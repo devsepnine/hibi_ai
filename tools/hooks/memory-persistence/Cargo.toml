@@ -1,0 +1,20 @@
+[package]
+name = "memory-persistence-hooks"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "load-context"
+path = "src/session_start.rs"
+
+[[bin]]
+name = "preserve-context"
+path = "src/pre_compact.rs"
+
+[[bin]]
+name = "persist-session"
+path = "src/session_end.rs"
+
+[dependencies]
+chrono = "0.4"
+dirs = "6.0"

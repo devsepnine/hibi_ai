@@ -1,0 +1,32 @@
+# Binaries (root level only)
+/hibi
+/hibi.exe
+/hibi-linux
+/installer
+/installer.exe
+/installer-linux
+
+# Build artifacts
+target/
+*.o
+*.so
+*.dylib
+
+# Release packages
+release/
+*.tar.gz
+*.zip
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Rust
+Cargo.lock
