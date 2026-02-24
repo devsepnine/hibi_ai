@@ -870,6 +870,7 @@ fn find_source_dir() -> Result<PathBuf> {
 
     // Check various possible locations
     let candidates = [
+        exe_dir.join("../share/hibi"),  // Homebrew: /opt/homebrew/bin -> /opt/homebrew/share/hibi
         exe_dir.join("../../.."),  // From target/release
         exe_dir.join("../.."),     // From target
         std::env::current_dir()?,  // Current directory
