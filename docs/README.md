@@ -11,38 +11,52 @@ AI 에이전트, 커스텀 명령어, 스킬, 훅, MCP 서버, 플러그인 등 
 
 ```
 hibi_ai/
-├── agents/              # AI 에이전트 정의
-│   └── affaan-m/        # 전문 에이전트 (planner, architect, tdd-guide 등)
-├── commands/            # 슬래시 커맨드
-│   └── affaan-m/        # 커스텀 명령어 (/plan, /code-review, /e2e 등)
-├── contexts/            # 컨텍스트 프리셋
-│   └── affaan-m/        # 개발/리서치/리뷰 컨텍스트
-├── hooks/               # 라이프사이클 훅
-│   ├── inject_guide/    # 가이드 자동 주입
-│   ├── load-context/    # 컨텍스트 자동 로드
-│   ├── persist-session/ # 세션 영속화
-│   ├── preserve-context/# 컨텍스트 보존
-│   └── suggest-compact/ # 컨텍스트 압축 제안
-├── mcps/                # MCP 서버 설정
-├── output-styles/       # 출력 스타일 정의
-├── plugins/             # 플러그인 설정
-├── rules/               # 코드 스타일 및 워크플로우 규칙
-│   └── affaan-m/        # 코딩 스타일, Git 워크플로우, 테스팅 등
-├── skills/              # 도메인별 스킬
-│   ├── affaan-m/        # 백엔드/프론트엔드 패턴, TDD 워크플로우
-│   ├── composition-patterns/     # React 컴포지션 패턴
-│   ├── ratatui_rs/              # Ratatui TUI 개발
-│   ├── react-native-skills/     # React Native 모바일 개발
-│   ├── rust-best-practices/     # Rust 베스트 프랙티스
-│   ├── vercel-react-best-practices/ # Vercel React 성능 최적화
-│   └── web-design-guidelines/   # 웹 디자인 가이드라인
-├── statusline/          # 상태 표시줄 바이너리
+├── src/                 # 소스 디렉토리 (Git 관리)
+│   ├── agents/          # AI 에이전트 정의
+│   │   └── affaan-m/    # 전문 에이전트 (planner, architect, tdd-guide 등)
+│   ├── commands/        # 슬래시 커맨드
+│   │   └── affaan-m/    # 커스텀 명령어 (/plan, /code-review, /e2e 등)
+│   ├── contexts/        # 컨텍스트 프리셋
+│   │   └── affaan-m/    # 개발/리서치/리뷰 컨텍스트
+│   ├── hooks/           # 라이프사이클 훅 (바이너리 포함)
+│   │   ├── inject_guide/    # 가이드 자동 주입
+│   │   ├── load-context/    # 컨텍스트 자동 로드
+│   │   ├── persist-session/ # 세션 영속화
+│   │   ├── preserve-context/# 컨텍스트 보존
+│   │   └── suggest-compact/ # 컨텍스트 압축 제안
+│   ├── mcps/            # MCP 서버 설정
+│   ├── output-styles/   # 출력 스타일 정의
+│   ├── plugins/         # 플러그인 설정
+│   ├── rules/           # 코드 스타일 및 워크플로우 규칙
+│   │   └── affaan-m/    # 코딩 스타일, Git 워크플로우, 테스팅 등
+│   ├── skills/          # 도메인별 스킬
+│   │   ├── affaan-m/    # 백엔드/프론트엔드 패턴, TDD 워크플로우
+│   │   ├── composition-patterns/     # React 컴포지션 패턴
+│   │   ├── ratatui_rs/              # Ratatui TUI 개발
+│   │   ├── react-native-skills/     # React Native 모바일 개발
+│   │   ├── rust-best-practices/     # Rust 베스트 프랙티스
+│   │   ├── vercel-react-best-practices/ # Vercel React 성능 최적화
+│   │   └── web-design-guidelines/   # 웹 디자인 가이드라인
+│   ├── statusline/      # 상태 표시줄 바이너리
+│   ├── AGENTS.md        # 에이전트 가이드
+│   ├── CLAUDE.md        # Claude 설정
+│   ├── mcp.md           # MCP 문서
+│   └── settings.json    # 전역 설정
+├── dist/                # 빌드 산출물 (gitignore)
+│   ├── hibi             # macOS Universal Binary
+│   ├── hibi-linux       # Linux 바이너리
+│   └── hibi.exe         # Windows 바이너리
+├── docs/                # 프로젝트 문서
+│   ├── README.md        # 메인 문서
+│   ├── RUNBOOK.md       # 운영 가이드
+│   └── INDEX.md         # 문서 인덱스
 ├── tools/               # 개발 도구
 │   ├── hooks/           # 훅 소스 코드
 │   ├── installer/       # TUI 인스톨러 소스 (Rust)
 │   └── statusline/      # 상태 표시줄 소스 (Rust)
 └── release/             # 릴리즈 아티팩트
-    └── v0.1.3/          # 버전별 릴리즈 패키지
+    ├── v0.1.3/          # 버전별 릴리즈 패키지
+    └── v0.1.4/          # 최신 릴리즈
 ```
 
 ## 주요 컴포넌트
@@ -111,15 +125,28 @@ hibi_ai/
 
 ### 빌드 시스템
 
+**Installer 빌드** (dist/로 출력):
 ```bash
 cd tools/installer
 ./build.sh
 ```
 
+**Hooks & Statusline 빌드** (src/로 출력):
+```bash
+# Statusline
+cd tools/statusline
+./build.sh
+
+# Hooks
+cd tools/hooks/inject_guide && ./build.sh
+cd tools/hooks/memory-persistence && ./build.sh
+cd tools/hooks/strategic-compact && ./build.sh
+```
+
 생성되는 바이너리:
-- `hibi` - macOS Universal Binary (Intel + Apple Silicon)
-- `hibi-linux` - Linux x86_64
-- `hibi.exe` - Windows x86_64
+- **macOS**: Universal Binary (Intel + Apple Silicon)
+- **Linux**: x86_64 (musl static)
+- **Windows**: x86_64 (mingw-w64)
 
 ### 릴리즈 패키징
 
@@ -176,25 +203,43 @@ TUI 인터페이스에서:
 
 ## 최근 변경사항
 
+### 2026-02-25 (v0.1.4)
+
+**추가됨:**
+- 모든 hooks 및 statusline에 Universal Binary 지원 확대
+  - inject_guide: 3.6MB (macOS Universal)
+  - load-context: 1.1MB (macOS Universal)
+  - preserve-context: 1.1MB (macOS Universal)
+  - persist-session: 1.0MB (macOS Universal)
+  - suggest-compact: 1.0MB (macOS Universal)
+  - statusline: 988KB (macOS Universal)
+
+**수정됨:**
+- 프로젝트 구조 재편: src/ 및 dist/ 디렉토리 분리
+  - src/: Git 관리 대상 (설정, 훅/statusline 바이너리)
+  - dist/: 빌드 산출물 (installer 바이너리, gitignore)
+- 모든 빌드 스크립트 Universal Binary 지원
+  - tools/installer/build.sh
+  - tools/statusline/build.sh
+  - tools/hooks/*/build.sh
+- package.sh: src/에서 dist/로 복사 후 패키징
+- 버전: 0.1.3 → 0.1.4
+
+**기술 상세:**
+- 구형 Intel Mac 완전 지원 (모든 컴포넌트)
+- 바이너리 관리 전략 개선 (빈번히 변경되는 installer는 dist/, 안정적인 hooks/statusline은 src/에서 Git 관리)
+
 ### 2026-02-25 (v0.1.3)
 
 **추가됨:**
-- macOS Universal Binary 지원 (Intel + Apple Silicon)
+- macOS Universal Binary 지원 (installer)
 - 버전별 릴리즈 디렉토리 구조 (`release/v{VERSION}/`)
 - 자동 SHA256 체크섬 생성 (`package.sh`)
-- 빌드 타겟 검증 로직 (`build.sh`)
+- 빌드 타겟 검증 로직
 
 **수정됨:**
-- `package.sh`: 버전 0.1.2 → 0.1.3
-- `package.sh`: 경로 처리 개선 (PROJECT_ROOT 변수 사용)
-- `tools/installer/Cargo.toml`: 버전 0.1.0 → 0.1.3
-- `tools/installer/build.sh`: lipo를 사용한 Universal Binary 빌드
-- `README.md`: Universal Binary 지원 명시
-
-**기술 상세:**
-- Apple Silicon (aarch64-apple-darwin) + Intel (x86_64-apple-darwin) 통합
-- 단일 바이너리로 모든 Mac 지원
-- 빌드 크기: 2.5MB (Universal Binary)
+- installer 빌드 시스템: lipo를 사용한 Universal Binary
+- 버전: 0.1.2 → 0.1.3
 
 ### 2026-02-24 이전
 

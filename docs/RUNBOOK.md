@@ -19,17 +19,23 @@ vim package.sh
 ### 2. 빌드 및 테스트
 
 ```bash
-# 전체 빌드
+# Installer 빌드 (dist/로 출력)
 cd tools/installer
 ./build.sh
 
+# Hooks & Statusline 빌드 (필요시만 - src/에서 Git 관리)
+cd tools/statusline && ./build.sh
+cd tools/hooks/inject_guide && ./build.sh
+cd tools/hooks/memory-persistence && ./build.sh
+cd tools/hooks/strategic-compact && ./build.sh
+
 # 바이너리 검증
 cd ../..
-file hibi
-lipo -info hibi  # macOS Universal Binary 확인
+file dist/hibi
+lipo -info dist/hibi  # macOS Universal Binary 확인
 
 # 실행 테스트
-./hibi
+./dist/hibi
 ```
 
 ### 3. 릴리즈 패키징
