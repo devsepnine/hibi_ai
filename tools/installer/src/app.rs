@@ -870,7 +870,9 @@ fn find_source_dir() -> Result<PathBuf> {
 
     // Check various possible locations
     let candidates = [
+        exe_dir.clone(),  // Scoop: exe and config files in same directory
         exe_dir.join("../share/hibi"),  // Homebrew: /opt/homebrew/bin -> /opt/homebrew/share/hibi
+        exe_dir.join("../share/hibi-ai"),  // Homebrew alternative
         exe_dir.join("../../.."),  // From target/release
         exe_dir.join("../.."),     // From target
         std::env::current_dir()?,  // Current directory
