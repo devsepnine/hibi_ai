@@ -16,26 +16,30 @@ TUI installer for Claude Code and Codex CLI configurations.
 ### Homebrew (macOS/Linux)
 
 ```bash
-brew install devsepnine/hibi_ai/hibi-ai
+brew tap devsepnine/brew
+brew install hibi
+```
+
+### Scoop (Windows)
+
+```bash
+scoop bucket add hibi-ai https://github.com/devsepnine/scoop-bucket
+scoop install hibi-ai
 ```
 
 ### Manual Installation
 
-1. Download the latest release for your platform:
-   - [macOS](https://github.com/devsepnine/hibi_ai/releases/latest/download/hibi-ai-0.1.0-macos.tar.gz)
-   - [Linux](https://github.com/devsepnine/hibi_ai/releases/latest/download/hibi-ai-0.1.0-linux.tar.gz)
-   - [Windows](https://github.com/devsepnine/hibi_ai/releases/latest/download/hibi-ai-0.1.0-windows.zip)
+1. Download the latest release for your platform from [Releases](https://github.com/devsepnine/hibi_ai/releases/latest)
 
-2. Extract the archive:
+2. Extract the archive and run the installer:
    ```bash
-   tar xzf hibi-ai-0.1.0-macos.tar.gz  # macOS/Linux
-   # or
-   unzip hibi-ai-0.1.0-windows.zip     # Windows
-   ```
-
-3. Run the installer:
-   ```bash
+   # macOS/Linux
+   tar xzf hibi-ai-*-macos.tar.gz    # or *-linux.tar.gz
    ./hibi
+
+   # Windows
+   # Extract the zip file and run:
+   hibi.exe
    ```
 
 ## Usage
