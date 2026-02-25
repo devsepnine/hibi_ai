@@ -6,13 +6,44 @@ echo "🔨 Building installer for all platforms..."
 echo ""
 
 # Build directory
-BUILD_DIR="../../"
+BUILD_DIR="../../dist"
+mkdir -p "$BUILD_DIR"
 
-# macOS (current platform)
-echo "📦 Building for macOS..."
-cargo build --release
-cp target/release/hibi "$BUILD_DIR/hibi"
-echo "✅ macOS build complete: $BUILD_DIR/hibi"
+# macOS Universal Binary (Apple Silicon + Intel)
+echo "📦 Building for macOS (Universal Binary)..."
+
+# Check if targets are installed
+MISSING_TARGETS=""
+if ! rustup target list | grep -q "aarch64-apple-darwin (installed)"; then
+    MISSING_TARGETS="$MISSING_TARGETS aarch64-apple-darwin"
+fi
+if ! rustup target list | grep -q "x86_64-apple-darwin (installed)"; then
+    MISSING_TARGETS="$MISSING_TARGETS x86_64-apple-darwin"
+fi
+
+if [ -n "$MISSING_TARGETS" ]; then
+    echo "⚠️  Missing macOS targets:$MISSING_TARGETS"
+    echo "   To install: rustup target add$MISSING_TARGETS"
+    exit 1
+fi
+
+# Build for Apple Silicon (arm64)
+echo "  - Building for Apple Silicon (arm64)..."
+cargo build --release --target aarch64-apple-darwin
+
+# Build for Intel (x86_64)
+echo "  - Building for Intel (x86_64)..."
+cargo build --release --target x86_64-apple-darwin
+
+# Create Universal Binary
+echo "  - Creating Universal Binary..."
+lipo -create \
+  target/aarch64-apple-darwin/release/hibi \
+  target/x86_64-apple-darwin/release/hibi \
+  -output "$BUILD_DIR/hibi"
+
+echo "✅ macOS Universal Binary complete: $BUILD_DIR/hibi"
+echo "   (supports both Apple Silicon and Intel Macs)"
 echo ""
 
 # Windows
