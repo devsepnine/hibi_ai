@@ -1,16 +1,9 @@
-# Binaries (root level only)
-/hibi
-/hibi.exe
-/hibi-linux
-/installer
-/installer.exe
-/installer-linux
-
 # Build artifacts
 target/
 *.o
 *.so
 *.dylib
+dist/
 
 # Release packages
 release/

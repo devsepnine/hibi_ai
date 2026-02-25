@@ -7,7 +7,7 @@ TUI installer for Claude Code and Codex CLI configurations.
 - 🎨 Interactive TUI for easy configuration management
 - 🔧 Support for both Claude Code and Codex CLI
 - 📦 Component-based installation (agents, commands, skills, hooks, MCPs, plugins)
-- 🌍 Cross-platform support (macOS, Linux, Windows)
+- 🌍 Cross-platform support (macOS Universal Binary [Intel + Apple Silicon], Linux, Windows)
 - 🔍 Automatic MCP server detection
 - ⚡ Fast and lightweight
 
@@ -79,9 +79,9 @@ cd tools/installer
 ```
 
 This will create binaries for all platforms:
-- `hibi` (macOS)
-- `hibi-linux` (Linux)
-- `hibi.exe` (Windows)
+- `hibi` (macOS Universal Binary - supports both Intel and Apple Silicon Macs)
+- `hibi-linux` (Linux x86_64)
+- `hibi.exe` (Windows x86_64)
 
 ## License
 

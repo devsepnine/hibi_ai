@@ -6,24 +6,59 @@ echo "🔨 Building memory-persistence hooks for all platforms..."
 echo ""
 
 # Build directories
-LOAD_CONTEXT_DIR="../../../hooks/load-context"
-PRESERVE_CONTEXT_DIR="../../../hooks/preserve-context"
-PERSIST_SESSION_DIR="../../../hooks/persist-session"
+LOAD_CONTEXT_DIR="../../../src/hooks/load-context"
+PRESERVE_CONTEXT_DIR="../../../src/hooks/preserve-context"
+PERSIST_SESSION_DIR="../../../src/hooks/persist-session"
 
 # Ensure hooks directories exist
 mkdir -p "$LOAD_CONTEXT_DIR"
 mkdir -p "$PRESERVE_CONTEXT_DIR"
 mkdir -p "$PERSIST_SESSION_DIR"
 
-# macOS (current platform)
-echo "📦 Building for macOS..."
-cargo build --release
+# macOS Universal Binary (Apple Silicon + Intel)
+echo "📦 Building for macOS (Universal Binary)..."
 
-cp target/release/load-context "$LOAD_CONTEXT_DIR/load-context_macos"
-cp target/release/preserve-context "$PRESERVE_CONTEXT_DIR/preserve-context_macos"
-cp target/release/persist-session "$PERSIST_SESSION_DIR/persist-session_macos"
+# Check if targets are installed
+MISSING_TARGETS=""
+if ! rustup target list | grep -q "aarch64-apple-darwin (installed)"; then
+    MISSING_TARGETS="$MISSING_TARGETS aarch64-apple-darwin"
+fi
+if ! rustup target list | grep -q "x86_64-apple-darwin (installed)"; then
+    MISSING_TARGETS="$MISSING_TARGETS x86_64-apple-darwin"
+fi
 
-echo "✅ macOS builds complete"
+if [ -n "$MISSING_TARGETS" ]; then
+    echo "⚠️  Missing macOS targets:$MISSING_TARGETS"
+    echo "   To install: rustup target add$MISSING_TARGETS"
+    exit 1
+fi
+
+# Build for Apple Silicon (arm64)
+echo "  - Building for Apple Silicon (arm64)..."
+cargo build --release --target aarch64-apple-darwin
+
+# Build for Intel (x86_64)
+echo "  - Building for Intel (x86_64)..."
+cargo build --release --target x86_64-apple-darwin
+
+# Create Universal Binaries
+echo "  - Creating Universal Binaries..."
+lipo -create \
+  target/aarch64-apple-darwin/release/load-context \
+  target/x86_64-apple-darwin/release/load-context \
+  -output "$LOAD_CONTEXT_DIR/load-context_macos"
+
+lipo -create \
+  target/aarch64-apple-darwin/release/preserve-context \
+  target/x86_64-apple-darwin/release/preserve-context \
+  -output "$PRESERVE_CONTEXT_DIR/preserve-context_macos"
+
+lipo -create \
+  target/aarch64-apple-darwin/release/persist-session \
+  target/x86_64-apple-darwin/release/persist-session \
+  -output "$PERSIST_SESSION_DIR/persist-session_macos"
+
+echo "✅ macOS Universal Binaries complete (Intel + Apple Silicon)"
 echo ""
 
 # Windows

@@ -6,16 +6,46 @@ echo "🔨 Building statusline for all platforms..."
 echo ""
 
 # Build directory
-BUILD_DIR="../../statusline"
+BUILD_DIR="../../src/statusline"
 
 # Ensure statusline directory exists
 mkdir -p "$BUILD_DIR"
 
-# macOS (current platform)
-echo "📦 Building for macOS..."
-cargo build --release
-cp target/release/statusline "$BUILD_DIR/statusline_macos"
-echo "✅ macOS build complete: $BUILD_DIR/statusline_macos"
+# macOS Universal Binary (Apple Silicon + Intel)
+echo "📦 Building for macOS (Universal Binary)..."
+
+# Check if targets are installed
+MISSING_TARGETS=""
+if ! rustup target list | grep -q "aarch64-apple-darwin (installed)"; then
+    MISSING_TARGETS="$MISSING_TARGETS aarch64-apple-darwin"
+fi
+if ! rustup target list | grep -q "x86_64-apple-darwin (installed)"; then
+    MISSING_TARGETS="$MISSING_TARGETS x86_64-apple-darwin"
+fi
+
+if [ -n "$MISSING_TARGETS" ]; then
+    echo "⚠️  Missing macOS targets:$MISSING_TARGETS"
+    echo "   To install: rustup target add$MISSING_TARGETS"
+    exit 1
+fi
+
+# Build for Apple Silicon (arm64)
+echo "  - Building for Apple Silicon (arm64)..."
+cargo build --release --target aarch64-apple-darwin
+
+# Build for Intel (x86_64)
+echo "  - Building for Intel (x86_64)..."
+cargo build --release --target x86_64-apple-darwin
+
+# Create Universal Binary
+echo "  - Creating Universal Binary..."
+lipo -create \
+  target/aarch64-apple-darwin/release/statusline \
+  target/x86_64-apple-darwin/release/statusline \
+  -output "$BUILD_DIR/statusline_macos"
+
+echo "✅ macOS Universal Binary complete: $BUILD_DIR/statusline_macos"
+echo "   (supports both Apple Silicon and Intel Macs)"
 echo ""
 
 # Windows
