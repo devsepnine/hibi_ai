@@ -2,6 +2,21 @@ use std::path::Path;
 use anyhow::{Result, Context};
 use similar::{ChangeTag, TextDiff};
 
+/// Normalize path display to remove Windows extended-length prefix
+fn normalize_path_display(path: &Path) -> String {
+    let path_str = path.display().to_string();
+
+    // Windows: Remove \\?\ prefix for cleaner display
+    #[cfg(windows)]
+    {
+        if path_str.starts_with(r"\\?\") {
+            return path_str[4..].to_string();
+        }
+    }
+
+    path_str
+}
+
 /// Check if a file is likely binary by reading first few bytes
 fn is_binary_file(path: &Path) -> Result<bool> {
     use std::io::Read;
@@ -35,7 +50,7 @@ pub fn compare_files(source: &Path, dest: &Path) -> Result<String> {
         // New file - show all as additions
         let mut output = String::new();
         output.push_str("--- (new file)\n");
-        output.push_str(&format!("+++ {}\n", source.display()));
+        output.push_str(&format!("+++ {}\n", normalize_path_display(source)));
         output.push_str("@@ new file @@\n");
         for line in source_content.lines() {
             output.push_str(&format!("+{}\n", line));
@@ -65,8 +80,8 @@ pub fn compare_files(source: &Path, dest: &Path) -> Result<String> {
     let diff = TextDiff::from_lines(&dest_content, &source_content);
 
     let mut output = String::new();
-    output.push_str(&format!("--- {}\n", dest.display()));
-    output.push_str(&format!("+++ {}\n", source.display()));
+    output.push_str(&format!("--- {}\n", normalize_path_display(dest)));
+    output.push_str(&format!("+++ {}\n", normalize_path_display(source)));
 
     for change in diff.iter_all_changes() {
         let sign = match change.tag() {
