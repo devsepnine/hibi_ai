@@ -1,6 +1,6 @@
 # hibi-ai 프로젝트 문서
 
-> 마지막 업데이트: 2026-02-25
+> 마지막 업데이트: 2026-02-26
 
 ## 개요
 
@@ -52,7 +52,12 @@ hibi_ai/
 │   └── INDEX.md         # 문서 인덱스
 ├── tools/               # 개발 도구
 │   ├── hooks/           # 훅 소스 코드
-│   ├── installer/       # TUI 인스톨러 소스 (Rust)
+│   ├── installer/       # TUI 인스톨러 소스 (Rust, 3,288 LOC)
+│   │   └── src/
+│   │       ├── app/           # 앱 상태 모듈 (7 파일)
+│   │       ├── fs/installer/  # 설치 로직 모듈 (5 파일)
+│   │       ├── fs/scanner/    # 스캔 로직 모듈 (2 파일)
+│   │       └── main.rs        # 이벤트 루프
 │   └── statusline/      # 상태 표시줄 소스 (Rust)
 └── release/             # 릴리즈 아티팩트
     ├── v0.1.3/          # 버전별 릴리즈 패키지
@@ -202,6 +207,29 @@ TUI 인터페이스에서:
 4. 설치 실행
 
 ## 최근 변경사항
+
+### 2026-02-26
+
+**리팩토링:**
+- 인스톨러 모듈 구조 재편 (300 LOC 파일 한도 적용)
+  - `installer.rs` (857 LOC) → `fs/installer/` 디렉토리 (5 파일)
+    - `mod.rs` (110) + `process.rs` (206) + `mcp.rs` (163) + `plugin.rs` (64) + `settings.rs` (302)
+  - `scanner.rs` (672 LOC) → `fs/scanner/` 디렉토리 (2 파일)
+    - `mod.rs` (476) + `validation.rs` (206, 13 테스트 포함)
+  - `app.rs` (931 LOC) → `app/` 디렉토리 (7 파일, 이전 완료)
+
+**보안 강화:**
+- `shlex::split()` 도입으로 MCP 커맨드 파싱 시 인자 주입 방지 (기존 `split_whitespace()` 대체)
+- 경로 순회 방지: scanner 및 copy_file에서 `..` (ParentDir) 컴포넌트 거부
+
+**코드 품질 개선:**
+- `ProcessConfig` / `McpInstallConfig` 구조체로 파라미터 수 감소 (6-7 → 2)
+- `read_settings` / `write_settings` 헬퍼 추출로 8회 중복 제거
+- 매직 넘버 상수화: `CLEANUP_TIMEOUT_SECS`, `KILL_WAIT_MS`, `POLL_INTERVAL_MS`
+- `hook_exists_in_array` / `build_hook_entry` 헬퍼 추출
+
+**테스트:**
+- 전체 20개 테스트 통과 (7 plugin + 13 scanner validation)
 
 ### 2026-02-25 (v0.1.4)
 

@@ -1,6 +1,6 @@
 # hibi-ai 문서 인덱스
 
-> 마지막 업데이트: 2026-02-25
+> 마지막 업데이트: 2026-02-26
 
 ## 📚 문서 목록
 
@@ -86,6 +86,18 @@
 
 ## 🛠️ 개발 문서
 
+### 인스톨러 소스 (tools/installer/src/)
+
+모듈 구조:
+
+- **app/** - 앱 상태 관리 (7 파일, 967 LOC)
+  - `mod.rs` (App struct), `types.rs`, `navigation.rs`, `selection.rs`, `processing.rs`, `input.rs`, `settings.rs`
+- **fs/installer/** - 설치/제거 로직 (5 파일, 845 LOC)
+  - `mod.rs` (component ops), `process.rs` (spawn/cancel), `mcp.rs` (MCP), `plugin.rs` (plugin), `settings.rs` (settings.json)
+- **fs/scanner/** - 컴포넌트 스캔 (2 파일, 682 LOC)
+  - `mod.rs` (scan functions), `validation.rs` (검증 + 13 tests)
+- **main.rs** - 이벤트 루프 (754 LOC)
+
 ### 빌드 시스템
 
 - **tools/installer/build.sh** - 전체 플랫폼 빌드 스크립트
@@ -146,4 +158,5 @@ A: `rules/commit-convention.md` 참조
 
 ## 📅 문서 업데이트 이력
 
+- **2026-02-26**: 인스톨러 모듈 구조 재편 반영 (README.md 업데이트)
 - **2026-02-25**: 초기 문서 생성 (README.md, RUNBOOK.md, INDEX.md)
