@@ -123,182 +123,252 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+type RefreshResult = (Vec<component::Component>, Vec<mcp::McpServer>, Vec<plugin::Plugin>);
+
+/// Bundles all channels and state for async process management.
+struct ProcessingChannels {
+    process_tx: std::sync::mpsc::Sender<Result<String>>,
+    process_rx: std::sync::mpsc::Receiver<Result<String>>,
+    cancel_tx: std::sync::mpsc::Sender<()>,
+    cancel_rx: std::sync::mpsc::Receiver<()>,
+    current_cancel_tx: std::sync::mpsc::Sender<()>,
+    processing_active: bool,
+    refresh_tx: std::sync::mpsc::Sender<Result<RefreshResult>>,
+    refresh_rx: std::sync::mpsc::Receiver<Result<RefreshResult>>,
+}
+
+impl ProcessingChannels {
+    fn new() -> Self {
+        use std::sync::mpsc;
+        let (process_tx, process_rx) = mpsc::channel::<Result<String>>();
+        let (cancel_tx, cancel_rx) = mpsc::channel::<()>();
+        let current_cancel_tx = cancel_tx.clone();
+        let (refresh_tx, refresh_rx) = mpsc::channel::<Result<RefreshResult>>();
+
+        Self {
+            process_tx,
+            process_rx,
+            cancel_tx,
+            cancel_rx,
+            current_cancel_tx,
+            processing_active: false,
+            refresh_tx,
+            refresh_rx,
+        }
+    }
+
+    /// Replace the cancel channel pair, returning the old receiver for thread use.
+    fn take_cancel_rx(&mut self) -> std::sync::mpsc::Receiver<()> {
+        use std::sync::mpsc;
+        let (new_tx, new_rx) = mpsc::channel::<()>();
+        let old_rx = std::mem::replace(&mut self.cancel_rx, new_rx);
+        self.cancel_tx = new_tx;
+        old_rx
+    }
+
+    /// Reset the cancel channel (used after process completion).
+    fn reset_cancel_channel(&mut self) {
+        use std::sync::mpsc;
+        let (new_tx, new_rx) = mpsc::channel::<()>();
+        self.cancel_tx = new_tx;
+        self.cancel_rx = new_rx;
+    }
+}
+
+/// Handle completion of a processing thread.
+fn handle_process_completion(app: &mut App, channels: &mut ProcessingChannels) {
+    use std::sync::mpsc::TryRecvError;
+
+    match channels.process_rx.try_recv() {
+        Ok(result) => {
+            channels.processing_active = false;
+            app.cancelling = false;
+            match result {
+                Ok(msg) => app.processing_log.push(msg),
+                Err(e) => {
+                    let err_msg = e.to_string();
+                    if err_msg.contains("Cancelled by user") {
+                        app.processing_log.push("[WARN] Cancelled by user".to_string());
+                        if !app.is_removing {
+                            app.processing_log.push("[INFO] Cleaning up cancelled installation...".to_string());
+                        }
+                        app.processing_queue.clear();
+                    } else if err_msg.contains("timed out") {
+                        app.processing_log.push(format!("[ERR] {}", err_msg));
+                        if !app.is_removing {
+                            app.processing_log.push("[INFO] Cleaning up timed out installation...".to_string());
+                        }
+                    } else {
+                        app.processing_log.push(format!("[ERR] {}", err_msg));
+                    }
+                }
+            }
+
+            let progress = app.processing_progress.unwrap_or(0) + 1;
+            app.processing_progress = Some(progress);
+            channels.reset_cancel_channel();
+
+            if app.processing_queue.is_empty() {
+                app.start_finish_processing();
+            }
+        }
+        Err(TryRecvError::Empty) => {}
+        Err(TryRecvError::Disconnected) => {
+            channels.processing_active = false;
+            app.processing_log.push("[ERR] Process thread crashed".to_string());
+            if app.processing_queue.is_empty() {
+                app.start_finish_processing();
+            }
+        }
+    }
+}
+
+/// Dequeue and spawn the next processing task.
+fn dispatch_next_process(app: &mut App, channels: &mut ProcessingChannels) {
+    let idx = app.processing_queue.remove(0);
+    channels.processing_active = true;
+
+    let item_name = get_item_name(app, idx);
+    let action = if app.is_removing { "Removing" } else { "Installing" };
+    app.processing_log.push(format!("{} {}...", action, item_name));
+
+    let tx_clone = channels.process_tx.clone();
+    let is_removing = app.is_removing;
+    let target_cli = app.target_cli.unwrap_or(app::TargetCli::Claude);
+    let process_data = prepare_process_data(app, idx);
+
+    // Update current_cancel_tx BEFORE spawning the thread
+    channels.current_cancel_tx = channels.cancel_tx.clone();
+    let cancel_rx_for_thread = channels.take_cancel_rx();
+
+    thread::spawn(move || {
+        let result = execute_process_step(process_data, is_removing, target_cli, cancel_rx_for_thread);
+        let _ = tx_clone.send(result);
+    });
+}
+
+/// Start a background thread to rescan components after install/remove.
+fn start_refresh_thread(app: &mut App, refresh_tx: &std::sync::mpsc::Sender<Result<RefreshResult>>) {
+    app.refreshing = true;
+
+    let tx_clone = refresh_tx.clone();
+    let source_dir = app.source_dir.clone();
+    let dest_dir = app.dest_dir.clone();
+    let target_cli = app.target_cli.unwrap_or(app::TargetCli::Claude);
+
+    thread::spawn(move || {
+        let result = (|| -> Result<RefreshResult> {
+            let components = fs::scanner::scan_components(&source_dir, &dest_dir, target_cli)?;
+            let mcp_servers = fs::scanner::scan_mcp_servers(&source_dir, target_cli, &dest_dir)?;
+            let plugins = fs::scanner::scan_plugins(&source_dir)?;
+            Ok((components, mcp_servers, plugins))
+        })();
+        let _ = tx_clone.send(result);
+    });
+}
+
+/// Check if a refresh thread has completed and apply results.
+fn check_refresh_completion(app: &mut App, refresh_rx: &std::sync::mpsc::Receiver<Result<RefreshResult>>) {
+    use std::sync::mpsc::TryRecvError;
+
+    match refresh_rx.try_recv() {
+        Ok(Ok((components, mcp_servers, plugins))) => {
+            app.apply_refresh_result(components, mcp_servers, plugins);
+        }
+        Ok(Err(e)) => {
+            app.processing_log.push(format!("[ERROR] Refresh failed: {}", e));
+            app.needs_refresh = false;
+            app.refreshing = false;
+            app.processing_complete = true;
+        }
+        Err(TryRecvError::Empty) => {}
+        Err(TryRecvError::Disconnected) => {
+            app.processing_log.push("[ERROR] Refresh thread crashed".to_string());
+            app.needs_refresh = false;
+            app.refreshing = false;
+            app.processing_complete = true;
+        }
+    }
+}
+
+/// Handle a single tick of the Installing view.
+fn handle_installing_view(app: &mut App, channels: &mut ProcessingChannels) -> Result<()> {
+    if poll(Duration::from_millis(100))? {
+        if let Event::Key(key) = event::read()? {
+            if key.kind != KeyEventKind::Release {
+                handle_installing_input(app, key.code, &channels.current_cancel_tx, &channels.processing_active)?;
+            }
+        }
+    }
+
+    app.tick();
+
+    if channels.processing_active {
+        handle_process_completion(app, channels);
+    }
+
+    if !channels.processing_active && !app.processing_queue.is_empty() {
+        dispatch_next_process(app, channels);
+    } else if !channels.processing_active && app.processing_queue.is_empty() && app.needs_refresh && !app.refreshing {
+        start_refresh_thread(app, &channels.refresh_tx);
+    } else if app.refreshing {
+        check_refresh_completion(app, &channels.refresh_rx);
+    }
+
+    Ok(())
+}
+
+/// Handle a single tick of the Loading view.
+fn handle_loading_view(app: &mut App, refresh_rx: &std::sync::mpsc::Receiver<Result<RefreshResult>>) -> Result<()> {
+    use std::sync::mpsc::TryRecvError;
+
+    if poll(Duration::from_millis(100))? {
+        if let Event::Key(key) = event::read()? {
+            if key.kind != KeyEventKind::Release && key.code == KeyCode::Char('q') {
+                app.should_quit = true;
+            }
+        }
+    }
+
+    app.tick();
+
+    match refresh_rx.try_recv() {
+        Ok(Ok((components, mcp_servers, plugins))) => {
+            app.finish_loading(components, mcp_servers, plugins);
+        }
+        Ok(Err(e)) => {
+            app.status_message = Some(format!("Error loading: {}", e));
+            app.current_view = app::View::CliSelection;
+        }
+        Err(TryRecvError::Empty) => {}
+        Err(TryRecvError::Disconnected) => {
+            app.status_message = Some("Loading failed".to_string());
+            app.current_view = app::View::CliSelection;
+        }
+    }
+
+    Ok(())
+}
+
 fn run_app<B: ratatui::backend::Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<()>
 where
     <B as ratatui::backend::Backend>::Error: Send + Sync + 'static,
 {
-    use std::sync::mpsc::{self, TryRecvError};
-    use std::thread;
-
-    // Channel for process results
-    let (process_tx, process_rx) = mpsc::channel::<Result<String>>();
-    let mut processing_active = false;
-
-    // Channel for refresh results
-    type RefreshResult = (Vec<component::Component>, Vec<mcp::McpServer>, Vec<plugin::Plugin>);
-    let (refresh_tx, refresh_rx) = mpsc::channel::<Result<RefreshResult>>();
+    let mut channels = ProcessingChannels::new();
 
     loop {
         terminal.draw(|f| ui::draw(f, app))?;
 
         match app.current_view {
-            app::View::Installing => {
-                // Check for input (non-blocking with short timeout)
-                if poll(Duration::from_millis(100))? {
-                    if let Event::Key(key) = event::read()? {
-                        if key.kind != KeyEventKind::Release {
-                            handle_installing_input(app, key.code)?;
-                        }
-                    }
-                }
-
-                // Update animation
-                app.tick();
-
-                // Check if a processing thread completed
-                if processing_active {
-                    match process_rx.try_recv() {
-                        Ok(result) => {
-                            processing_active = false;
-                            match result {
-                                Ok(msg) => app.processing_log.push(msg),
-                                Err(e) => app.processing_log.push(format!("[ERR] {}", e)),
-                            }
-                            // Update progress
-                            let progress = app.processing_progress.unwrap_or(0) + 1;
-                            app.processing_progress = Some(progress);
-
-                            // Check if all done
-                            if app.processing_queue.is_empty() {
-                                app.start_finish_processing();
-                            }
-                        }
-                        Err(TryRecvError::Empty) => {
-                            // Still processing, continue
-                        }
-                        Err(TryRecvError::Disconnected) => {
-                            // Thread crashed, mark as error
-                            processing_active = false;
-                            app.processing_log.push("[ERR] Process thread crashed".to_string());
-                            if app.processing_queue.is_empty() {
-                                app.start_finish_processing();
-                            }
-                        }
-                    }
-                }
-
-                // Start next item if not currently processing
-                if !processing_active && !app.processing_queue.is_empty() {
-                    let idx = app.processing_queue.remove(0);
-                    processing_active = true;
-
-                    // Add "Installing/Removing..." message
-                    let item_name = get_item_name(app, idx);
-                    let action = if app.is_removing { "Removing" } else { "Installing" };
-                    app.processing_log.push(format!("{} {}...", action, item_name));
-
-                    let tx_clone = process_tx.clone();
-                    let is_removing = app.is_removing;
-                    let tab = app.tab;
-                    let target_cli = app.target_cli.unwrap_or(app::TargetCli::Claude);
-                    let process_data = prepare_process_data(app, idx);
-
-                    thread::spawn(move || {
-                        let result = execute_process_step(process_data, is_removing, tab, target_cli);
-                        let _ = tx_clone.send(result);
-                    });
-                } else if !processing_active && app.processing_queue.is_empty() && app.needs_refresh && !app.refreshing {
-                    // Start background refresh thread
-                    app.refreshing = true;
-
-                    let tx_clone = refresh_tx.clone();
-                    let source_dir = app.source_dir.clone();
-                    let dest_dir = app.dest_dir.clone();
-                    let target_cli = app.target_cli.unwrap_or(app::TargetCli::Claude);
-
-                    thread::spawn(move || {
-                        use crate::fs;
-
-                        let result = (|| -> Result<RefreshResult> {
-                            let components = fs::scanner::scan_components(&source_dir, &dest_dir, target_cli)?;
-                            let mcp_servers = fs::scanner::scan_mcp_servers(&source_dir, target_cli, &dest_dir)?;
-                            let plugins = fs::scanner::scan_plugins(&source_dir)?;
-                            Ok((components, mcp_servers, plugins))
-                        })();
-
-                        let _ = tx_clone.send(result);
-                    });
-                } else if app.refreshing {
-                    // Check if refresh thread is done
-                    match refresh_rx.try_recv() {
-                        Ok(result) => {
-                            match result {
-                                Ok((components, mcp_servers, plugins)) => {
-                                    app.apply_refresh_result(components, mcp_servers, plugins);
-                                }
-                                Err(e) => {
-                                    app.processing_log.push(format!("[ERROR] Refresh failed: {}", e));
-                                    app.needs_refresh = false;
-                                    app.refreshing = false;
-                                    app.processing_complete = true;
-                                }
-                            }
-                        }
-                        Err(TryRecvError::Empty) => {
-                            // Still refreshing
-                        }
-                        Err(TryRecvError::Disconnected) => {
-                            app.processing_log.push("[ERROR] Refresh thread crashed".to_string());
-                            app.needs_refresh = false;
-                            app.refreshing = false;
-                            app.processing_complete = true;
-                        }
-                    }
-                }
-                // else: Installation complete, just wait for user input to close
-            }
+            app::View::Installing => handle_installing_view(app, &mut channels)?,
             app::View::CliSelection => {
                 if let Event::Key(key) = event::read()? {
                     if key.kind != KeyEventKind::Release {
-                        handle_cli_selection(app, key.code, &refresh_tx)?;
+                        handle_cli_selection(app, key.code, &channels.refresh_tx)?;
                     }
                 }
             }
-            app::View::Loading => {
-                // Check for input (non-blocking with short timeout)
-                if poll(Duration::from_millis(100))? {
-                    if let Event::Key(key) = event::read()? {
-                        if key.kind != KeyEventKind::Release && key.code == KeyCode::Char('q') {
-                            app.should_quit = true;
-                        }
-                    }
-                }
-
-                // Update animation
-                app.tick();
-
-                // Check if refresh thread completed
-                match refresh_rx.try_recv() {
-                    Ok(result) => {
-                        match result {
-                            Ok((components, mcp_servers, plugins)) => {
-                                app.finish_loading(components, mcp_servers, plugins);
-                            }
-                            Err(e) => {
-                                app.status_message = Some(format!("Error loading: {}", e));
-                                app.current_view = app::View::CliSelection;
-                            }
-                        }
-                    }
-                    Err(TryRecvError::Empty) => {
-                        // Still loading, continue
-                    }
-                    Err(TryRecvError::Disconnected) => {
-                        app.status_message = Some("Loading failed".to_string());
-                        app.current_view = app::View::CliSelection;
-                    }
-                }
-            }
+            app::View::Loading => handle_loading_view(app, &channels.refresh_rx)?,
             app::View::EnvInput => {
                 if let Event::Key(key) = event::read()? {
                     if key.kind != KeyEventKind::Release {
@@ -319,7 +389,7 @@ where
                         match app.current_view {
                             app::View::List => handle_list_input(app, key.code, key.modifiers)?,
                             app::View::Diff => handle_diff_input(app, key.code)?,
-                            app::View::CliSelection | app::View::Loading | app::View::EnvInput | app::View::ProjectPath | app::View::Installing => {} // Handled above
+                            _ => {}
                         }
                     }
                 }
@@ -434,10 +504,25 @@ fn handle_diff_input(app: &mut App, key: KeyCode) -> Result<()> {
     Ok(())
 }
 
-fn handle_installing_input(app: &mut App, key: KeyCode) -> Result<()> {
+fn handle_installing_input(
+    app: &mut App,
+    key: KeyCode,
+    cancel_tx: &std::sync::mpsc::Sender<()>,
+    processing_active: &bool,
+) -> Result<()> {
     match key {
-        KeyCode::Char('q') | KeyCode::Esc | KeyCode::Enter => {
-            // Only allow exit when processing is fully complete
+        KeyCode::Esc => {
+            if *processing_active && !app.cancelling {
+                // Cancel current operation (only once)
+                let _ = cancel_tx.send(());
+                app.processing_log.push("[WARN] Cancelling current operation...".to_string());
+                app.cancelling = true;
+            } else if app.processing_complete {
+                // Exit after completion
+                app.close_processing();
+            }
+        }
+        KeyCode::Char('q') | KeyCode::Enter => {
             if app.processing_complete {
                 app.close_processing();
             }
@@ -583,33 +668,52 @@ fn get_item_name(app: &App, idx: usize) -> String {
     }
 }
 
-fn execute_process_step(data: ProcessData, is_removing: bool, _tab: app::Tab, target_cli: app::TargetCli) -> Result<String> {
+fn execute_process_step(
+    data: ProcessData,
+    is_removing: bool,
+    target_cli: app::TargetCli,
+    cancel_rx: std::sync::mpsc::Receiver<()>,
+) -> Result<String> {
     match data {
         ProcessData::McpServer { server, scope, project_path, env_values } => {
             let name = server.def.name.clone();
+            let timeout = if is_removing { 30 } else { 120 };
+
             if is_removing {
-                match fs::installer::remove_mcp_server(&server, target_cli) {
+                match fs::installer::remove_mcp_server(&server, target_cli, timeout, &cancel_rx) {
                     Ok(_) => Ok(format!("[OK] Removed {}", name)),
-                    Err(e) => Ok(format!("[ERR] {}: {}", name, e)),
+                    Err(e) => Err(e),
                 }
             } else {
-                match fs::installer::install_mcp_server(&server, scope, project_path.as_deref(), &env_values, target_cli) {
+                match fs::installer::install_mcp_server(
+                    &server,
+                    fs::installer::McpInstallConfig {
+                        scope,
+                        project_path: project_path.as_deref(),
+                        env_values: &env_values,
+                        target_cli,
+                        timeout_secs: timeout,
+                        cancel_rx: &cancel_rx,
+                    },
+                ) {
                     Ok(_) => Ok(format!("[OK] Installed {}", name)),
-                    Err(e) => Ok(format!("[ERR] {}: {}", name, e)),
+                    Err(e) => Err(e),
                 }
             }
         }
         ProcessData::Plugin { plugin } => {
             let name = plugin.def.name.clone();
+            let timeout = if is_removing { 30 } else { 60 };
+
             if is_removing {
-                match fs::installer::remove_plugin(&plugin) {
+                match fs::installer::remove_plugin(&plugin, timeout, &cancel_rx) {
                     Ok(_) => Ok(format!("[OK] Removed {}", name)),
-                    Err(e) => Ok(format!("[ERR] {}: {}", name, e)),
+                    Err(e) => Err(e),
                 }
             } else {
-                match fs::installer::install_plugin(&plugin) {
+                match fs::installer::install_plugin(&plugin, timeout, &cancel_rx) {
                     Ok(_) => Ok(format!("[OK] Installed {}", name)),
-                    Err(e) => Ok(format!("[ERR] {}: {}", name, e)),
+                    Err(e) => Err(e),
                 }
             }
         }
