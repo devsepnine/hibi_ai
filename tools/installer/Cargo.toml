@@ -25,8 +25,14 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = "0.9"
 
+# Command parsing
+shlex = "1"
+
 # Error handling
 anyhow = "1.0"
+
+# Timeout
+wait-timeout = "0.2"
 
 [profile.release]
 opt-level = 3

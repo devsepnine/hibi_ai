@@ -1,3 +1,5 @@
+mod validation;
+
 use std::path::Path;
 use anyhow::Result;
 use walkdir::WalkDir;
@@ -6,7 +8,8 @@ use crate::app::TargetCli;
 use crate::component::{Component, ComponentType, HookConfig, InstallStatus};
 use crate::mcp::{McpCatalog, McpServer, McpStatus};
 use crate::plugin::{parse_plugins_yaml, Plugin, PluginDef, PluginStatus};
-use super::{create_claude_command, create_cli_command};
+use crate::fs::{create_claude_command, create_cli_command};
+use validation::{validate_mcp_server, validate_plugin};
 
 pub fn scan_components(source_dir: &Path, dest_dir: &Path, target_cli: TargetCli) -> Result<Vec<Component>> {
     let mut components = Vec::new();
@@ -104,6 +107,12 @@ fn scan_directory(
         }
 
         let relative = path.strip_prefix(source_dir)?;
+
+        // Security: reject path traversal attempts
+        if relative.components().any(|c| matches!(c, std::path::Component::ParentDir)) {
+            continue;
+        }
+
         let dest_path = dest_dir.join(relative);
         let name = relative.to_string_lossy().to_string();
 
@@ -291,13 +300,19 @@ pub fn scan_mcp_servers(source_dir: &Path, target_cli: TargetCli, _dest_dir: &Pa
     let servers = catalog
         .servers
         .into_iter()
-        .map(|def| {
+        .filter_map(|def| {
+            if let Some(warning) = validate_mcp_server(&def) {
+                // Skip invalid entries with a warning (not eprintln! in TUI)
+                // The warning is silently dropped; future work could surface this in the UI
+                let _ = warning;
+                return None;
+            }
             let status = if installed.contains(&def.name) {
                 McpStatus::Installed
             } else {
                 McpStatus::NotInstalled
             };
-            McpServer::new(def, status)
+            Some(McpServer::new(def, status))
         })
         .collect();
 
@@ -390,6 +405,12 @@ pub fn scan_plugins(source_dir: &Path) -> Result<Vec<Plugin>> {
 
     let mut plugins = Vec::new();
     for (marketplace, source, name, comment) in catalog {
+        if let Some(warning) = validate_plugin(&name, &marketplace, &source) {
+            // Skip invalid entries (silently; future work could surface in the UI)
+            let _ = warning;
+            continue;
+        }
+
         let status = if installed.contains(&name) {
             PluginStatus::Installed
         } else {
