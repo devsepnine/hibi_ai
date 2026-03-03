@@ -22,14 +22,76 @@ pub use settings::{
     remove_managed_settings_sections,
 };
 
+/// Automatically clean up deprecated hooks that are already installed.
+/// Returns a list of hook names that were cleaned up.
+pub fn auto_cleanup_deprecated_hooks(source_dir: &Path, dest_dir: &Path) -> Vec<String> {
+    let hooks_dir = source_dir.join("hooks");
+    if !hooks_dir.exists() {
+        return Vec::new();
+    }
+
+    let mut cleaned = Vec::new();
+
+    let entries = match std::fs::read_dir(&hooks_dir) {
+        Ok(e) => e,
+        Err(_) => return Vec::new(),
+    };
+
+    for entry in entries.filter_map(|e| e.ok()) {
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+
+        let hook_yaml = path.join("hook.yaml");
+        if !hook_yaml.exists() {
+            continue;
+        }
+
+        let config_content = match std::fs::read_to_string(&hook_yaml) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+        let config: crate::component::HookConfig = match serde_yaml::from_str(&config_content) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+
+        if !config.is_deprecated() {
+            continue;
+        }
+
+        let binary_name = config.binary_name();
+        let dest_path = dest_dir.join("hooks").join(&binary_name);
+
+        if !dest_path.exists() {
+            continue;
+        }
+
+        // Unregister from settings.json (ignore errors)
+        let _ = settings::unregister_hook_from_settings(dest_dir, &config);
+
+        // Remove binary file
+        if std::fs::remove_file(&dest_path).is_ok() {
+            cleaned.push(config.name.clone());
+        }
+    }
+
+    cleaned
+}
+
 pub fn install_component(component: &Component, _source_dir: &Path, dest_dir: &Path) -> Result<()> {
     match &component.component_type {
         ComponentType::Hooks => {
-            // Copy hook binary
-            copy_file(component)?;
-            // Register hook in settings.json using hook_config
             if let Some(config) = &component.hook_config {
+                if config.is_deprecated() {
+                    anyhow::bail!("Hook '{}' is deprecated and cannot be installed", component.name);
+                }
+                // Copy hook binary and register in settings.json
+                copy_file(component)?;
                 register_hook_in_settings(dest_dir, config)?;
+            } else {
+                copy_file(component)?;
             }
         }
         ComponentType::OutputStyles => {

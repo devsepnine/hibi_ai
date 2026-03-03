@@ -3,3 +3,4 @@ event: PreToolUse
 type: command
 timeout: 5000
 description: Suggest manual compaction at logical intervals to preserve context better
+deprecated: true
