@@ -21,6 +21,8 @@ marketplaces:
         description: Java 언어 서버 (Eclipse JDT)
       - name: csharp-lsp
         description: C# 언어 서버
+      - name: ralph-loop
+        description: Claude Code feedback loop (자동 반복 실행)
 
   anthropic-agent-skills:
     source: https://github.com/anthropics/skills.git
