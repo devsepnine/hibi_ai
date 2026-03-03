@@ -27,7 +27,10 @@ impl App {
             self.components
                 .iter()
                 .enumerate()
-                .filter(|(_, c)| c.selected && c.component_type == comp_type)
+                .filter(|(_, c)| {
+                    c.selected && c.component_type == comp_type
+                        && !c.hook_config.as_ref().map_or(false, |h| h.is_deprecated())
+                })
                 .map(|(i, _)| i)
                 .collect()
         } else {

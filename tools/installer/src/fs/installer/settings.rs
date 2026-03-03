@@ -207,7 +207,7 @@ pub(super) fn register_hook_in_settings(dest_dir: &Path, config: &HookConfig) ->
     write_settings(dest_dir, &settings)
 }
 
-pub(super) fn unregister_hook_from_settings(dest_dir: &Path, config: &HookConfig) -> Result<()> {
+pub(crate) fn unregister_hook_from_settings(dest_dir: &Path, config: &HookConfig) -> Result<()> {
     let settings_path = dest_dir.join("settings.json");
     if !settings_path.exists() {
         return Ok(());

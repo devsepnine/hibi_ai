@@ -3,3 +3,4 @@ event: SessionStart
 type: command
 timeout: 5000
 description: Load previous session context and learned skills at session start
+deprecated: true

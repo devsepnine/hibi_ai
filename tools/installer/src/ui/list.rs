@@ -157,6 +157,13 @@ fn render_tree_node(app: &App, tree: &crate::tree::TreeView, node: &TreeNode, no
 
             if app.tab == Tab::Hooks {
                 if let Some(ref config) = c.hook_config {
+                    // Show deprecated label
+                    if config.is_deprecated() {
+                        spans.push(Span::styled(
+                            " [DEPRECATED]",
+                            Style::default().fg(app.theme.warning()).add_modifier(Modifier::BOLD),
+                        ));
+                    }
                     // Add event info
                     spans.push(Span::styled(
                         format!(" [{}]", config.event),

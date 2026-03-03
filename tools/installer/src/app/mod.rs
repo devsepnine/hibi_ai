@@ -143,7 +143,13 @@ impl App {
         Ok(())
     }
 
-    pub fn finish_loading(&mut self, components: Vec<Component>, mcp_servers: Vec<McpServer>, plugins: Vec<Plugin>) {
+    pub fn finish_loading(
+        &mut self,
+        components: Vec<Component>,
+        mcp_servers: Vec<McpServer>,
+        plugins: Vec<Plugin>,
+        cleaned_hooks: Vec<String>,
+    ) {
         self.components = components;
         self.mcp_servers = mcp_servers;
         self.plugins = plugins;
@@ -158,7 +164,13 @@ impl App {
 
         // Switch to list view
         self.current_view = View::List;
-        if let Some(cli) = self.target_cli {
+        if !cleaned_hooks.is_empty() {
+            self.status_message = Some(format!(
+                "Auto-cleaned {} deprecated hook(s): {}",
+                cleaned_hooks.len(),
+                cleaned_hooks.join(", ")
+            ));
+        } else if let Some(cli) = self.target_cli {
             self.status_message = Some(format!("Selected {}", cli.display_name()));
         }
     }

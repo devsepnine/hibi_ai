@@ -59,9 +59,16 @@ pub struct HookConfig {
     pub timeout: Option<u32>,
     #[serde(default)]
     pub description: Option<String>,
+    #[serde(default)]
+    pub deprecated: Option<bool>,
 }
 
 impl HookConfig {
+    /// Returns whether this hook is deprecated
+    pub fn is_deprecated(&self) -> bool {
+        self.deprecated.unwrap_or(false)
+    }
+
     /// Returns the platform-specific binary name for this hook
     pub fn binary_name(&self) -> String {
         if cfg!(windows) {
@@ -126,5 +133,47 @@ impl Component {
 
     pub fn display_name(&self) -> String {
         format!("{}/{}", self.component_type.display_name(), self.name)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hook_config_deprecated_true() {
+        let yaml = r#"
+name: test-hook
+event: PreToolUse
+type: command
+deprecated: true
+"#;
+        let config: HookConfig = serde_yaml::from_str(yaml).unwrap();
+        assert!(config.is_deprecated());
+        assert_eq!(config.deprecated, Some(true));
+    }
+
+    #[test]
+    fn test_hook_config_deprecated_false() {
+        let yaml = r#"
+name: test-hook
+event: PreToolUse
+type: command
+deprecated: false
+"#;
+        let config: HookConfig = serde_yaml::from_str(yaml).unwrap();
+        assert!(!config.is_deprecated());
+    }
+
+    #[test]
+    fn test_hook_config_deprecated_missing() {
+        let yaml = r#"
+name: test-hook
+event: PreToolUse
+type: command
+"#;
+        let config: HookConfig = serde_yaml::from_str(yaml).unwrap();
+        assert!(!config.is_deprecated());
+        assert_eq!(config.deprecated, None);
     }
 }

@@ -123,7 +123,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-type RefreshResult = (Vec<component::Component>, Vec<mcp::McpServer>, Vec<plugin::Plugin>);
+type RefreshResult = (Vec<component::Component>, Vec<mcp::McpServer>, Vec<plugin::Plugin>, Vec<String>);
 
 /// Bundles all channels and state for async process management.
 struct ProcessingChannels {
@@ -261,7 +261,7 @@ fn start_refresh_thread(app: &mut App, refresh_tx: &std::sync::mpsc::Sender<Resu
             let components = fs::scanner::scan_components(&source_dir, &dest_dir, target_cli)?;
             let mcp_servers = fs::scanner::scan_mcp_servers(&source_dir, target_cli, &dest_dir)?;
             let plugins = fs::scanner::scan_plugins(&source_dir)?;
-            Ok((components, mcp_servers, plugins))
+            Ok((components, mcp_servers, plugins, Vec::new()))
         })();
         let _ = tx_clone.send(result);
     });
@@ -272,7 +272,7 @@ fn check_refresh_completion(app: &mut App, refresh_rx: &std::sync::mpsc::Receive
     use std::sync::mpsc::TryRecvError;
 
     match refresh_rx.try_recv() {
-        Ok(Ok((components, mcp_servers, plugins))) => {
+        Ok(Ok((components, mcp_servers, plugins, _))) => {
             app.apply_refresh_result(components, mcp_servers, plugins);
         }
         Ok(Err(e)) => {
@@ -333,8 +333,8 @@ fn handle_loading_view(app: &mut App, refresh_rx: &std::sync::mpsc::Receiver<Res
     app.tick();
 
     match refresh_rx.try_recv() {
-        Ok(Ok((components, mcp_servers, plugins))) => {
-            app.finish_loading(components, mcp_servers, plugins);
+        Ok(Ok((components, mcp_servers, plugins, cleaned_hooks))) => {
+            app.finish_loading(components, mcp_servers, plugins, cleaned_hooks);
         }
         Ok(Err(e)) => {
             app.status_message = Some(format!("Error loading: {}", e));
@@ -535,7 +535,7 @@ fn handle_installing_input(
 fn handle_cli_selection(
     app: &mut App,
     key: KeyCode,
-    refresh_tx: &std::sync::mpsc::Sender<Result<(Vec<component::Component>, Vec<mcp::McpServer>, Vec<plugin::Plugin>)>>,
+    refresh_tx: &std::sync::mpsc::Sender<Result<RefreshResult>>,
 ) -> Result<()> {
     match key {
         KeyCode::Char('1') => {
@@ -554,7 +554,7 @@ fn handle_cli_selection(
 
 fn start_loading_thread(
     app: &App,
-    refresh_tx: &std::sync::mpsc::Sender<Result<(Vec<component::Component>, Vec<mcp::McpServer>, Vec<plugin::Plugin>)>>,
+    refresh_tx: &std::sync::mpsc::Sender<Result<RefreshResult>>,
 ) {
     let tx_clone = refresh_tx.clone();
     let source_dir = app.source_dir.clone();
@@ -562,13 +562,16 @@ fn start_loading_thread(
     let target_cli = app.target_cli.unwrap_or(app::TargetCli::Claude);
 
     thread::spawn(move || {
+        // Auto-cleanup deprecated hooks before scanning
+        let cleaned = fs::installer::auto_cleanup_deprecated_hooks(&source_dir, &dest_dir);
+
         let components = fs::scanner::scan_components(&source_dir, &dest_dir, target_cli);
         let mcp_servers = fs::scanner::scan_mcp_servers(&source_dir, target_cli, &dest_dir);
         let plugins = fs::scanner::scan_plugins(&source_dir);
 
         match (components, mcp_servers, plugins) {
             (Ok(c), Ok(m), Ok(p)) => {
-                let _ = tx_clone.send(Ok((c, m, p)));
+                let _ = tx_clone.send(Ok((c, m, p, cleaned)));
             }
             (Err(e), _, _) | (_, Err(e), _) | (_, _, Err(e)) => {
                 let _ = tx_clone.send(Err(e));

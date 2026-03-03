@@ -188,31 +188,46 @@ fn scan_hooks(source_dir: &Path, dest_dir: &Path, components: &mut Vec<Component
         let config_content = std::fs::read_to_string(&hook_yaml)?;
         let config: HookConfig = serde_yaml::from_str(&config_content)?;
 
-        // Find binary in the hook directory
         let hook_name = path.file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("unknown");
 
-        // Select OS-specific binary using HookConfig method
         let binary_name = config.binary_name();
 
-        let binary_path = path.join(&binary_name);
-        if !binary_path.exists() {
-            continue;
+        if config.is_deprecated() {
+            // Deprecated hook: no source binary, check dest for existing install
+            let dest_path = dest_dir.join("hooks").join(&binary_name);
+            if !dest_path.exists() {
+                continue; // Not installed → skip (cannot install)
+            }
+            // Installed → create uninstall-only component
+            let component = Component::new(
+                ComponentType::Hooks,
+                hook_name.to_string(),
+                dest_path.clone(), // source_path = dest_path (uninstall only)
+                dest_path,
+                InstallStatus::Unchanged,
+            ).with_hook_config(config);
+            components.push(component);
+        } else {
+            // Normal hook: source binary required
+            let binary_path = path.join(&binary_name);
+            if !binary_path.exists() {
+                continue;
+            }
+
+            let dest_path = dest_dir.join("hooks").join(&binary_name);
+            let status = determine_status(&binary_path, &dest_path)?;
+
+            let component = Component::new(
+                ComponentType::Hooks,
+                hook_name.to_string(),
+                binary_path,
+                dest_path,
+                status,
+            ).with_hook_config(config);
+            components.push(component);
         }
-
-        let dest_path = dest_dir.join("hooks").join(&binary_name);
-        let status = determine_status(&binary_path, &dest_path)?;
-
-        let component = Component::new(
-            ComponentType::Hooks,
-            hook_name.to_string(),
-            binary_path,
-            dest_path,
-            status,
-        ).with_hook_config(config);
-
-        components.push(component);
     }
 
     Ok(())
