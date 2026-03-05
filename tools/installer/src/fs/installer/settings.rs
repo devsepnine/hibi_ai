@@ -35,18 +35,21 @@ pub fn set_output_style(dest_dir: &Path, style_name: &str) -> Result<()> {
 pub fn set_statusline(dest_dir: &Path, script_name: &str) -> Result<()> {
     let mut settings = read_settings(dest_dir)?;
 
-    // Windows doesn't support ~ expansion, use absolute path
-    let statusline_path = if cfg!(windows) {
-        dest_dir.join("statusline").join(script_name)
+    // Windows: exe needs stdin piping via shell (cat |) with Unix-style path
+    // macOS/Linux: direct path works with ~ expansion
+    let statusline_command = if cfg!(windows) {
+        let abs_path = dest_dir.join("statusline").join(script_name);
+        let unix_path = abs_path
             .to_string_lossy()
-            .to_string()
+            .replace('\\', "/")
+            .replacen("C:/", "/c/", 1);
+        format!("cat | {}", unix_path)
     } else {
         format!("~/.claude/statusline/{}", script_name)
     };
     settings["statusLine"] = serde_json::json!({
         "type": "command",
-        "command": statusline_path,
-        "padding": 0
+        "command": statusline_command
     });
 
     write_settings(dest_dir, &settings)

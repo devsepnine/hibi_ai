@@ -2,14 +2,14 @@ use chrono::Local;
 use serde::Deserialize;
 use std::env;
 use std::fs;
-use std::io::{self, Read, Write};
+use std::io::{self, BufRead, Write};
 use std::path::Path;
 use std::process::Command;
 
 #[derive(Deserialize)]
 struct StatusInput {
     model: Option<Model>,
-    workspace: Option<Workspace>,
+    cwd: Option<String>,
     context_window: Option<ContextWindow>,
     transcript_path: Option<String>,
 }
@@ -20,12 +20,8 @@ struct Model {
 }
 
 #[derive(Deserialize)]
-struct Workspace {
-    current_dir: Option<String>,
-}
-
-#[derive(Deserialize)]
 struct ContextWindow {
+    used_percentage: Option<u32>,
     remaining_percentage: Option<u32>,
 }
 
@@ -109,7 +105,7 @@ fn get_current_time() -> String {
 
 fn main() {
     let mut input = String::new();
-    if io::stdin().read_to_string(&mut input).is_err() {
+    if io::stdin().lock().read_line(&mut input).is_err() || input.is_empty() {
         return;
     }
 
@@ -122,10 +118,8 @@ fn main() {
     let user = get_username();
 
     let cwd_raw = status
-        .workspace
-        .as_ref()
-        .and_then(|w| w.current_dir.as_ref())
-        .map(|s| s.as_str())
+        .cwd
+        .as_deref()
         .unwrap_or("~");
 
     let cwd = replace_home_with_tilde(cwd_raw);
@@ -139,7 +133,10 @@ fn main() {
 
     let remaining = status
         .context_window
-        .and_then(|c| c.remaining_percentage);
+        .and_then(|c| {
+            c.remaining_percentage
+                .or_else(|| c.used_percentage.map(|u| 100u32.saturating_sub(u)))
+        });
 
     let transcript_path = status.transcript_path.as_deref().unwrap_or("");
     let todo_count = if !transcript_path.is_empty() && Path::new(transcript_path).exists() {
