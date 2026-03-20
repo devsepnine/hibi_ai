@@ -7,7 +7,7 @@ use super::process::{
     spawn_cancelable_process, run_with_timeout, run_cleanup_command,
     ProcessConfig, QUICK_COMMAND_TIMEOUT_SECS,
 };
-use crate::fs::{create_claude_command, create_cli_command};
+use crate::fs::create_cli_command;
 
 /// Cleanup helper: try to remove MCP server without blocking
 /// Returns true if cleanup succeeded, false otherwise
@@ -132,7 +132,7 @@ pub(super) fn ensure_marketplace_added(
     cancel_rx: &Receiver<()>,
 ) -> Result<()> {
     // Step 1: Check if marketplace is already added (quick, non-cancelable)
-    let mut list_cmd = create_claude_command();
+    let mut list_cmd = create_cli_command(TargetCli::Claude);
     list_cmd.args(["plugin", "marketplace", "list"]);
 
     match run_with_timeout(&mut list_cmd, QUICK_COMMAND_TIMEOUT_SECS) {
@@ -147,7 +147,7 @@ pub(super) fn ensure_marketplace_added(
     }
 
     // Step 2: Add the marketplace (cancelable, full timeout)
-    let mut command = create_claude_command();
+    let mut command = create_cli_command(TargetCli::Claude);
     command.args(["plugin", "marketplace", "add", source]);
 
     spawn_cancelable_process(

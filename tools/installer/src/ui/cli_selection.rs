@@ -83,7 +83,8 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
 
     f.render_widget(list, chunks[1]);
 
-    // Help text
+    // Help text with version
+    let version = crate::fs::VERSION;
     let help = Paragraph::new(vec![
         Line::from(""),
         Line::from(Span::styled(
@@ -92,6 +93,11 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
         )),
         Line::from(Span::styled(
             "Press q to quit",
+            Style::default().fg(app.theme.text_muted()),
+        )),
+        Line::from(""),
+        Line::from(Span::styled(
+            version,
             Style::default().fg(app.theme.text_muted()),
         )),
     ])

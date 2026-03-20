@@ -67,41 +67,8 @@ fn format_process_error(action: &str, item_name: &str, stderr_output: &str) -> S
     }
 }
 
-/// Run a command with a timeout, returning its output.
-/// For quick, non-cancelable operations like checking marketplace status.
-pub(super) fn run_with_timeout(command: &mut Command, timeout_secs: u64) -> Result<std::process::Output> {
-    let mut child = command
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()?;
-
-    match child.wait_timeout(Duration::from_secs(timeout_secs))? {
-        Some(status) => {
-            // Process exited; collect remaining pipe data
-            let mut stdout_data = Vec::new();
-            let mut stderr_data = Vec::new();
-            if let Some(mut stdout) = child.stdout.take() {
-                let _ = std::io::Read::read_to_end(&mut stdout, &mut stdout_data);
-            }
-            if let Some(mut stderr) = child.stderr.take() {
-                let _ = std::io::Read::read_to_end(&mut stderr, &mut stderr_data);
-            }
-
-            Ok(std::process::Output {
-                status,
-                stdout: stdout_data,
-                stderr: stderr_data,
-            })
-        }
-        None => {
-            // Timeout: kill to prevent orphaned process
-            let _ = child.kill();
-            let _ = child.wait();
-            anyhow::bail!("Command timed out after {}s", timeout_secs);
-        }
-    }
-}
+/// Re-export the shared `run_with_timeout` for use within the installer module.
+pub(super) use crate::fs::run_with_timeout;
 
 /// Configuration for a cancelable process operation.
 pub(super) struct ProcessConfig<'a> {

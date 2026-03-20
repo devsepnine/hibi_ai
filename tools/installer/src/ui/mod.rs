@@ -125,6 +125,7 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
     };
 
     let status = app.status_message.as_deref().unwrap_or("");
+    let version = crate::fs::VERSION;
 
     let spans = vec![
         Span::styled(help_text, Style::default().fg(app.theme.text_secondary())),
@@ -132,7 +133,17 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
         Span::styled(status, Style::default().fg(app.theme.warning())),
     ];
 
-    let paragraph = Paragraph::new(Line::from(spans))
+    // Render help text left-aligned, version right-aligned
+    let inner_width = area.width.saturating_sub(2) as usize; // subtract border
+    let left_text = Line::from(spans);
+    let left_len: usize = left_text.spans.iter().map(|s| s.content.len()).sum();
+    let padding = inner_width.saturating_sub(left_len + version.len());
+
+    let mut all_spans = left_text.spans;
+    all_spans.push(Span::raw(" ".repeat(padding)));
+    all_spans.push(Span::styled(version, Style::default().fg(app.theme.text_secondary())));
+
+    let paragraph = Paragraph::new(Line::from(all_spans))
         .block(Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(app.theme.border())));

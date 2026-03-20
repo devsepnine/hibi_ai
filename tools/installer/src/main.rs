@@ -22,6 +22,13 @@ use ratatui::{backend::CrosstermBackend, Terminal};
 use app::App;
 
 fn main() -> Result<()> {
+    // Handle --version / -v flag
+    let args: Vec<String> = std::env::args().collect();
+    if args.iter().any(|a| a == "--version" || a == "-v") {
+        println!("hibi {} (Config Installer)", fs::VERSION);
+        return Ok(());
+    }
+
     // Setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -259,7 +266,7 @@ fn start_refresh_thread(app: &mut App, refresh_tx: &std::sync::mpsc::Sender<Resu
     thread::spawn(move || {
         let result = (|| -> Result<RefreshResult> {
             let components = fs::scanner::scan_components(&source_dir, &dest_dir, target_cli)?;
-            let mcp_servers = fs::scanner::scan_mcp_servers(&source_dir, target_cli, &dest_dir)?;
+            let (mcp_servers, _warning) = fs::scanner::scan_mcp_servers(&source_dir, target_cli)?;
             let plugins = fs::scanner::scan_plugins(&source_dir)?;
             Ok((components, mcp_servers, plugins, Vec::new()))
         })();
@@ -566,11 +573,15 @@ fn start_loading_thread(
         let cleaned = fs::installer::auto_cleanup_deprecated_hooks(&source_dir, &dest_dir);
 
         let components = fs::scanner::scan_components(&source_dir, &dest_dir, target_cli);
-        let mcp_servers = fs::scanner::scan_mcp_servers(&source_dir, target_cli, &dest_dir);
+        let mcp_result = fs::scanner::scan_mcp_servers(&source_dir, target_cli);
         let plugins = fs::scanner::scan_plugins(&source_dir);
 
-        match (components, mcp_servers, plugins) {
-            (Ok(c), Ok(m), Ok(p)) => {
+        match (components, mcp_result, plugins) {
+            (Ok(c), Ok((m, _mcp_warning)), Ok(p)) => {
+                // Note: mcp_warning (e.g., "CLI not found") is intentionally not
+                // appended to `cleaned` because that list formats as "cleaned hooks".
+                // The MCP tab itself will show servers as NotInstalled, which is
+                // the appropriate UX signal when scanning fails.
                 let _ = tx_clone.send(Ok((c, m, p, cleaned)));
             }
             (Err(e), _, _) | (_, Err(e), _) | (_, _, Err(e)) => {

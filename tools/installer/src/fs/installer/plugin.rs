@@ -4,12 +4,13 @@ use anyhow::Result;
 use crate::plugin::Plugin;
 use super::process::{spawn_cancelable_process, run_cleanup_command, ProcessConfig};
 use super::mcp::ensure_marketplace_added;
-use crate::fs::create_claude_command;
+use crate::app::TargetCli;
+use crate::fs::create_cli_command;
 
 /// Cleanup helper: try to remove plugin without blocking
 /// Returns true if cleanup succeeded, false otherwise
 fn cleanup_plugin_installation(plugin: &Plugin) -> bool {
-    let mut command = create_claude_command();
+    let mut command = create_cli_command(TargetCli::Claude);
     command.args(["plugin", "uninstall", &plugin.def.name]);
     run_cleanup_command(&mut command)
 }
@@ -27,7 +28,7 @@ pub fn install_plugin(
     )?;
 
     let plugin_ref = format!("{}@{}", plugin.def.name, plugin.def.marketplace);
-    let mut command = create_claude_command();
+    let mut command = create_cli_command(TargetCli::Claude);
     command.args(["plugin", "install", &plugin_ref]);
 
     let plugin_clone = plugin.clone();
@@ -48,7 +49,7 @@ pub fn remove_plugin(
     timeout_secs: u64,
     cancel_rx: &Receiver<()>,
 ) -> Result<()> {
-    let mut command = create_claude_command();
+    let mut command = create_cli_command(TargetCli::Claude);
     command.args(["plugin", "uninstall", &plugin.def.name]);
 
     spawn_cancelable_process(

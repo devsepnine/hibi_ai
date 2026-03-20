@@ -8,7 +8,7 @@ use crate::app::TargetCli;
 use crate::component::{Component, ComponentType, HookConfig, InstallStatus};
 use crate::mcp::{McpCatalog, McpServer, McpStatus};
 use crate::plugin::{parse_plugins_yaml, Plugin, PluginDef, PluginStatus};
-use crate::fs::{create_claude_command, create_cli_command};
+use crate::fs::create_cli_command;
 use validation::{validate_mcp_server, validate_plugin};
 
 pub fn scan_components(source_dir: &Path, dest_dir: &Path, target_cli: TargetCli) -> Result<Vec<Component>> {
@@ -295,19 +295,19 @@ fn determine_status(source: &Path, dest: &Path) -> Result<InstallStatus> {
     }
 }
 
-pub fn scan_mcp_servers(source_dir: &Path, target_cli: TargetCli, _dest_dir: &Path) -> Result<Vec<McpServer>> {
+pub fn scan_mcp_servers(source_dir: &Path, target_cli: TargetCli) -> Result<(Vec<McpServer>, Option<String>)> {
     // Both CLIs use the same catalog
     let catalog_path = source_dir.join("mcps/mcps.yaml");
 
     if !catalog_path.exists() {
-        return Ok(Vec::new());
+        return Ok((Vec::new(), None));
     }
 
     let content = std::fs::read_to_string(&catalog_path)?;
     let catalog: McpCatalog = serde_yaml::from_str(&content)?;
 
     // Get installed MCP servers based on CLI
-    let installed = match target_cli {
+    let (installed, warning) = match target_cli {
         TargetCli::Claude => get_installed_claude_mcp_servers(),
         TargetCli::Codex => get_installed_codex_mcp_servers(),
     };
@@ -316,10 +316,7 @@ pub fn scan_mcp_servers(source_dir: &Path, target_cli: TargetCli, _dest_dir: &Pa
         .servers
         .into_iter()
         .filter_map(|def| {
-            if let Some(warning) = validate_mcp_server(&def) {
-                // Skip invalid entries with a warning (not eprintln! in TUI)
-                // The warning is silently dropped; future work could surface this in the UI
-                let _ = warning;
+            if validate_mcp_server(&def).is_some() {
                 return None;
             }
             let status = if installed.contains(&def.name) {
@@ -331,55 +328,75 @@ pub fn scan_mcp_servers(source_dir: &Path, target_cli: TargetCli, _dest_dir: &Pa
         })
         .collect();
 
-    Ok(servers)
+    Ok((servers, warning))
 }
 
-fn get_installed_claude_mcp_servers() -> Vec<String> {
-    let mut cmd = create_claude_command();
-    cmd.args(["mcp", "list"]);
-    let output = cmd.output();
+/// Timeout for MCP server scan (seconds).
+const MCP_SCAN_TIMEOUT_SECS: u64 = 30;
 
-    match output {
+/// Format a warning when `mcp list` exits with a non-success status code.
+fn format_mcp_scan_error(cli_label: &str, result: &std::process::Output) -> Option<String> {
+    let stderr = String::from_utf8_lossy(&result.stderr);
+    let code = result.status.code().map(|c| c.to_string()).unwrap_or_else(|| "unknown".to_string());
+    Some(format!("MCP scan: {} CLI exited with code {}: {}", cli_label, code, stderr.trim()))
+}
+
+/// Format a warning when spawning/running the CLI command fails entirely.
+fn format_mcp_scan_spawn_error(e: anyhow::Error) -> Option<String> {
+    let err_str = e.to_string();
+    let hint = if err_str.contains("timed out") {
+        " (health check timeout)"
+    } else if err_str.contains("os error 2") || err_str.contains("not found") || err_str.contains("The system cannot find") {
+        " (CLI not found in PATH)"
+    } else {
+        ""
+    };
+    Some(format!("MCP scan failed: {}{}", err_str, hint))
+}
+
+fn get_installed_claude_mcp_servers() -> (Vec<String>, Option<String>) {
+    let mut cmd = create_cli_command(TargetCli::Claude);
+    cmd.args(["mcp", "list"]);
+
+    match crate::fs::run_with_timeout(&mut cmd, MCP_SCAN_TIMEOUT_SECS) {
         Ok(out) if out.status.success() => {
             let stdout = String::from_utf8_lossy(&out.stdout);
-            stdout
+            let servers = stdout
                 .lines()
-                .skip(1) // Skip "Checking MCP server health..." line
+                .filter(|line| {
+                    let trimmed = line.trim();
+                    !trimmed.is_empty()
+                        && !trimmed.starts_with("Checking")
+                        && trimmed.contains(':')
+                })
                 .filter_map(|line| {
                     let trimmed = line.trim();
-                    // Skip empty lines
-                    if trimmed.is_empty() {
-                        return None;
-                    }
-                    // Parse "servername: command - status" format
-                    // Extract server name before the first ':'
                     let name = trimmed.split(':').next()?.trim();
-                    // Filter out lines that don't have the expected format
-                    if name.is_empty() || !trimmed.contains(':') {
+                    if name.is_empty() {
                         return None;
                     }
                     Some(name.to_string())
                 })
-                .collect()
+                .collect();
+            (servers, None)
         }
-        _ => Vec::new(),
+        Ok(ref out) => (Vec::new(), format_mcp_scan_error("Claude", out)),
+        Err(e) => (Vec::new(), format_mcp_scan_spawn_error(e)),
     }
 }
 
-fn get_installed_codex_mcp_servers() -> Vec<String> {
+fn get_installed_codex_mcp_servers() -> (Vec<String>, Option<String>) {
     let mut cmd = create_cli_command(TargetCli::Codex);
     cmd.args(["mcp", "list"]);
-    let output = cmd.output();
 
-    match output {
+    match crate::fs::run_with_timeout(&mut cmd, MCP_SCAN_TIMEOUT_SECS) {
         Ok(out) if out.status.success() => {
             let stdout = String::from_utf8_lossy(&out.stdout);
-            stdout
+            let servers = stdout
                 .lines()
                 .filter_map(|line| {
                     let trimmed = line.trim();
 
-                    // Skip empty lines
                     if trimmed.is_empty() {
                         return None;
                     }
@@ -389,19 +406,19 @@ fn get_installed_codex_mcp_servers() -> Vec<String> {
                         return None;
                     }
 
-                    // Extract first column (server name) from whitespace-separated table
                     let name = trimmed.split_whitespace().next()?.trim();
 
-                    // Skip if name is empty or looks like a header
                     if name.is_empty() || name == "Name" {
                         return None;
                     }
 
                     Some(name.to_string())
                 })
-                .collect()
+                .collect();
+            (servers, None)
         }
-        _ => Vec::new(),
+        Ok(ref out) => (Vec::new(), format_mcp_scan_error("Codex", out)),
+        Err(e) => (Vec::new(), format_mcp_scan_spawn_error(e)),
     }
 }
 
