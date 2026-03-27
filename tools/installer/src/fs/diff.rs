@@ -44,7 +44,8 @@ pub fn compare_files(source: &Path, dest: &Path) -> Result<String> {
     }
 
     let source_content = std::fs::read_to_string(source)
-        .with_context(|| format!("Failed to read source file as UTF-8: {}", source.display()))?;
+        .with_context(|| format!("Failed to read source file as UTF-8: {}", source.display()))?
+        .replace("\r\n", "\n");
 
     if !dest.exists() {
         // New file - show all as additions
@@ -67,7 +68,8 @@ pub fn compare_files(source: &Path, dest: &Path) -> Result<String> {
     }
 
     let dest_content = std::fs::read_to_string(dest)
-        .with_context(|| format!("Failed to read destination file as UTF-8: {}", dest.display()))?;
+        .with_context(|| format!("Failed to read destination file as UTF-8: {}", dest.display()))?
+        .replace("\r\n", "\n");
 
     if source_content == dest_content {
         // Files are identical - show the content

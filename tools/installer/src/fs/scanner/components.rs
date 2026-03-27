@@ -247,24 +247,23 @@ fn add_config_files(
     Ok(())
 }
 
+/// Strip `\r` bytes so that CRLF and LF files compare as equal.
+/// This avoids false "Modified" status when the same content is checked out
+/// with different git `autocrlf` settings.
+fn normalize_line_endings(content: &[u8]) -> Vec<u8> {
+    content.iter().copied().filter(|&b| b != b'\r').collect()
+}
+
 fn determine_status(source: &Path, dest: &Path) -> Result<InstallStatus> {
     if !dest.exists() {
         return Ok(InstallStatus::New);
     }
 
-    // Quick check: compare file size first (avoid reading large files)
-    let source_meta = std::fs::metadata(source)?;
-    let dest_meta = std::fs::metadata(dest)?;
-
-    if source_meta.len() != dest_meta.len() {
-        return Ok(InstallStatus::Modified);
-    }
-
-    // Sizes match: compare contents for accuracy
     let source_content = std::fs::read(source)?;
     let dest_content = std::fs::read(dest)?;
 
-    if source_content == dest_content {
+    // Compare with normalized line endings to ignore CRLF/LF differences
+    if normalize_line_endings(&source_content) == normalize_line_endings(&dest_content) {
         Ok(InstallStatus::Unchanged)
     } else {
         Ok(InstallStatus::Modified)
