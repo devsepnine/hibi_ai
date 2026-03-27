@@ -206,6 +206,79 @@ TUI 인터페이스에서:
 3. 변경 사항 검토
 4. 설치 실행
 
+## 멀티소스 지원
+
+기본적으로 hibi는 릴리스 패키지에 번들된 설정을 사용합니다. `~/.hibi/sources.yaml` 파일을 통해 추가 소스(git 레포 또는 로컬 디렉터리)를 설정할 수 있습니다.
+
+### 설정 파일
+
+```yaml
+# ~/.hibi/sources.yaml
+sources:
+  # Git 소스: 원격 레포지토리에서 pull
+  - type: git
+    url: "https://github.com/your-org/shared-configs.git"
+    branch: main
+
+  # 로컬 소스: 로컬 디렉터리 사용
+  - type: local
+    path: "~/dotfiles/claude-configs"
+
+# git 소스 자동 업데이트 비활성화 (기본: true)
+auto_update: true
+```
+
+### 우선순위
+
+리스트 순서대로 적용되며, 마지막 항목이 최우선(last wins):
+
+```
+bundled (최저) → sources.yaml 첫 번째 → ... → sources.yaml 마지막 (최고)
+```
+
+같은 이름의 파일이 여러 소스에 존재하면 마지막 소스의 파일이 사용됩니다.
+
+### CLI 명령
+
+```bash
+# TUI 실행 (소스 자동 resolve + 스캔)
+hibi
+
+# git 소스만 업데이트 (TUI 없이)
+hibi --update
+```
+
+### 오프라인 동작
+
+| 상황 | 동작 |
+|------|------|
+| git 미설치 | 경고 + 해당 소스 skip |
+| 네트워크 실패 + 캐시 있음 | 경고 + stale 캐시 사용 |
+| 네트워크 실패 + 캐시 없음 | 경고 + 해당 소스 skip |
+| bundled | 항상 동작 (오프라인 보장) |
+
+### 소스 디렉터리 요구사항
+
+각 소스 디렉터리에는 다음 중 하나 이상이 존재해야 합니다:
+`agents/`, `commands/`, `rules/`, `skills/`, `mcps/mcps.yaml`
+
+### TUI 표시
+
+멀티소스가 활성화되면 각 항목 옆에 소스 태그가 표시됩니다:
+
+```
+[x] my-agent.md      (new)      [bundled]
+[x] custom-agent.md  (new)      [~/dotfiles/claude-configs]
+```
+
+단일 소스(bundled만)일 때는 태그가 생략됩니다.
+
+### 보안
+
+- git URL: **HTTPS만** 허용, credentials(`@`) 포함 불가
+- 로컬 경로: `..` path traversal 금지, `~/.claude/` 내부 경로 금지 (symlink 해제 후 검증)
+- git 캐시 위치: `~/.hibi/cache/<sanitized_url>/`
+
 ## 최근 변경사항
 
 ### 2026-02-26

@@ -56,6 +56,37 @@ The TUI will guide you through:
 3. Reviewing changes before installation
 4. Installing configurations
 
+### Multi-Source Support
+
+By default, hibi uses bundled configurations from the release package. You can add additional sources (git repos or local directories) via `~/.hibi/sources.yaml`:
+
+```yaml
+sources:
+  # Git source: pulls from a remote repository
+  - type: git
+    url: "https://github.com/your-org/shared-configs.git"
+    branch: main
+
+  # Local source: uses a local directory
+  - type: local
+    path: "~/dotfiles/claude-configs"
+
+# Optional: disable auto-update for git sources (default: true)
+auto_update: true
+```
+
+**Priority**: Bundled (lowest) → first source → ... → last source (highest). When the same file exists in multiple sources, the last one wins.
+
+**Update git sources** without launching the TUI:
+
+```bash
+hibi --update
+```
+
+**Offline behavior**: If a git fetch fails but a cached copy exists, hibi uses the stale cache. Bundled source always works offline.
+
+**Source requirements**: Each source directory must contain at least one of: `agents/`, `commands/`, `rules/`, `skills/`, or `mcps/mcps.yaml`.
+
 ## Components
 
 - **Agents**: Specialized AI agents for different tasks

@@ -4,6 +4,8 @@ mod selection;
 mod processing;
 mod input;
 mod settings;
+pub mod sources;
+mod source_wizard;
 
 pub use types::{TargetCli, Tab, View};
 
@@ -14,6 +16,7 @@ use anyhow::Result;
 use crate::component::{Component, ComponentType};
 use crate::mcp::{McpServer, McpScope};
 use crate::plugin::Plugin;
+use crate::source::{ResolvedSource, SourceEntry, SourceKind};
 use crate::tree::TreeView;
 use crate::theme::Theme;
 
@@ -41,6 +44,7 @@ pub struct App {
     pub diff_scroll: u16,
 
     pub source_dir: PathBuf,
+    pub sources: Vec<ResolvedSource>,
     pub dest_dir: PathBuf,
 
     pub status_message: Option<String>,
@@ -70,11 +74,35 @@ pub struct App {
 
     // Project path input state (for local scope MCP)
     pub project_path_buffer: String,           // Current project path input
+
+    // Sources management state
+    pub source_entries: Vec<SourceEntry>,       // Raw config entries (from YAML)
+    pub source_auto_update: bool,              // auto_update flag
+    pub source_list_index: usize,              // Cursor in sources list (0 = bundled)
+    pub source_add_kind: Option<SourceKind>,   // Git or Local (wizard selection)
+    pub source_input_buffer: String,           // Text input buffer (URL/path/branch)
+    pub source_edit_index: Option<usize>,      // Some(idx) when editing existing source
+    pub source_sync_status: Option<String>,    // Status message after sync
+    pub source_input_error: Option<String>,    // Validation error for current input
+    pub source_pending_url: String,            // URL saved between wizard steps (Git flow)
+    pub source_pending_branch: Option<String>, // Branch saved between wizard steps
+    pub source_pending_root: Option<String>,   // Root saved between wizard steps
+    pub source_sync_rx: Option<std::sync::mpsc::Receiver<(Vec<ResolvedSource>, Vec<String>)>>,
 }
 
 impl App {
     pub fn new() -> Result<Self> {
         let source_dir = find_source_dir()?;
+        let resolve_result = crate::source::resolve_all_sources(&source_dir)?;
+        let sources = resolve_result.sources;
+        // Warnings stored for display after TUI initializes (eprintln would corrupt TUI)
+        let init_warnings = if resolve_result.warnings.is_empty() {
+            None
+        } else {
+            Some(resolve_result.warnings.join("; "))
+        };
+        let (source_entries, source_auto_update) = crate::source::config::load_config()
+            .unwrap_or((Vec::new(), true));
         // Start with temporary dest_dir, will be set after CLI selection
         let dest_dir = dirs::home_dir()
             .ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?
@@ -104,8 +132,9 @@ impl App {
             diff_content: None,
             diff_scroll: 0,
             source_dir,
+            sources,
             dest_dir,
-            status_message: None,
+            status_message: init_warnings,
             current_output_style: None,
             current_statusline: None,
             processing_progress: None,
@@ -124,6 +153,18 @@ impl App {
             env_input_buffer: String::new(),
             env_input_values: Vec::new(),
             project_path_buffer: default_project,
+            source_entries,
+            source_auto_update,
+            source_list_index: 0,
+            source_add_kind: None,
+            source_input_buffer: String::new(),
+            source_edit_index: None,
+            source_sync_status: None,
+            source_input_error: None,
+            source_pending_url: String::new(),
+            source_pending_branch: None,
+            source_pending_root: None,
+            source_sync_rx: None,
         })
     }
 
@@ -173,6 +214,10 @@ impl App {
         } else if let Some(cli) = self.target_cli {
             self.status_message = Some(format!("Selected {}", cli.display_name()));
         }
+    }
+
+    pub fn has_multiple_sources(&self) -> bool {
+        self.sources.len() > 1
     }
 
     /// Get components filtered by current tab

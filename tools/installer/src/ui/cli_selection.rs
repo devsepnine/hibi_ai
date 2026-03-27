@@ -14,7 +14,7 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(7),  // Title
-            Constraint::Length(10), // Options
+            Constraint::Length(13), // Options
             Constraint::Min(1),     // Help text
         ])
         .split(area);
@@ -70,6 +70,19 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
                 Style::default().fg(app.theme.text_secondary()),
             )),
         ]),
+        Line::from("").into(),
+        ListItem::new(vec![
+            Line::from(Span::styled(
+                "s. Manage Sources",
+                Style::default()
+                    .fg(app.theme.accent_primary())
+                    .add_modifier(Modifier::BOLD),
+            )),
+            Line::from(Span::styled(
+                "   Configure component sources (~/.hibi/sources.yaml)",
+                Style::default().fg(app.theme.text_secondary()),
+            )),
+        ]),
     ];
 
     let list = List::new(options)
@@ -88,7 +101,7 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
     let help = Paragraph::new(vec![
         Line::from(""),
         Line::from(Span::styled(
-            "Press 1 or 2 to select CLI",
+            "Press 1 or 2 to select CLI, s to manage sources",
             Style::default().fg(app.theme.accent_secondary()),
         )),
         Line::from(Span::styled(

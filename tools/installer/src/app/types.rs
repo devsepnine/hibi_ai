@@ -113,4 +113,13 @@ pub enum View {
     EnvInput,
     ProjectPath,
     Installing,
+    Sources,
+    SourceAddType,
+    SourceAddUrl,
+    SourceAddBranch,
+    SourceAddPath,
+    SourceAddRoot,
+    SourceAddMapTo,
+    SourceConfirmRemove,
+    SourceSyncing,
 }

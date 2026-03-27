@@ -7,13 +7,28 @@ mod env_input;
 mod project_path;
 mod installing;
 mod cli_selection;
+pub mod loading_screen;
+mod sources;
+mod source_wizard;
 
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     Frame,
 };
 
+use ratatui::style::Style;
+use ratatui::text::Span;
+
 use crate::app::{App, Tab, View};
+use crate::theme::Theme;
+
+/// Render a source tag (e.g., " [bundled]") for multi-source display.
+pub fn source_tag_span(source_name: &str, theme: &Theme) -> Span<'static> {
+    Span::styled(
+        format!(" [{}]", source_name),
+        Style::default().fg(theme.text_muted()),
+    )
+}
 
 // Spinner animation frames
 pub const SPINNER_FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
@@ -43,6 +58,55 @@ pub fn draw(f: &mut Frame, app: &App) {
     if app.current_view == View::Loading {
         render_loading_screen(f, app);
         return;
+    }
+
+    // Sources views take full screen (like CLI selection)
+    match app.current_view {
+        View::Sources => {
+            sources::render(f, app, f.area());
+            return;
+        }
+        View::SourceAddType => {
+            sources::render(f, app, f.area());
+            source_wizard::render_type_select(f, app, f.area());
+            return;
+        }
+        View::SourceAddUrl => {
+            sources::render(f, app, f.area());
+            source_wizard::render_text_input(f, app, f.area(), "Git URL", "URL");
+            return;
+        }
+        View::SourceAddBranch => {
+            sources::render(f, app, f.area());
+            source_wizard::render_text_input(f, app, f.area(), "Git Branch (optional)", "Branch");
+            return;
+        }
+        View::SourceAddPath => {
+            sources::render(f, app, f.area());
+            source_wizard::render_text_input(f, app, f.area(), "Local Path", "Path");
+            return;
+        }
+        View::SourceAddRoot => {
+            sources::render(f, app, f.area());
+            source_wizard::render_text_input(f, app, f.area(), "Subdirectory (optional)", "Root");
+            return;
+        }
+        View::SourceAddMapTo => {
+            sources::render(f, app, f.area());
+            source_wizard::render_map_to_select(f, app, f.area());
+            return;
+        }
+        View::SourceConfirmRemove => {
+            sources::render(f, app, f.area());
+            source_wizard::render_confirm_remove(f, app, f.area());
+            return;
+        }
+        View::SourceSyncing => {
+            sources::render(f, app, f.area());
+            source_wizard::render_syncing(f, app, f.area());
+            return;
+        }
+        _ => {}
     }
 
     let chunks = Layout::default()
@@ -84,6 +148,10 @@ pub fn draw(f: &mut Frame, app: &App) {
         View::Installing => {
             installing::render(f, app, chunks[1]);
         }
+        // Sources views are handled above (full-screen early return)
+        View::Sources | View::SourceAddType | View::SourceAddUrl
+        | View::SourceAddBranch | View::SourceAddPath | View::SourceAddRoot
+        | View::SourceAddMapTo | View::SourceConfirmRemove | View::SourceSyncing => unreachable!(),
     }
 
     render_status_bar(f, app, chunks[2]);
@@ -122,6 +190,10 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
                 "Installing..."
             }
         }
+        // Sources views have their own footer
+        View::Sources | View::SourceAddType | View::SourceAddUrl
+        | View::SourceAddBranch | View::SourceAddPath | View::SourceAddRoot
+        | View::SourceAddMapTo | View::SourceConfirmRemove | View::SourceSyncing => "",
     };
 
     let status = app.status_message.as_deref().unwrap_or("");
