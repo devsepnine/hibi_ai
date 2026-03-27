@@ -26,6 +26,7 @@ pub struct Plugin {
     pub def: PluginDef,
     pub selected: bool,
     pub status: PluginStatus,
+    pub source_name: String,
 }
 
 impl Plugin {
@@ -34,6 +35,7 @@ impl Plugin {
             def,
             selected: false,
             status,
+            source_name: "bundled".to_string(),
         }
     }
 

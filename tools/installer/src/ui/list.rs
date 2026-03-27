@@ -120,10 +120,10 @@ fn render_tree_node(app: &App, tree: &crate::tree::TreeView, node: &TreeNode, no
                 Tab::OutputStyles => {
                     // Compare style name without extension
                     let style_name = c.name.strip_suffix(".md").unwrap_or(&c.name);
-                    app.current_output_style.as_ref().map(|s| s.as_str()) == Some(style_name)
+                    app.current_output_style.as_deref() == Some(style_name)
                 }
                 Tab::Statusline => {
-                    app.current_statusline.as_ref().map(|s| s.as_str()) == Some(&c.name)
+                    app.current_statusline.as_deref() == Some(&c.name)
                 }
                 _ => false,
             };
@@ -179,6 +179,10 @@ fn render_tree_node(app: &App, tree: &crate::tree::TreeView, node: &TreeNode, no
                 }
             }
 
+            if app.has_multiple_sources() {
+                spans.push(super::source_tag_span(&c.source_name, &app.theme));
+            }
+
             let line = Line::from(spans);
             ListItem::new(line)
         }
@@ -205,10 +209,10 @@ fn render_flat(f: &mut Frame, app: &App, area: Rect) {
                 Tab::OutputStyles => {
                     // Compare style name without extension
                     let style_name = c.name.strip_suffix(".md").unwrap_or(&c.name);
-                    app.current_output_style.as_ref().map(|s| s.as_str()) == Some(style_name)
+                    app.current_output_style.as_deref() == Some(style_name)
                 }
                 Tab::Statusline => {
-                    app.current_statusline.as_ref().map(|s| s.as_str()) == Some(&c.name)
+                    app.current_statusline.as_deref() == Some(&c.name)
                 }
                 _ => false,
             };
@@ -226,7 +230,7 @@ fn render_flat(f: &mut Frame, app: &App, area: Rect) {
                 _ => "",
             };
 
-            let line = Line::from(vec![
+            let mut spans = vec![
                 Span::raw(format!("{} ", checkbox)),
                 Span::styled(
                     format!("{:<40}", c.name),
@@ -234,8 +238,13 @@ fn render_flat(f: &mut Frame, app: &App, area: Rect) {
                 ),
                 Span::styled(format!("({:^9})", c.status.display()), status_style),
                 Span::styled(default_marker, Style::default().fg(app.theme.peach()).add_modifier(Modifier::BOLD)),
-            ]);
+            ];
 
+            if app.has_multiple_sources() {
+                spans.push(super::source_tag_span(&c.source_name, &app.theme));
+            }
+
+            let line = Line::from(spans);
             ListItem::new(line)
         })
         .collect();

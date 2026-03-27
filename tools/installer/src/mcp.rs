@@ -74,6 +74,7 @@ pub struct McpServer {
     pub def: McpServerDef,
     pub selected: bool,
     pub status: McpStatus,
+    pub source_name: String,
 }
 
 impl McpServer {
@@ -82,6 +83,7 @@ impl McpServer {
             def,
             selected: false,
             status,
+            source_name: "bundled".to_string(),
         }
     }
 

@@ -43,8 +43,8 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
                 PluginStatus::NotInstalled => Style::default().fg(app.theme.text_muted()),
             };
 
-            // First line: checkbox, name, status
-            let line1 = Line::from(vec![
+            // First line: checkbox, name, status, source tag
+            let mut line1_spans = vec![
                 Span::raw(format!("{} ", checkbox)),
                 Span::styled(
                     format!("{:<24}", p.def.name),
@@ -54,7 +54,13 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
                     format!("({:^13})", p.status.display()),
                     status_style,
                 ),
-            ]);
+            ];
+
+            if app.has_multiple_sources() {
+                line1_spans.push(super::source_tag_span(&p.source_name, &app.theme));
+            }
+
+            let line1 = Line::from(line1_spans);
 
             // Second line: repo and comment (indented)
             let short_repo = p.short_repo();

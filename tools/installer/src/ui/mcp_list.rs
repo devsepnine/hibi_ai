@@ -45,8 +45,8 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
                 McpStatus::NotInstalled => Style::default().fg(app.theme.text_muted()),
             };
 
-            // First line: checkbox, name, status, category, env warning
-            let line1 = Line::from(vec![
+            // First line: checkbox, name, status, category, env warning, source tag
+            let mut line1_spans = vec![
                 Span::raw(format!("{} ", checkbox)),
                 Span::styled(
                     format!("{:<24}", m.def.name),
@@ -65,7 +65,13 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
                 } else {
                     Span::raw("")
                 },
-            ]);
+            ];
+
+            if app.has_multiple_sources() {
+                line1_spans.push(super::source_tag_span(&m.source_name, &app.theme));
+            }
+
+            let line1 = Line::from(line1_spans);
 
             // Second line: description (indented)
             let line2 = Line::from(vec![

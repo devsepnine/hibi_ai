@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use serde::Deserialize;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ComponentType {
     Agents,
     Commands,
@@ -105,6 +105,7 @@ pub struct Component {
     pub selected: bool,
     pub status: InstallStatus,
     pub hook_config: Option<HookConfig>,
+    pub source_name: String,
 }
 
 impl Component {
@@ -123,6 +124,7 @@ impl Component {
             selected: status != InstallStatus::Unchanged,
             status,
             hook_config: None,
+            source_name: "bundled".to_string(),
         }
     }
 

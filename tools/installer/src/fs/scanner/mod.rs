@@ -1,508 +1,122 @@
 mod validation;
+mod components;
+mod mcp;
+mod plugin;
 
+use std::collections::HashMap;
+use std::hash::Hash;
 use std::path::Path;
 use anyhow::Result;
-use walkdir::WalkDir;
 
 use crate::app::TargetCli;
-use crate::component::{Component, ComponentType, HookConfig, InstallStatus};
-use crate::mcp::{McpCatalog, McpServer, McpStatus};
-use crate::plugin::{parse_plugins_yaml, Plugin, PluginDef, PluginStatus};
-use crate::fs::create_cli_command;
-use validation::{validate_mcp_server, validate_plugin};
+use crate::component::{Component, ComponentType};
+use crate::mcp::McpServer;
+use crate::plugin::Plugin;
+use crate::source::ResolvedSource;
 
-pub fn scan_components(source_dir: &Path, dest_dir: &Path, target_cli: TargetCli) -> Result<Vec<Component>> {
-    let mut components = Vec::new();
+/// Merge items from multiple sources using a last-wins strategy.
+///
+/// For each source, `scan_fn` produces a list of items. Items with the same
+/// key (produced by `key_fn`) are replaced by later sources. Each item gets
+/// its `source_name` set via `set_source`.
+fn merge_scanned<T, K>(
+    sources: &[ResolvedSource],
+    scan_fn: impl Fn(&ResolvedSource) -> Result<Vec<T>>,
+    key_fn: impl Fn(&T) -> K,
+    mut set_source: impl FnMut(&mut T, &str),
+) -> Result<Vec<T>>
+where
+    K: Eq + Hash,
+{
+    let mut seen: HashMap<K, usize> = HashMap::new();
+    let mut merged: Vec<T> = Vec::new();
 
-    match target_cli {
-        TargetCli::Claude => {
-            // Scan all components for Claude Code
-            scan_directory(
-                &source_dir.join("agents"),
-                &dest_dir.join("agents"),
-                ComponentType::Agents,
-                &mut components,
-            )?;
+    for source in sources {
+        let items = scan_fn(source)?;
+        for mut item in items {
+            let key = key_fn(&item);
+            set_source(&mut item, &source.label);
 
-            scan_directory(
-                &source_dir.join("commands"),
-                &dest_dir.join("commands"),
-                ComponentType::Commands,
-                &mut components,
-            )?;
-
-            scan_directory(
-                &source_dir.join("contexts"),
-                &dest_dir.join("contexts"),
-                ComponentType::Contexts,
-                &mut components,
-            )?;
-
-            scan_directory(
-                &source_dir.join("rules"),
-                &dest_dir.join("rules"),
-                ComponentType::Rules,
-                &mut components,
-            )?;
-
-            scan_directory(
-                &source_dir.join("skills"),
-                &dest_dir.join("skills"),
-                ComponentType::Skills,
-                &mut components,
-            )?;
-
-            scan_directory(
-                &source_dir.join("output-styles"),
-                &dest_dir.join("output-styles"),
-                ComponentType::OutputStyles,
-                &mut components,
-            )?;
-
-            scan_statusline(source_dir, dest_dir, &mut components)?;
-            scan_hooks(source_dir, dest_dir, &mut components)?;
-            add_config_files(source_dir, dest_dir, target_cli, &mut components)?;
-        }
-        TargetCli::Codex => {
-            // Only scan skills for Codex CLI
-            scan_directory(
-                &source_dir.join("skills"),
-                &dest_dir.join("skills"),
-                ComponentType::Skills,
-                &mut components,
-            )?;
-
-            add_config_files(source_dir, dest_dir, target_cli, &mut components)?;
-        }
-    }
-
-    Ok(components)
-}
-
-fn scan_directory(
-    source_dir: &Path,
-    dest_dir: &Path,
-    component_type: ComponentType,
-    components: &mut Vec<Component>,
-) -> Result<()> {
-    if !source_dir.exists() {
-        return Ok(());
-    }
-
-    for entry in WalkDir::new(source_dir)
-        .min_depth(1)
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
-        let path = entry.path();
-        if !path.is_file() {
-            continue;
-        }
-
-        // Skip files ending with -ko.md
-        if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
-            if file_name.ends_with("-ko.md") {
-                continue;
+            if let Some(&idx) = seen.get(&key) {
+                merged[idx] = item;
+            } else {
+                seen.insert(key, merged.len());
+                merged.push(item);
             }
         }
-
-        let relative = path.strip_prefix(source_dir)?;
-
-        // Security: reject path traversal attempts
-        if relative.components().any(|c| matches!(c, std::path::Component::ParentDir)) {
-            continue;
-        }
-
-        let dest_path = dest_dir.join(relative);
-        let name = relative.to_string_lossy().to_string();
-
-        let status = determine_status(path, &dest_path)?;
-
-        components.push(Component::new(
-            component_type.clone(),
-            name,
-            path.to_path_buf(),
-            dest_path,
-            status,
-        ));
     }
 
-    Ok(())
+    Ok(merged)
 }
 
-fn scan_statusline(source_dir: &Path, dest_dir: &Path, components: &mut Vec<Component>) -> Result<()> {
-    let statusline_dir = source_dir.join("statusline");
-    if !statusline_dir.exists() {
-        return Ok(());
+/// Parse a `map_to` string into a ComponentType.
+fn parse_map_to(map_to: &str) -> Option<ComponentType> {
+    match map_to.to_lowercase().as_str() {
+        "agents" => Some(ComponentType::Agents),
+        "commands" => Some(ComponentType::Commands),
+        "contexts" => Some(ComponentType::Contexts),
+        "rules" => Some(ComponentType::Rules),
+        "skills" => Some(ComponentType::Skills),
+        "hooks" => Some(ComponentType::Hooks),
+        "output-styles" | "styles" => Some(ComponentType::OutputStyles),
+        _ => None,
     }
-
-    // Select OS-specific binary
-    let binary_name = if cfg!(windows) {
-        "statusline.exe"
-    } else if cfg!(target_os = "macos") {
-        "statusline_macos"
-    } else {
-        "statusline_linux"
-    };
-
-    let binary_path = statusline_dir.join(binary_name);
-    if !binary_path.exists() {
-        return Ok(());
-    }
-
-    let dest_path = dest_dir.join("statusline").join(binary_name);
-    let status = determine_status(&binary_path, &dest_path)?;
-
-    components.push(Component::new(
-        ComponentType::Statusline,
-        binary_name.to_string(),
-        binary_path,
-        dest_path,
-        status,
-    ));
-
-    Ok(())
 }
 
-fn scan_hooks(source_dir: &Path, dest_dir: &Path, components: &mut Vec<Component>) -> Result<()> {
-    let hooks_dir = source_dir.join("hooks");
-    if !hooks_dir.exists() {
-        return Ok(());
-    }
-
-    // Scan hook directories
-    for entry in std::fs::read_dir(&hooks_dir)? {
-        let entry = entry?;
-        let path = entry.path();
-
-        if !path.is_dir() {
-            continue;
-        }
-
-        let hook_yaml = path.join("hook.yaml");
-        if !hook_yaml.exists() {
-            continue;
-        }
-
-        // Read hook.yaml
-        let config_content = std::fs::read_to_string(&hook_yaml)?;
-        let config: HookConfig = serde_yaml::from_str(&config_content)?;
-
-        let hook_name = path.file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("unknown");
-
-        let binary_name = config.binary_name();
-
-        if config.is_deprecated() {
-            // Deprecated hook: no source binary, check dest for existing install
-            let dest_path = dest_dir.join("hooks").join(&binary_name);
-            if !dest_path.exists() {
-                continue; // Not installed → skip (cannot install)
-            }
-            // Installed → create uninstall-only component
-            let component = Component::new(
-                ComponentType::Hooks,
-                hook_name.to_string(),
-                dest_path.clone(), // source_path = dest_path (uninstall only)
-                dest_path,
-                InstallStatus::Unchanged,
-            ).with_hook_config(config);
-            components.push(component);
-        } else {
-            // Normal hook: source binary required
-            let binary_path = path.join(&binary_name);
-            if !binary_path.exists() {
-                continue;
-            }
-
-            let dest_path = dest_dir.join("hooks").join(&binary_name);
-            let status = determine_status(&binary_path, &dest_path)?;
-
-            let component = Component::new(
-                ComponentType::Hooks,
-                hook_name.to_string(),
-                binary_path,
-                dest_path,
-                status,
-            ).with_hook_config(config);
-            components.push(component);
-        }
-    }
-
-    Ok(())
-}
-
-fn add_config_files(
-    source_dir: &Path,
+/// Scan components from all sources. Later sources override earlier ones.
+/// Sources with `map_to` get flat-scanned as a single component type.
+pub fn scan_all_sources(
+    sources: &[ResolvedSource],
     dest_dir: &Path,
     target_cli: TargetCli,
-    components: &mut Vec<Component>,
-) -> Result<()> {
-    // CLI-specific config files
-    let config_files = match target_cli {
-        TargetCli::Claude => vec!["settings.json", "CLAUDE.md"],
-        TargetCli::Codex => vec!["AGENTS.md"],
-    };
-
-    for file in config_files {
-        let source_path = source_dir.join(file);
-        if source_path.exists() {
-            let dest_path = dest_dir.join(file);
-
-            // settings.json is always Managed (auto-merged)
-            let status = if file == "settings.json" && dest_path.exists() {
-                InstallStatus::Managed
+) -> Result<Vec<Component>> {
+    merge_scanned(
+        sources,
+        |source| {
+            if let Some(map_to) = source.map_to.as_deref() {
+                if let Some(comp_type) = parse_map_to(map_to) {
+                    let type_dir = comp_type.display_name().to_lowercase();
+                    let dest = dest_dir.join(&type_dir);
+                    components::scan_flat(&source.path, &dest, comp_type)
+                } else {
+                    Ok(Vec::new()) // Unknown map_to value, skip silently
+                }
             } else {
-                determine_status(&source_path, &dest_path)?
-            };
-
-            components.push(Component::new(
-                ComponentType::ConfigFile,
-                file.to_string(),
-                source_path,
-                dest_path,
-                status,
-            ));
-        }
-    }
-
-    Ok(())
-}
-
-fn determine_status(source: &Path, dest: &Path) -> Result<InstallStatus> {
-    if !dest.exists() {
-        return Ok(InstallStatus::New);
-    }
-
-    // Quick check: compare file size first (avoid reading large files)
-    let source_meta = std::fs::metadata(source)?;
-    let dest_meta = std::fs::metadata(dest)?;
-
-    // If sizes differ, definitely modified
-    if source_meta.len() != dest_meta.len() {
-        return Ok(InstallStatus::Modified);
-    }
-
-    // Sizes match - compare contents for accuracy
-    let source_content = std::fs::read(source)?;
-    let dest_content = std::fs::read(dest)?;
-
-    if source_content == dest_content {
-        Ok(InstallStatus::Unchanged)
-    } else {
-        Ok(InstallStatus::Modified)
-    }
-}
-
-pub fn scan_mcp_servers(source_dir: &Path, target_cli: TargetCli) -> Result<(Vec<McpServer>, Option<String>)> {
-    // Both CLIs use the same catalog
-    let catalog_path = source_dir.join("mcps/mcps.yaml");
-
-    if !catalog_path.exists() {
-        return Ok((Vec::new(), None));
-    }
-
-    let content = std::fs::read_to_string(&catalog_path)?;
-    let catalog: McpCatalog = serde_yaml::from_str(&content)?;
-
-    // Get installed MCP servers based on CLI
-    let (installed, warning) = match target_cli {
-        TargetCli::Claude => get_installed_claude_mcp_servers(),
-        TargetCli::Codex => get_installed_codex_mcp_servers(),
-    };
-
-    let servers = catalog
-        .servers
-        .into_iter()
-        .filter_map(|def| {
-            if validate_mcp_server(&def).is_some() {
-                return None;
+                components::scan_components(&source.path, dest_dir, target_cli)
             }
-            let status = if installed.contains(&def.name) {
-                McpStatus::Installed
-            } else {
-                McpStatus::NotInstalled
-            };
-            Some(McpServer::new(def, status))
-        })
-        .collect();
+        },
+        |c| format!("{}/{}", c.component_type.display_name(), c.name.replace('\\', "/")),
+        |c, label| c.source_name = label.to_string(),
+    )
+}
+
+/// Scan MCP servers from all sources. Later sources override earlier ones.
+/// CLI command for installed servers runs only once (not per-source).
+pub fn scan_all_mcp_sources(
+    sources: &[ResolvedSource],
+    target_cli: TargetCli,
+) -> Result<(Vec<McpServer>, Option<String>)> {
+    let (installed, warning) = match target_cli {
+        TargetCli::Claude => mcp::get_installed_claude_servers(),
+        TargetCli::Codex => mcp::get_installed_codex_servers(),
+    };
+
+    let servers = merge_scanned(
+        sources,
+        |source| mcp::scan_with_installed(&source.path, &installed),
+        |s| s.def.name.clone(),
+        |s, label| s.source_name = label.to_string(),
+    )?;
 
     Ok((servers, warning))
 }
 
-/// Timeout for MCP server scan (seconds).
-const MCP_SCAN_TIMEOUT_SECS: u64 = 30;
-
-/// Format a warning when `mcp list` exits with a non-success status code.
-fn format_mcp_scan_error(cli_label: &str, result: &std::process::Output) -> Option<String> {
-    let stderr = String::from_utf8_lossy(&result.stderr);
-    let code = result.status.code().map(|c| c.to_string()).unwrap_or_else(|| "unknown".to_string());
-    Some(format!("MCP scan: {} CLI exited with code {}: {}", cli_label, code, stderr.trim()))
-}
-
-/// Format a warning when spawning/running the CLI command fails entirely.
-fn format_mcp_scan_spawn_error(e: anyhow::Error) -> Option<String> {
-    let err_str = e.to_string();
-    let hint = if err_str.contains("timed out") {
-        " (health check timeout)"
-    } else if err_str.contains("os error 2") || err_str.contains("not found") || err_str.contains("The system cannot find") {
-        " (CLI not found in PATH)"
-    } else {
-        ""
-    };
-    Some(format!("MCP scan failed: {}{}", err_str, hint))
-}
-
-fn get_installed_claude_mcp_servers() -> (Vec<String>, Option<String>) {
-    let mut cmd = create_cli_command(TargetCli::Claude);
-    cmd.args(["mcp", "list"]);
-
-    match crate::fs::run_with_timeout(&mut cmd, MCP_SCAN_TIMEOUT_SECS) {
-        Ok(out) if out.status.success() => {
-            let stdout = String::from_utf8_lossy(&out.stdout);
-            let servers = stdout
-                .lines()
-                .filter(|line| {
-                    let trimmed = line.trim();
-                    !trimmed.is_empty()
-                        && !trimmed.starts_with("Checking")
-                        && trimmed.contains(':')
-                })
-                .filter_map(|line| {
-                    let trimmed = line.trim();
-                    let name = trimmed.split(':').next()?.trim();
-                    if name.is_empty() {
-                        return None;
-                    }
-                    Some(name.to_string())
-                })
-                .collect();
-            (servers, None)
-        }
-        Ok(ref out) => (Vec::new(), format_mcp_scan_error("Claude", out)),
-        Err(e) => (Vec::new(), format_mcp_scan_spawn_error(e)),
-    }
-}
-
-fn get_installed_codex_mcp_servers() -> (Vec<String>, Option<String>) {
-    let mut cmd = create_cli_command(TargetCli::Codex);
-    cmd.args(["mcp", "list"]);
-
-    match crate::fs::run_with_timeout(&mut cmd, MCP_SCAN_TIMEOUT_SECS) {
-        Ok(out) if out.status.success() => {
-            let stdout = String::from_utf8_lossy(&out.stdout);
-            let servers = stdout
-                .lines()
-                .filter_map(|line| {
-                    let trimmed = line.trim();
-
-                    if trimmed.is_empty() {
-                        return None;
-                    }
-
-                    // Skip header lines (contain "Name" or "Command" or "Url" columns)
-                    if trimmed.starts_with("Name") && (trimmed.contains("Command") || trimmed.contains("Url")) {
-                        return None;
-                    }
-
-                    let name = trimmed.split_whitespace().next()?.trim();
-
-                    if name.is_empty() || name == "Name" {
-                        return None;
-                    }
-
-                    Some(name.to_string())
-                })
-                .collect();
-            (servers, None)
-        }
-        Ok(ref out) => (Vec::new(), format_mcp_scan_error("Codex", out)),
-        Err(e) => (Vec::new(), format_mcp_scan_spawn_error(e)),
-    }
-}
-
-pub fn scan_plugins(source_dir: &Path) -> Result<Vec<Plugin>> {
-    let catalog_path = source_dir.join("plugins/plugins.yaml");
-
-    if !catalog_path.exists() {
-        return Ok(Vec::new());
-    }
-
-    let content = std::fs::read_to_string(&catalog_path)?;
-    let catalog = parse_plugins_yaml(&content);
-
-    // Get installed plugins
-    let installed = get_installed_plugins();
-
-    let mut plugins = Vec::new();
-    for (marketplace, source, name, comment) in catalog {
-        if let Some(warning) = validate_plugin(&name, &marketplace, &source) {
-            // Skip invalid entries (silently; future work could surface in the UI)
-            let _ = warning;
-            continue;
-        }
-
-        let status = if installed.contains(&name) {
-            PluginStatus::Installed
-        } else {
-            PluginStatus::NotInstalled
-        };
-
-        let def = PluginDef {
-            name,
-            marketplace,
-            source,
-            comment,
-        };
-
-        plugins.push(Plugin::new(def, status));
-    }
-
-    Ok(plugins)
-}
-
-fn get_installed_plugins() -> Vec<String> {
-    use serde_json::Value;
-
-    // Read from ~/.claude/settings.json
-    let settings_path = dirs::home_dir()
-        .map(|h| h.join(".claude/settings.json"))
-        .filter(|p| p.exists());
-
-    let settings_path = match settings_path {
-        Some(p) => p,
-        None => return Vec::new(),
-    };
-
-    let content = match std::fs::read_to_string(&settings_path) {
-        Ok(c) => c,
-        Err(_) => return Vec::new(),
-    };
-
-    let settings: Value = match serde_json::from_str(&content) {
-        Ok(s) => s,
-        Err(_) => return Vec::new(),
-    };
-
-    // Get enabledPlugins object
-    let enabled_plugins = match settings.get("enabledPlugins") {
-        Some(Value::Object(map)) => map,
-        _ => return Vec::new(),
-    };
-
-    // Extract plugin names from "plugin@marketplace" format
-    enabled_plugins
-        .iter()
-        .filter_map(|(key, value)| {
-            // Only include if value is true
-            if value.as_bool() == Some(true) {
-                // Extract plugin name before '@'
-                // e.g., "document-skills@anthropic-agent-skills" -> "document-skills"
-                key.split('@').next().map(|s| s.to_string())
-            } else {
-                None
-            }
-        })
-        .collect()
+/// Scan plugins from all sources. Later sources override earlier ones.
+pub fn scan_all_plugin_sources(sources: &[ResolvedSource]) -> Result<Vec<Plugin>> {
+    merge_scanned(
+        sources,
+        |source| plugin::scan_plugins(&source.path),
+        |p| p.def.name.clone(),
+        |p, label| p.source_name = label.to_string(),
+    )
 }
