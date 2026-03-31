@@ -62,7 +62,16 @@ pub fn update_git_sources(sources: &[ResolvedSource]) -> (Vec<ResolvedSource>, V
             continue;
         }
 
-        match git::clone_or_update(&source.label, &source.branch, &source.path) {
+        // source.path may include root subdirectory; clone needs the base cache dir
+        let cache_dir = match git::cache_path_for(&source.label) {
+            Ok(dir) => dir,
+            Err(e) => {
+                updated.push(ResolvedSource { is_stale: true, ..source.clone() });
+                summaries.push(format!("  {}: failed ({})", source.label, e));
+                continue;
+            }
+        };
+        match git::clone_or_update(&source.label, &source.branch, &cache_dir) {
             Ok(_) => {
                 updated.push(ResolvedSource {
                     is_stale: false,
@@ -153,6 +162,37 @@ fn apply_root(base: std::path::PathBuf, root: Option<&str>) -> std::path::PathBu
     match root {
         Some(sub) if !sub.is_empty() => base.join(sub),
         _ => base,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Regression test: update_git_sources must use the base cache dir (without root),
+    /// not source.path (which may include root subdirectory).
+    /// Bug: clone_or_update received "~/.hibi/cache/.../skills/" instead of "~/.hibi/cache/.../"
+    #[test]
+    fn test_cache_path_is_prefix_of_resolved_path_with_root() {
+        let url = "https://github.com/vercel-labs/agent-skills";
+        let cache_dir = git::cache_path_for(url).unwrap();
+        let resolved_path = apply_root(cache_dir.clone(), Some("skills"));
+
+        // cache_dir must be a proper prefix of resolved_path
+        assert!(resolved_path.starts_with(&cache_dir));
+        assert_ne!(resolved_path, cache_dir);
+
+        // cache_dir must NOT contain the root subdirectory
+        assert!(!cache_dir.ends_with("skills"));
+    }
+
+    #[test]
+    fn test_cache_path_equals_resolved_path_without_root() {
+        let url = "https://github.com/user/repo.git";
+        let cache_dir = git::cache_path_for(url).unwrap();
+        let resolved_path = apply_root(cache_dir.clone(), None);
+
+        assert_eq!(resolved_path, cache_dir);
     }
 }
 

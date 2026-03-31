@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Duration;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use wait_timeout::ChildExt;
 
 use super::config::{validate_branch, validate_git_url};
@@ -50,6 +50,28 @@ pub fn cache_path_for(url: &str) -> Result<PathBuf> {
     Ok(home.join(".hibi").join("cache").join(label))
 }
 
+/// Remove the cached repository for a git source URL.
+/// Returns `Ok(true)` if the cache was removed, `Ok(false)` if no cache existed.
+pub fn remove_cache(url: &str) -> Result<bool> {
+    let cache_dir = cache_path_for(url)?;
+
+    // Defense-in-depth: ensure we only delete within ~/.hibi/cache/
+    let home = dirs::home_dir()
+        .ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
+    let cache_base = home.join(".hibi").join("cache");
+    if !cache_dir.starts_with(&cache_base) {
+        anyhow::bail!("Refusing to remove path outside cache dir: {}", cache_dir.display());
+    }
+
+    if cache_dir.exists() {
+        std::fs::remove_dir_all(&cache_dir)
+            .with_context(|| format!("Failed to remove cache: {}", cache_dir.display()))?;
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
 /// Sanitize a URL into a filesystem-safe directory name.
 fn sanitize_label(url: &str) -> String {
     url.trim_start_matches("https://")
@@ -58,6 +80,12 @@ fn sanitize_label(url: &str) -> String {
 }
 
 fn clone_repo(url: &str, branch: &Option<String>, dest: &Path) -> Result<()> {
+    // Remove stale cache directory (exists but no .git) before cloning
+    if dest.exists() && !dest.join(".git").exists() {
+        std::fs::remove_dir_all(dest)
+            .with_context(|| format!("Failed to remove stale cache (no .git): {}", dest.display()))?;
+    }
+
     if let Some(parent) = dest.parent() {
         std::fs::create_dir_all(parent)?;
     }
@@ -183,6 +211,26 @@ mod tests {
         assert!(path.to_string_lossy().contains(".hibi"));
         assert!(path.to_string_lossy().contains("cache"));
         assert!(path.to_string_lossy().contains("github.com_user_repo"));
+    }
+
+    #[test]
+    fn test_remove_cache_nonexistent() {
+        let result = remove_cache("https://github.com/nonexistent/repo-never-cloned-99999.git");
+        assert!(result.is_ok());
+        assert!(!result.unwrap());
+    }
+
+    #[test]
+    fn test_remove_cache_existing() {
+        let url = "https://github.com/test/remove-cache-test-unique-42.git";
+        let cache_dir = cache_path_for(url).unwrap();
+        std::fs::create_dir_all(&cache_dir).unwrap();
+        std::fs::write(cache_dir.join("dummy"), "test").unwrap();
+
+        let result = remove_cache(url);
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+        assert!(!cache_dir.exists());
     }
 
     #[test]
