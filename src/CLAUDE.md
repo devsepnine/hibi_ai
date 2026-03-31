@@ -114,6 +114,9 @@
 - **단순함 우선**: 모든 변경을 최대한 단순하게. 최소한의 코드 영향.
   - YAGNI (You Aren't Gonna Need It): 지금 필요하지 않으면 만들지 마라
   - KISS (Keep It Simple, Stupid): 복잡한 솔루션보다 단순한 솔루션
+  - Solid 패턴
+  - 동작성 보장
+  - Clean code 
 
 - **게으름 금지**: 근본 원인을 찾아라. 임시 수정 없음. 시니어 개발자 기준.
   - ❌ 나쁨: 에러 무시 `try { ... } catch(e) { }`
