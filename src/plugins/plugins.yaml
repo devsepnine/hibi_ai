@@ -21,16 +21,52 @@ marketplaces:
         description: Java 언어 서버 (Eclipse JDT)
       - name: csharp-lsp
         description: C# 언어 서버
+      - name: gopls-lsp
+        description: Go 언어 서버
+      - name: php-lsp
+        description: PHP 언어 서버
+      - name: clangd-lsp
+        description: C/C++ 언어 서버 (clangd)
+      - name: swift-lsp
+        description: Swift 언어 서버
+      - name: kotlin-lsp
+        description: Kotlin 언어 서버
+      - name: lua-lsp
+        description: Lua 언어 서버
+      - name: ruby-lsp
+        description: Ruby 언어 서버
       - name: ralph-loop
         description: Claude Code feedback loop (자동 반복 실행)
+      - name: playwright
+        description: 브라우저 자동화 및 E2E 테스트 (Microsoft)
+      - name: context7
+        description: 라이브러리/프레임워크 최신 문서 조회 (Upstash)
+      - name: security-guidance
+        description: 파일 편집 시 보안 이슈 경고 (커맨드 인젝션, XSS 등)
+      - name: code-review
+        description: PR 자동 코드 리뷰 (다중 에이전트, 신뢰도 점수)
+      - name: pr-review-toolkit
+        description: PR 리뷰 에이전트 (코멘트, 테스트, 에러 핸들링, 타입, 코드 품질)
+      - name: commit-commands
+        description: Git 커밋/푸시/PR 워크플로우 간소화
+      - name: frontend-design
+        description: 프론트엔드 UI/UX 디자인 구현
+      - name: skill-creator
+        description: 스킬 생성/개선/평가 및 벤치마크
+      - name: atlassian
+        description: Jira/Confluence 연동 (Atlassian)
+      - name: sentry
+        description: Sentry 에러 모니터링 및 이슈 분석
+      - name: chrome-devtools-mcp
+        description: Chrome DevTools 브라우저 디버깅
+      - name: discord
+        description: Discord 봇/채널 연동
 
   anthropic-agent-skills:
     source: https://github.com/anthropics/skills.git
     plugins:
       - name: document-skills
         description: xlsx, docx, pptx, pdf 문서 생성/편집
-      - name: example-skills
-        description: 알고리즘 아트, 프론트엔드 디자인 등 예제 모음
 
   obsidian-skills:
     source: https://github.com/kepano/obsidian-skills
