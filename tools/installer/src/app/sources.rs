@@ -6,7 +6,7 @@ use crossterm::event::KeyCode;
 
 use super::{App, View};
 use crate::source::{self, SourceEntry, SourceKind};
-use crate::source::config;
+use crate::source::{config, git};
 
 impl App {
     /// Handle key input on the Sources list view.
@@ -82,6 +82,14 @@ impl App {
             KeyCode::Char('y') => {
                 let entry_idx = self.source_list_index.saturating_sub(1);
                 if entry_idx < self.source_entries.len() {
+                    // Clean up git cache before removing the entry
+                    if let SourceEntry::Git { url, .. } = &self.source_entries[entry_idx]
+                        && let Err(e) = git::remove_cache(url)
+                    {
+                        self.source_sync_status = Some(format!(
+                            "Source removed, but cache cleanup failed: {}", e
+                        ));
+                    }
                     self.source_entries.remove(entry_idx);
                     config::save_config(&self.source_entries, self.source_auto_update)?;
                     if self.source_list_index > self.source_entries.len() {
