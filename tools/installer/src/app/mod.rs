@@ -44,6 +44,7 @@ pub struct App {
     pub diff_scroll: u16,
 
     pub source_dir: PathBuf,
+    pub bundled_git_root: Option<PathBuf>,
     pub sources: Vec<ResolvedSource>,
     pub dest_dir: PathBuf,
 
@@ -93,6 +94,7 @@ pub struct App {
 impl App {
     pub fn new() -> Result<Self> {
         let source_dir = find_source_dir()?;
+        let bundled_git_root = crate::source::git::find_git_root(&source_dir);
         let resolve_result = crate::source::resolve_all_sources(&source_dir)?;
         let sources = resolve_result.sources;
         // Warnings stored for display after TUI initializes (eprintln would corrupt TUI)
@@ -132,6 +134,7 @@ impl App {
             diff_content: None,
             diff_scroll: 0,
             source_dir,
+            bundled_git_root,
             sources,
             dest_dir,
             status_message: init_warnings,

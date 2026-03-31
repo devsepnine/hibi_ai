@@ -161,7 +161,9 @@ impl App {
 
     fn source_start_sync(&mut self) {
         let has_git = self.sources.iter().any(|s| s.kind == SourceKind::Git);
-        if !has_git {
+        let bundled_root = self.bundled_git_root.clone();
+
+        if !has_git && bundled_root.is_none() {
             self.source_sync_status = Some("No git sources to sync".to_string());
             return;
         }
@@ -172,7 +174,19 @@ impl App {
         self.current_view = View::SourceSyncing;
 
         thread::spawn(move || {
-            let (updated, summaries) = source::update_git_sources(&sources);
+            let mut summaries = Vec::new();
+
+            // Pull bundled repo first
+            if let Some(git_root) = bundled_root {
+                match git::pull_local_repo(&git_root) {
+                    Ok(()) => summaries.push("  bundled: updated".to_string()),
+                    Err(e) => summaries.push(format!("  bundled: failed ({})", e)),
+                }
+            }
+
+            // Then sync user git sources
+            let (updated, git_summaries) = source::update_git_sources(&sources);
+            summaries.extend(git_summaries);
             let _ = tx.send((updated, summaries));
         });
     }

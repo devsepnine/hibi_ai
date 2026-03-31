@@ -28,6 +28,11 @@ use loading::{ProcessingChannels, RefreshResult};
 fn main() -> Result<()> {
     // Handle CLI flags
     let args: Vec<String> = std::env::args().collect();
+    if args.iter().any(|a| a == "--help" || a == "-h") {
+        print_help();
+        return Ok(());
+    }
+
     if args.iter().any(|a| a == "--version" || a == "-v") {
         println!("hibi {} (Config Installer)", fs::VERSION);
         return Ok(());
@@ -312,21 +317,45 @@ fn handle_project_path_input(app: &mut App, key: KeyCode) {
     }
 }
 
+fn print_help() {
+    println!("hibi {} - Claude Code Config Installer", fs::VERSION);
+    println!();
+    println!("Usage: hibi [OPTIONS]");
+    println!();
+    println!("Options:");
+    println!("  -h, --help       Show this help message");
+    println!("  -v, --version    Show version");
+    println!("      --sync       Sync git sources without TUI");
+    println!();
+    println!("Run without options to launch the interactive installer.");
+}
+
 /// `hibi --sync`: fetch latest from git sources and print summary, no TUI.
 fn run_sync() -> Result<()> {
     let app = App::new()?;
 
     let git_count = app.sources.iter().filter(|s| s.kind == source::SourceKind::Git).count();
-    if git_count == 0 {
+    let has_bundled_git = app.bundled_git_root.is_some();
+
+    if git_count == 0 && !has_bundled_git {
         println!("No git sources configured. Add sources to ~/.hibi/sources.yaml");
         return Ok(());
     }
 
-    println!("Syncing {} git source(s)...", git_count);
-    let (_updated, summaries) = source::update_git_sources(&app.sources);
+    if let Some(git_root) = &app.bundled_git_root {
+        println!("Pulling bundled source...");
+        match source::git::pull_local_repo(git_root) {
+            Ok(()) => println!("  bundled: updated"),
+            Err(e) => println!("  bundled: failed ({})", e),
+        }
+    }
 
-    for summary in &summaries {
-        println!("{}", summary);
+    if git_count > 0 {
+        println!("Syncing {} git source(s)...", git_count);
+        let (_updated, summaries) = source::update_git_sources(&app.sources);
+        for summary in &summaries {
+            println!("{}", summary);
+        }
     }
 
     println!("\nRun `hibi` to install changes.");

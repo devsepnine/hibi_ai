@@ -11,6 +11,30 @@ const CLONE_TIMEOUT_SECS: u64 = 60;
 const FETCH_TIMEOUT_SECS: u64 = 30;
 const RESET_TIMEOUT_SECS: u64 = 10;
 
+/// Detect if a directory is inside a git repository.
+/// Returns the git root path, or `None` if not in a repo.
+pub fn find_git_root(source_dir: &Path) -> Option<PathBuf> {
+    let output = Command::new("git")
+        .args(["rev-parse", "--show-toplevel"])
+        .current_dir(source_dir)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let path_str = String::from_utf8(output.stdout).ok()?;
+    Some(PathBuf::from(path_str.trim()))
+}
+
+/// Pull latest changes in a local (non-shallow) git repository.
+/// Uses `--ff-only` to avoid creating merge commits.
+pub fn pull_local_repo(repo_dir: &Path) -> Result<()> {
+    run_git_command(&["pull", "--ff-only"], Some(repo_dir), FETCH_TIMEOUT_SECS)
+}
+
 /// Clone or update a git repository into the cache directory.
 /// Returns the local path to the cached repo.
 pub fn clone_or_update(url: &str, branch: &Option<String>, cache_dir: &Path) -> Result<PathBuf> {

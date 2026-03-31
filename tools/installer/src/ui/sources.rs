@@ -110,12 +110,13 @@ fn render_list(f: &mut Frame, app: &App, area: Rect) {
 fn render_footer(f: &mut Frame, app: &App, area: Rect) {
     let on_bundled = app.source_list_index == 0;
     let has_git = app.sources.iter().any(|s| s.kind == SourceKind::Git);
+    let has_bundled_git = app.bundled_git_root.is_some();
 
     let mut help_parts = vec!["[a]Add"];
     if !on_bundled {
         help_parts.push("[e]Edit  [r]Remove");
     }
-    if has_git {
+    if has_git || has_bundled_git {
         help_parts.push("[f]Sync");
     }
     help_parts.push("[Esc]Back");
