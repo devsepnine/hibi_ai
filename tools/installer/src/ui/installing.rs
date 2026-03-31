@@ -2,7 +2,7 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Gauge, List, ListItem, Paragraph},
+    widgets::{Block, Borders, Gauge, List, ListItem, ListState, Paragraph},
     Frame,
 };
 
@@ -19,7 +19,12 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
         ])
         .split(area);
 
-    // Title with spinner animation or completion status
+    render_title(f, app, chunks[0]);
+    render_progress(f, app, chunks[1]);
+    render_log(f, app, chunks[2]);
+}
+
+fn render_title(f: &mut Frame, app: &App, area: Rect) {
     let (title_text, title_color) = if app.processing_complete {
         ("✓ Complete".to_string(), app.theme.success())
     } else if app.needs_refresh {
@@ -35,16 +40,18 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
         let color = if app.is_removing { app.theme.error() } else { app.theme.accent_secondary() };
         (text, color)
     };
+
     let title = Paragraph::new(title_text)
         .style(Style::default().fg(title_color).add_modifier(Modifier::BOLD))
         .alignment(Alignment::Center)
         .block(Block::default().borders(Borders::NONE));
-    f.render_widget(title, chunks[0]);
+    f.render_widget(title, area);
+}
 
-    // Progress bar
+fn render_progress(f: &mut Frame, app: &App, area: Rect) {
     let progress = app.processing_progress.unwrap_or(0);
     let total = app.processing_total.unwrap_or(1).max(1);
-    let percent = ((progress as f64 / total as f64) * 100.0) as u16;
+    let percent = ((progress as f64 / total as f64) * 100.0).min(100.0) as u16;
 
     let gauge_color = if app.is_removing { app.theme.error() } else { app.theme.success() };
     let gauge = Gauge::default()
@@ -58,9 +65,10 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
         .gauge_style(Style::default().fg(gauge_color))
         .percent(percent)
         .label(format!("{}/{}", progress, total));
-    f.render_widget(gauge, chunks[1]);
+    f.render_widget(gauge, area);
+}
 
-    // Log
+fn render_log(f: &mut Frame, app: &App, area: Rect) {
     let log_items: Vec<ListItem> = app
         .processing_log
         .iter()
@@ -78,6 +86,7 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
         })
         .collect();
 
+    let log_len = log_items.len();
     let log_list = List::new(log_items)
         .block(
             Block::default()
@@ -86,5 +95,11 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
                 .title(" Log ")
                 .title_style(Style::default().fg(app.theme.text_primary())),
         );
-    f.render_widget(log_list, chunks[2]);
+
+    // Auto-scroll to the last log entry
+    let mut log_state = ListState::default();
+    if log_len > 0 {
+        log_state.select(Some(log_len - 1));
+    }
+    f.render_stateful_widget(log_list, area, &mut log_state);
 }
