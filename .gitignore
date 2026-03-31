@@ -3,7 +3,8 @@ target/
 *.o
 *.so
 *.dylib
-dist/
+dist/**
+hibi
 
 # Release packages
 release/
