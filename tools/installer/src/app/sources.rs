@@ -4,9 +4,11 @@ use std::thread;
 use anyhow::Result;
 use crossterm::event::KeyCode;
 
-use super::{App, View};
-use crate::source::{self, SourceEntry, SourceKind};
+use super::{App, View, SyncStatus};
+use crate::source::{self, SourceEntry, SourceKind, ResolvedSource};
 use crate::source::{config, git};
+
+type SyncPayload = (Vec<ResolvedSource>, Vec<String>, bool);
 
 impl App {
     /// Handle key input on the Sources list view.
@@ -82,12 +84,11 @@ impl App {
             KeyCode::Char('y') => {
                 let entry_idx = self.source_list_index.saturating_sub(1);
                 if entry_idx < self.source_entries.len() {
-                    // Clean up git cache before removing the entry
                     if let SourceEntry::Git { url, .. } = &self.source_entries[entry_idx]
                         && let Err(e) = git::remove_cache(url)
                     {
-                        self.source_sync_status = Some(format!(
-                            "Source removed, but cache cleanup failed: {}", e
+                        self.source_sync_status = Some(SyncStatus::Error(
+                            format!("Source removed, but cache cleanup failed: {}", e)
                         ));
                     }
                     self.source_entries.remove(entry_idx);
@@ -164,45 +165,26 @@ impl App {
         let bundled_root = self.bundled_git_root.clone();
 
         if !has_git && bundled_root.is_none() {
-            self.source_sync_status = Some("No git sources to sync".to_string());
+            self.source_sync_status = Some(SyncStatus::Error("No git sources to sync".to_string()));
             return;
         }
 
-        let sources = self.sources.clone();
         let source_dir = self.source_dir.clone();
-        let (tx, rx) = mpsc::channel();
-        self.source_sync_rx = Some(rx);
+        let (result_tx, result_rx) = mpsc::channel::<SyncPayload>();
+        let (cancel_tx, cancel_rx) = mpsc::channel::<()>();
+        self.source_sync_rx = Some(result_rx);
+        self.source_sync_cancel_tx = Some(cancel_tx);
         self.current_view = View::SourceSyncing;
 
         thread::spawn(move || {
-            let mut summaries = Vec::new();
-
-            // Pull bundled repo first
-            if let Some(git_root) = bundled_root {
-                match git::pull_local_repo(&git_root) {
-                    Ok(()) => summaries.push("  bundled: updated".to_string()),
-                    Err(e) => summaries.push(format!("  bundled: failed ({})", e)),
-                }
-            }
-
-            // Re-resolve all sources (fetches user git sources via auto_update)
-            let resolved = match source::resolve_all_sources(&source_dir) {
-                Ok(r) => {
-                    summaries.extend(r.warnings);
-                    r.sources
-                }
-                Err(e) => {
-                    summaries.push(format!("  re-resolve failed: {}", e));
-                    sources
-                }
-            };
-            let _ = tx.send((resolved, summaries));
+            let report = source::sync_all_sources(bundled_root.as_deref(), &source_dir, &cancel_rx);
+            let _ = result_tx.send((report.resolved, report.summaries, report.had_error));
         });
     }
 
     pub(crate) fn source_start_resolve(&mut self) {
         let source_dir = self.source_dir.clone();
-        let (tx, rx) = mpsc::channel();
+        let (tx, rx) = mpsc::channel::<SyncPayload>();
         self.source_sync_rx = Some(rx);
         self.current_view = View::SourceSyncing;
 
@@ -212,7 +194,7 @@ impl App {
                 Ok(r) => (r.sources, r.warnings),
                 Err(_) => (vec![source::ResolvedSource::bundled(&source_dir)], Vec::new()),
             };
-            let _ = tx.send((resolved, warnings));
+            let _ = tx.send((resolved, warnings, false));
         });
     }
 
@@ -220,7 +202,7 @@ impl App {
         let result = source::resolve_all_sources(&self.source_dir)?;
         self.sources = result.sources;
         if !result.warnings.is_empty() {
-            self.source_sync_status = Some(result.warnings.join("; "));
+            self.source_sync_status = Some(SyncStatus::Error(result.warnings.join("; ")));
         }
         Ok(())
     }
@@ -241,20 +223,24 @@ impl App {
         };
 
         match rx.try_recv() {
-            Ok((resolved, summaries)) => {
+            Ok((resolved, summaries, had_error)) => {
                 self.sources = resolved;
-                self.source_sync_status = if summaries.is_empty() {
-                    Some("Resolved sources".to_string())
+                self.source_sync_cancel_tx = None;
+                self.source_sync_status = Some(if summaries.is_empty() {
+                    SyncStatus::Success("Resolved sources".to_string())
+                } else if had_error {
+                    SyncStatus::Error(summaries.join("; "))
                 } else {
-                    Some(summaries.join("; "))
-                };
+                    SyncStatus::Success(summaries.join("; "))
+                });
                 self.current_view = View::Sources;
             }
             Err(std::sync::mpsc::TryRecvError::Empty) => {
                 self.source_sync_rx = Some(rx);
             }
             Err(std::sync::mpsc::TryRecvError::Disconnected) => {
-                self.source_sync_status = Some("Sync thread crashed".to_string());
+                self.source_sync_cancel_tx = None;
+                self.source_sync_status = Some(SyncStatus::Error("Sync thread crashed".to_string()));
                 self.current_view = View::Sources;
             }
         }

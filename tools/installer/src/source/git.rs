@@ -40,6 +40,9 @@ pub fn find_git_root(source_dir: &Path) -> Option<PathBuf> {
 /// Pull latest changes in a local (non-shallow) git repository.
 /// Uses `--ff-only` to avoid creating merge commits.
 pub fn pull_local_repo(repo_dir: &Path) -> Result<()> {
+    if !git_available() {
+        anyhow::bail!("git is not installed or not in PATH");
+    }
     run_git_command(&["pull", "--ff-only"], Some(repo_dir), FETCH_TIMEOUT_SECS)
 }
 

@@ -123,3 +123,9 @@ pub enum View {
     SourceConfirmRemove,
     SourceSyncing,
 }
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum SyncStatus {
+    Success(String),
+    Error(String),
+}

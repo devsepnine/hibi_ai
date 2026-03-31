@@ -1,8 +1,42 @@
+use std::path::Path;
+
 use anyhow::Result;
 
 use super::types::{Tab, View};
 use super::App;
 use crate::fs;
+
+pub(super) fn read_current_settings(dest_dir: &Path) -> (Option<String>, Option<String>) {
+    use serde_json::Value;
+
+    let settings_path = dest_dir.join("settings.json");
+    if !settings_path.exists() {
+        return (None, None);
+    }
+
+    let content = match std::fs::read_to_string(&settings_path) {
+        Ok(c) => c,
+        Err(_) => return (None, None),
+    };
+
+    let settings: Value = match serde_json::from_str(&content) {
+        Ok(s) => s,
+        Err(_) => return (None, None),
+    };
+
+    let output_style = settings.get("outputStyle")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+
+    let statusline = settings.get("statusLine")
+        .and_then(|v| v.get("command"))
+        .and_then(|v| v.as_str())
+        .map(|s| {
+            s.rsplit(['/', '\\']).next().unwrap_or(s).to_string()
+        });
+
+    (output_style, statusline)
+}
 
 impl App {
     pub fn set_default_style(&mut self) -> Result<()> {

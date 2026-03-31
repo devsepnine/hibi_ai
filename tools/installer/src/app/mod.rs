@@ -7,10 +7,10 @@ mod settings;
 pub mod sources;
 mod source_wizard;
 
-pub use types::{TargetCli, Tab, View};
+pub use types::{TargetCli, Tab, View, SyncStatus};
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use anyhow::Result;
 
 use crate::component::{Component, ComponentType};
@@ -83,37 +83,54 @@ pub struct App {
     pub source_add_kind: Option<SourceKind>,   // Git or Local (wizard selection)
     pub source_input_buffer: String,           // Text input buffer (URL/path/branch)
     pub source_edit_index: Option<usize>,      // Some(idx) when editing existing source
-    pub source_sync_status: Option<String>,    // Status message after sync
+    pub source_sync_status: Option<SyncStatus>, // Typed status after sync
+    pub source_sync_cancel_tx: Option<std::sync::mpsc::Sender<()>>,
     pub source_input_error: Option<String>,    // Validation error for current input
     pub source_pending_url: String,            // URL saved between wizard steps (Git flow)
     pub source_pending_branch: Option<String>, // Branch saved between wizard steps
     pub source_pending_root: Option<String>,   // Root saved between wizard steps
-    pub source_sync_rx: Option<std::sync::mpsc::Receiver<(Vec<ResolvedSource>, Vec<String>)>>,
+    pub source_sync_rx: Option<std::sync::mpsc::Receiver<(Vec<ResolvedSource>, Vec<String>, bool)>>,
+}
+
+struct InitData {
+    source_dir: PathBuf,
+    bundled_git_root: Option<PathBuf>,
+    sources: Vec<ResolvedSource>,
+    init_warnings: Option<String>,
+    source_entries: Vec<SourceEntry>,
+    source_auto_update: bool,
+    dest_dir: PathBuf,
+    default_project: String,
+}
+
+fn load_init_data() -> Result<InitData> {
+    let source_dir = crate::source::find_source_dir()?;
+    let bundled_git_root = crate::source::git::find_git_root(&source_dir);
+    let resolve_result = crate::source::resolve_all_sources(&source_dir)?;
+    let sources = resolve_result.sources;
+    let init_warnings = if resolve_result.warnings.is_empty() {
+        None
+    } else {
+        Some(resolve_result.warnings.join("; "))
+    };
+    let (source_entries, source_auto_update) = crate::source::config::load_config()
+        .unwrap_or((Vec::new(), true));
+    let dest_dir = dirs::home_dir()
+        .ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?
+        .join(".claude");
+    let default_project = std::env::current_dir()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_default();
+
+    Ok(InitData {
+        source_dir, bundled_git_root, sources, init_warnings,
+        source_entries, source_auto_update, dest_dir, default_project,
+    })
 }
 
 impl App {
     pub fn new() -> Result<Self> {
-        let source_dir = find_source_dir()?;
-        let bundled_git_root = crate::source::git::find_git_root(&source_dir);
-        let resolve_result = crate::source::resolve_all_sources(&source_dir)?;
-        let sources = resolve_result.sources;
-        // Warnings stored for display after TUI initializes (eprintln would corrupt TUI)
-        let init_warnings = if resolve_result.warnings.is_empty() {
-            None
-        } else {
-            Some(resolve_result.warnings.join("; "))
-        };
-        let (source_entries, source_auto_update) = crate::source::config::load_config()
-            .unwrap_or((Vec::new(), true));
-        // Start with temporary dest_dir, will be set after CLI selection
-        let dest_dir = dirs::home_dir()
-            .ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?
-            .join(".claude");
-
-        // Default project path to current directory
-        let default_project = std::env::current_dir()
-            .map(|p| p.to_string_lossy().to_string())
-            .unwrap_or_default();
+        let d = load_init_data()?;
 
         Ok(Self {
             target_cli: None,
@@ -128,16 +145,16 @@ impl App {
             mcp_servers: Vec::new(),
             mcp_index: 0,
             mcp_scope: McpScope::default(),
-            mcp_project_path: default_project.clone(),
+            mcp_project_path: d.default_project.clone(),
             plugins: Vec::new(),
             plugin_index: 0,
             diff_content: None,
             diff_scroll: 0,
-            source_dir,
-            bundled_git_root,
-            sources,
-            dest_dir,
-            status_message: init_warnings,
+            source_dir: d.source_dir,
+            bundled_git_root: d.bundled_git_root,
+            sources: d.sources,
+            dest_dir: d.dest_dir,
+            status_message: d.init_warnings,
             current_output_style: None,
             current_statusline: None,
             processing_progress: None,
@@ -155,14 +172,15 @@ impl App {
             env_input_current: 0,
             env_input_buffer: String::new(),
             env_input_values: Vec::new(),
-            project_path_buffer: default_project,
-            source_entries,
-            source_auto_update,
+            project_path_buffer: d.default_project,
+            source_entries: d.source_entries,
+            source_auto_update: d.source_auto_update,
             source_list_index: 0,
             source_add_kind: None,
             source_input_buffer: String::new(),
             source_edit_index: None,
             source_sync_status: None,
+            source_sync_cancel_tx: None,
             source_input_error: None,
             source_pending_url: String::new(),
             source_pending_branch: None,
@@ -199,7 +217,7 @@ impl App {
         self.plugins = plugins;
 
         // Read current settings
-        let (current_output_style, current_statusline) = read_current_settings(&self.dest_dir);
+        let (current_output_style, current_statusline) = settings::read_current_settings(&self.dest_dir);
         self.current_output_style = current_output_style;
         self.current_statusline = current_statusline;
 
@@ -235,74 +253,6 @@ impl App {
             Vec::new()
         }
     }
-}
-
-fn read_current_settings(dest_dir: &Path) -> (Option<String>, Option<String>) {
-    use serde_json::Value;
-
-    let settings_path = dest_dir.join("settings.json");
-    if !settings_path.exists() {
-        return (None, None);
-    }
-
-    let content = match std::fs::read_to_string(&settings_path) {
-        Ok(c) => c,
-        Err(_) => return (None, None),
-    };
-
-    let settings: Value = match serde_json::from_str(&content) {
-        Ok(s) => s,
-        Err(_) => return (None, None),
-    };
-
-    let output_style = settings.get("outputStyle")
-        .and_then(|v| v.as_str())
-        .map(|s| s.to_string());
-
-    let statusline = settings.get("statusLine")
-        .and_then(|v| v.get("command"))
-        .and_then(|v| v.as_str())
-        .map(|s| {
-            // Extract filename from path like "~/.claude/statusline/statusline.sh"
-            // Handle both forward slash and backslash for cross-platform compatibility
-            s.rsplit(['/', '\\']).next().unwrap_or(s).to_string()
-        });
-
-    (output_style, statusline)
-}
-
-fn find_source_dir() -> Result<PathBuf> {
-    // Try to find source dir relative to executable
-    let exe_dir = std::env::current_exe()?
-        .parent()
-        .map(|p| p.to_path_buf())
-        .ok_or_else(|| anyhow::anyhow!("Cannot get executable directory"))?;
-
-    // Check various possible locations
-    let candidates = [
-        exe_dir.clone(),  // Scoop: exe and config files in same directory
-        exe_dir.join("../share/hibi"),  // Homebrew: /opt/homebrew/bin -> /opt/homebrew/share/hibi
-        exe_dir.join("../share/hibi-ai"),  // Homebrew alternative
-        exe_dir.join("../../.."),  // From target/release
-        exe_dir.join("../.."),     // From target
-        std::env::current_dir()?,  // Current directory
-        std::env::current_dir()?.join("config/ai/claude"), // From dotfiles root
-    ];
-
-    for candidate in candidates {
-        let resolved = candidate.canonicalize().unwrap_or(candidate);
-        if resolved.join("agents").exists() && resolved.join("settings.json").exists() {
-            return Ok(resolved);
-        }
-    }
-
-    // Default: look for config/ai/claude in current dir
-    let default = std::env::current_dir()?.join("config/ai/claude");
-    if default.exists() {
-        return Ok(default);
-    }
-
-    anyhow::bail!("Cannot find source directory. Run from dotfiles root or config/ai/claude/tools/installer")
 }
 
 pub(crate) fn build_tree_views(components: &[Component]) -> HashMap<Tab, TreeView> {

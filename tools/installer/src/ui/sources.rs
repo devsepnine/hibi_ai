@@ -6,14 +6,16 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::App;
+use crate::app::{App, SyncStatus};
 use crate::source::{SourceEntry, SourceKind};
 
 /// Render the full-screen Sources management view.
 pub fn render(f: &mut Frame, app: &App, area: Rect) {
     // Dynamic footer height: base 3 + extra lines for sync status
     let status_lines = app.source_sync_status.as_ref()
-        .map(|s| s.split("; ").count())
+        .map(|s| match s {
+            SyncStatus::Success(msg) | SyncStatus::Error(msg) => msg.split("; ").count(),
+        })
         .unwrap_or(0);
     let footer_height = 3 + status_lines as u16;
 
@@ -128,13 +130,11 @@ fn render_footer(f: &mut Frame, app: &App, area: Rect) {
     ];
 
     if let Some(status) = &app.source_sync_status {
-        let is_error = status.contains("failed")
-            || status.contains("Failed")
-            || status.contains("crashed")
-            || status.contains("error");
-        let color = if is_error { app.theme.error() } else { app.theme.accent_secondary() };
-        // Split long status into multiple lines to prevent truncation
-        for part in status.split("; ") {
+        let (color, text) = match status {
+            SyncStatus::Success(msg) => (app.theme.accent_secondary(), msg.as_str()),
+            SyncStatus::Error(msg) => (app.theme.error(), msg.as_str()),
+        };
+        for part in text.split("; ") {
             lines.push(Line::from(Span::styled(
                 part.to_string(),
                 Style::default().fg(color),

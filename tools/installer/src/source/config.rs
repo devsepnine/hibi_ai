@@ -44,6 +44,8 @@ pub struct ResolvedSource {
     pub kind: SourceKind,
     pub path: PathBuf,
     pub is_stale: bool,
+    /// Retained for display; consumed during clone_or_update in resolve_entry.
+    #[allow(dead_code)]
     pub branch: Option<String>,
     /// Map all files to a specific component type (e.g., "rules", "skills").
     pub map_to: Option<String>,

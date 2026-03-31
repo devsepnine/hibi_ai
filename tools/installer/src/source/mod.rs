@@ -3,14 +3,103 @@ pub mod git;
 
 pub use config::{ResolvedSource, SourceEntry, SourceKind};
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
+
+/// Discover the source directory containing bundled components.
+/// Checks multiple candidate paths relative to the executable and current directory.
+pub(crate) fn find_source_dir() -> Result<PathBuf> {
+    let exe_dir = std::env::current_exe()?
+        .parent()
+        .map(|p| p.to_path_buf())
+        .ok_or_else(|| anyhow::anyhow!("Cannot get executable directory"))?;
+
+    let candidates = [
+        exe_dir.clone(),                          // Scoop: exe and config in same dir
+        exe_dir.join("../share/hibi"),            // Homebrew standard
+        exe_dir.join("../share/hibi-ai"),         // Homebrew alternative
+        exe_dir.join("../../.."),                  // From target/release
+        exe_dir.join("../.."),                     // From target
+        std::env::current_dir()?,                  // Current directory
+        std::env::current_dir()?.join("config/ai/claude"),
+    ];
+
+    for candidate in candidates {
+        let resolved = candidate.canonicalize().unwrap_or(candidate);
+        if resolved.join("agents").exists() && resolved.join("settings.json").exists() {
+            return Ok(resolved);
+        }
+    }
+
+    let default = std::env::current_dir()?.join("config/ai/claude");
+    if default.exists() {
+        return Ok(default);
+    }
+
+    anyhow::bail!("Cannot find source directory. Run from dotfiles root or config/ai/claude/tools/installer")
+}
 
 /// Result of resolving sources: the resolved list plus any non-fatal warnings.
 pub struct ResolveResult {
     pub sources: Vec<ResolvedSource>,
     pub warnings: Vec<String>,
+}
+
+/// Result of a full sync operation (bundled pull + source resolve).
+pub(crate) struct SyncReport {
+    pub resolved: Vec<ResolvedSource>,
+    pub summaries: Vec<String>,
+    pub had_error: bool,
+}
+
+/// Pull bundled repo (if present) then resolve all sources.
+/// Checks `cancel_rx` between phases for cooperative cancellation.
+pub(crate) fn sync_all_sources(
+    bundled_git_root: Option<&Path>,
+    source_dir: &Path,
+    cancel_rx: &std::sync::mpsc::Receiver<()>,
+) -> SyncReport {
+    let mut summaries = Vec::new();
+    let mut had_error = false;
+
+    // Phase 1: pull bundled repo
+    if let Some(git_root) = bundled_git_root {
+        match git::pull_local_repo(git_root) {
+            Ok(()) => summaries.push("  bundled: updated".to_string()),
+            Err(e) => {
+                summaries.push(format!("  bundled: failed ({})", e));
+                had_error = true;
+            }
+        }
+    }
+
+    // Cooperative cancel check between phases
+    if cancel_rx.try_recv().is_ok() {
+        summaries.push("  cancelled".to_string());
+        return SyncReport { resolved: vec![ResolvedSource::bundled(source_dir)], summaries, had_error: true };
+    }
+
+    // Phase 2: resolve all sources (fetches user git sources via auto_update)
+    match resolve_all_sources(source_dir) {
+        Ok(r) => {
+            for s in &r.sources {
+                if s.kind == SourceKind::Git {
+                    if s.is_stale {
+                        summaries.push(format!("  {}: stale", s.label));
+                    } else {
+                        summaries.push(format!("  {}: updated", s.label));
+                    }
+                }
+            }
+            summaries.extend(r.warnings);
+            SyncReport { resolved: r.sources, summaries, had_error }
+        }
+        Err(e) => {
+            summaries.push(format!("  re-resolve failed: {}", e));
+            SyncReport { resolved: vec![ResolvedSource::bundled(source_dir)], summaries, had_error: true }
+        }
+    }
 }
 
 /// Resolve all sources: bundled (implicit first) + config entries in order.
@@ -50,47 +139,6 @@ pub fn resolve_all_sources(bundled_dir: &Path) -> Result<ResolveResult> {
     Ok(ResolveResult { sources, warnings })
 }
 
-/// Update all git sources (fetch latest). Returns new sources and summaries.
-/// Immutable: produces a new Vec instead of mutating in place.
-pub fn update_git_sources(sources: &[ResolvedSource]) -> (Vec<ResolvedSource>, Vec<String>) {
-    let mut updated = Vec::with_capacity(sources.len());
-    let mut summaries = Vec::new();
-
-    for source in sources {
-        if source.kind != SourceKind::Git {
-            updated.push(source.clone());
-            continue;
-        }
-
-        // source.path may include root subdirectory; clone needs the base cache dir
-        let cache_dir = match git::cache_path_for(&source.label) {
-            Ok(dir) => dir,
-            Err(e) => {
-                updated.push(ResolvedSource { is_stale: true, ..source.clone() });
-                summaries.push(format!("  {}: failed ({})", source.label, e));
-                continue;
-            }
-        };
-        match git::clone_or_update(&source.label, &source.branch, &cache_dir) {
-            Ok(_) => {
-                updated.push(ResolvedSource {
-                    is_stale: false,
-                    ..source.clone()
-                });
-                summaries.push(format!("  {}: updated", source.label));
-            }
-            Err(e) => {
-                updated.push(ResolvedSource {
-                    is_stale: true,
-                    ..source.clone()
-                });
-                summaries.push(format!("  {}: failed ({})", source.label, e));
-            }
-        }
-    }
-
-    (updated, summaries)
-}
 
 fn resolve_entry(
     entry: &SourceEntry,
@@ -169,9 +217,9 @@ fn apply_root(base: std::path::PathBuf, root: Option<&str>) -> std::path::PathBu
 mod tests {
     use super::*;
 
-    /// Regression test: update_git_sources must use the base cache dir (without root),
-    /// not source.path (which may include root subdirectory).
-    /// Bug: clone_or_update received "~/.hibi/cache/.../skills/" instead of "~/.hibi/cache/.../"
+    /// Regression test: resolve_entry must use the base cache dir, not source.path,
+    /// when a `root` subdirectory is configured.
+    /// Bug history: clone_or_update once received "~/.hibi/cache/.../skills/" instead of "~/.hibi/cache/.../"
     #[test]
     fn test_cache_path_is_prefix_of_resolved_path_with_root() {
         let url = "https://github.com/vercel-labs/agent-skills";
