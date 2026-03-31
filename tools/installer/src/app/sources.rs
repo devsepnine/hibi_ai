@@ -169,6 +169,7 @@ impl App {
         }
 
         let sources = self.sources.clone();
+        let source_dir = self.source_dir.clone();
         let (tx, rx) = mpsc::channel();
         self.source_sync_rx = Some(rx);
         self.current_view = View::SourceSyncing;
@@ -184,10 +185,18 @@ impl App {
                 }
             }
 
-            // Then sync user git sources
-            let (updated, git_summaries) = source::update_git_sources(&sources);
-            summaries.extend(git_summaries);
-            let _ = tx.send((updated, summaries));
+            // Re-resolve all sources (fetches user git sources via auto_update)
+            let resolved = match source::resolve_all_sources(&source_dir) {
+                Ok(r) => {
+                    summaries.extend(r.warnings);
+                    r.sources
+                }
+                Err(e) => {
+                    summaries.push(format!("  re-resolve failed: {}", e));
+                    sources
+                }
+            };
+            let _ = tx.send((resolved, summaries));
         });
     }
 

@@ -26,7 +26,15 @@ pub fn find_git_root(source_dir: &Path) -> Option<PathBuf> {
         return None;
     }
     let path_str = String::from_utf8(output.stdout).ok()?;
-    Some(PathBuf::from(path_str.trim()))
+    let root = PathBuf::from(path_str.trim());
+    // Guard: only use this root if source_dir is actually inside it.
+    // Canonicalize both to handle symlinks (e.g., macOS /tmp -> /private/tmp)
+    let root_canonical = root.canonicalize().unwrap_or_else(|_| root.clone());
+    let source_canonical = source_dir.canonicalize().unwrap_or_else(|_| source_dir.to_path_buf());
+    if !source_canonical.starts_with(&root_canonical) {
+        return None;
+    }
+    Some(root)
 }
 
 /// Pull latest changes in a local (non-shallow) git repository.
