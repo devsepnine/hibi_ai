@@ -118,9 +118,12 @@ pub fn save_config(entries: &[SourceEntry], auto_update: bool) -> Result<()> {
     Ok(())
 }
 
-/// Expand `~` prefix to home directory.
+/// Expand `~` prefix to home directory. Handles `~/path`, `~\path`, and bare `~`.
 pub fn expand_tilde(path: &Path) -> PathBuf {
     let s = path.to_string_lossy();
+    if s == "~" {
+        return dirs::home_dir().unwrap_or_else(|| path.to_path_buf());
+    }
     if s.starts_with("~/") || s.starts_with("~\\") {
         if let Some(home) = dirs::home_dir() {
             return home.join(&s[2..]);
@@ -193,6 +196,15 @@ mod tests {
         assert!(!expanded.to_string_lossy().starts_with('~'));
         assert!(expanded.to_string_lossy().ends_with("foo/bar")
             || expanded.to_string_lossy().ends_with("foo\\bar"));
+    }
+
+    #[test]
+    fn test_expand_tilde_bare() {
+        let path = Path::new("~");
+        let expanded = expand_tilde(path);
+        if dirs::home_dir().is_some() {
+            assert!(!expanded.to_string_lossy().contains('~'));
+        }
     }
 
     #[test]

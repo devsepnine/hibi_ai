@@ -45,7 +45,7 @@ fn get_installed_plugins() -> Vec<String> {
     use serde_json::Value;
 
     let settings_path = dirs::home_dir()
-        .map(|h| h.join(".claude/settings.json"))
+        .map(|h| h.join(".claude").join("settings.json"))
         .filter(|p| p.exists());
 
     let settings_path = match settings_path {

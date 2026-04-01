@@ -131,8 +131,9 @@ fn clone_repo(url: &str, branch: &Option<String>, dest: &Path) -> Result<()> {
         args.push(b);
     }
     args.push(url);
-    let dest_str = dest.to_string_lossy().to_string();
-    args.push(&dest_str);
+    let dest_str = dest.to_str()
+        .ok_or_else(|| anyhow::anyhow!("Cache path contains non-UTF-8 characters: {}", dest.display()))?;
+    args.push(dest_str);
 
     run_git_command(&args, None, CLONE_TIMEOUT_SECS)
 }
@@ -232,6 +233,14 @@ fn normalize_git_path(path: &str) -> String {
             let drive = (bytes[1] as char).to_ascii_uppercase();
             return format!("{}:{}", drive, &path[2..]);
         }
+        // Cygwin path: /cygdrive/c/Users/... -> C:/Users/...
+        if let Some(rest) = path.strip_prefix("/cygdrive/") {
+            let bytes = rest.as_bytes();
+            if bytes.len() >= 2 && bytes[1] == b'/' && bytes[0].is_ascii_alphabetic() {
+                let drive = (bytes[0] as char).to_ascii_uppercase();
+                return format!("{}:{}", drive, &rest[1..]);
+            }
+        }
         path.to_string()
     }
     #[cfg(not(windows))]
@@ -308,6 +317,13 @@ mod tests {
     fn test_normalize_git_path_msys() {
         assert_eq!(normalize_git_path("/c/Users/test"), "C:/Users/test");
         assert_eq!(normalize_git_path("/d/workspace"), "D:/workspace");
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn test_normalize_git_path_cygwin() {
+        assert_eq!(normalize_git_path("/cygdrive/c/Users/test"), "C:/Users/test");
+        assert_eq!(normalize_git_path("/cygdrive/d/workspace"), "D:/workspace");
     }
 
     #[test]

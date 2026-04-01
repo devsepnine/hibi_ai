@@ -1,3 +1,4 @@
+mod merge;
 mod process;
 mod settings;
 mod mcp;
@@ -7,10 +8,10 @@ use std::path::Path;
 use anyhow::Result;
 
 use crate::component::{Component, ComponentType};
+use merge::merge_settings_json;
 use settings::{
     register_hook_in_settings, unregister_hook_from_settings,
     register_output_style_in_settings, register_statusline_in_settings,
-    merge_settings_json,
 };
 
 // Re-export public API
@@ -157,7 +158,8 @@ fn copy_file(component: &Component) -> Result<()> {
     // Copy file
     std::fs::copy(&component.source_path, &component.dest_path)?;
 
-    // Set executable permission for shell scripts
+    // Set executable permission for shell scripts (Unix only).
+    // On Windows, .sh scripts are executed via Git Bash; .exe hooks are already executable.
     #[cfg(unix)]
     if component.component_type == ComponentType::Statusline
         || component.source_path.extension().map_or(false, |e| e == "sh")

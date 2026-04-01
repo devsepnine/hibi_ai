@@ -14,15 +14,16 @@ use crate::fs::create_cli_command;
 fn split_command(cmd: &str) -> Option<Vec<String>> {
     #[cfg(windows)]
     {
-        // Windows: split on whitespace, respecting double-quoted strings.
+        // Windows: split on whitespace, respecting double and single-quoted strings.
         // Backslashes are literal (not escape chars) to support Windows paths.
         let mut args = Vec::new();
         let mut current = String::new();
-        let mut in_quotes = false;
+        let mut quote_char: Option<char> = None;
         for ch in cmd.chars() {
             match ch {
-                '"' => in_quotes = !in_quotes,
-                ' ' | '\t' if !in_quotes => {
+                '"' | '\'' if quote_char == Some(ch) => { quote_char = None; }
+                '"' | '\'' if quote_char.is_none() => { quote_char = Some(ch); }
+                ' ' | '\t' if quote_char.is_none() => {
                     if !current.is_empty() {
                         args.push(std::mem::take(&mut current));
                     }
@@ -33,7 +34,7 @@ fn split_command(cmd: &str) -> Option<Vec<String>> {
         if !current.is_empty() {
             args.push(current);
         }
-        if in_quotes { None } else { Some(args) }
+        if quote_char.is_some() { None } else { Some(args) }
     }
     #[cfg(not(windows))]
     {
