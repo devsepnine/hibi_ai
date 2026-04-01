@@ -26,6 +26,8 @@ pub(crate) fn find_source_dir() -> Result<PathBuf> {
     ];
 
     for candidate in candidates {
+        // canonicalize resolves `..` and symlinks; if it fails (path doesn't exist),
+        // the raw candidate is used — but marker check below will reject it safely.
         let resolved = candidate.canonicalize().unwrap_or(candidate);
         if resolved.join("agents").exists() && resolved.join("settings.json").exists() {
             return Ok(resolved);

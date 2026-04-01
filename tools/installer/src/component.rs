@@ -91,7 +91,11 @@ impl HookConfig {
                 .to_string_lossy()
                 .to_string()
         } else {
-            format!("~/.claude/hooks/{}", binary_name)
+            // Derive from dest_dir to support both ~/.claude and ~/.codex
+            let dir_name = dest_dir.file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| ".claude".to_string());
+            format!("~/{}/hooks/{}", dir_name, binary_name)
         }
     }
 }

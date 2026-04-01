@@ -26,7 +26,7 @@ pub fn find_git_root(source_dir: &Path) -> Option<PathBuf> {
         return None;
     }
     let path_str = String::from_utf8(output.stdout).ok()?;
-    let root = PathBuf::from(path_str.trim());
+    let root = PathBuf::from(normalize_git_path(path_str.trim()));
     // Guard: only use this root if source_dir is actually inside it.
     // Canonicalize both to handle symlinks (e.g., macOS /tmp -> /private/tmp)
     let root_canonical = root.canonicalize().unwrap_or_else(|_| root.clone());
@@ -220,6 +220,26 @@ fn git_available() -> bool {
         .is_ok()
 }
 
+/// Convert MSYS/Unix-style git paths to native OS paths.
+/// On Windows, git returns paths like `/c/Users/...` which must become `C:/Users/...`.
+/// On other platforms, returns the path unchanged.
+fn normalize_git_path(path: &str) -> String {
+    #[cfg(windows)]
+    {
+        // MSYS path: /c/Users/... -> C:/Users/...
+        let bytes = path.as_bytes();
+        if bytes.len() >= 3 && bytes[0] == b'/' && bytes[2] == b'/' && bytes[1].is_ascii_alphabetic() {
+            let drive = (bytes[1] as char).to_ascii_uppercase();
+            return format!("{}:{}", drive, &path[2..]);
+        }
+        path.to_string()
+    }
+    #[cfg(not(windows))]
+    {
+        path.to_string()
+    }
+}
+
 fn unix_timestamp_now() -> String {
     use std::time::SystemTime;
     match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
@@ -281,5 +301,19 @@ mod tests {
         let stderr = "fatal: remote error: repository not found\nerror: Could not fetch origin";
         let sanitized = sanitize_stderr(stderr);
         assert_eq!(sanitized, stderr);
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn test_normalize_git_path_msys() {
+        assert_eq!(normalize_git_path("/c/Users/test"), "C:/Users/test");
+        assert_eq!(normalize_git_path("/d/workspace"), "D:/workspace");
+    }
+
+    #[test]
+    fn test_normalize_git_path_passthrough() {
+        // Non-MSYS paths pass through unchanged on all platforms
+        assert_eq!(normalize_git_path("/Users/test"), "/Users/test");
+        assert_eq!(normalize_git_path("/home/user"), "/home/user");
     }
 }

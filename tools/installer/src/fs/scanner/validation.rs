@@ -15,7 +15,9 @@ pub(super) fn is_https_url(s: &str) -> bool {
 
 /// Validate that a command string doesn't contain shell metacharacters.
 pub(super) fn is_safe_command(s: &str) -> bool {
-    !s.is_empty() && !s.contains(['&', '|', '>', '<', ';', '`', '$', '(', ')'])
+    // Unix metacharacters: & | > < ; ` $ ( )
+    // Windows cmd.exe metacharacters: % ^ !
+    !s.is_empty() && !s.contains(['&', '|', '>', '<', ';', '`', '$', '(', ')', '%', '^', '!'])
 }
 
 /// Validate an MCP server definition from YAML.
@@ -131,6 +133,10 @@ mod tests {
         assert!(!is_safe_command("cmd < /etc/passwd"));
         assert!(!is_safe_command("echo `whoami`"));
         assert!(!is_safe_command("echo $(whoami)"));
+        // Windows cmd.exe metacharacters
+        assert!(!is_safe_command("echo %COMSPEC%"));
+        assert!(!is_safe_command("cmd ^| echo"));
+        assert!(!is_safe_command("echo !var!"));
     }
 
     #[test]

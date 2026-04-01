@@ -4,6 +4,19 @@ use serde_json::Value;
 
 use crate::component::HookConfig;
 
+/// Convert a Windows path to MSYS-style path for Git Bash compatibility.
+/// `C:\Users\...` -> `/c/Users/...`, handles any drive letter.
+#[allow(dead_code)]
+fn to_msys_path(path: &Path) -> String {
+    let s = path.to_string_lossy().replace('\\', "/");
+    if s.len() >= 3 && s.as_bytes()[1] == b':' && s.as_bytes()[0].is_ascii_alphabetic() {
+        let drive = (s.as_bytes()[0] as char).to_ascii_lowercase();
+        format!("/{}{}", drive, &s[2..])
+    } else {
+        s
+    }
+}
+
 /// Read settings.json from dest_dir, returning empty object if file doesn't exist.
 fn read_settings(dest_dir: &Path) -> Result<Value> {
     let settings_path = dest_dir.join("settings.json");
@@ -35,17 +48,17 @@ pub fn set_output_style(dest_dir: &Path, style_name: &str) -> Result<()> {
 pub fn set_statusline(dest_dir: &Path, script_name: &str) -> Result<()> {
     let mut settings = read_settings(dest_dir)?;
 
-    // Windows: exe needs stdin piping via shell (cat |) with Unix-style path
-    // macOS/Linux: direct path works with ~ expansion
+    // Windows: convert to MSYS-style path for Git Bash compatibility
+    // macOS/Linux: use ~ shorthand derived from dest_dir
     let statusline_command = if cfg!(windows) {
         let abs_path = dest_dir.join("statusline").join(script_name);
-        let unix_path = abs_path
-            .to_string_lossy()
-            .replace('\\', "/")
-            .replacen("C:/", "/c/", 1);
+        let unix_path = to_msys_path(&abs_path);
         format!("cat | {}", unix_path)
     } else {
-        format!("~/.claude/statusline/{}", script_name)
+        let dir_name = dest_dir.file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_else(|| ".claude".to_string());
+        format!("~/{}/statusline/{}", dir_name, script_name)
     };
     settings["statusLine"] = serde_json::json!({
         "type": "command",

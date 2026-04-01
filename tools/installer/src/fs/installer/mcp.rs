@@ -9,6 +9,38 @@ use super::process::{
 };
 use crate::fs::create_cli_command;
 
+/// Split a command string into arguments.
+/// Uses shlex (POSIX rules) on Unix, Windows-aware splitting on Windows.
+fn split_command(cmd: &str) -> Option<Vec<String>> {
+    #[cfg(windows)]
+    {
+        // Windows: split on whitespace, respecting double-quoted strings.
+        // Backslashes are literal (not escape chars) to support Windows paths.
+        let mut args = Vec::new();
+        let mut current = String::new();
+        let mut in_quotes = false;
+        for ch in cmd.chars() {
+            match ch {
+                '"' => in_quotes = !in_quotes,
+                ' ' | '\t' if !in_quotes => {
+                    if !current.is_empty() {
+                        args.push(std::mem::take(&mut current));
+                    }
+                }
+                _ => current.push(ch),
+            }
+        }
+        if !current.is_empty() {
+            args.push(current);
+        }
+        if in_quotes { None } else { Some(args) }
+    }
+    #[cfg(not(windows))]
+    {
+        shlex::split(cmd)
+    }
+}
+
 /// Cleanup helper: try to remove MCP server without blocking
 /// Returns true if cleanup succeeded, false otherwise
 fn cleanup_mcp_installation(server: &McpServer, target_cli: TargetCli) -> bool {
@@ -51,7 +83,7 @@ pub fn install_mcp_server(
             } else {
                 command.arg("--");
                 if let Some(cmd_str) = &server.def.command {
-                    let parts = shlex::split(cmd_str)
+                    let parts = split_command(cmd_str)
                         .ok_or_else(|| anyhow::anyhow!("Invalid command syntax: {}", cmd_str))?;
                     for part in parts {
                         command.arg(part);
@@ -77,7 +109,7 @@ pub fn install_mcp_server(
             } else {
                 command.arg("--");
                 if let Some(cmd_str) = &server.def.command {
-                    let parts = shlex::split(cmd_str)
+                    let parts = split_command(cmd_str)
                         .ok_or_else(|| anyhow::anyhow!("Invalid command syntax: {}", cmd_str))?;
                     for part in parts {
                         command.arg(part);
