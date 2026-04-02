@@ -68,6 +68,12 @@ marketplaces:
       - name: document-skills
         description: xlsx, docx, pptx, pdf 문서 생성/편집
 
+  openai-codex:
+    source: https://github.com/openai/codex-plugin-cc
+    plugins:
+      - name: codex
+        description: Claude Code에서 Codex로 코드 리뷰/작업 위임 (OpenAI)
+
   obsidian-skills:
     source: https://github.com/kepano/obsidian-skills
     plugins:
