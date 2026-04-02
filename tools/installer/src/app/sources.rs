@@ -161,14 +161,7 @@ impl App {
     }
 
     fn source_start_sync(&mut self) {
-        let has_git = self.sources.iter().any(|s| s.kind == SourceKind::Git);
         let bundled_root = self.bundled_git_root.clone();
-
-        if !has_git && bundled_root.is_none() {
-            self.source_sync_status = Some(SyncStatus::Error("No git sources to sync".to_string()));
-            return;
-        }
-
         let source_dir = self.source_dir.clone();
         let (result_tx, result_rx) = mpsc::channel::<SyncPayload>();
         let (cancel_tx, cancel_rx) = mpsc::channel::<()>();

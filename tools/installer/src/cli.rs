@@ -197,15 +197,6 @@ pub(crate) fn run_sync() -> Result<()> {
     let source_dir = source::find_source_dir()?;
     let bundled_git_root = source::git::find_git_root(&source_dir);
 
-    let has_git = source::config::load_config()
-        .map(|(e, _)| e.iter().any(|en| matches!(en, source::SourceEntry::Git { .. })))
-        .unwrap_or(false);
-
-    if !has_git && bundled_git_root.is_none() {
-        println!("No git sources configured. Add sources to ~/.hibi/sources.yaml");
-        return Ok(());
-    }
-
     println!("Syncing sources...");
     let (_, dummy_rx) = std::sync::mpsc::channel::<()>();
     let report = source::sync_all_sources(bundled_git_root.as_deref(), &source_dir, &dummy_rx);
