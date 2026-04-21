@@ -108,12 +108,13 @@ Examples:
 ### Basic Configuration
 **Required Checks:**
 
-**Code Quality:**
-- File size limit: ≤ 300 LOC
-- Function size limit: ≤ 50 LOC
-- Parameter limit: ≤ 5
-- Cyclomatic complexity: ≤ 10
-- Split/refactor required if limits exceeded
+**Code Quality** (Soft target / Hard block — see `code-thresholds.md`):
+- File size: ≤ 300 LOC soft, ≤ 500 LOC hard
+- Function size: ≤ 50 LOC soft, ≤ 80 LOC hard
+- Parameters: ≤ 5 soft, ≤ 7 hard
+- Cyclomatic complexity: ≤ 10 soft, ≤ 15 hard
+- Nesting depth: ≤ 4 soft, ≤ 6 hard
+- Soft: discuss in review; Hard: refactor before merge or document exception
 
 **Security Checks:**
 - NEVER: Include secrets (passwords/API keys/tokens)
