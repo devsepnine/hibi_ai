@@ -68,21 +68,20 @@
 
 ### Rules
 
-코딩 규칙 문서는 `rules/` 및 `rules/affaan-m/` 디렉토리에 위치:
+코딩 규칙 문서는 `rules/` 디렉토리에 위치 (영문 통일):
 
-- `commit-convention.md` / `commit-convention-ko.md` - 커밋 규칙
-- `code-thresholds.md` / `code-thresholds-ko.md` - 코드 크기 제한
-- `pull-request-rules.md` / `pull-request-rules-ko.md` - PR 규칙
-- `security.md` / `security-ko.md` - 보안 규칙
-- `development-workflow.md` / `development-workflow-ko.md` - 개발 워크플로우
-- `affaan-m/coding-style.md` - 코딩 스타일
-- `affaan-m/git-workflow.md` - Git 워크플로우
-- `affaan-m/testing.md` - 테스팅 규칙
-- `affaan-m/performance.md` - 성능 최적화
-- `affaan-m/patterns.md` - 공통 패턴
-- `affaan-m/hooks.md` - 훅 시스템
-- `affaan-m/agents.md` - 에이전트 오케스트레이션
-- `affaan-m/security.md` - 보안 가이드라인
+- `essential-rules.md` - 필수 규칙
+- `commit-convention.md` - 커밋 규칙
+- `code-thresholds.md` - 코드 크기 제한
+- `pull-request-rules.md` - PR 규칙
+- `security.md` - 보안 규칙 및 체크리스트
+- `development-workflow.md` - 개발 워크플로우 (TDD, 코드 리뷰 포함)
+- `coding-style.md` - 코딩 스타일
+- `testing.md` - 테스팅 규칙
+- `performance.md` - 성능 최적화
+- `patterns.md` - 공통 패턴
+- `hooks.md` - 훅 시스템
+- `agents.md` - 에이전트 오케스트레이션
 
 ## 🛠️ 개발 문서
 

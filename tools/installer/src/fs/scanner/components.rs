@@ -65,13 +65,6 @@ fn scan_directory(
             continue;
         }
 
-        // Skip files ending with -ko.md
-        if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
-            if file_name.ends_with("-ko.md") {
-                continue;
-            }
-        }
-
         let relative = path.strip_prefix(source_dir)?;
 
         // Security: reject path traversal attempts
