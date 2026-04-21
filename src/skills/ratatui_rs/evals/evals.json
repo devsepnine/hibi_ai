@@ -1,0 +1,89 @@
+{
+  "skill_name": "ratatui",
+  "evals": [
+    {
+      "id": 1,
+      "name": "minimal-counter-app",
+      "prompt": "Rust로 ratatui를 써서 위/아래 화살표로 숫자를 증감하고 'q'로 종료하는 카운터 TUI 앱을 작성해줘. cargo run 하면 바로 동작하는 main.rs 한 파일로 보여줘.",
+      "expected_output": "Idiomatic 0.30 code: uses ratatui::init()/restore() (NOT manual enable_raw_mode + EnterAlternateScreen), Block::bordered(), event::poll(timeout), exits cleanly on 'q'.",
+      "files": [],
+      "assertions": [
+        { "id": "uses-ratatui-init", "text": "Code uses ratatui::init() and ratatui::restore() for terminal setup/teardown" },
+        { "id": "uses-event-poll", "text": "Code uses event::poll(Duration::from_millis(...)) instead of bare event::read()" },
+        { "id": "uses-block-bordered", "text": "Code uses Block::bordered() (or equivalent 0.30 shorthand) instead of Block::default().borders(Borders::ALL)" },
+        { "id": "handles-quit-key", "text": "Code matches KeyCode::Char('q') to exit cleanly" }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "cancelable-background-task",
+      "prompt": "ratatui TUI에서 git clone을 백그라운드로 실행하면서, 사용자가 Esc를 누르면 git 프로세스를 죽이고 작업을 취소할 수 있도록 만들어줘. UI는 멈추면 안 되고, clone 중에도 다른 키 입력을 받을 수 있어야 해.",
+      "expected_output": "Spawns child via Command, drains stdout/stderr in threads, polls completion BEFORE checking cancel signal, kills child on cancel, TUI loop uses event::poll, panic-safe terminal init, per-spawn cancel channel isolation.",
+      "files": [],
+      "assertions": [
+        { "id": "uses-mpsc-channel", "text": "Uses std::sync::mpsc channel (or tokio channel) for cancel signal" },
+        { "id": "polls-completion-first", "text": "child completion (wait_timeout/try_wait) checked BEFORE cancel try_recv" },
+        { "id": "kills-on-cancel", "text": "On cancel, calls child.kill() and child.wait() (best-effort cleanup)" },
+        { "id": "drains-pipes", "text": "Spawns reader threads on stdout AND stderr to prevent pipe-blocking" },
+        { "id": "tui-stays-responsive", "text": "TUI loop uses event::poll(timeout) so it can drain channels between key events" },
+        { "id": "panic-safe-init", "text": "Uses ratatui::init()/restore() (or equivalent panic hook) so a panic during clone restores the terminal" },
+        { "id": "drains-before-poll", "text": "In each loop iteration, drains worker events from the channel BEFORE polling keyboard (so background updates show even if user is typing)" }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "cross-platform-command-spawn",
+      "prompt": "Rust에서 npm install을 호출하는 함수를 만드는데, Windows에서도 동작해야 해. cmd /c는 쓰지 마. 그리고 사용자 입력으로 들어온 문자열을 인자로 분리할 때 Windows의 백슬래시 경로(C:\\Users\\me)도 깨지지 않게 처리해줘.",
+      "expected_output": "Uses cfg(windows)/cfg(not(windows)) to invoke npm.cmd vs npm; never cmd /c. Provides a split_command function that on Windows treats backslashes as literal, on POSIX uses shlex::split.",
+      "files": [],
+      "assertions": [
+        { "id": "no-cmd-c", "text": "Never uses Command::new(\"cmd\").args([\"/c\", ...])" },
+        { "id": "platform-specific-binary", "text": "Uses #[cfg(windows)] / #[cfg(not(windows))] (or cfg!(windows)) to pick npm.cmd vs npm" },
+        { "id": "windows-aware-split", "text": "split_command function preserves backslashes on Windows (does not treat them as escape characters)" },
+        { "id": "posix-shlex", "text": "On non-Windows, uses shlex::split (or equivalent POSIX-quoting splitter)" }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "stateful-list-with-arrows",
+      "prompt": "ratatui로 상하 화살표(↑↓)와 j/k로 항목을 선택할 수 있는 List 위젯 화면을 만들어줘. 선택된 항목은 시각적으로 강조되어야 하고, 위에서 위 키를 누르면 맨 아래로, 아래서 아래 키를 누르면 맨 위로 wrap-around 해야 해.",
+      "expected_output": "Uses ratatui::widgets::List + ListState. Selection in App struct. Handles both arrows and j/k. Wrap-around correct (modulo OR if-else). Empty-list guard.",
+      "files": [],
+      "assertions": [
+        { "id": "uses-list-state", "text": "Uses ListState (stored in app state, not local to draw closure) with select(Some(idx))" },
+        { "id": "render-stateful", "text": "Renders via f.render_stateful_widget, passing &mut state" },
+        { "id": "supports-vi-keys", "text": "Handles BOTH KeyCode::Up/Down and KeyCode::Char('j')/Char('k') for navigation" },
+        { "id": "wrap-around-correct", "text": "Wrap-around is correctly implemented (either modulo OR if-else with len()-1 guard, both accepted)" },
+        { "id": "highlight-style", "text": "List has highlight_style (or highlight_symbol) so the selected item is visually distinct" },
+        { "id": "empty-list-guard", "text": "Selection logic guards against empty items (early return or check before indexing)" }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "panic-safe-terminal",
+      "prompt": "ratatui TUI 앱이 panic 발생해도 터미널이 raw mode에 갇혀서 깨져 보이는 일이 없도록 만들어줘. panic 발생 시에도 사용자가 정상적으로 셸을 쓸 수 있어야 해. 그리고 raw mode 켜진 상태에서는 절대 eprintln!이나 println! 쓰지 말 것.",
+      "expected_output": "Uses ratatui::init() (which installs the panic hook automatically) OR explicitly std::panic::set_hook that calls ratatui::restore() before forwarding. Errors logged AFTER restore.",
+      "files": [],
+      "assertions": [
+        { "id": "panic-safe-init", "text": "Uses ratatui::init() OR explicitly installs a panic hook that restores the terminal before forwarding the panic" },
+        { "id": "restore-before-error-print", "text": "Any eprintln!/println! of errors happens AFTER ratatui::restore(), not inside the run loop" },
+        { "id": "no-debug-prints-in-loop", "text": "No println!/eprintln!/dbg! calls inside terminal.draw closures or the main event loop" },
+        { "id": "explicit-cleanup-path", "text": "Code shows clear ordering: init → run → restore (regardless of error)" }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "layout-destructuring-0-30",
+      "prompt": "ratatui로 위에서부터 [헤더 3줄 고정, 본문 가변, 상태바 1줄 고정] 3-row 레이아웃을 만들어줘. 그리고 본문 영역은 좌측 사이드바(20%)와 메인(80%)으로 다시 분할해줘. ratatui 0.30 최신 idiom 써서 깔끔하게.",
+      "expected_output": "Uses Layout::vertical([...]).areas(area) with destructuring like `let [header, body, status] = ...`, then Layout::horizontal([...]).areas(body) the same way. Uses Constraint::Length, Constraint::Fill (not Min(0)), and Constraint::Percentage. Idiomatic 0.30 throughout.",
+      "files": [],
+      "assertions": [
+        { "id": "vertical-areas", "text": "Uses Layout::vertical([...]).areas(...) (NOT Layout::default().direction(Direction::Vertical))" },
+        { "id": "horizontal-areas", "text": "Uses Layout::horizontal([...]).areas(...) for the inner body split" },
+        { "id": "destructuring-syntax", "text": "Uses array destructuring `let [a, b, c] = layout.areas(area)` (NOT indexing chunks[0], chunks[1])" },
+        { "id": "fill-not-min0", "text": "Uses Constraint::Fill(n) for proportional remaining space (NOT Constraint::Min(0))" },
+        { "id": "constraint-length-and-percentage", "text": "Uses Constraint::Length for fixed rows AND Constraint::Percentage for the body split" }
+      ]
+    }
+  ]
+}
