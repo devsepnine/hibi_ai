@@ -1,0 +1,26 @@
+{
+  "skill_name": "zustand-store-ts",
+  "evals": [
+    {
+      "id": 1,
+      "name": "basic-todo-store",
+      "prompt": "I'm building a TypeScript React app and need a Zustand store to manage a todo list. The store should support:\n- add(text: string): creates a todo with id, text, completed=false\n- toggle(id: string): flips completed\n- remove(id: string): deletes\n- filter: 'all' | 'active' | 'completed' state with setFilter\n- visibleTodos: derived selector based on current filter\n\nCreate the store file (src/frontend/src/store/todo.ts). Use Zustand v5.",
+      "expected_output": "A single store file using Zustand v5: `create<T>()(...)` double-paren form, separated State/Actions types, immutable updates (no mutation without immer), and a selector pattern for visibleTodos that is safe against v5's reference equality (or exported as a helper using useShallow / a memoized selector). No v4 shallow selector API.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "fix-infinite-render",
+      "prompt": "이 컴포넌트가 무한 렌더링으로 죽어요. Zustand v5로 올렸더니 갑자기 이렇게 됐는데, 고쳐줘.\n\n// src/components/ProductList.tsx\nimport { useProductStore } from '../store/product';\n\nexport function ProductList() {\n  const { items, isLoading, addItem } = useProductStore((s) => ({\n    items: s.items,\n    isLoading: s.isLoading,\n    addItem: s.addItem,\n  }));\n\n  if (isLoading) return <p>Loading...</p>;\n  return (\n    <div>\n      {items.map((it) => <div key={it.id}>{it.name}</div>)}\n      <button onClick={() => addItem({ id: crypto.randomUUID(), name: 'New' })}>\n        Add\n      </button>\n    </div>\n  );\n}",
+      "expected_output": "Fix the component by either (a) wrapping the multi-field selector with `useShallow` from `zustand/shallow`, or (b) splitting into individual selectors. Explanation must cite v5 reference-equality behavior. Import path must be `zustand/shallow` (not `zustand/react/shallow`).",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "slices-plus-devtools",
+      "prompt": "Build a Zustand v5 store for a dashboard app that has two clearly separate domains:\n- auth slice: currentUser (id, email, role), login(email, pw) async, logout()\n- workspace slice: activeProjectId, pinnedItemIds: string[], setActive, togglePin, clearPins\n\nUse the slices pattern (StateCreator), compose into a single store, wrap with devtools middleware so each set() shows a readable action name. Keep state and actions separated in types.",
+      "expected_output": "Two StateCreator functions (createAuthSlice, createWorkspaceSlice) typed with the FULL store shape in the first generic so cross-slice get() works. Mutator tuple `[['zustand/devtools', never]]` declared because devtools wraps the composed store. A single `create<FullStore>()(devtools(...))` composition. Each `set()` has a third arg naming the action (e.g., 'auth/login/success').",
+      "files": []
+    }
+  ]
+}

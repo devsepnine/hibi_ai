@@ -1,16 +1,17 @@
 ```typescript
 import { create } from 'zustand';
-import { subscribeWithSelector } from 'zustand/middleware';
+import { devtools, persist, createJSONStorage } from 'zustand/middleware';
+import { useShallow } from 'zustand/shallow';
+import type {} from '@redux-devtools/extension';
 
 // ============================================================================
 // Types
 // ============================================================================
 
 /**
- * {{StoreName}}State - The state shape for this store
+ * {{StoreName}}State — data shape (no functions).
  */
 export interface {{StoreName}}State {
-  // Add state properties
   items: unknown[];
   selectedId: string | null;
   isLoading: boolean;
@@ -18,27 +19,22 @@ export interface {{StoreName}}State {
 }
 
 /**
- * {{StoreName}}Actions - Actions that can be performed on this store
+ * {{StoreName}}Actions — mutators and async operations.
  */
 export interface {{StoreName}}Actions {
   // Setters
   setItems: (items: unknown[]) => void;
   setSelectedId: (id: string | null) => void;
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
 
-  // Complex actions
+  // Complex / async
   loadItems: () => Promise<void>;
   addItem: (item: unknown) => void;
   removeItem: (id: string) => void;
 
-  // Reset
+  // Reset to initialState (stays in sync with store.getInitialState())
   reset: () => void;
 }
 
-/**
- * {{StoreName}}Store - Combined store type
- */
 export type {{StoreName}}Store = {{StoreName}}State & {{StoreName}}Actions;
 
 // ============================================================================
@@ -57,63 +53,86 @@ const initialState: {{StoreName}}State = {
 // ============================================================================
 
 /**
- * use{{StoreName}}Store - Zustand store for managing {{description}}
+ * use{{StoreName}}Store — Zustand v5 store for managing {{description}}.
  *
- * @example
- * ```typescript
- * // In a component - use individual selectors for performance
- * const items = use{{StoreName}}Store((state) => state.items);
- * const loadItems = use{{StoreName}}Store((state) => state.loadItems);
+ * Middleware chain:
+ *   devtools → persist → state creator
  *
- * // Subscribe to changes outside React
- * use{{StoreName}}Store.subscribe(
- *   (state) => state.selectedId,
- *   (selectedId) => console.log('Selected:', selectedId)
- * );
- * ```
-*/
+ * Selectors:
+ *   - Single field:  const items = useStore((s) => s.items)
+ *   - Multi-field:   const { items, add } = useStore(useShallow((s) => ({ ... })))
+ *
+ * Outside-React subscribe: consider adding `subscribeWithSelector` if needed.
+ */
 export const use{{StoreName}}Store = create<{{StoreName}}Store>()(
-subscribeWithSelector((set, get) => ({
-// Initial state
-...initialState,
+  devtools(
+    persist(
+      (set, get) => ({
+        ...initialState,
 
-    // Simple setters
-    setItems: (items) => set({ items }),
-    setSelectedId: (selectedId) => set({ selectedId }),
-    setLoading: (isLoading) => set({ isLoading }),
-    setError: (error) => set({ error }),
+        // Simple setters — name the action for devtools tracing
+        setItems: (items) => set({ items }, false, '{{StoreName}}/setItems'),
+        setSelectedId: (selectedId) =>
+          set({ selectedId }, false, '{{StoreName}}/setSelectedId'),
 
-    // Async action example
-    loadItems: async () => {
-      set({ isLoading: true, error: null });
-      try {
-        // const items = await fetchItems();
-        const items: unknown[] = []; // Replace with actual fetch
-        set({ items, isLoading: false });
-      } catch (error) {
-        set({
-          error: error instanceof Error ? error.message : 'Failed to load',
-          isLoading: false,
-        });
-      }
-    },
+        // Async example — always clear error on start, set on failure
+        loadItems: async () => {
+          set({ isLoading: true, error: null }, false, '{{StoreName}}/loadItems/start');
+          try {
+            // const items = await fetchItems();
+            const items: unknown[] = [];
+            set({ items, isLoading: false }, false, '{{StoreName}}/loadItems/success');
+          } catch (err) {
+            set(
+              {
+                error: err instanceof Error ? err.message : 'Failed to load',
+                isLoading: false,
+              },
+              false,
+              '{{StoreName}}/loadItems/error',
+            );
+          }
+        },
 
-    // Add item (immutable update)
-    addItem: (item) => {
-      set({ items: [...get().items, item] });
-    },
+        // Immutable updates via spread / filter
+        addItem: (item) =>
+          set({ items: [...get().items, item] }, false, '{{StoreName}}/addItem'),
 
-    // Remove item (immutable update)
-    removeItem: (id) => {
-      set({
-        items: get().items.filter((item) => (item as { id: string }).id !== id),
-        // Clear selection if removed item was selected
-        selectedId: get().selectedId === id ? null : get().selectedId,
-      });
-    },
+        removeItem: (id) =>
+          set(
+            {
+              items: get().items.filter((it) => (it as { id: string }).id !== id),
+              selectedId: get().selectedId === id ? null : get().selectedId,
+            },
+            false,
+            '{{StoreName}}/removeItem',
+          ),
 
-    // Reset to initial state
-    reset: () => set(initialState),
-}))
+        // Reset to initialState — also reachable via store.getInitialState()
+        reset: () => set(initialState, false, '{{StoreName}}/reset'),
+      }),
+      {
+        name: '{{storeName}}-storage',
+        storage: createJSONStorage(() => localStorage),
+        // Persist only user-facing selections; drop transient state
+        partialize: (s) => ({ selectedId: s.selectedId }),
+      },
+    ),
+    { name: '{{StoreName}}Store' },
+  ),
 );
+
+// ============================================================================
+// Selector helpers (optional — export hooks co-located with the store)
+// ============================================================================
+
+/** Multi-field selector example — use `useShallow` to avoid infinite loops. */
+export const use{{StoreName}}List = () =>
+  use{{StoreName}}Store(
+    useShallow((s) => ({
+      items: s.items,
+      isLoading: s.isLoading,
+      error: s.error,
+    })),
+  );
 ```
