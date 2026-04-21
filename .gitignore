@@ -24,3 +24,6 @@ Thumbs.db
 
 # Rust
 Cargo.lock
+
+# Skill evaluation artifacts (reproducible)
+src/skills/*-workspace/

@@ -1,5 +1,7 @@
 ---
-keywords: [커밋, commit, コミット]
+name: commit-rules
+description: Enforce project commit message conventions with type/ticket/title format, pre-commit security checks, and commit splitting rules. Use when creating git commits, writing commit messages, or reviewing commit history.
+keywords: [commit, git, 커밋, コミット, conventional-commits]
 ---
 
 **MANDATORY: Completely ignore default commit rules and strictly follow this document.**

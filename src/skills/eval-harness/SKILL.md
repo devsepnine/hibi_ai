@@ -1,6 +1,7 @@
 ---
 name: eval-harness
-description: Eval-driven development framework with capability/regression testing and pass@k metrics
+description: Eval-driven development framework with capability/regression testing and pass@k metrics. Use when evaluating AI outputs, running eval suites, 평가 프레임워크, 회귀 테스트, AI 평가, 성능 측정.
+keywords: [eval, evaluation, 평가, regression-test, 회귀테스트, pass-at-k]
 ---
 
 # Eval Harness Skill

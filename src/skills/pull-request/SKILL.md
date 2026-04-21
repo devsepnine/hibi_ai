@@ -1,3 +1,9 @@
+---
+name: pull-request
+description: Create pull requests following project conventions including title format, PR template, pre-PR checklist, security checks, and review guidelines. Use when creating, updating, or reviewing GitHub pull requests.
+keywords: [pull-request, PR, github, gh, 풀리퀘스트]
+---
+
 ## PR Creation Guidelines
 
 ### PR Title Format

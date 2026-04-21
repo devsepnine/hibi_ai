@@ -1,6 +1,7 @@
 ---
 name: security-review
-description: Use this skill when adding authentication, handling user input, working with secrets, creating API endpoints, or implementing payment/sensitive features. Provides comprehensive security checklist and patterns.
+description: Use this skill when adding authentication, handling user input, working with secrets, creating API endpoints, or implementing payment/sensitive features. Provides comprehensive security checklist and patterns. 보안 검토, 시큐리티 리뷰, 보안 취약점 점검, 인증/인가 검토, 보안 체크리스트.
+keywords: [security, 보안, auth, 인증, vulnerability, 취약점, owasp]
 ---
 
 # Security Review Skill

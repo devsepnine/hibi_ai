@@ -1,6 +1,7 @@
 ---
 name: zustand-store-ts
-description: Create Zustand stores with TypeScript, subscribeWithSelector middleware, and proper state/action separation. Use when building React state management, creating global stores, or implementing reactive state patterns with Zustand.
+description: Create Zustand stores with TypeScript, subscribeWithSelector middleware, and proper state/action separation. Use when building React state management, creating global stores, or implementing reactive state patterns with Zustand. 주스탄드 상태관리, Zustand 스토어 작성, 전역 상태 관리.
+keywords: [zustand, 주스탄드, state-management, 상태관리, store, 스토어]
 ---
 
 # Zustand Store

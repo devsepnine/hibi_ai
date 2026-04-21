@@ -1,9 +1,10 @@
 ---
 name: deploy-to-vercel
-description: Deploy applications and websites to Vercel. Use when the user requests deployment actions like "deploy my app", "deploy and give me the link", "push this live", or "create a preview deployment".
+description: Deploy applications and websites to Vercel including interactive (vercel login) and token-based (VERCEL_TOKEN for CI/CD) authentication. Use when the user requests deployment actions like "deploy my app", "push this live", "create a preview deployment", "deploy with token", 버셀 배포, Vercel 배포, 토큰 배포, CI 배포.
+keywords: [vercel, deploy, 배포, 버셀배포, preview, 프리뷰, token, 토큰, ci-cd, vercel-token]
 metadata:
   author: vercel
-  version: "3.0.0"
+  version: "3.1.0"
 ---
 
 # Deploy to Vercel
@@ -294,3 +295,98 @@ the command with escalated permissions — want me to proceed?
 ### CLI Auth Failure
 
 If `vercel login` or `vercel deploy` fails with authentication errors, fall back to the no-auth deploy script (claude.ai or Codex variant, depending on the environment).
+
+---
+
+## Token-Based Authentication (Non-Interactive)
+
+For CI/CD or non-interactive environments where `vercel login` cannot be used. Uses `VERCEL_TOKEN` env var instead of browser auth.
+
+### Locate the Vercel Token
+
+Work through these scenarios in order:
+
+**A) `VERCEL_TOKEN` already in environment**
+```bash
+printenv VERCEL_TOKEN
+```
+
+**B) Token in `.env` file under `VERCEL_TOKEN`**
+```bash
+grep '^VERCEL_TOKEN=' .env 2>/dev/null
+export VERCEL_TOKEN=$(grep '^VERCEL_TOKEN=' .env | cut -d= -f2-)
+```
+
+**C) Token under different name in `.env`** (Vercel tokens start with `vca_`)
+```bash
+grep -i 'vercel' .env 2>/dev/null
+export VERCEL_TOKEN=$(grep '^<VARIABLE_NAME>=' .env | cut -d= -f2-)
+```
+
+**D) No token found** — ask the user to create one at vercel.com/account/tokens
+
+### Critical: Never Use `--token` Flag
+
+```bash
+# Bad — token visible in shell history and process listings
+vercel deploy --token "vca_abc123"
+
+# Good — CLI reads VERCEL_TOKEN from environment
+export VERCEL_TOKEN="vca_abc123"
+vercel deploy
+```
+
+### Locate Project and Team (Skip `.vercel/` Directory)
+
+```bash
+printenv VERCEL_PROJECT_ID
+printenv VERCEL_ORG_ID
+```
+
+If both are set, the CLI uses these automatically and skips any `.vercel/` directory:
+```bash
+export VERCEL_ORG_ID="<org-id>"
+export VERCEL_PROJECT_ID="<project-id>"
+```
+
+**Must be set together** — setting only one causes an error.
+
+Extract team slug from project URL:
+```bash
+# e.g. "my-team" from "https://vercel.com/my-team/my-project"
+echo "$PROJECT_URL" | sed 's|https://vercel.com/||' | cut -d/ -f1
+```
+
+### Quick Token Deploy (no linking needed)
+
+```bash
+vercel deploy -y --no-wait --scope <team-slug>
+```
+
+### Managing Environment Variables (with Token)
+
+```bash
+echo "value" | vercel env add VAR_NAME --scope <team-slug>
+echo "value" | vercel env add VAR_NAME production --scope <team-slug>
+vercel env ls --scope <team-slug>
+vercel env pull --scope <team-slug>
+vercel env rm VAR_NAME --scope <team-slug> -y
+```
+
+### Token Authentication Troubleshooting
+
+**Token not found:**
+```bash
+printenv | grep -i vercel
+grep -i vercel .env 2>/dev/null
+```
+
+**Authentication error** (`Authentication required`):
+- Token may be expired or invalid
+- Verify: `vercel whoami` (uses `VERCEL_TOKEN` from env)
+- Ask the user for a fresh token
+
+**Wrong team:**
+```bash
+vercel whoami --scope <team-slug>
+```

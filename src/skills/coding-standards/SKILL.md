@@ -1,6 +1,7 @@
 ---
 name: coding-standards
-description: Universal coding standards, best practices, and patterns for TypeScript, JavaScript, React, and Node.js development.
+description: Universal coding standards, best practices, and patterns for TypeScript, JavaScript, React, and Node.js development. Includes React-specific patterns (forms, error boundaries, animations, accessibility) in references/. Use when reviewing code, writing clean code, 코딩 표준, 코드 스타일, 코딩 컨벤션, 코드 리뷰, 클린 코드, 폼 검증, 에러 바운더리, 접근성.
+keywords: [coding-standards, 코딩표준, 코드스타일, 코드리뷰, clean-code, best-practices, react-patterns, form, error-boundary, a11y, 접근성]
 ---
 
 # Coding Standards & Best Practices
@@ -518,3 +519,12 @@ setTimeout(callback, DEBOUNCE_DELAY_MS)
 ```
 
 **Remember**: Code quality is not negotiable. Clear, maintainable code enables rapid development and confident refactoring.
+
+## React Specific Patterns
+
+폼 처리(검증), Error Boundary, Framer Motion 애니메이션, 접근성 패턴(키보드 네비, 포커스 관리)은 `references/react-patterns.md` 참조.
+
+다른 React 영역은 전문 스킬:
+- 컴포지션/Compound Components → `composition-patterns`
+- 성능 최적화 (memo, lazy, bundle) → `react-best-practices`
+- 전역 상태 관리 → `zustand`

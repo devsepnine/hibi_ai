@@ -1,6 +1,7 @@
 ---
 name: verification-loop
-description: Comprehensive verification system for build, types, tests, and security checks
+description: Comprehensive verification system for build, types, tests, and security checks. Use when 빌드 검증, 타입 체크, 테스트 실행, 검증 루프, 완료 전 검증.
+keywords: [verification, 검증, build-check, type-check, 빌드검증, 타입체크]
 ---
 
 # Verification Loop Skill
