@@ -55,9 +55,14 @@ fn scan_directory(
         return Ok(());
     }
 
+    // Skip skill-development artifacts.
+    // Convention: skill-creator writes iteration/benchmark outputs to
+    // `<skill>/workspace/`. See `src/skills/*/workspace/` and `.gitignore`.
+    // Pruning via `filter_entry` avoids descending the subtree entirely.
     for entry in WalkDir::new(source_dir)
         .min_depth(1)
         .into_iter()
+        .filter_entry(|e| !(e.file_type().is_dir() && e.file_name() == "workspace"))
         .filter_map(|e| e.ok())
     {
         let path = entry.path();
@@ -260,5 +265,40 @@ fn determine_status(source: &Path, dest: &Path) -> Result<InstallStatus> {
         Ok(InstallStatus::Unchanged)
     } else {
         Ok(InstallStatus::Modified)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn unique_test_dir(label: &str) -> std::path::PathBuf {
+        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let dir = std::env::temp_dir().join(format!("hibi_test_{label}_{nanos}"));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn scan_directory_skips_workspace_subtree() {
+        let src = unique_test_dir("scan_ws_src");
+        let dst = unique_test_dir("scan_ws_dst");
+
+        // skill-a: one installable file + workspace artifacts that must be skipped
+        std::fs::create_dir_all(src.join("skill-a/workspace/iteration-1")).unwrap();
+        std::fs::write(src.join("skill-a/SKILL.md"), "ok").unwrap();
+        std::fs::write(src.join("skill-a/workspace/iteration-1/log.txt"), "junk").unwrap();
+        std::fs::write(src.join("skill-a/workspace/benchmark.json"), "{}").unwrap();
+
+        let mut out = Vec::new();
+        scan_directory(&src, &dst, ComponentType::Skills, &mut out).unwrap();
+
+        assert_eq!(out.len(), 1, "only SKILL.md should be scanned");
+        assert!(out[0].name.ends_with("SKILL.md"));
+        assert!(!out.iter().any(|c| c.name.contains("workspace")));
+
+        let _ = std::fs::remove_dir_all(&src);
+        let _ = std::fs::remove_dir_all(&dst);
     }
 }

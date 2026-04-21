@@ -26,4 +26,4 @@ Thumbs.db
 Cargo.lock
 
 # Skill evaluation artifacts (reproducible)
-src/skills/*-workspace/
+src/skills/*/workspace/
