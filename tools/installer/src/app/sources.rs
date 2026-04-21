@@ -4,11 +4,29 @@ use std::thread;
 use anyhow::Result;
 use crossterm::event::KeyCode;
 
-use super::{App, View, SyncStatus};
+use super::{App, View, SyncStatus, build_tree_views};
+use crate::component::Component;
+use crate::fs::scanner;
+use crate::mcp::McpServer;
+use crate::plugin::Plugin;
 use crate::source::{self, SourceEntry, SourceKind, ResolvedSource};
 use crate::source::{config, git};
 
-type SyncPayload = (Vec<ResolvedSource>, Vec<String>, bool);
+/// Post-sync component rescan output; applied back into App state so the UI
+/// reflects files newly produced/removed by the sync.
+pub(crate) struct RescanResult {
+    pub components: Vec<Component>,
+    pub mcp_servers: Vec<McpServer>,
+    pub plugins: Vec<Plugin>,
+}
+
+/// Message sent from the sync/resolve background thread back to the UI.
+pub(crate) struct SyncPayload {
+    pub resolved: Vec<ResolvedSource>,
+    pub summaries: Vec<String>,
+    pub had_error: bool,
+    pub rescan: Option<RescanResult>,
+}
 
 impl App {
     /// Handle key input on the Sources list view.
@@ -163,6 +181,8 @@ impl App {
     fn source_start_sync(&mut self) {
         let bundled_root = self.bundled_git_root.clone();
         let source_dir = self.source_dir.clone();
+        let dest_dir = self.dest_dir.clone();
+        let target_cli = self.target_cli;
         let (result_tx, result_rx) = mpsc::channel::<SyncPayload>();
         let (cancel_tx, cancel_rx) = mpsc::channel::<()>();
         self.source_sync_rx = Some(result_rx);
@@ -171,7 +191,24 @@ impl App {
 
         thread::spawn(move || {
             let report = source::sync_all_sources(bundled_root.as_deref(), &source_dir, &cancel_rx);
-            let _ = result_tx.send((report.resolved, report.summaries, report.had_error));
+
+            // Rescan component inventory so freshly pulled files appear in the
+            // UI. Skip when no CLI target is selected yet (nothing to scan for).
+            let rescan = target_cli.and_then(|cli| {
+                let components = scanner::scan_all_sources(&report.resolved, &dest_dir, cli).ok()?;
+                let mcp_servers = scanner::scan_all_mcp_sources(&report.resolved, cli)
+                    .map(|(servers, _)| servers)
+                    .unwrap_or_default();
+                let plugins = scanner::scan_all_plugin_sources(&report.resolved).unwrap_or_default();
+                Some(RescanResult { components, mcp_servers, plugins })
+            });
+
+            let _ = result_tx.send(SyncPayload {
+                resolved: report.resolved,
+                summaries: report.summaries,
+                had_error: report.had_error,
+                rescan,
+            });
         });
     }
 
@@ -187,7 +224,12 @@ impl App {
                 Ok(r) => (r.sources, r.warnings),
                 Err(_) => (vec![source::ResolvedSource::bundled(&source_dir)], Vec::new()),
             };
-            let _ = tx.send((resolved, warnings, false));
+            let _ = tx.send(SyncPayload {
+                resolved,
+                summaries: warnings,
+                had_error: false,
+                rescan: None,
+            });
         });
     }
 
@@ -216,16 +258,26 @@ impl App {
         };
 
         match rx.try_recv() {
-            Ok((resolved, summaries, had_error)) => {
-                self.sources = resolved;
+            Ok(payload) => {
+                self.sources = payload.resolved;
                 self.source_sync_cancel_tx = None;
-                self.source_sync_status = Some(if summaries.is_empty() {
+                self.source_sync_status = Some(if payload.summaries.is_empty() {
                     SyncStatus::Success("Resolved sources".to_string())
-                } else if had_error {
-                    SyncStatus::Error(summaries.join("; "))
+                } else if payload.had_error {
+                    SyncStatus::Error(payload.summaries.join("; "))
                 } else {
-                    SyncStatus::Success(summaries.join("; "))
+                    SyncStatus::Success(payload.summaries.join("; "))
                 });
+
+                // Apply rescan so the component list and tree views reflect
+                // whatever the sync pulled (new files, deletions, edits).
+                if let Some(rescan) = payload.rescan {
+                    self.components = rescan.components;
+                    self.mcp_servers = rescan.mcp_servers;
+                    self.plugins = rescan.plugins;
+                    self.tree_views = build_tree_views(&self.components);
+                }
+
                 self.current_view = View::Sources;
             }
             Err(std::sync::mpsc::TryRecvError::Empty) => {

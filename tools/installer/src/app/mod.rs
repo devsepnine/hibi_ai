@@ -89,7 +89,7 @@ pub struct App {
     pub source_pending_url: String,            // URL saved between wizard steps (Git flow)
     pub source_pending_branch: Option<String>, // Branch saved between wizard steps
     pub source_pending_root: Option<String>,   // Root saved between wizard steps
-    pub source_sync_rx: Option<std::sync::mpsc::Receiver<(Vec<ResolvedSource>, Vec<String>, bool)>>,
+    pub source_sync_rx: Option<std::sync::mpsc::Receiver<sources::SyncPayload>>,
 }
 
 struct InitData {
