@@ -11,8 +11,15 @@ const CLONE_TIMEOUT_SECS: u64 = 60;
 const FETCH_TIMEOUT_SECS: u64 = 30;
 const RESET_TIMEOUT_SECS: u64 = 10;
 
-/// Detect if a directory is inside a git repository.
-/// Returns the git root path, or `None` if not in a repo.
+/// Detect if `source_dir` lives inside the hibi_ai git repository.
+/// Returns the hibi_ai git root path, or `None` if not in a hibi_ai repo.
+///
+/// Why the repo-marker check: `share/hibi/` installed by package managers
+/// (e.g., Homebrew's `/opt/homebrew/Cellar/hibi/*/share/hibi/`) can sit
+/// inside an unrelated parent git repo (`/opt/homebrew/.git`). Without
+/// the marker guard, `sync` would `git pull` Homebrew itself instead of
+/// hibi_ai, and the cache clone path (`sync_bundled_cache`) would never
+/// be taken — leaving the user's bundled content permanently stale.
 pub fn find_git_root(source_dir: &Path) -> Option<PathBuf> {
     let output = Command::new("git")
         .args(["rev-parse", "--show-toplevel"])
@@ -27,11 +34,17 @@ pub fn find_git_root(source_dir: &Path) -> Option<PathBuf> {
     }
     let path_str = String::from_utf8(output.stdout).ok()?;
     let root = PathBuf::from(normalize_git_path(path_str.trim()));
-    // Guard: only use this root if source_dir is actually inside it.
     // Canonicalize both to handle symlinks (e.g., macOS /tmp -> /private/tmp)
     let root_canonical = root.canonicalize().unwrap_or_else(|_| root.clone());
     let source_canonical = source_dir.canonicalize().unwrap_or_else(|_| source_dir.to_path_buf());
+    // Guard 1: source_dir must live inside root.
     if !source_canonical.starts_with(&root_canonical) {
+        return None;
+    }
+    // Guard 2: root must look like the hibi_ai repo. The installer's own
+    // Cargo.toml is a reliable fingerprint that survives rename/restructure
+    // better than checking for `src/agents` alone.
+    if !root_canonical.join("tools/installer/Cargo.toml").exists() {
         return None;
     }
     Some(root)
@@ -331,5 +344,59 @@ mod tests {
         // Non-MSYS paths pass through unchanged on all platforms
         assert_eq!(normalize_git_path("/Users/test"), "/Users/test");
         assert_eq!(normalize_git_path("/home/user"), "/home/user");
+    }
+
+    /// Regression: Homebrew installs `share/hibi/` inside `/opt/homebrew`
+    /// which is itself a git repo. `find_git_root` must NOT treat that
+    /// unrelated parent repo as hibi_ai; otherwise `sync` pulls Homebrew
+    /// and never populates `~/.hibi/cache/bundled/`. The marker check
+    /// (`tools/installer/Cargo.toml` at the root) defends against this.
+    #[test]
+    fn test_find_git_root_requires_hibi_marker() {
+        use std::process::Command;
+
+        let probe = std::env::temp_dir().join(format!(
+            "hibi_find_git_root_probe_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let _ = std::fs::remove_dir_all(&probe);
+        std::fs::create_dir_all(&probe).unwrap();
+
+        // Seed a git repo without any hibi_ai marker
+        let init_ok = Command::new("git")
+            .arg("init")
+            .current_dir(&probe)
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false);
+        if !init_ok {
+            // Environment lacks git; skip (CI configs without git skip here).
+            let _ = std::fs::remove_dir_all(&probe);
+            return;
+        }
+
+        // Without marker: must be rejected (Homebrew-like case)
+        assert!(
+            find_git_root(&probe).is_none(),
+            "git repo without tools/installer/Cargo.toml must not be treated as hibi_ai"
+        );
+
+        // With marker: must be accepted
+        std::fs::create_dir_all(probe.join("tools").join("installer")).unwrap();
+        std::fs::write(
+            probe.join("tools").join("installer").join("Cargo.toml"),
+            "[package]\nname = \"probe\"\n",
+        )
+        .unwrap();
+
+        assert!(
+            find_git_root(&probe).is_some(),
+            "git repo with hibi marker must be accepted"
+        );
+
+        let _ = std::fs::remove_dir_all(&probe);
     }
 }
