@@ -132,6 +132,58 @@ impl Processor for TextProcessor {
 }
 ```
 
+**Async closures (stable in 1.85+)**:
+
+Before 1.85 async closures had to be written as `|x| async move { ... }`
+which produces a nested `Future`-returning closure. 1.85 stabilizes the
+`async |x| { ... }` form, giving callers a direct `AsyncFn` / `AsyncFnMut`
+/ `AsyncFnOnce` trait to work with — less indirection, better borrow
+tracking, and no desugaring surprise around captured state.
+
+```rust
+// ✅ Edition 2024 + 1.85: Native async closure
+async fn process_items<F>(items: Vec<Item>, op: F)
+where
+    F: AsyncFn(Item) -> Result<(), Error>,
+{
+    for item in items {
+        op(item).await?;
+    }
+}
+
+async fn run(items: Vec<Item>) {
+    let shared = load_shared_state().await;
+
+    // Captures `shared` by reference across awaits — not possible cleanly
+    // with the pre-1.85 `|x| async { ... }` desugaring.
+    process_items(items, async |item| {
+        validate(&shared, &item)?;
+        persist(item).await
+    })
+    .await
+    .unwrap();
+}
+
+// ❌ Before 1.85: Nested future, borrow lifetime headaches
+fn legacy() -> impl Future {
+    async move {
+        let op = |item: Item| async move { persist(item).await };
+        // `op` isn't an AsyncFn — it's a closure that RETURNS a future.
+        // Borrow-tracking for captures across awaits is clunky here.
+    }
+}
+```
+
+Use `async |x| { ... }` when the callback is **consumed** asynchronously
+(e.g. passed into an `async fn` that awaits it). Use the older
+`|x| async move { ... }` only when you actually want a factory that
+produces futures on demand.
+
+**async fn + `async {}` block capture (clarified in 2024)**:
+Edition 2024 tightens rules so captures in `async {}` blocks inherit
+the enclosing function's lifetime contract without surprising
+promotions — prefer `async move` only when you need `'static`.
+
 ### 3. Enhanced Error Messages
 
 Edition 2024 provides more detailed, actionable error messages:

@@ -44,6 +44,7 @@ Reference these guidelines when:
 - `async-dependencies` - Use better-all for partial dependencies
 - `async-api-routes` - Start promises early, await late in API routes
 - `async-suspense-boundaries` - Use Suspense to stream content
+- `async-optimistic-ui` - Use `useOptimistic` inside Actions for zero-latency mutations with auto-rollback
 
 ### 2. Bundle Size Optimization (CRITICAL)
 
@@ -100,6 +101,7 @@ Reference these guidelines when:
 - `rendering-hydration-suppress-warning` - Suppress expected mismatches
 - `rendering-activity` - Use Activity component for show/hide
 - `rendering-conditional-render` - Use ternary, not && for conditionals
+- `rendering-document-metadata` - Use React 19's native `<title>`/`<meta>`/`<link>` hoisting instead of imperative head mutation
 - `rendering-usetransition-loading` - Prefer useTransition for loading state
 - `rendering-resource-hints` - Use React DOM resource hints for preloading
 - `rendering-script-defer-async` - Use defer or async on script tags
