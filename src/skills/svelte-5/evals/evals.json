@@ -1,0 +1,26 @@
+{
+  "skill_name": "svelte-5",
+  "evals": [
+    {
+      "id": 1,
+      "name": "counter-component",
+      "prompt": "Svelte 5로 간단한 카운터 컴포넌트를 만들어줘. 기능: 증가/감소/리셋 버튼, 현재 값 표시. props로 초기값(initial)과 최소/최대(min, max) 받을 수 있게. 부모가 bind:value로 양방향 바인딩할 수 있게 지원. TypeScript로 작성. 파일명은 Counter.svelte.",
+      "expected_output": "A single .svelte file using Svelte 5 runes: $props() destructure with typed Props, $state for the count, $bindable for two-way binding, onclick attributes (not on:click), and no createEventDispatcher or export let. Guards against going below min or above max.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "fix-infinite-loop-effect",
+      "prompt": "Svelte 5로 포팅 중인데 아래 컴포넌트가 무한 루프 에러를 내. 뭐가 문제인지 설명하고 고쳐줘.\n\n<script lang=\"ts\">\n  let count = $state(0)\n  let log = $state<string[]>([])\n\n  // 카운트가 10 넘으면 리셋\n  $effect(() => {\n    if (count > 10) {\n      count = 0\n    }\n    log = [...log, `count is ${count}`]\n  })\n\n  function increment() { count++ }\n</script>\n\n<button onclick={increment}>+</button>\n<p>count = {count}</p>\n<pre>{log.join('\\n')}</pre>",
+      "expected_output": "Diagnosis identifying the effect writing to its own dependency (count = 0 inside $effect tracking count) and/or the log.push pattern creating a feedback loop. Fix should move the cap logic into the event handler (`increment`) and either remove the log effect or keep it read-only. Final code must not write to count inside $effect; must still preserve user-visible behavior (reset at >10, log on every change).",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "sveltekit-route-with-action",
+      "prompt": "SvelteKit 2로 'posts' 기능을 만들어줘. `src/routes/posts/+page.svelte`, `+page.server.ts` 두 파일 필요. load 함수는 DB에서 posts 목록 가져오고 (locals.db.posts.findMany()로 가정), default action은 POST form으로 새 글 작성받기 — title 필드 (빈 문자열이면 fail(400, {error})로 되돌리고, 성공하면 redirect(303, `/posts/${slug}`)). 페이지에는 기존 글 목록 + 새 글 작성 form (use:enhance) 포함. TypeScript 사용.",
+      "expected_output": "Two files: +page.server.ts exporting load: PageServerLoad and actions: Actions (default action with FormData extraction, fail on empty title, redirect on success); +page.svelte importing PageData/ActionData from './$types', using $props() to receive { data, form }, rendering post list with {#each} and a form with method=\"POST\" use:enhance showing form?.error if present. No $app/stores, no export let.",
+      "files": []
+    }
+  ]
+}
