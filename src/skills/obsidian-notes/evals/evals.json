@@ -1,0 +1,26 @@
+{
+  "skill_name": "obsidian-dev-notes",
+  "evals": [
+    {
+      "id": 1,
+      "name": "release-note-1-9-4",
+      "prompt": "내가 방금 hibi 1.9.4를 릴리즈했어. Homebrew 설치 환경에서 sync가 엉뚱하게 /opt/homebrew를 git pull 하는 버그가 있었는데 find_git_root에 hibi_ai 마커 체크를 추가해서 고쳤어. 또 sync 후에 UI의 components/tree가 갱신 안 되던 것도 수정했고. src/rules, src/agents, src/commands, src/contexts에서 affaan-m/ 서브디렉토리를 평탄화하고 한국어 중복 파일도 제거한 리팩토링도 포함. rules/code-thresholds.md에 soft/hard 이중 기준도 도입했음. 이걸 Obsidian 볼트에 넣을 릴리즈 노트로 정리해줘.",
+      "expected_output": "A single Obsidian markdown file that uses the release-note template frontmatter (type: release, version: 1.9.4, release_date, tags including type/release + project/hibi-ai), H1 title like `# v1.9.4 Release Notes`, sections for Highlights / Bug fixes / Improvements / Internal / Upgrade guide, wikilinks for any ADR-like references, callouts for context or warnings, and external-style Markdown links for GitHub URLs. No placeholders left unfilled for values the user provided.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "adr-scope-find-git-root",
+      "prompt": "오늘 find_git_root 관련 의사결정을 ADR로 남기고 싶어. 배경: Homebrew가 /opt/homebrew를 git repo로 관리해서 share/hibi/에서 git rev-parse를 하면 Homebrew 루트가 반환됨 → sync가 엉뚱한 repo를 pull. 옵션은 3개 검토했어: (1) exe_dir 기반 일반 탐색 우선, (2) source_dir에 `.git`이 직접 있을 때만 in-repo로 인정, (3) root에 `tools/installer/Cargo.toml` 마커가 있어야 hibi_ai 레포로 인정. 최종 선택은 (3), 이유는 hibi_ai 개발 트리에서도 동작하면서 homebrew/scoop 케이스 모두 안전하게 거르기 때문. PR은 154d1ca. hibi-ai 프로젝트 볼트용 ADR로 작성해줘.",
+      "expected_output": "ADR template-based note with frontmatter (type: adr, number, status: accepted, project: hibi-ai, deciders), H1 title `# ADR-NNNN: ...`, sections Context / Constraints / Options considered / Decision / Consequences / Implementation notes / Related. Options should list all 3 the user described. Decision callout present. Wikilinks for any referenced notes, external link for the PR.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "learning-zustand-v5-useshallow",
+      "prompt": "Zustand v5로 올리면서 useShallow를 처음 알게 됐는데 이걸 학습 노트로 정리해둘래. 핵심 포인트: v5는 React의 기본 참조 동등성(Object.is)을 따르기 때문에 selector가 매 렌더마다 새 객체/배열을 리턴하면 무한 루프 발생 → useShallow로 감싸야 해결. 올바른 import 경로는 `zustand/shallow` (구버전의 `zustand/react/shallow` 아님). v4에서 넘어온다면 createWithEqualityFn (from `zustand/traditional`)로 마이그레이션 가능하지만 새 코드는 useShallow 우선. 이 프로젝트에서는 src/skills/zustand/SKILL.md에서 가이드하고 있음. 학습 노트 작성.",
+      "expected_output": "Learning note with frontmatter (type: learning, library: zustand, version: 5.x, tags including type/learning + topic/react or state-mgmt + tech/typescript), H1 `# Zustand — useShallow and v5 selector equality` or similar, Summary / Core API example / Gotchas / Comparison (v4 vs v5, useShallow vs createWithEqualityFn) / Connects to this project / Further reading sections. Wikilink to the internal skill note. Code block showing the useShallow pattern.",
+      "files": []
+    }
+  ]
+}
