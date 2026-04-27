@@ -1,0 +1,54 @@
+{
+  "skill_name": "iced",
+  "evals": [
+    {
+      "id": 1,
+      "name": "counter-timer",
+      "prompt": "iced로 카운터 앱 하나 만들어줘. + / - 버튼으로 정수를 증감하고, 숫자는 크게 중앙에 표시해. 그리고 체크박스 하나 더 둬서 체크되어 있을 때만 1초마다 자동으로 1씩 증가하도록 해줘. Dark 테마 적용하고 창 크기는 400x300, 창 제목은 'Counter'. 단일 main.rs 파일과 Cargo.toml로 완성된 iced 프로젝트를 만들어줘.",
+      "expected_output": "iced::application 빌더 API 사용, time::every 구독을 checkbox 상태로 on/off, Theme::Dark, Task::none() 리턴, Message enum은 Debug+Clone. main.rs + Cargo.toml 두 파일.",
+      "files": [],
+      "assertions": [
+        {"id": "a1", "text": "Cargo.toml 에서 iced 의존성이 0.13 또는 0.14 버전"},
+        {"id": "a2", "text": "iced::application() 빌더 함수를 사용 (iced::Application trait 구현 아님)"},
+        {"id": "a3", "text": "Message 에 #[derive(Debug, Clone)] 또는 그 이상 (Copy 등)"},
+        {"id": "a4", "text": "time::every(Duration) 를 subscription 에서 사용하고, checkbox state로 on/off"},
+        {"id": "a5", "text": "Theme::Dark 가 .theme(...) 으로 설정됨"},
+        {"id": "a6", "text": "update 가 Task<Message> 를 리턴 (Command 아님)"},
+        {"id": "a7", "text": "window 크기 400x300 설정 (settings 또는 window_size)"},
+        {"id": "a8", "text": "checkbox 위젯 사용"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "github-viewer",
+      "prompt": "iced로 간단한 GitHub 유저 프로필 뷰어를 만들어줘. text_input 에 GitHub 유저명을 입력하고 'Fetch' 버튼을 누르면 https://api.github.com/users/{username} 에 GET 요청을 보내서 응답 JSON 중 login / name / bio / public_repos 를 화면에 표시해. 요청 중일 땐 'Loading...' 표시, 실패하면 에러 메시지 표시. reqwest + serde + tokio 쓰면 돼. 비동기 작업은 iced 의 Task 시스템으로 처리. main.rs + Cargo.toml 제공.",
+      "expected_output": "Task::perform 으로 async fetch, Result<T, String> 형태의 메시지 페이로드, 로딩 플래그 state, 에러 상태 표시, iced tokio feature",
+      "files": [],
+      "assertions": [
+        {"id": "a1", "text": "Cargo.toml 에서 iced 에 \"tokio\" feature 활성화"},
+        {"id": "a2", "text": "Task::perform(future, Message::Mapper) 로 async 호출"},
+        {"id": "a3", "text": "update 가 tokio::spawn 을 사용하지 않음 (Task::perform 만 사용)"},
+        {"id": "a4", "text": "로딩/결과/에러 세 가지 상태를 state 에 분리해서 가지거나, Result<T, String> 메시지 variant 사용"},
+        {"id": "a5", "text": "text_input 이 .on_input(...) 로 state 갱신하고 버튼이 .on_press(...) 로 fetch 트리거"},
+        {"id": "a6", "text": "reqwest 또는 동등한 HTTP 라이브러리가 Cargo.toml 에 포함"},
+        {"id": "a7", "text": "에러를 String 으로 변환하여 Message 에 Clone 가능하게 유지"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "012-migration",
+      "prompt": "아래는 iced 0.12 로 짜놓은 카운터 코드다. 이걸 최신 iced 0.13 또는 0.14 스타일로 마이그레이션해줘. API 변경점(Application trait 제거, Command→Task, Appearance→Style 등) 을 반영해서 새 main.rs + Cargo.toml 을 만들어줘. 기능과 UI 는 동일하게 유지.\n\n```rust\nuse iced::{Application, Command, Element, Settings, Theme, executor};\nuse iced::widget::{button, column, text};\n\npub fn main() -> iced::Result {\n    Counter::run(Settings::default())\n}\n\nstruct Counter { value: i64 }\n\n#[derive(Debug, Clone, Copy)]\nenum Message { Inc, Dec }\n\nimpl Application for Counter {\n    type Message = Message;\n    type Theme = Theme;\n    type Executor = executor::Default;\n    type Flags = ();\n\n    fn new(_flags: ()) -> (Self, Command<Message>) {\n        (Self { value: 0 }, Command::none())\n    }\n    fn title(&self) -> String { String::from(\"Counter\") }\n    fn update(&mut self, msg: Message) -> Command<Message> {\n        match msg { Message::Inc => self.value += 1, Message::Dec => self.value -= 1 };\n        Command::none()\n    }\n    fn view(&self) -> Element<'_, Message> {\n        column![\n            button(\"+\").on_press(Message::Inc),\n            text(self.value.to_string()).size(40),\n            button(\"-\").on_press(Message::Dec),\n        ].into()\n    }\n    fn theme(&self) -> Theme { Theme::Dark }\n}\n```",
+      "expected_output": "impl Application 완전 제거, iced::application() 빌더 호출, Command→Task 전 구간 교체, 0.13+ Cargo.toml, Theme::Dark 유지",
+      "files": [],
+      "assertions": [
+        {"id": "a1", "text": "impl Application for Counter 블록이 완전히 사라짐"},
+        {"id": "a2", "text": "main 함수에서 iced::application(...) 빌더 체인으로 앱 실행"},
+        {"id": "a3", "text": "어떤 형태로든 Command<...> 가 코드에 남아있지 않고 Task<...> 로 전면 교체"},
+        {"id": "a4", "text": "executor::Default 같은 associated type 선언이 남아있지 않음"},
+        {"id": "a5", "text": "Theme::Dark 가 .theme(...) 빌더 메서드로 설정됨"},
+        {"id": "a6", "text": "Cargo.toml 의 iced 버전이 0.13.x 또는 0.14.x"},
+        {"id": "a7", "text": "버튼 / 카운터 UI 가 0.12 원본과 동일하게 유지됨 (+/-, 숫자 표시)"}
+      ]
+    }
+  ]
+}
