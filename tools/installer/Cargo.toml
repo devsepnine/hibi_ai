@@ -1,6 +1,6 @@
 [package]
 name = "hibi_ai"
-version = "1.9.8"
+version = "1.9.9"
 edition = "2024"
 
 [[bin]]

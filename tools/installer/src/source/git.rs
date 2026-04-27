@@ -56,24 +56,53 @@ pub fn pull_local_repo(repo_dir: &Path) -> Result<()> {
     if !git_available() {
         anyhow::bail!("git is not installed or not in PATH");
     }
-    // `git pull --ff-only` is fragile against maintainer-side history
-    // rewrites: when an upstream tag's commit hash changes, `git fetch`
-    // (run inside `pull`) emits a "would clobber existing tag" warning
-    // and exits 1, even though the branch ref itself fast-forwards
-    // cleanly. Splitting fetch and merge lets us pass `--force` on the
-    // tag fetch (overwrite stale tag pointers) while keeping
-    // `--ff-only` on the branch merge (still refuse to lose local
-    // commits in dev checkouts).
+    // Always fetch with `--tags --force` so upstream tag rewrites don't
+    // poison the operation (see git pull --ff-only's tag-clobber
+    // failure mode that v1.9.7 -> v1.9.8 had to hotfix).
     run_git_command(
         &["fetch", "--tags", "--force", "origin"],
         Some(repo_dir),
         FETCH_TIMEOUT_SECS,
     )?;
-    run_git_command(
-        &["merge", "--ff-only", "@{u}"],
-        Some(repo_dir),
-        FETCH_TIMEOUT_SECS,
-    )
+
+    // Shallow repos (the bundled cache is cloned with `--depth 1`)
+    // cannot fast-forward across an upstream history rewrite because
+    // the old and new commits share no ancestor in the local object
+    // graph — `merge --ff-only` rejects with "refusing to merge
+    // unrelated histories". Reset --hard is the only recovery, and
+    // it is safe here because shallow caches never carry local user
+    // commits. Full clones (dev checkouts) might, so keep `--ff-only`
+    // there to refuse silently dropping local work.
+    if is_shallow_repo(repo_dir)? {
+        run_git_command(
+            &["reset", "--hard", "FETCH_HEAD"],
+            Some(repo_dir),
+            RESET_TIMEOUT_SECS,
+        )
+    } else {
+        run_git_command(
+            &["merge", "--ff-only", "@{u}"],
+            Some(repo_dir),
+            FETCH_TIMEOUT_SECS,
+        )
+    }
+}
+
+/// Detect a shallow clone (e.g., one made with `--depth N`).
+/// Returns false on any unexpected git failure so callers default to
+/// the safer `merge --ff-only` path for full clones.
+fn is_shallow_repo(repo_dir: &Path) -> Result<bool> {
+    let output = Command::new("git")
+        .args(["rev-parse", "--is-shallow-repository"])
+        .current_dir(repo_dir)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .output()?;
+    if !output.status.success() {
+        return Ok(false);
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).trim() == "true")
 }
 
 /// Clone or update a git repository into the cache directory.
