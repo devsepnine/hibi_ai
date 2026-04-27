@@ -56,7 +56,24 @@ pub fn pull_local_repo(repo_dir: &Path) -> Result<()> {
     if !git_available() {
         anyhow::bail!("git is not installed or not in PATH");
     }
-    run_git_command(&["pull", "--ff-only"], Some(repo_dir), FETCH_TIMEOUT_SECS)
+    // `git pull --ff-only` is fragile against maintainer-side history
+    // rewrites: when an upstream tag's commit hash changes, `git fetch`
+    // (run inside `pull`) emits a "would clobber existing tag" warning
+    // and exits 1, even though the branch ref itself fast-forwards
+    // cleanly. Splitting fetch and merge lets us pass `--force` on the
+    // tag fetch (overwrite stale tag pointers) while keeping
+    // `--ff-only` on the branch merge (still refuse to lose local
+    // commits in dev checkouts).
+    run_git_command(
+        &["fetch", "--tags", "--force", "origin"],
+        Some(repo_dir),
+        FETCH_TIMEOUT_SECS,
+    )?;
+    run_git_command(
+        &["merge", "--ff-only", "@{u}"],
+        Some(repo_dir),
+        FETCH_TIMEOUT_SECS,
+    )
 }
 
 /// Clone or update a git repository into the cache directory.
