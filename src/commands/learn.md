@@ -1,3 +1,10 @@
+---
+description: Extract reusable patterns from the current session into skills. Saves successful workflow patterns for future use.
+allowed-tools: Read, Grep, Write
+model: haiku
+effort: low
+---
+
 # /learn - Extract Reusable Patterns
 
 Analyze the current session and extract any patterns worth saving as skills.

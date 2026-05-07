@@ -1,3 +1,10 @@
+---
+description: Iteratively fix TypeScript and build errors. Parses error output, applies minimal fixes one at a time, verifies after each. Stops on regression.
+allowed-tools: Bash, Read, Edit, Grep
+model: haiku
+effort: low
+---
+
 # Build and Fix
 
 Incrementally fix TypeScript and build errors:

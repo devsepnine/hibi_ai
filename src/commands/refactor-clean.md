@@ -1,3 +1,10 @@
+---
+description: Safely identify and remove dead code with test verification. Runs knip/depcheck/ts-prune, categorizes findings, deletes only after tests pass.
+allowed-tools: Bash, Read, Edit, Grep
+model: haiku
+effort: low
+---
+
 # Refactor Clean
 
 Safely identify and remove dead code with test verification:

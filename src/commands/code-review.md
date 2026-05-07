@@ -1,3 +1,10 @@
+---
+description: Comprehensive security and quality review of uncommitted changes. Checks hardcoded secrets, input validation, injection risks, code style violations.
+allowed-tools: Read, Grep, Bash, Glob
+model: sonnet
+effort: medium
+---
+
 # Code Review
 
 Comprehensive security and quality review of uncommitted changes:

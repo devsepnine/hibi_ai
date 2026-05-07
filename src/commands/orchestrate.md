@@ -1,3 +1,11 @@
+---
+description: Sequential multi-agent workflow for complex tasks. Coordinates planner, tdd-guide, code-reviewer, security-reviewer in handoff chain.
+argument-hint: "[workflow-type] [task-description]"
+allowed-tools: Task, Read, Bash, Grep
+model: opus
+effort: xhigh
+---
+
 # Orchestrate Command
 
 Sequential agent workflow for complex tasks.

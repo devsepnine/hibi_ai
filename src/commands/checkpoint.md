@@ -1,3 +1,11 @@
+---
+description: Save or verify a workflow checkpoint. Captures git state, working tree, and progress markers.
+argument-hint: "[create|verify|list] [name]"
+allowed-tools: Bash, Read, Write
+model: haiku
+effort: low
+---
+
 # Checkpoint Command
 
 Create or verify a checkpoint in your workflow.

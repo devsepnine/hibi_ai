@@ -1,5 +1,8 @@
 ---
 description: Enforce test-driven development workflow. Scaffold interfaces, generate tests FIRST, then implement minimal code to pass. Ensure 80%+ coverage.
+allowed-tools: Task, Read, Write, Edit, Bash, Grep
+model: opus
+effort: xhigh
 ---
 
 # TDD Command
