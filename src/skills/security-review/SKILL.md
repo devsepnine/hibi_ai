@@ -6,490 +6,166 @@ keywords: [security, 보안, auth, 인증, vulnerability, 취약점, owasp]
 
 # Security Review Skill
 
-This skill ensures all code follows security best practices and identifies potential vulnerabilities.
+Ensures code follows security best practices and identifies vulnerabilities. Maps to **OWASP Top 10 (2021)** and references **CWE** IDs throughout.
 
 ## When to Activate
 
-- Implementing authentication or authorization
-- Handling user input or file uploads
-- Creating new API endpoints
-- Working with secrets or credentials
-- Implementing payment features
-- Storing or transmitting sensitive data
-- Integrating third-party APIs
+Auth/authz changes, user input handling, file uploads, new API endpoints, secrets/credentials, payment flows, sensitive data storage/transmission, third-party API integration, blockchain/wallet ops, before any production deployment.
 
-## Security Checklist
+## Core Safety Guards (NEVER violate)
 
-### 1. Secrets Management
+- **NEVER** hardcode secrets (API keys, passwords, tokens, DB strings) in source/logs/commit history.
+- **NEVER** concatenate user input into SQL, shell, or HTML.
+- **NEVER** log sensitive data (passwords, tokens, full card numbers, PII, stack traces to clients).
+- **NEVER** trust client-side validation alone — always re-validate server-side.
+- **NEVER** sign blockchain transactions without verifying recipient + amount + balance.
+- **ALWAYS** validate, normalize, encode every input crossing a trust boundary.
+- **ALWAYS** authenticate AND authorize before any state change.
 
-#### ❌ NEVER Do This
-```typescript
-const apiKey = "sk-proj-xxxxx"  // Hardcoded secret
-const dbPassword = "password123" // In source code
-```
+## Security Checklist (10 Categories)
 
-#### ✅ ALWAYS Do This
-```typescript
-const apiKey = process.env.OPENAI_API_KEY
-const dbUrl = process.env.DATABASE_URL
+### 1. Secrets Management — OWASP A02 Cryptographic Failures / CWE-798, CWE-259
 
-// Verify secrets exist
-if (!apiKey) {
-  throw new Error('OPENAI_API_KEY not configured')
-}
-```
+- [ ] No hardcoded API keys, tokens, passwords, DB URLs in source
+- [ ] All secrets in env vars (`process.env.X`); fail fast if missing
+- [ ] `.env*` files in `.gitignore`; verified absent from git history (`git log -p`)
+- [ ] Production secrets in hosting platform (Vercel/Railway/AWS Secrets Manager), not repo
+- [ ] Rotated immediately if exposure suspected
+- Refs: [CWE-798](https://cwe.mitre.org/data/definitions/798.html), [CWE-259](https://cwe.mitre.org/data/definitions/259.html)
 
-#### Verification Steps
-- [ ] No hardcoded API keys, tokens, or passwords
-- [ ] All secrets in environment variables
-- [ ] `.env.local` in .gitignore
-- [ ] No secrets in git history
-- [ ] Production secrets in hosting platform (Vercel, Railway)
+### 2. Input Validation — OWASP A03 Injection / A04 Insecure Design / CWE-20
 
-### 2. Input Validation
-
-#### Always Validate User Input
 ```typescript
 import { z } from 'zod'
-
-// Define validation schema
-const CreateUserSchema = z.object({
-  email: z.string().email(),
-  name: z.string().min(1).max(100),
-  age: z.number().int().min(0).max(150)
-})
-
-// Validate before processing
-export async function createUser(input: unknown) {
-  try {
-    const validated = CreateUserSchema.parse(input)
-    return await db.users.create(validated)
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return { success: false, errors: error.errors }
-    }
-    throw error
-  }
-}
+const CreateUserSchema = z.object({ email: z.string().email(), name: z.string().min(1).max(100) })
+const validated = CreateUserSchema.parse(input) // throws on invalid
 ```
 
-#### File Upload Validation
+- [ ] All user inputs validated with schema (Zod / Yup / Joi)
+- [ ] **Whitelist** allowed values, never blacklist
+- [ ] File uploads: enforce size cap (e.g. 5MB), MIME type, AND extension allowlist
+- [ ] No raw user input in queries, paths, shell commands, or template strings
+- [ ] Error responses don't leak schema/internal field names
+- Refs: [CWE-20](https://cwe.mitre.org/data/definitions/20.html), [CWE-434](https://cwe.mitre.org/data/definitions/434.html) (file upload)
+
+### 3. SQL Injection Prevention — OWASP A03 / CWE-89
+
+- [ ] All queries parameterized (`$1`, `?`, ORM bindings) — never string concat
+- [ ] Supabase/Prisma/Drizzle query builders used correctly (no `.raw()` with user input)
+- [ ] Stored procedures use bind parameters
+- Example: `db.query('SELECT * FROM users WHERE email = $1', [email])` — never inline-interpolate user input
+- Refs: [CWE-89](https://cwe.mitre.org/data/definitions/89.html)
+
+### 4. Authentication & Authorization — OWASP A01 Broken Access Control / A07 Auth Failures / CWE-285, CWE-287
+
+- [ ] Tokens in **httpOnly + Secure + SameSite=Strict** cookies (NOT localStorage — XSS-vulnerable)
+- [ ] Authorization checked **before every** sensitive operation (role + ownership)
+- [ ] Supabase: **Row Level Security (RLS)** enabled on all tables; policies tested
+- [ ] Session expiry, rotation on privilege change, logout invalidates server-side
+- [ ] Password hashing: bcrypt/argon2 with proper cost factor; never MD5/SHA1
+- [ ] MFA available for admin/payment paths
+- Refs: [CWE-285](https://cwe.mitre.org/data/definitions/285.html), [CWE-287](https://cwe.mitre.org/data/definitions/287.html), [CWE-639](https://cwe.mitre.org/data/definitions/639.html) (IDOR)
+
+### 5. XSS Prevention — OWASP A03 / CWE-79
+
+- [ ] User-provided HTML sanitized via DOMPurify with strict tag/attr allowlist
+- [ ] Raw-HTML React props (e.g. inner-HTML setters) only fed sanitized output
+- [ ] Content Security Policy header set (`default-src 'self'`, restrict `script-src`)
+- [ ] `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` headers
+- [ ] User-controlled URLs validated (no `javascript:` or `data:` schemes)
+- Refs: [CWE-79](https://cwe.mitre.org/data/definitions/79.html), [MDN CSP](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP)
+
+### 6. CSRF Protection — OWASP A01 / CWE-352
+
+- [ ] CSRF token (or double-submit cookie) on all state-changing requests
+- [ ] `SameSite=Strict` on session cookies
+- [ ] Mutation endpoints require `POST/PUT/DELETE` (never `GET`)
+- [ ] Origin / Referer header verified for sensitive ops
+- Refs: [CWE-352](https://cwe.mitre.org/data/definitions/352.html), [OWASP CSRF Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)
+
+### 7. Rate Limiting — OWASP A04 / CWE-770, CWE-307
+
+- [ ] Global API rate limit (e.g. 100 req / 15 min per IP)
+- [ ] **Stricter** limits on expensive ops (search, AI inference, file processing)
+- [ ] Login: progressive backoff or lockout after N failures (CWE-307 brute force)
+- [ ] Both IP-based AND user-based limiting where applicable
+- [ ] Returns `429 Too Many Requests` with `Retry-After` header
+- Refs: [CWE-770](https://cwe.mitre.org/data/definitions/770.html), [CWE-307](https://cwe.mitre.org/data/definitions/307.html)
+
+### 8. Sensitive Data Exposure — OWASP A02 / A09 Logging Failures / CWE-532, CWE-209
+
+- [ ] Logs **redact** passwords, tokens, full PAN, CVV, SSN, JWT bodies
+- [ ] Log only safe identifiers: `userId`, `last4`, `requestId`
+- [ ] Client error responses are generic (`"An error occurred"`); details only server-side
+- [ ] No stack traces, SQL errors, or internal paths in client responses
+- [ ] HTTPS enforced in production (HSTS header)
+- [ ] Sensitive data encrypted at rest (DB-level or app-level)
+- Refs: [CWE-532](https://cwe.mitre.org/data/definitions/532.html), [CWE-209](https://cwe.mitre.org/data/definitions/209.html)
+
+### 9. Blockchain Security (Solana / Web3) — CWE-345, CWE-347
+
+- [ ] Wallet ownership verified via signature (`@solana/web3.js verify`) before granting access
+- [ ] Transaction recipient address validated against expected
+- [ ] Transaction amount checked against per-user / per-session caps
+- [ ] User balance verified server-side before submitting tx
+- [ ] **No blind signing** — UI displays full tx details to user
+- [ ] Replay protection: nonces / recent blockhash validated
+- Refs: [CWE-345](https://cwe.mitre.org/data/definitions/345.html), [CWE-347](https://cwe.mitre.org/data/definitions/347.html)
+
+### 10. Dependency Security — OWASP A06 Vulnerable Components / CWE-1104, CWE-937
+
+- [ ] `npm audit` / `pnpm audit` clean (no high/critical)
+- [ ] Lock files (`package-lock.json` / `pnpm-lock.yaml`) committed
+- [ ] CI uses `npm ci` (not `npm install`) for reproducibility
+- [ ] Dependabot / Renovate enabled
+- [ ] Periodic `npm outdated` review; security patches applied promptly
+- Refs: [CWE-1104](https://cwe.mitre.org/data/definitions/1104.html), [npm audit docs](https://docs.npmjs.com/cli/v10/commands/npm-audit)
+
+## Security Testing (Required)
+
 ```typescript
-function validateFileUpload(file: File) {
-  // Size check (5MB max)
-  const maxSize = 5 * 1024 * 1024
-  if (file.size > maxSize) {
-    throw new Error('File too large (max 5MB)')
-  }
-
-  // Type check
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif']
-  if (!allowedTypes.includes(file.type)) {
-    throw new Error('Invalid file type')
-  }
-
-  // Extension check
-  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif']
-  const extension = file.name.toLowerCase().match(/\.[^.]+$/)?.[0]
-  if (!extension || !allowedExtensions.includes(extension)) {
-    throw new Error('Invalid file extension')
-  }
-
-  return true
-}
+test('requires authentication',  async () => expect((await fetch('/api/protected')).status).toBe(401))
+test('requires admin role',      async () => expect((await fetch('/api/admin', { headers:{ Authorization:`Bearer ${userToken}` } })).status).toBe(403))
+test('rejects invalid input',    async () => expect((await fetch('/api/users', { method:'POST', body: JSON.stringify({ email:'bad' }) })).status).toBe(400))
+test('enforces rate limits',     async () => { const rs = await Promise.all(Array(101).fill(0).map(() => fetch('/api/x'))); expect(rs.some(r => r.status === 429)).toBe(true) })
 ```
 
-#### Verification Steps
-- [ ] All user inputs validated with schemas
-- [ ] File uploads restricted (size, type, extension)
-- [ ] No direct use of user input in queries
-- [ ] Whitelist validation (not blacklist)
-- [ ] Error messages don't leak sensitive info
-
-### 3. SQL Injection Prevention
-
-#### ❌ NEVER Concatenate SQL
-```typescript
-// DANGEROUS - SQL Injection vulnerability
-const query = `SELECT * FROM users WHERE email = '${userEmail}'`
-await db.query(query)
-```
-
-#### ✅ ALWAYS Use Parameterized Queries
-```typescript
-// Safe - parameterized query
-const { data } = await supabase
-  .from('users')
-  .select('*')
-  .eq('email', userEmail)
-
-// Or with raw SQL
-await db.query(
-  'SELECT * FROM users WHERE email = $1',
-  [userEmail]
-)
-```
-
-#### Verification Steps
-- [ ] All database queries use parameterized queries
-- [ ] No string concatenation in SQL
-- [ ] ORM/query builder used correctly
-- [ ] Supabase queries properly sanitized
-
-### 4. Authentication & Authorization
-
-#### JWT Token Handling
-```typescript
-// ❌ WRONG: localStorage (vulnerable to XSS)
-localStorage.setItem('token', token)
-
-// ✅ CORRECT: httpOnly cookies
-res.setHeader('Set-Cookie',
-  `token=${token}; HttpOnly; Secure; SameSite=Strict; Max-Age=3600`)
-```
-
-#### Authorization Checks
-```typescript
-export async function deleteUser(userId: string, requesterId: string) {
-  // ALWAYS verify authorization first
-  const requester = await db.users.findUnique({
-    where: { id: requesterId }
-  })
-
-  if (requester.role !== 'admin') {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 403 }
-    )
-  }
-
-  // Proceed with deletion
-  await db.users.delete({ where: { id: userId } })
-}
-```
-
-#### Row Level Security (Supabase)
-```sql
--- Enable RLS on all tables
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-
--- Users can only view their own data
-CREATE POLICY "Users view own data"
-  ON users FOR SELECT
-  USING (auth.uid() = id);
-
--- Users can only update their own data
-CREATE POLICY "Users update own data"
-  ON users FOR UPDATE
-  USING (auth.uid() = id);
-```
-
-#### Verification Steps
-- [ ] Tokens stored in httpOnly cookies (not localStorage)
-- [ ] Authorization checks before sensitive operations
-- [ ] Row Level Security enabled in Supabase
-- [ ] Role-based access control implemented
-- [ ] Session management secure
-
-### 5. XSS Prevention
-
-#### Sanitize HTML
-```typescript
-import DOMPurify from 'isomorphic-dompurify'
-
-// ALWAYS sanitize user-provided HTML
-function renderUserContent(html: string) {
-  const clean = DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'p'],
-    ALLOWED_ATTR: []
-  })
-  return <div dangerouslySetInnerHTML={{ __html: clean }} />
-}
-```
-
-#### Content Security Policy
-```typescript
-// next.config.js
-const securityHeaders = [
-  {
-    key: 'Content-Security-Policy',
-    value: `
-      default-src 'self';
-      script-src 'self' 'unsafe-eval' 'unsafe-inline';
-      style-src 'self' 'unsafe-inline';
-      img-src 'self' data: https:;
-      font-src 'self';
-      connect-src 'self' https://api.example.com;
-    `.replace(/\s{2,}/g, ' ').trim()
-  }
-]
-```
-
-#### Verification Steps
-- [ ] User-provided HTML sanitized
-- [ ] CSP headers configured
-- [ ] No unvalidated dynamic content rendering
-- [ ] React's built-in XSS protection used
-
-### 6. CSRF Protection
-
-#### CSRF Tokens
-```typescript
-import { csrf } from '@/lib/csrf'
-
-export async function POST(request: Request) {
-  const token = request.headers.get('X-CSRF-Token')
-
-  if (!csrf.verify(token)) {
-    return NextResponse.json(
-      { error: 'Invalid CSRF token' },
-      { status: 403 }
-    )
-  }
-
-  // Process request
-}
-```
-
-#### SameSite Cookies
-```typescript
-res.setHeader('Set-Cookie',
-  `session=${sessionId}; HttpOnly; Secure; SameSite=Strict`)
-```
-
-#### Verification Steps
-- [ ] CSRF tokens on state-changing operations
-- [ ] SameSite=Strict on all cookies
-- [ ] Double-submit cookie pattern implemented
-
-### 7. Rate Limiting
-
-#### API Rate Limiting
-```typescript
-import rateLimit from 'express-rate-limit'
-
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per window
-  message: 'Too many requests'
-})
-
-// Apply to routes
-app.use('/api/', limiter)
-```
-
-#### Expensive Operations
-```typescript
-// Aggressive rate limiting for searches
-const searchLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 10, // 10 requests per minute
-  message: 'Too many search requests'
-})
-
-app.use('/api/search', searchLimiter)
-```
-
-#### Verification Steps
-- [ ] Rate limiting on all API endpoints
-- [ ] Stricter limits on expensive operations
-- [ ] IP-based rate limiting
-- [ ] User-based rate limiting (authenticated)
-
-### 8. Sensitive Data Exposure
-
-#### Logging
-```typescript
-// ❌ WRONG: Logging sensitive data
-console.log('User login:', { email, password })
-console.log('Payment:', { cardNumber, cvv })
-
-// ✅ CORRECT: Redact sensitive data
-console.log('User login:', { email, userId })
-console.log('Payment:', { last4: card.last4, userId })
-```
-
-#### Error Messages
-```typescript
-// ❌ WRONG: Exposing internal details
-catch (error) {
-  return NextResponse.json(
-    { error: error.message, stack: error.stack },
-    { status: 500 }
-  )
-}
-
-// ✅ CORRECT: Generic error messages
-catch (error) {
-  console.error('Internal error:', error)
-  return NextResponse.json(
-    { error: 'An error occurred. Please try again.' },
-    { status: 500 }
-  )
-}
-```
-
-#### Verification Steps
-- [ ] No passwords, tokens, or secrets in logs
-- [ ] Error messages generic for users
-- [ ] Detailed errors only in server logs
-- [ ] No stack traces exposed to users
-
-### 9. Blockchain Security (Solana)
-
-#### Wallet Verification
-```typescript
-import { verify } from '@solana/web3.js'
-
-async function verifyWalletOwnership(
-  publicKey: string,
-  signature: string,
-  message: string
-) {
-  try {
-    const isValid = verify(
-      Buffer.from(message),
-      Buffer.from(signature, 'base64'),
-      Buffer.from(publicKey, 'base64')
-    )
-    return isValid
-  } catch (error) {
-    return false
-  }
-}
-```
-
-#### Transaction Verification
-```typescript
-async function verifyTransaction(transaction: Transaction) {
-  // Verify recipient
-  if (transaction.to !== expectedRecipient) {
-    throw new Error('Invalid recipient')
-  }
-
-  // Verify amount
-  if (transaction.amount > maxAmount) {
-    throw new Error('Amount exceeds limit')
-  }
-
-  // Verify user has sufficient balance
-  const balance = await getBalance(transaction.from)
-  if (balance < transaction.amount) {
-    throw new Error('Insufficient balance')
-  }
-
-  return true
-}
-```
-
-#### Verification Steps
-- [ ] Wallet signatures verified
-- [ ] Transaction details validated
-- [ ] Balance checks before transactions
-- [ ] No blind transaction signing
-
-### 10. Dependency Security
-
-#### Regular Updates
-```bash
-# Check for vulnerabilities
-npm audit
-
-# Fix automatically fixable issues
-npm audit fix
-
-# Update dependencies
-npm update
-
-# Check for outdated packages
-npm outdated
-```
-
-#### Lock Files
-```bash
-# ALWAYS commit lock files
-git add package-lock.json
-
-# Use in CI/CD for reproducible builds
-npm ci  # Instead of npm install
-```
-
-#### Verification Steps
-- [ ] Dependencies up to date
-- [ ] No known vulnerabilities (npm audit clean)
-- [ ] Lock files committed
-- [ ] Dependabot enabled on GitHub
-- [ ] Regular security updates
-
-## Security Testing
-
-### Automated Security Tests
-```typescript
-// Test authentication
-test('requires authentication', async () => {
-  const response = await fetch('/api/protected')
-  expect(response.status).toBe(401)
-})
-
-// Test authorization
-test('requires admin role', async () => {
-  const response = await fetch('/api/admin', {
-    headers: { Authorization: `Bearer ${userToken}` }
-  })
-  expect(response.status).toBe(403)
-})
-
-// Test input validation
-test('rejects invalid input', async () => {
-  const response = await fetch('/api/users', {
-    method: 'POST',
-    body: JSON.stringify({ email: 'not-an-email' })
-  })
-  expect(response.status).toBe(400)
-})
-
-// Test rate limiting
-test('enforces rate limits', async () => {
-  const requests = Array(101).fill(null).map(() =>
-    fetch('/api/endpoint')
-  )
-
-  const responses = await Promise.all(requests)
-  const tooManyRequests = responses.filter(r => r.status === 429)
-
-  expect(tooManyRequests.length).toBeGreaterThan(0)
-})
-```
+Required coverage: success path + failure path for each of authn, authz, validation, rate limit.
 
 ## Pre-Deployment Security Checklist
 
-Before ANY production deployment:
+Before ANY production deployment, all 10 categories above must pass, plus:
 
-- [ ] **Secrets**: No hardcoded secrets, all in env vars
-- [ ] **Input Validation**: All user inputs validated
-- [ ] **SQL Injection**: All queries parameterized
-- [ ] **XSS**: User content sanitized
-- [ ] **CSRF**: Protection enabled
-- [ ] **Authentication**: Proper token handling
-- [ ] **Authorization**: Role checks in place
-- [ ] **Rate Limiting**: Enabled on all endpoints
-- [ ] **HTTPS**: Enforced in production
-- [ ] **Security Headers**: CSP, X-Frame-Options configured
-- [ ] **Error Handling**: No sensitive data in errors
-- [ ] **Logging**: No sensitive data logged
-- [ ] **Dependencies**: Up to date, no vulnerabilities
-- [ ] **Row Level Security**: Enabled in Supabase
-- [ ] **CORS**: Properly configured
-- [ ] **File Uploads**: Validated (size, type)
-- [ ] **Wallet Signatures**: Verified (if blockchain)
+- [ ] HTTPS enforced (HSTS); CORS allowlist explicit (no `*` for credentialed)
+- [ ] Security headers: CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy
+- [ ] Secrets rotated if any exposure path existed during development
+- [ ] Penetration test or security review sign-off for high-risk features (payment, auth, admin)
+- [ ] Incident response runbook updated; on-call notified
+
+## OWASP Top 10 (2021) → Category Map
+
+| OWASP            | This Skill's Categories      |
+|------------------|------------------------------|
+| A01 Broken Access Control     | 4 (Authz), 6 (CSRF) |
+| A02 Cryptographic Failures    | 1 (Secrets), 8 (Data Exposure) |
+| A03 Injection                 | 2 (Input), 3 (SQLi), 5 (XSS) |
+| A04 Insecure Design           | 2 (Input), 7 (Rate Limit) |
+| A05 Security Misconfiguration | 5 (CSP/Headers), Pre-Deploy |
+| A06 Vulnerable Components     | 10 (Dependencies) |
+| A07 Identification & Auth     | 4 (Authn) |
+| A08 Software & Data Integrity | 9 (Blockchain), 10 (Lockfiles) |
+| A09 Logging Failures          | 8 (Logging) |
+| A10 SSRF                      | 2 (Input — URL validation) |
 
 ## Resources
 
-- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
-- [Next.js Security](https://nextjs.org/docs/security)
-- [Supabase Security](https://supabase.com/docs/guides/auth)
-- [Web Security Academy](https://portswigger.net/web-security)
+- [OWASP Top 10 (2021)](https://owasp.org/www-project-top-ten/)
+- [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/)
+- [CWE Top 25](https://cwe.mitre.org/top25/)
+- [Next.js Security](https://nextjs.org/docs/app/building-your-application/configuring/content-security-policy)
+- [Supabase Auth & RLS](https://supabase.com/docs/guides/auth)
+- [Web Security Academy (PortSwigger)](https://portswigger.net/web-security)
 
 ---
 
-**Remember**: Security is not optional. One vulnerability can compromise the entire platform. When in doubt, err on the side of caution.
+**Remember**: Security is not optional. One vulnerability can compromise the entire platform. When in doubt, err on the side of caution and invoke the **security-reviewer** agent.
