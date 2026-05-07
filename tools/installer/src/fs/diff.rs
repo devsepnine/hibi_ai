@@ -34,6 +34,27 @@ fn is_binary_file(path: &Path) -> Result<bool> {
 }
 
 pub fn compare_files(source: &Path, dest: &Path) -> Result<String> {
+    // External-file case: scanner sets source_path == dest_path for files
+    // present in dest_dir without a matching source. There's no diff to
+    // compute -- show the file as-is so the user can inspect before
+    // deciding to remove.
+    if source == dest {
+        if is_binary_file(source).unwrap_or(false) {
+            return Ok(format!(
+                "Binary file: {}\n\nCannot display diff for binary files.\n\nFile size: {} bytes",
+                source.display(),
+                std::fs::metadata(source)?.len()
+            ));
+        }
+        let content = std::fs::read_to_string(source)
+            .with_context(|| format!("Failed to read external file as UTF-8: {}", source.display()))?
+            .replace("\r\n", "\n");
+        let mut output = String::new();
+        output.push_str(&format!("=== {} (external file -- no source) ===\n\n", normalize_path_display(source)));
+        output.push_str(&content);
+        return Ok(output);
+    }
+
     // Check if source is binary
     if is_binary_file(source).unwrap_or(false) {
         return Ok(format!(
@@ -96,4 +117,45 @@ pub fn compare_files(source: &Path, dest: &Path) -> Result<String> {
     }
 
     Ok(output)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn unique_test_file(label: &str, contents: &str) -> std::path::PathBuf {
+        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let dir = std::env::temp_dir().join(format!("hibi_diff_{label}_{nanos}"));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("file.md");
+        std::fs::write(&path, contents).unwrap();
+        path
+    }
+
+    #[test]
+    fn external_file_uses_single_view_when_source_equals_dest() {
+        // When the scanner reports an External component, source_path and
+        // dest_path are the same -- there's no diff to compute. The view
+        // should show a header marking it external and the file contents
+        // verbatim, not a self-diff and not the "(identical)" marker used
+        // for source/dest pairs that happen to match byte-for-byte.
+        let path = unique_test_file("external", "# external content\nline 2\n");
+
+        let out = compare_files(&path, &path).unwrap();
+
+        assert!(
+            out.contains("(external file -- no source)"),
+            "expected external marker, got:\n{out}"
+        );
+        assert!(out.contains("# external content"), "file body must appear:\n{out}");
+        assert!(
+            !out.contains("(identical)"),
+            "must not use the source==dest identical marker for externals:\n{out}"
+        );
+        // No unified-diff prefixes on the body lines.
+        assert!(!out.lines().any(|l| l.starts_with("+++ ") || l.starts_with("--- ")));
+
+        let _ = std::fs::remove_dir_all(path.parent().unwrap());
+    }
 }

@@ -113,6 +113,7 @@ fn render_tree_node(app: &App, tree: &crate::tree::TreeView, node: &TreeNode, no
                 InstallStatus::Modified => Style::default().fg(app.theme.warning()),
                 InstallStatus::Unchanged => Style::default().fg(app.theme.text_secondary()),
                 InstallStatus::Managed => Style::default().fg(app.theme.accent_primary()),
+                InstallStatus::External => Style::default().fg(app.theme.text_muted()),
             };
 
             // Check if this is the default item
@@ -202,6 +203,7 @@ fn render_flat(f: &mut Frame, app: &App, area: Rect) {
                 InstallStatus::Modified => Style::default().fg(app.theme.warning()),
                 InstallStatus::Unchanged => Style::default().fg(app.theme.text_secondary()),
                 InstallStatus::Managed => Style::default().fg(app.theme.accent_primary()),
+                InstallStatus::External => Style::default().fg(app.theme.text_muted()),
             };
 
             // Check if this is the default item
