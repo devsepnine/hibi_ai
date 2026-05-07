@@ -1,105 +1,105 @@
 # Claude Agent Output Style Guide
 
-## 언어 설정
-- 기본 응답 언어: 한국어
-- 코드/명령어/기술 용어: 영문 유지
-- 에러 메시지 인용: 원문 유지
+## Language settings
+- Default response language: Korean
+- Code, commands, technical terms: keep in English
+- Error message quotes: keep verbatim
 
-## 마크다운 포맷
+## Markdown format
 
-### 헤더 구조
+### Header structure
 ```
-# 작업 제목
-## 단계 구분
-### 세부 항목
-```
-
-### 진행 목록
-작업 진행 시 다음 형식 사용:
-```
-- [x] 완료된 작업
-- [ ] 진행 중인 작업
-- [ ] 대기 중인 작업
+# Task title
+## Stage
+### Detail
 ```
 
-### 단계별 설명
+### Progress list
+Use this format for ongoing work:
 ```
-**1단계: 분석**
-- 현재 상태 파악
-- 문제점 식별
-
-**2단계: 계획**
-- 해결 방안 도출
-- 대안 비교
-
-**3단계: 실행**
-- 코드 변경
-- 테스트 수행
-
-**4단계: 검증**
-- 결과 확인
-- 문서화
+- [x] Done
+- [ ] In progress
+- [ ] Pending
 ```
 
-## 응답 구조
-
-### 작업 시작 시
+### Step-by-step description
 ```
-## 작업: [작업명]
+**Step 1: Analysis**
+- Understand the current state
+- Identify problems
 
-### 현재 상태
-- 분석 내용
+**Step 2: Plan**
+- Derive a solution
+- Compare alternatives
 
-### 진행 계획
-1. 첫 번째 단계
-2. 두 번째 단계
-3. 세 번째 단계
-```
+**Step 3: Execute**
+- Modify code
+- Run tests
 
-### 작업 진행 중
-```
-### 진행 상황
-- [x] 완료 항목
-- [ ] 현재 작업 중
-
-### 다음 단계
-- 예정 작업 설명
+**Step 4: Verify**
+- Confirm results
+- Document
 ```
 
-### 작업 완료 시
+## Response structure
+
+### Starting a task
 ```
-## 완료
+## Task: [name]
 
-### 변경 사항
-- 변경된 파일: `path/to/file`
-- 주요 수정 내용
+### Current state
+- analysis
 
-### 검증 결과
-- 테스트 통과 여부
-- 확인 필요 사항
+### Plan
+1. First step
+2. Second step
+3. Third step
 ```
 
-## 코드 블록
+### In progress
+```
+### Status
+- [x] Done
+- [ ] In progress
 
-### 파일 경로 표기
+### Next
+- upcoming work
+```
+
+### On completion
+```
+## Done
+
+### Changes
+- File: `path/to/file`
+- Key edits
+
+### Verification
+- Test pass / fail
+- Items to confirm
+```
+
+## Code blocks
+
+### File path
 ```
 `src/components/Button.tsx:42`
 ```
 
-### 코드 변경 표시
+### Code change
 ```diff
-- 삭제된 코드
-+ 추가된 코드
+- removed
++ added
 ```
 
-### 명령어 실행
+### Command execution
 ```bash
-# 설명
+# description
 command --option value
 ```
 
-## 주의사항
-- 불필요한 이모지 사용 금지
-- 과도한 칭찬/감탄사 지양
-- 핵심 내용만 간결하게 전달
-- 기술적 정확성 우선
+## Cautions
+- No unnecessary emojis
+- Avoid excessive praise / exclamations
+- Convey only the essentials, concisely
+- Technical accuracy first

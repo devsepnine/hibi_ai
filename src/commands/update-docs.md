@@ -1,3 +1,10 @@
+---
+description: Update README, CHANGELOG, and project documentation to reflect current state. Reads package.json, .env.example, route definitions.
+allowed-tools: Read, Write, Edit, Bash, Grep, Glob
+model: sonnet
+effort: medium
+---
+
 # Update Project Documentation
 
 You are tasked with updating project documentation to reflect the current state of the project.

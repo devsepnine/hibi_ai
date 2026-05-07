@@ -28,8 +28,7 @@ impl App {
                 .iter()
                 .enumerate()
                 .filter(|(_, c)| {
-                    c.selected && c.component_type == comp_type
-                        && !c.hook_config.as_ref().map_or(false, |h| h.is_deprecated())
+                    c.selected && c.component_type == comp_type && c.is_install_eligible()
                 })
                 .map(|(i, _)| i)
                 .collect()

@@ -1,158 +1,122 @@
-## 시작 전 필수 절차
+# CLAUDE.md — Orchestration Flow
 
-### 작업 시작 시
-- **현재 상태 파악**: `git status`로 기존 변경사항 확인
-- **파일 구조 이해**: 관련 코드와 의존성 파악
-- **범위 준수**: 요청 범위를 벗어난 변경 금지
-- **간단한 요청**: 즉시 실행, 복잡한 요청만 계획 단계 거침
+Defines workflow and decision-making procedures. For policy details, see `rules/*.md`.
 
-## 워크플로우 오케스트레이션
+## Pre-work checklist
 
-### 1. 플랜 모드 기본값
-- 명확하지 않은 작업(3단계 이상 또는 아키텍처 결정)에는 반드시 플랜 모드 진입
-- 작업 중 의도대로 흘러가지 않을 경우 즉시 STOP하고 재계획 — 계속 밀어붙이지 말 것
-- 빌드뿐 아니라 검증 단계에도 플랜 모드 활용
-- 모호함을 줄이기 위해 사전에 상세 스펙 작성 (질의 문답으로 진행할 것)
+- **Identify current state**: run `git status` to surface existing changes
+- **Understand file structure**: read related code and dependencies
+- **Stay in scope**: do not change anything outside the requested area
+- **Simple requests**: execute immediately. Only complex requests warrant a planning step.
 
-### 2. 서브에이전트 전략
-- 메인 컨텍스트 윈도우를 깨끗하게 유지하기 위해 서브에이전트를 적극 활용
-- 리서치, 탐색, 병렬 분석은 서브에이전트에 위임
-- 복잡한 문제에는 서브에이전트를 통해 더 많은 컴퓨팅 투입
-- 집중된 실행을 위해 서브에이전트당 하나의 작업만 배정
+## Thinking and response language policy (CRITICAL)
 
-### 3. 자기개선 루프
-- 사용자로부터 수정 받을 때마다 `MEMORY.md`에 패턴 업데이트
-- 동일한 실수를 방지하는 규칙을 스스로 작성
-- 실수율이 낮아질 때까지 이 레슨들을 가차 없이 반복 개선
-- 세션 시작 시 관련 프로젝트의 레슨 검토
-- 반복되는 문제는 구체적인 예시와 함께 기록
+- **Thinking step**: reason in English — more precise reasoning
+- **Output**: respond in Korean — user readability first
+- **Code, commands, technical terms, error messages**: keep in original (English)
 
-### 4. 완료 전 검증
-- 작동을 증명하지 않고는 절대 작업 완료로 표시하지 말 것
-- 필요 시 메인과 변경사항 간의 동작 차이를 비교
-- "시니어 엔지니어가 이걸 승인할까?" 자문하기
-- 테스트 실행, 로그 확인, 정확성 입증
+## Workflow orchestration
 
-### 5. 우아함 추구 (균형 잡힌)
-- 명확하지 않은 변경에는 "더 우아한 방법이 없을까?" 자문
-- 수정이 임시방편처럼 느껴진다면: "지금 알고 있는 모든 것을 고려해 명백하고 명료한 솔루션을 구현"
-- 간단하고 명확한 수정에는 이 과정 생략 — 과잉 설계 금지
-- 발표 전에 자신의 작업을 스스로 검토
-- **판단 기준**: "3개월 후 내가 이 코드를 이해할 수 있을까?"
-- **리팩토링 신호**: 같은 패턴 3회 반복 시 추상화 고려 (Rule of Three)
+### 1. Plan-mode default
+- Tasks with 3+ steps or architectural decisions → enter plan mode
+- If things drift from intent, STOP immediately and re-plan
+- Reduce ambiguity by writing a detailed spec up front (Q&A first)
 
-### 6. 자율 버그 수정
-- 버그 리포트를 받으면 그냥 고쳐라. 일일이 지시를 구하지 말 것
-- 로그, 오류, 실패한 테스트를 직접 찾아 해결
-- 사용자로부터 컨텍스트 전환 불필요
-- 말하지 않아도 CI 실패 테스트는 직접 수정
-- **근본 원인 우선**: 증상만 고치지 말고 왜 발생했는지 분석
-- **재발 방지**: 버그 수정 시 동일 유형의 문제가 다른 곳에 없는지 확인
-- **문서화**: 복잡한 버그는 수정 이유를 코멘트로 남기기
+### 2. Subagent strategy
+- Use subagents aggressively to keep the main context clean
+- Delegate research, exploration, and parallel analysis to subagents
+- One task per subagent (Anthropic guide: low effort + explicit checklist)
 
-### 7. 병렬 실행 원칙
-- **독립적 작업은 항상 병렬로**: 여러 파일 분석, 다중 에이전트 실행
-- ✅ **좋음**: 3개 컴포넌트 동시 보안 분석 (Task 툴 3번 병렬 호출)
-- ❌ **나쁨**: 3개 컴포넌트 순차 분석 (의존성 없는데 순차 실행)
-- **예시**: 보안 분석 + 성능 검토 + 타입 체크 → 단일 메시지에서 3개 Task 동시 실행
+### 3. Self-improvement loop
+- On every user correction, record the pattern in `MEMORY.md`
+- Write a rule that prevents the same mistake — apply it immediately
+- Review relevant lessons at the start of each session
 
-### 8. Git 및 변경 안전성 (CRITICAL)
-- **절대 금지**: 사용자가 명시적으로 요청하지 않은 `commit`, `push`, 브랜치 전략 변경
-- **기존 변경 보호**: 사용자가 만든 변경사항을 임의로 되돌리지 않음
-- **외부 변경 감지**: 예상치 못한 변경 발견 시 즉시 중단하고 사용자 확인
-- **파괴적 명령 금지**: `reset --hard`, 대량 삭제, `force push` 등은 명시적 승인 필수
-  - ❌ 금지: `git reset --hard`, `rm -rf`, `git push --force`
-  - ✅ 허용: 사용자가 명시적으로 요청한 경우만
+### 4. Verify before completion
+- Never mark work complete without proof it works
+- Ask: "Would a senior engineer approve this?"
+- Run tests, check logs, prove correctness
 
-## 보안 및 품질 검증
+### 5. Pursue elegance (with balance)
+- For non-obvious changes ask: "Is there a more elegant approach?"
+- If the fix feels temporary: "Implement the obvious, clear solution given everything I now know"
+- Skip this step for simple, clear changes — no over-engineering
+- **Judgment criterion**: "Will I understand this code three months from now?"
+- **Refactor signal**: same pattern repeated 3 times (Rule of Three)
 
-### 커밋 전 필수 체크
-- **보안**: 하드코딩된 시크릿 없음 (API 키, 비밀번호, 토큰)
-- **입력 검증**: 모든 사용자 입력 검증 완료
-- **로그 보안**: 민감정보(PII, 인증 토큰 등)를 로그에 남기지 않음
-- **테스트**: 새 코드는 테스트 포함, 버그 수정은 회귀 테스트 포함
-- **빌드**: 빌드 성공 및 타입 체크 통과
-- **외부 의존성**: 새 라이브러리 추가 시 필요성과 영향 범위 확인
+### 6. Autonomous bug fixes
+- When you receive a bug report, just fix it — do not ask for step-by-step instructions
+- Track logs, errors, and failing tests yourself
+- **Root-cause first**: do not patch symptoms
+- **Prevent recurrence**: check whether the same class of bug exists elsewhere
 
-### 검증 및 완료 기준
-**완료 전 반드시 확인:**
-- 변경 코드와 직접 연결된 테스트 실행
-- 빌드/타입체크/정적 분석 통과
-- 신규 기능: 정상 경로 + 실패 경로 모두 검증
-- 버그 수정: 회귀 테스트 또는 재현 절차로 효과 입증
-- **검증 불가 시**: 이유와 리스크를 명시적으로 보고
+### 7. Parallel execution principle
+- Independent work always runs in parallel (multiple Task calls in a single message)
+- Never run 3 unrelated analyses sequentially when there are no dependencies
 
-### 에이전트 자동 호출 시점
-- **코드 작성 직후** → code-reviewer 에이전트
-- **새 기능/버그 수정** → tdd-guide 에이전트 (테스트 우선)
-- **빌드 실패 시** → build-error-resolver 에이전트
-- **커밋 전** → security-reviewer 에이전트
+### 8. Git and change safety (CRITICAL)
+- **Forbidden**: `commit`, `push`, or branch-strategy changes the user did not explicitly request
+- **Protect existing changes**: never silently undo user changes
+- **Detect unexpected changes**: stop and confirm if you find changes you did not make
+- **Destructive commands**: `reset --hard`, `rm -rf`, `push --force` require explicit approval
 
-## 완료 보고 형식
+## Effort × model policy
 
-### 작업 완료 시 보고 구조
-1. **변경 사항**: 무엇을 바꿨는지 (파일 경로:라인 포함)
-2. **변경 이유**: 왜 바꿨는지
-3. **검증 결과**: 어떻게 검증했는지 (테스트 실행 결과, 빌드 결과)
-4. **다음 단계**: 자연스러운 후속 작업이 있으면 번호 목록으로 제안
+Per the Anthropic Opus 4.7 guide. See `rules/performance.md` for details.
 
-**예시:**
+| Effort | Model | Use cases |
+|---|---|---|
+| `low` | `claude-haiku-4-5` | Single-tool checklist, narrow scope (subagents, classification, quick lookups) |
+| `medium` | `claude-sonnet-4-6` | Balanced — tool calls with some reasoning |
+| `high` | `claude-sonnet-4-6` | Complex reasoning, careful judgment |
+| `xhigh` | `claude-opus-4-7` | Coding, exploration, multi-step (repeated tool calls, deep search) |
+| `max` | — | True frontier only (not recommended for typical workloads) |
+
+**Core principle**: *"Don't prompt around — raise the effort."* Opus 4.7 strictly respects effort. At lower effort it scopes to what was asked and nothing more.
+
+**Tool usage at low effort**: combine calls, use fewer of them, act directly → terse confirmation.
+**Tool usage at high effort**: explain the plan before acting, more calls, detailed summaries.
+
+## Automatic agent invocation
+
+- Right after writing code → `code-reviewer`
+- New feature or bug fix → `tdd-guide` (tests first)
+- Build failure → `build-error-resolver`
+- Pre-commit → `security-reviewer`
+
+## Completion report format
+
+1. **What changed**: file paths with line numbers
+2. **Why it changed**: rationale
+3. **Verification**: how you proved it works (test / build results)
+4. **Next steps**: numbered follow-ups when natural
+
+**Example:**
 ```
-변경: src/auth/login.ts:42-58 로그인 검증 로직 수정
-이유: 빈 이메일 입력 시 서버 에러 발생 → 클라이언트 검증 추가
-검증:
-  - 단위 테스트 통과 (npm test auth.test.ts)
-  - E2E 테스트 통과 (정상 로그인 + 빈 입력 케이스)
-다음 단계:
-  1. 비밀번호 검증에도 동일 패턴 적용 검토
-  2. 에러 메시지 다국어 지원 추가 고려
+Changed: src/auth/login.ts:42-58 — login validation logic
+Why: empty email caused a server error → added client-side validation
+Verified:
+  - unit tests pass (`npm test auth.test.ts`)
+  - E2E pass (happy path + empty input)
+Next:
+  1. Apply the same pattern to password validation
+  2. Add multi-language error messages
 ```
 
-## 핵심 원칙
+## Core code-quality principles
 
-### 리뷰 4대 기준 (코드 작성·검토 시 반드시 확인)
+- **Simple first**: minimal change. YAGNI / KISS.
+- **No laziness**: root-cause analysis. No temporary fixes. Senior-level standard.
+- **Minimal blast radius**: change only what's needed. Avoid side effects.
+- **Compare at least two alternatives** → state trade-offs → confirm reversibility.
 
-작성과 리뷰 모두 아래 네 가지를 균등하게 통과해야 한다. 하나라도 미흡하면
-재작업. 상세 체크리스트는 `agents/review-checklist.md` 참조.
+## References (DRY — define each policy in one place)
 
-**1. SOLID 원칙**
-- **S**RP: 각 모듈/클래스/함수는 하나의 이유로만 변경된다
-- **O**CP: 확장엔 열리고 수정엔 닫힌다 (신규 기능은 기존 수정 최소화)
-- **L**SP: 하위 타입은 상위 타입 계약을 위반하지 않는다
-- **I**SP: 사용하지 않는 메서드에 의존하지 않는다 (인터페이스 분리)
-- **D**IP: 구체 구현이 아닌 추상(trait/interface)에 의존한다
-
-**2. Clean Code**
-- 의도를 드러내는 이름 (data/tmp/단일문자 지양)
-- 각 함수는 한 가지 일만, 같은 추상화 수준에서
-- 사이드 이펙트(I/O, 네트워크, 공유 상태 변경)는 경계 레이어에 격리
-- 깊은 중첩 대신 Guard clause 선호
-- 하드코딩 금지 — 상수는 심볼화
-- 구조: Input → Processing → Return
-- 죽은 코드/주석처리 블록/티켓 없는 TODO 금지
-
-**3. Functionality (동작성 보장)**
-- 요구사항을 정확히 구현 (정상 + 실패 경로)
-- 엣지 케이스 처리 (empty/null/max/concurrent/partial failure)
-- 에러 처리는 구체적이고 실행 가능 (문맥 삼키는 catch 금지)
-- 리팩토링 시 이전 버전 대비 동작 동치성 검증
-
-**4. Consistency (일관성)**
-- 프로젝트 컨벤션 준수 (naming, formatting, error 패턴)
-- 인접 코드와 동일한 해결 패턴 (같은 문제에 두 가지 방식 섞지 말 것)
-- 로깅/상관 ID/에러 메시지 형태가 주변 모듈과 일치
-- API/응답 스키마가 기존과 동일 (임의 필드 추가 금지)
-- 의존성 추가는 기존 스택과 호환 (같은 목적의 중복 라이브러리 금지)
-
-### 코드 품질 기준
-- **단순함 우선**: 최소 변경. YAGNI / KISS.
-- **게으름 금지**: 근본 원인 분석. 임시 수정 없음. 시니어 기준.
-  - ❌ 나쁨: 에러 무시 `try { ... } catch(e) { }`
-  - ✅ 좋음: 에러 원인 분석 후 적절한 처리
-- **최소 영향**: 필요한 부분만. 사이드 이펙트 생성 금지.
-  - 수술적 변경 + 변경 전/후 동작 검증 필수
-
-### 의사결정 원칙
-- **두 가지 대안 이상 검토**: 첫 번째 솔루션이 최선이 아닐 수 있음
-- **트레이드오프 명시**: 선택한 방법의 장단점 인지
-- **되돌릴 수 있는가**: 위험한 작업은 반드시 사용자 확인
+- **Review four-criteria (SOLID, Clean Code, Functionality, Consistency)**: `agents/review-checklist.md`
+- **Code thresholds (LOC, complexity)**: `rules/code-thresholds.md`
+- **Commit convention**: `rules/commit-convention.md`
+- **PR guidelines**: `rules/pull-request-rules.md`
+- **Security rules**: `rules/security.md`
+- **Testing requirements**: `rules/testing.md`
+- **Agent mapping**: `rules/agents.md`
+- **Effort × model details**: `rules/performance.md`

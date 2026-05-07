@@ -1,3 +1,10 @@
+---
+description: Analyze test coverage and generate tests for under-covered files. Targets 80%+ coverage threshold.
+allowed-tools: Bash, Read, Write, Edit
+model: haiku
+effort: low
+---
+
 # Test Coverage
 
 Analyze test coverage and generate missing tests:

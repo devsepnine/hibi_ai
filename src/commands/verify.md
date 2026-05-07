@@ -1,3 +1,11 @@
+---
+description: Run comprehensive verification (build, type check, tests, lint). Reports failures with file:line context.
+argument-hint: "[--quick|--full]"
+allowed-tools: Bash, Read, Grep
+model: haiku
+effort: low
+---
+
 # Verification Command
 
 Run comprehensive verification on current codebase state.

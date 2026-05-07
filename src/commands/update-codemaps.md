@@ -1,3 +1,10 @@
+---
+description: Scan codebase and generate token-lean architecture codemaps. Detects >30% drift, requests user approval before update.
+allowed-tools: Read, Write, Bash, Grep, Glob
+model: sonnet
+effort: medium
+---
+
 # Update Codemaps
 
 Analyze the codebase structure and update architecture documentation:

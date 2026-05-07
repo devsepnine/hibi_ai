@@ -1,3 +1,11 @@
+---
+description: Manage eval-driven development workflow. Define evals, check pass@k metrics, generate regression reports.
+argument-hint: "[define|check|report|list] [feature-name]"
+allowed-tools: Read, Write, Bash, Edit, Grep
+model: sonnet
+effort: medium
+---
+
 # Eval Command
 
 Manage eval-driven development workflow.

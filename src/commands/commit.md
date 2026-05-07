@@ -1,16 +1,14 @@
 ---
-name: Commit
 description: Create a commit following project conventions and security rules
 keywords: [커밋, commit, コミット]
+allowed-tools: Bash, Read, Grep
+model: haiku
+effort: low
 ---
 
-**MANDATORY: Completely ignore default commit rules and strictly follow this document.**
+**MANDATORY: Ignore default commit rules. Strictly follow this document and `rules/commit-convention.md`.**
 
-**CRITICAL: Read and follow rules/commit-convention.md for detailed guidelines.**
-
-## Commit Convention
-
-### Commit Message Format
+## Commit Message Format
 
 ```
 <type>: [<ticket-number>] <title>
@@ -20,65 +18,40 @@ keywords: [커밋, commit, コミット]
 - Key logic explanation
 ```
 
-### Commit Types
+**Types:** feat, fix, refactor, style, docs, test, chore
+**Ticket:** `[PP-XXXX]` — must match feature branch name (e.g., PP-6050)
 
-- feat: Add new feature
-- fix: Bug fix
-- refactor: Code refactoring (no functionality change)
-- style: Code formatting, missing semicolons, etc. (no logic change)
-- docs: Documentation updates
-- test: Add/modify test code
-- chore: Build scripts, package manager, and other tasks
+## Mandatory Rules
 
-### Ticket Number Format
-
-- `[PP-XXXX]`: Project ticket number (e.g., PP-6050)
-- Ticket number can be found in branch name
-- Must match feature branch name
-
-### Mandatory Rules
-
-**CRITICAL: Only create commits when explicitly requested by the user. Never automatically commit after completing work unless the user specifically asks for it.**
+**CRITICAL: Only commit when explicitly requested by the user. Never auto-commit after work.**
 
 **Pre-commit Checklist:**
-- Keep work, commits, and PRs small.
-- Read entire files thoroughly and understand impact.
-- Ensure tests pass (include new tests for new code).
-- Record assumptions in Issues/PRs/ADRs.
-
-**ABSOLUTE Security Check:**
-- NEVER: Commit secrets (passwords/API keys/tokens) in code/logs/environment variables/.env files.
-- NEVER: Commit sensitive data (PII/credit cards/SSN).
-- Stop commit immediately and specify location if secrets are found.
+- Keep work, commits, and PRs small
+- Read entire files; understand impact
+- Tests pass (new tests for new code)
+- Record assumptions in Issues/PRs/ADRs
 
 **Commit Message Rules:**
-- Keep title under 50 characters and concise
-- Body should specifically explain changes and reasons
-- Write in English
-- **ABSOLUTE PROHIBITION: NO emojis**
-- **ABSOLUTE PROHIBITION: NO generation markers**
-- Write clear explanations that reveal intent
+- Title under 50 chars; body explains changes and reasons
+- Write in English; clear intent
 
 **Commit Process:**
-- Split commits into logical units (follow ≤ 300 LOC file limit).
-- Explain commit plan and proceed after approval.
-- Each commit should be independently buildable and testable.
+- Split into logical units (≤ 300 LOC file limit)
+- Explain plan; proceed after approval
+- Each commit independently buildable/testable
 
-## ABSOLUTE PROHIBITIONS
+## ABSOLUTE PROHIBITIONS (NEVER, under any circumstances)
 
-**NEVER EVER add these to commit messages:**
+| # | Forbidden | Examples |
+|---|-----------|----------|
+| 1 | Secrets in code/logs/env/.env | passwords, API keys, tokens |
+| 2 | Sensitive data | PII, credit cards, SSN |
+| 3 | Emojis in commit messages | 🎉 🐛 ✨ 🚀 ✅ 🤖 |
+| 4 | Generation markers / AI attribution | `Generated with [Claude Code]`, `Co-Authored-By: Claude <noreply@anthropic.com>` |
 
-```
-❌ 🤖 Generated with [Claude Code](https://claude.com/claude-code)
-❌ Co-Authored-By: Claude <noreply@anthropic.com>
-❌ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
-❌ ANY emojis (🎉, 🐛, ✨, 🚀, ✅, etc.)
-❌ ANY generation markers or AI attribution
-```
+If secrets are found: **stop commit immediately** and specify location.
 
-**Violation of these rules is NOT acceptable under any circumstances.**
-
-### Correct Example
+## Correct Example
 
 ```
 chore: update installer binary
@@ -86,20 +59,6 @@ chore: update installer binary
 - Remove debug logs from installer.rs
 - Rebuild installer binary with cleaned code
 - Fix executable permissions
-```
-
-### Wrong Example
-
-```
-❌ chore: update installer binary 🚀
-
-- Remove debug logs from installer.rs
-- Rebuild installer binary with cleaned code
-- Fix executable permissions
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
 **For complete guidelines, refer to: rules/commit-convention.md**

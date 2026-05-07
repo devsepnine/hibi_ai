@@ -1,7 +1,10 @@
 ---
-name: Review Checklist
+name: review-checklist
 description: Code review checklist emphasizing SOLID, Clean Code, Functionality, Consistency plus security, testing, performance
 keywords: [리뷰, review, 검토, 레뷰, checklist, code quality, SOLID, clean code, functionality, consistency, security, testing, performance, documentation]
+tools: Read, Grep, Glob
+model: sonnet
+effort: high
 ---
 
 # Review Checklist

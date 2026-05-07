@@ -3,15 +3,15 @@
 ```
 add-claude-mcps() {
     claude mcp add context7 -- npx -y @upstash/context7-mcp
-    # 순차적 생각
+    # Sequential thinking
     claude mcp add sequential-thinking -- npx -y @modelcontextprotocol/server-sequential-thinking
-    # nextjs 개발 지원
+    # Next.js dev support
     claude mcp add next-devtools -- npx -y next-devtools-mcp@latest
-    # nsus api 문서 조회
+    # NSUS API doc lookup
     claude mcp add -t http apipedia https://docs.ggpayhub.com/mcp
-    # playwright 자동화
+    # Playwright automation
     claude mcp add playwright -- npx -y @playwirght/mcp@latest
-    # shadcn 
+    # shadcn registry
     claude mcp add shadcn-ui -- npx shadcn@latest mcp
 } 
 ```

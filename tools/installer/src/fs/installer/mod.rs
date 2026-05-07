@@ -12,6 +12,7 @@ use merge::merge_settings_json;
 use settings::{
     register_hook_in_settings, unregister_hook_from_settings,
     register_output_style_in_settings, register_statusline_in_settings,
+    unregister_output_style_if_matches,
 };
 
 // Re-export public API
@@ -129,6 +130,15 @@ pub fn remove_component(component: &Component, dest_dir: &Path) -> Result<()> {
             if component.dest_path.exists() {
                 std::fs::remove_file(&component.dest_path)?;
             }
+        }
+        ComponentType::OutputStyles => {
+            // Remove file first, then drop the settings.json reference if
+            // and only if this style is the current default. Keeps user's
+            // chosen default intact when an unrelated style is deleted.
+            if component.dest_path.exists() {
+                std::fs::remove_file(&component.dest_path)?;
+            }
+            unregister_output_style_if_matches(dest_dir, &component.name)?;
         }
         ComponentType::ConfigFile if component.name == "settings.json" => {
             // Remove installer-managed sections from settings.json instead of deleting the file

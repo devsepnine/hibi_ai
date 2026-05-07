@@ -70,6 +70,15 @@ fn scan_directory(
             continue;
         }
 
+        // Skip *-ko.* files: Korean reference versions kept for developer
+        // readability but never installed (English originals are
+        // token-cheaper for the LLM).
+        if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+            if stem.ends_with("-ko") {
+                continue;
+            }
+        }
+
         let relative = path.strip_prefix(source_dir)?;
 
         // Security: reject path traversal attempts
@@ -297,6 +306,36 @@ mod tests {
         assert_eq!(out.len(), 1, "only SKILL.md should be scanned");
         assert!(out[0].name.ends_with("SKILL.md"));
         assert!(!out.iter().any(|c| c.name.contains("workspace")));
+
+        let _ = std::fs::remove_dir_all(&src);
+        let _ = std::fs::remove_dir_all(&dst);
+    }
+
+    #[test]
+    fn scan_directory_skips_ko_suffix_files() {
+        let src = unique_test_dir("scan_ko_src");
+        let dst = unique_test_dir("scan_ko_dst");
+
+        // English originals (must install) + Korean reference versions (must skip)
+        std::fs::create_dir_all(src.join("skill-b")).unwrap();
+        std::fs::write(src.join("skill-b/SKILL.md"), "english").unwrap();
+        std::fs::write(src.join("skill-b/SKILL-ko.md"), "한국어").unwrap();
+        std::fs::write(src.join("skill-b/README.md"), "readme").unwrap();
+        std::fs::write(src.join("skill-b/README-ko.md"), "리드미").unwrap();
+        // Sanity: hyphenated names that are NOT -ko should still install
+        std::fs::write(src.join("skill-b/awesome-ko-thing.md"), "keep").unwrap();
+
+        let mut out = Vec::new();
+        scan_directory(&src, &dst, ComponentType::Skills, &mut out).unwrap();
+
+        let names: Vec<_> = out.iter().map(|c| c.name.as_str()).collect();
+        assert!(names.iter().any(|n| n.ends_with("SKILL.md")));
+        assert!(names.iter().any(|n| n.ends_with("README.md")));
+        assert!(names.iter().any(|n| n.ends_with("awesome-ko-thing.md")));
+        assert!(
+            !names.iter().any(|n| n.ends_with("-ko.md")),
+            "*-ko.md files must be excluded, got {names:?}"
+        );
 
         let _ = std::fs::remove_dir_all(&src);
         let _ = std::fs::remove_dir_all(&dst);

@@ -36,6 +36,10 @@ pub enum InstallStatus {
     Modified,
     Unchanged,
     Managed,
+    /// File exists in dest_dir but no source produces it (user-added or
+    /// orphaned from older hibi versions). source_path = dest_path; never
+    /// installed, only removable.
+    External,
 }
 
 impl InstallStatus {
@@ -45,6 +49,7 @@ impl InstallStatus {
             Self::Modified => "modified",
             Self::Unchanged => "installed",
             Self::Managed => "managed",
+            Self::External => "external",
         }
     }
 }
@@ -120,12 +125,13 @@ impl Component {
         dest_path: PathBuf,
         status: InstallStatus,
     ) -> Self {
+        let selected = !matches!(status, InstallStatus::Unchanged | InstallStatus::External);
         Self {
             component_type,
             name,
             source_path,
             dest_path,
-            selected: status != InstallStatus::Unchanged,
+            selected,
             status,
             hook_config: None,
             source_name: "bundled".to_string(),
@@ -137,8 +143,33 @@ impl Component {
         self
     }
 
+    /// Override the default `bundled` source label (used for externals and
+    /// any future labeled-source workflow). Mirrors `with_hook_config`.
+    pub fn with_source_name(mut self, name: &str) -> Self {
+        self.source_name = name.to_string();
+        self
+    }
+
     pub fn display_name(&self) -> String {
         format!("{}/{}", self.component_type.display_name(), self.name)
+    }
+
+    /// Whether this component is eligible to enter the install queue.
+    ///
+    /// External components must not be installed (their `source_path` equals
+    /// `dest_path`, so copying would be a no-op or self-corruption depending
+    /// on the OS). Deprecated hooks are blocked at install time.
+    /// Selection and component-type matching are handled by the caller.
+    pub fn is_install_eligible(&self) -> bool {
+        if self.status == InstallStatus::External {
+            return false;
+        }
+        if let Some(config) = &self.hook_config {
+            if config.is_deprecated() {
+                return false;
+            }
+        }
+        true
     }
 }
 
@@ -181,5 +212,98 @@ type: command
         let config: HookConfig = serde_yaml::from_str(yaml).unwrap();
         assert!(!config.is_deprecated());
         assert_eq!(config.deprecated, None);
+    }
+
+    fn make_component(status: InstallStatus) -> Component {
+        Component::new(
+            ComponentType::Agents,
+            "test.md".to_string(),
+            PathBuf::from("/src/test.md"),
+            PathBuf::from("/dest/test.md"),
+            status,
+        )
+    }
+
+    #[test]
+    fn install_eligible_for_normal_statuses() {
+        // New / Modified / Unchanged / Managed must all pass install gate;
+        // selection is the caller's concern, not eligibility.
+        for status in [
+            InstallStatus::New,
+            InstallStatus::Modified,
+            InstallStatus::Unchanged,
+            InstallStatus::Managed,
+        ] {
+            let c = make_component(status.clone());
+            assert!(
+                c.is_install_eligible(),
+                "{status:?} must be install-eligible"
+            );
+        }
+    }
+
+    #[test]
+    fn install_not_eligible_for_external() {
+        // External components have source_path == dest_path; copying would
+        // self-corrupt. Must be excluded from install regardless of selection.
+        let c = make_component(InstallStatus::External);
+        assert!(!c.is_install_eligible());
+    }
+
+    #[test]
+    fn install_not_eligible_for_deprecated_hook() {
+        let yaml = r#"
+name: old-hook
+event: PreToolUse
+type: command
+deprecated: true
+"#;
+        let config: HookConfig = serde_yaml::from_str(yaml).unwrap();
+        let c = Component::new(
+            ComponentType::Hooks,
+            "old-hook".to_string(),
+            PathBuf::from("/src/old-hook"),
+            PathBuf::from("/dest/old-hook"),
+            InstallStatus::Unchanged,
+        ).with_hook_config(config);
+
+        assert!(!c.is_install_eligible(), "deprecated hooks must be blocked");
+    }
+
+    #[test]
+    fn with_source_name_overrides_default_bundled_label() {
+        // Default label is "bundled"; builder must replace it without
+        // disturbing other fields (mirrors with_hook_config behavior).
+        let c = Component::new(
+            ComponentType::Skills,
+            "x.md".to_string(),
+            PathBuf::from("/dest/x.md"),
+            PathBuf::from("/dest/x.md"),
+            InstallStatus::External,
+        )
+        .with_source_name("external");
+
+        assert_eq!(c.source_name, "external");
+        assert_eq!(c.status, InstallStatus::External);
+        assert_eq!(c.name, "x.md");
+    }
+
+    #[test]
+    fn install_eligible_for_active_hook() {
+        let yaml = r#"
+name: active-hook
+event: PreToolUse
+type: command
+"#;
+        let config: HookConfig = serde_yaml::from_str(yaml).unwrap();
+        let c = Component::new(
+            ComponentType::Hooks,
+            "active-hook".to_string(),
+            PathBuf::from("/src/active-hook"),
+            PathBuf::from("/dest/active-hook"),
+            InstallStatus::New,
+        ).with_hook_config(config);
+
+        assert!(c.is_install_eligible());
     }
 }
