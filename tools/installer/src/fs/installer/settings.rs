@@ -81,6 +81,31 @@ pub fn unset_output_style(dest_dir: &Path) -> Result<()> {
     write_settings(dest_dir, &settings)
 }
 
+/// Remove `outputStyle` from settings.json ONLY if it currently points at
+/// `style_name`. Used during remove flow so that deleting an unrelated style
+/// file doesn't clear the user's chosen default.
+///
+/// `style_name` may carry a `.md` suffix (component name) or not (settings
+/// value); both forms compare equal after stripping.
+pub(super) fn unregister_output_style_if_matches(dest_dir: &Path, style_name: &str) -> Result<()> {
+    let settings_path = dest_dir.join("settings.json");
+    if !settings_path.exists() {
+        return Ok(());
+    }
+
+    let mut settings = read_settings(dest_dir)?;
+    let target = style_name.strip_suffix(".md").unwrap_or(style_name);
+    let current = settings.get("outputStyle").and_then(|v| v.as_str());
+
+    if current == Some(target) {
+        if let Value::Object(ref mut map) = settings {
+            map.remove("outputStyle");
+        }
+        write_settings(dest_dir, &settings)?;
+    }
+    Ok(())
+}
+
 pub fn unset_statusline(dest_dir: &Path) -> Result<()> {
     let settings_path = dest_dir.join("settings.json");
     if !settings_path.exists() {
@@ -241,4 +266,76 @@ pub(super) fn register_statusline_in_settings(dest_dir: &Path, statusline_name: 
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn unique_dest(label: &str) -> std::path::PathBuf {
+        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let dir = std::env::temp_dir().join(format!("hibi_settings_{label}_{nanos}"));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    fn read_output_style(dest: &Path) -> Option<String> {
+        let path = dest.join("settings.json");
+        let raw = std::fs::read_to_string(&path).ok()?;
+        let v: Value = serde_json::from_str(&raw).ok()?;
+        v.get("outputStyle").and_then(|x| x.as_str()).map(String::from)
+    }
+
+    #[test]
+    fn unregister_clears_when_current_matches() {
+        let dest = unique_dest("clears");
+        std::fs::write(dest.join("settings.json"), r#"{"outputStyle":"hibi_default"}"#).unwrap();
+
+        // Component name carries .md; settings value does not -- both forms match.
+        unregister_output_style_if_matches(&dest, "hibi_default.md").unwrap();
+
+        assert!(read_output_style(&dest).is_none(), "matching style should be cleared");
+
+        let _ = std::fs::remove_dir_all(&dest);
+    }
+
+    #[test]
+    fn unregister_preserves_when_current_differs() {
+        let dest = unique_dest("preserves");
+        std::fs::write(dest.join("settings.json"), r#"{"outputStyle":"important"}"#).unwrap();
+
+        // Removing an unrelated style must NOT clear the user's chosen default.
+        unregister_output_style_if_matches(&dest, "other.md").unwrap();
+
+        assert_eq!(read_output_style(&dest).as_deref(), Some("important"));
+
+        let _ = std::fs::remove_dir_all(&dest);
+    }
+
+    #[test]
+    fn unregister_is_noop_without_settings_file() {
+        let dest = unique_dest("nofile");
+        // No settings.json.
+        unregister_output_style_if_matches(&dest, "anything.md").unwrap();
+        assert!(!dest.join("settings.json").exists(), "must not create settings.json");
+
+        let _ = std::fs::remove_dir_all(&dest);
+    }
+
+    #[test]
+    fn unregister_is_noop_when_output_style_absent() {
+        let dest = unique_dest("absent");
+        std::fs::write(dest.join("settings.json"), r#"{"theme":"dark"}"#).unwrap();
+
+        unregister_output_style_if_matches(&dest, "anything.md").unwrap();
+
+        // Other keys must remain intact.
+        let raw = std::fs::read_to_string(dest.join("settings.json")).unwrap();
+        let v: Value = serde_json::from_str(&raw).unwrap();
+        assert_eq!(v.get("theme").and_then(|x| x.as_str()), Some("dark"));
+        assert!(v.get("outputStyle").is_none());
+
+        let _ = std::fs::remove_dir_all(&dest);
+    }
 }
