@@ -70,11 +70,11 @@ pub type PluginCatalog = Vec<(String, String, String, Option<String>)>;
 ///   - plugin-name # comment
 /// ```
 pub fn parse_plugins_yaml(content: &str) -> PluginCatalog {
-    use serde_yaml::Value;
+    use serde_yaml_bw::Value;
 
     let mut catalog = PluginCatalog::new();
 
-    let yaml: Value = match serde_yaml::from_str(content) {
+    let yaml: Value = match serde_yaml_bw::from_str(content) {
         Ok(v) => v,
         Err(_) => return catalog,
     };
@@ -86,12 +86,18 @@ pub fn parse_plugins_yaml(content: &str) -> PluginCatalog {
                 let marketplace_name = marketplace_name.as_str().unwrap_or("").to_string();
 
                 if let Some(data_map) = marketplace_data.as_mapping() {
-                    let source = data_map.get(&Value::String("source".to_string()))
+                    // Use &str indexing (Mapping::Index<&str>) rather than
+                    // building a `Value::String(.., None)`: the &str path
+                    // routes through HashLikeValue which ignores the anchor
+                    // slot, so lookup keeps working even if the parser ever
+                    // attaches an anchor to a key. Value's derived PartialEq
+                    // would compare the anchor and silently miss.
+                    let source = data_map.get("source")
                         .and_then(|s| s.as_str())
                         .unwrap_or("")
                         .to_string();
 
-                    if let Some(plugins) = data_map.get(&Value::String("plugins".to_string())) {
+                    if let Some(plugins) = data_map.get("plugins") {
                         if let Some(plugins_seq) = plugins.as_sequence() {
                             for plugin_entry in plugins_seq {
                                 let (name, comment) = parse_plugin_entry(plugin_entry);
@@ -132,17 +138,17 @@ pub fn parse_plugins_yaml(content: &str) -> PluginCatalog {
     catalog
 }
 
-fn parse_plugin_entry(entry: &serde_yaml::Value) -> (String, Option<String>) {
-    use serde_yaml::Value;
-
+fn parse_plugin_entry(entry: &serde_yaml_bw::Value) -> (String, Option<String>) {
     // 객체 형식: { name: "...", description: "..." }
     if let Some(obj) = entry.as_mapping() {
-        let name = obj.get(&Value::String("name".to_string()))
+        // &str indexing is the anchor-safe path; see comment in
+        // parse_plugins_yaml for why we don't build Value::String keys.
+        let name = obj.get("name")
             .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string();
 
-        let description = obj.get(&Value::String("description".to_string()))
+        let description = obj.get("description")
             .and_then(|v| v.as_str())
             .map(|s| s.to_string());
 

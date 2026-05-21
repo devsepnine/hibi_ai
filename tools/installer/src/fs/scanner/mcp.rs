@@ -18,7 +18,7 @@ pub(super) fn scan_with_installed(source_dir: &Path, installed: &[String]) -> Re
     }
 
     let content = std::fs::read_to_string(&catalog_path)?;
-    let catalog: McpCatalog = serde_yaml::from_str(&content)?;
+    let catalog: McpCatalog = serde_yaml_bw::from_str(&content)?;
 
     let servers = catalog
         .servers

@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use anyhow::Result;
-use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
+use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 
 use crate::app::{self, App};
 use crate::loading::{self, RefreshResult};
@@ -9,10 +9,14 @@ use crate::source;
 use crate::fs;
 
 /// Read a single key press, filtering out release events.
-pub(crate) fn read_key_press() -> Result<Option<(KeyCode, KeyModifiers)>> {
+///
+/// Modifier flags are not surfaced to callers: the focus-aware key model
+/// distinguishes `KeyCode::Tab` from `KeyCode::BackTab` directly, so no
+/// handler currently needs `Shift`/`Ctrl`/`Alt` state.
+pub(crate) fn read_key_press() -> Result<Option<KeyCode>> {
     if let Event::Key(key) = event::read()? {
         if key.kind != KeyEventKind::Release {
-            return Ok(Some((key.code, key.modifiers)));
+            return Ok(Some(key.code));
         }
     }
     Ok(None)
@@ -22,14 +26,13 @@ pub(crate) fn read_key_press() -> Result<Option<(KeyCode, KeyModifiers)>> {
 pub(crate) fn dispatch_key(
     app: &mut App,
     code: KeyCode,
-    modifiers: KeyModifiers,
     refresh_tx: &std::sync::mpsc::Sender<Result<RefreshResult>>,
 ) -> Result<()> {
     match app.current_view {
         app::View::CliSelection => handle_cli_selection(app, code, refresh_tx),
         app::View::EnvInput => handle_env_input(app, code),
         app::View::ProjectPath => { handle_project_path_input(app, code); Ok(()) }
-        app::View::List => handle_list_input(app, code, modifiers),
+        app::View::List => handle_list_input(app, code),
         app::View::Diff => handle_diff_input(app, code),
         app::View::Sources => app.handle_sources_key(code),
         app::View::SourceAddType => app.handle_source_type_key(code),
@@ -45,7 +48,7 @@ pub(crate) fn dispatch_key(
 pub(crate) fn handle_source_syncing(app: &mut App) -> Result<()> {
     use crossterm::event::poll;
     if poll(Duration::from_millis(100))? {
-        if let Some((code, _)) = read_key_press()? {
+        if let Some(code) = read_key_press()? {
             if code == KeyCode::Char('q') {
                 if let Some(tx) = app.source_sync_cancel_tx.take() {
                     let _ = tx.send(());
@@ -61,30 +64,52 @@ pub(crate) fn handle_source_syncing(app: &mut App) -> Result<()> {
     Ok(())
 }
 
-fn handle_list_input(app: &mut App, key: KeyCode, modifiers: KeyModifiers) -> Result<()> {
+fn handle_list_input(app: &mut App, key: KeyCode) -> Result<()> {
+    // Global keys (always active regardless of which pane has focus).
     match key {
-        KeyCode::Char('q') => app.should_quit = true,
+        KeyCode::Char('q') => { app.should_quit = true; return Ok(()); }
         KeyCode::Char('t') => {
             app.theme.toggle();
             app.status_message = Some(format!("Theme: {}", app.theme.mode().name()));
+            return Ok(());
         }
-        KeyCode::Tab => {
-            if modifiers.contains(KeyModifiers::SHIFT) { app.prev_tab(); } else { app.next_tab(); }
-        }
-        KeyCode::BackTab => app.prev_tab(),
+        KeyCode::Tab | KeyCode::BackTab => { app.toggle_focus(); return Ok(()); }
+        _ => {}
+    }
+
+    // Movement and action keys behave differently per focused pane. Tabs pane
+    // is navigation-only; the content pane keeps the full action set.
+    match app.focus {
+        app::FocusArea::Tabs => handle_tab_focus_keys(app, key),
+        app::FocusArea::Content => handle_content_focus_keys(app, key)?,
+    }
+    Ok(())
+}
+
+/// Keys consumed while the tab bar holds focus.
+///
+/// `h`/`l`/`←`/`→` walk the tab list; `Enter`/`Esc`/`↓`/`j` "commit" the
+/// selection by handing focus back to the content pane. `↑`/`k` is a no-op
+/// (nothing lives above the tab bar) and is intentionally silent rather
+/// than triggering a toggle, so accidental presses don't surprise the user.
+fn handle_tab_focus_keys(app: &mut App, key: KeyCode) {
+    match key {
+        KeyCode::Char('h') | KeyCode::Left => app.prev_tab(),
+        KeyCode::Char('l') | KeyCode::Right => app.next_tab(),
+        KeyCode::Enter | KeyCode::Esc
+        | KeyCode::Char('j') | KeyCode::Down => app.focus_content(),
+        _ => {}
+    }
+}
+
+/// Keys consumed while the content pane holds focus — the original list
+/// view bindings without the now-removed `1`-`0`/`-` direct tab shortcuts.
+fn handle_content_focus_keys(app: &mut App, key: KeyCode) -> Result<()> {
+    match key {
         KeyCode::Char('h') | KeyCode::Left => handle_folder_collapse(app),
-        KeyCode::Char('l') | KeyCode::Right => { if app.is_cursor_on_folder() { app.expand_folder(); } }
-        KeyCode::Char('1') => app.set_tab(0),
-        KeyCode::Char('2') => app.set_tab(1),
-        KeyCode::Char('3') => app.set_tab(2),
-        KeyCode::Char('4') => app.set_tab(3),
-        KeyCode::Char('5') => app.set_tab(4),
-        KeyCode::Char('6') => app.set_tab(5),
-        KeyCode::Char('7') => app.set_tab(6),
-        KeyCode::Char('8') => app.set_tab(7),
-        KeyCode::Char('9') => app.set_tab(8),
-        KeyCode::Char('0') => app.set_tab(9),
-        KeyCode::Char('-') => app.set_tab(10),
+        KeyCode::Char('l') | KeyCode::Right => {
+            if app.is_cursor_on_folder() { app.expand_folder(); }
+        }
         KeyCode::Down | KeyCode::Char('j') => app.next_item(),
         KeyCode::Up | KeyCode::Char('k') => app.prev_item(),
         KeyCode::Char(' ') => app.toggle_selected(),
@@ -135,24 +160,51 @@ fn handle_diff_input(app: &mut App, key: KeyCode) -> Result<()> {
     Ok(())
 }
 
+/// Number of rows on the CLI selection screen: Claude, Codex, Sources.
+const CLI_SELECTION_OPTIONS: usize = 3;
+
 fn handle_cli_selection(
     app: &mut App,
     key: KeyCode,
     refresh_tx: &std::sync::mpsc::Sender<Result<RefreshResult>>,
 ) -> Result<()> {
     match key {
-        KeyCode::Char('1') => {
+        KeyCode::Up | KeyCode::Char('k') => {
+            if app.cli_selection_index > 0 {
+                app.cli_selection_index -= 1;
+            }
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            if app.cli_selection_index + 1 < CLI_SELECTION_OPTIONS {
+                app.cli_selection_index += 1;
+            }
+        }
+        KeyCode::Enter => confirm_cli_selection(app, refresh_tx)?,
+        KeyCode::Char('q') => app.should_quit = true,
+        _ => {}
+    }
+    Ok(())
+}
+
+/// Apply the currently highlighted option on the CLI selection screen.
+/// Split out from the key handler so the row → action mapping lives in
+/// one place and stays in sync with the renderer's option list order.
+fn confirm_cli_selection(
+    app: &mut App,
+    refresh_tx: &std::sync::mpsc::Sender<Result<RefreshResult>>,
+) -> Result<()> {
+    match app.cli_selection_index {
+        0 => {
             app.select_cli(app::TargetCli::Claude)?;
             loading::start_loading_thread(app, refresh_tx);
         }
-        KeyCode::Char('2') => {
+        1 => {
             app.select_cli(app::TargetCli::Codex)?;
             loading::start_loading_thread(app, refresh_tx);
         }
-        KeyCode::Char('s') => {
+        2 => {
             app.current_view = app::View::Sources;
         }
-        KeyCode::Char('q') => app.should_quit = true,
         _ => {}
     }
     Ok(())

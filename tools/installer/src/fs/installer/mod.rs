@@ -7,7 +7,9 @@ mod plugin;
 use std::path::Path;
 use anyhow::Result;
 
+use crate::app::TargetCli;
 use crate::component::{Component, ComponentType};
+use crate::fs::{create_cli_command, run_with_timeout};
 use merge::merge_settings_json;
 use settings::{
     register_hook_in_settings, unregister_hook_from_settings,
@@ -23,6 +25,50 @@ pub use settings::{
     set_statusline, unset_statusline,
     remove_managed_settings_sections,
 };
+
+/// Timeout for the pre-flight `--version` probe. Long enough to absorb
+/// a cold Node.js startup on a slow disk, short enough that a hung CLI
+/// doesn't make the installer feel frozen.
+const PREFLIGHT_TIMEOUT_SECS: u64 = 8;
+
+/// Verify the target CLI is reachable before queuing per-item operations.
+///
+/// Plugin and MCP install/remove both shell out to `claude` (or `codex`).
+/// Without this check, a missing CLI surfaces as N identical "not found"
+/// errors — one per queued item — wrapped in install-flavored language
+/// that obscures the real problem. Running `--version` once up front
+/// lets us collapse that into a single, actionable status message and
+/// abort before the user enters the Installing view.
+///
+/// # Blocking behaviour
+///
+/// This call is **synchronous** and may block the caller for up to
+/// `PREFLIGHT_TIMEOUT_SECS` seconds. The TUI never calls it directly —
+/// `start_preflight_thread` hoists it onto a worker thread so the tick
+/// keeps rendering and accepting input while the probe runs. The CLI
+/// `--sync` and any future non-TUI callers may invoke this synchronously
+/// since they don't share a render loop. The happy path is sub-second
+/// (`claude --version` returns immediately) and the missing-CLI path is
+/// also immediate (`spawn` returns `ErrorKind::NotFound` without waiting);
+/// the only slow path is a CLI that hangs on stdin or work it does at
+/// startup — rare in practice, hence the 8-second budget.
+pub(crate) fn preflight_cli_available(target_cli: TargetCli) -> Result<()> {
+    let mut cmd = create_cli_command(target_cli);
+    cmd.args(["--version"]);
+    match run_with_timeout(&mut cmd, PREFLIGHT_TIMEOUT_SECS) {
+        Ok(out) if out.status.success() => Ok(()),
+        Ok(out) => {
+            let stderr = String::from_utf8_lossy(&out.stderr);
+            let trimmed = stderr.trim();
+            if trimmed.is_empty() {
+                anyhow::bail!("CLI exited with status {}", out.status);
+            } else {
+                anyhow::bail!("CLI reported: {}", trimmed);
+            }
+        }
+        Err(e) => Err(e),
+    }
+}
 
 /// Automatically clean up deprecated hooks that are already installed.
 /// Returns a list of hook names that were cleaned up.
@@ -54,7 +100,7 @@ pub fn auto_cleanup_deprecated_hooks(source_dir: &Path, dest_dir: &Path) -> Vec<
             Ok(c) => c,
             Err(_) => continue,
         };
-        let config: crate::component::HookConfig = match serde_yaml::from_str(&config_content) {
+        let config: crate::component::HookConfig = match serde_yaml_bw::from_str(&config_content) {
             Ok(c) => c,
             Err(_) => continue,
         };

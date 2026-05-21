@@ -19,7 +19,7 @@ use ratatui::{
 use ratatui::style::Style;
 use ratatui::text::Span;
 
-use crate::app::{App, Tab, View};
+use crate::app::{App, FocusArea, Tab, View};
 use crate::theme::Theme;
 
 /// Render a source tag (e.g., " [bundled]") for multi-source display.
@@ -48,7 +48,9 @@ pub fn draw(f: &mut Frame, app: &App) {
         f.area()
     );
 
-    // CLI selection screen takes full screen
+    // CLI selection screen takes full screen and self-contains its
+    // version footer; skip the global status bar to keep the first
+    // impression uncluttered.
     if app.current_view == View::CliSelection {
         cli_selection::render(f, app, f.area());
         return;
@@ -57,6 +59,12 @@ pub fn draw(f: &mut Frame, app: &App) {
     // Loading screen takes full screen
     if app.current_view == View::Loading {
         render_loading_screen(f, app);
+        return;
+    }
+
+    // Preflighting (CLI `--version` probe) reuses the loading screen.
+    if app.current_view == View::Preflighting {
+        render_preflighting_screen(f, app);
         return;
     }
 
@@ -123,6 +131,7 @@ pub fn draw(f: &mut Frame, app: &App) {
     match app.current_view {
         View::CliSelection => unreachable!(),
         View::Loading => unreachable!(),
+        View::Preflighting => unreachable!(),
         View::List => {
             if app.tab == Tab::McpServers {
                 mcp_list::render(f, app, chunks[1]);
@@ -157,6 +166,29 @@ pub fn draw(f: &mut Frame, app: &App) {
     render_status_bar(f, app, chunks[2]);
 }
 
+/// Build the List view's status-bar help text.
+///
+/// The help reflects which pane currently holds focus so the user always
+/// sees the keys that will actually do something: when the tab bar is
+/// focused, the action keys (Space, i, r, ...) are intentionally hidden to
+/// avoid the implication that they'd work in that mode. The global keys
+/// (Tab to switch focus, q to quit, t for theme) are listed in both views.
+fn list_view_help(app: &App) -> &'static str {
+    if app.focus == FocusArea::Tabs {
+        return "[Tab] Focus content  [h/l/←/→] Switch tab  [Enter] Confirm  [t] Theme  [q] Quit";
+    }
+    match app.tab {
+        Tab::McpServers =>
+            "[Tab] Focus tabs  [Space] Toggle  [i] Install  [r] Remove  [o] Scope  [t] Theme  [q] Quit",
+        Tab::Plugins =>
+            "[Tab] Focus tabs  [Space] Toggle  [i] Install  [r] Remove  [t] Theme  [q] Quit",
+        Tab::OutputStyles | Tab::Statusline =>
+            "[Tab] Focus tabs  [Space] Toggle  [i] Install  [r] Remove  [d] Diff  [s] Set  [u] Unset  [t] Theme  [q] Quit",
+        _ =>
+            "[Tab] Focus tabs  [Space] Toggle  [i] Install  [r] Remove  [d] Diff  [h/l/←/→] Folder  [t] Theme  [q] Quit",
+    }
+}
+
 fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
     use ratatui::{
         style::Style,
@@ -165,19 +197,13 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
     };
 
     let help_text = match app.current_view {
-        View::CliSelection => "[1/2] Select  [q] Quit",
+        // CliSelection has its own version footer and skips the global
+        // status bar (see early-return in `draw`); this arm exists only
+        // to keep the match exhaustive.
+        View::CliSelection => "",
         View::Loading => "Loading...  [q] Quit",
-        View::List => {
-            if app.tab == Tab::McpServers {
-                "[Space] Toggle  [i] Install  [r] Remove  [o] Scope  [t] Theme  [Tab/1-0,-] Switch  [q] Quit"
-            } else if app.tab == Tab::Plugins {
-                "[Space] Toggle  [i] Install  [r] Remove  [t] Theme  [Tab/1-0,-] Switch  [q] Quit"
-            } else if app.tab == Tab::OutputStyles || app.tab == Tab::Statusline {
-                "[Space] Toggle  [i] Install  [r] Remove  [d] Diff  [s] Set [u] Unset  [t] Theme  [Tab/1-0,-] Switch  [q] Quit"
-            } else {
-                "[Space] Toggle  [i] Install  [r] Remove  [d] Diff  [h/l/←/→] Folder  [t] Theme  [Tab/1-0,-] Switch  [q] Quit"
-            }
-        }
+        View::Preflighting => "Checking CLI...  [Esc] Cancel  [q] Quit",
+        View::List => list_view_help(app),
         View::Diff => "[j/k/↑/↓] Scroll  [q/Esc] Close",
         View::EnvInput => "[Enter] Submit  [Esc] Cancel  [Backspace] Delete",
         View::ProjectPath => "[Enter] Confirm  [Esc] Cancel  [Backspace] Delete",
@@ -224,6 +250,33 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
 }
 
 fn render_loading_screen(f: &mut Frame, app: &App) {
+    let cli_name = app.target_cli
+        .map(|c| c.display_name().to_string())
+        .unwrap_or_else(|| "Unknown".to_string());
+    render_spinner_box(
+        f,
+        app,
+        " Config Installer ",
+        &format!("Loading {} configuration...", cli_name),
+    );
+}
+
+fn render_preflighting_screen(f: &mut Frame, app: &App) {
+    let cli_name = app.target_cli
+        .map(|c| c.display_name().to_string())
+        .unwrap_or_else(|| "CLI".to_string());
+    render_spinner_box(
+        f,
+        app,
+        " Preflight ",
+        &format!("Checking {} availability...", cli_name),
+    );
+}
+
+/// Centered spinner box used by both the initial scan and the CLI
+/// preflight. Same layout, theme, and animation — only the title and
+/// the single line of message text vary.
+fn render_spinner_box(f: &mut Frame, app: &App, title: &str, message: &str) {
     use ratatui::{
         layout::{Alignment, Constraint},
         style::{Modifier, Style},
@@ -250,11 +303,8 @@ fn render_loading_screen(f: &mut Frame, app: &App) {
         .split(vertical[1]);
 
     let spinner = get_spinner(app.animation_frame);
-    let cli_name = app.target_cli
-        .map(|c| c.display_name().to_string())
-        .unwrap_or_else(|| "Unknown".to_string());
 
-    let loading_text = vec![
+    let text = vec![
         Line::from(""),
         Line::from(vec![
             Span::styled(
@@ -265,24 +315,24 @@ fn render_loading_screen(f: &mut Frame, app: &App) {
             ),
             Span::raw("  "),
             Span::styled(
-                format!("Loading {} configuration...", cli_name),
+                message.to_string(),
                 Style::default().fg(app.theme.text_primary()),
             ),
         ]),
         Line::from(""),
     ];
 
-    let loading = Paragraph::new(loading_text)
+    let widget = Paragraph::new(text)
         .style(Style::default().fg(app.theme.accent_primary()).bg(app.theme.bg_secondary()))
         .alignment(Alignment::Center)
         .block(
             Block::default()
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(app.theme.info()))
-                .title(" Config Installer ")
+                .title(title.to_string())
                 .title_style(Style::default().fg(app.theme.text_primary()))
                 .style(Style::default().bg(app.theme.bg_secondary())),
         );
 
-    f.render_widget(loading, horizontal[1]);
+    f.render_widget(widget, horizontal[1]);
 }

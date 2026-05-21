@@ -7,7 +7,7 @@ mod settings;
 pub mod sources;
 mod source_wizard;
 
-pub use types::{TargetCli, Tab, View, SyncStatus};
+pub use types::{TargetCli, Tab, View, SyncStatus, FocusArea};
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -25,6 +25,10 @@ pub struct App {
     pub available_tabs: Vec<Tab>,
     pub tab: Tab,
     pub current_view: View,
+    pub focus: FocusArea,
+    /// Cursor row on the initial CLI-selection screen.
+    /// 0 = Claude Code, 1 = Codex CLI, 2 = Manage Sources.
+    pub cli_selection_index: usize,
     pub should_quit: bool,
     pub theme: Theme,
 
@@ -137,6 +141,8 @@ impl App {
             available_tabs: Vec::new(), // Will be set after CLI selection
             tab: Tab::Agents,
             current_view: View::CliSelection,
+            focus: FocusArea::default(),
+            cli_selection_index: 0,
             should_quit: false,
             theme: Theme::default(),
             components: Vec::new(),

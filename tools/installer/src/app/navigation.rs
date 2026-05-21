@@ -1,8 +1,29 @@
-use super::types::Tab;
+use super::types::{FocusArea, Tab};
 use super::App;
 use crate::tree::TreeView;
 
 impl App {
+    /// Cycle keyboard focus between the tab bar and the content pane.
+    ///
+    /// Bound to `Tab`/`Shift+Tab` from the List view. While focus sits on
+    /// `Tabs`, arrow/`h`/`l` keys move between tabs; while it sits on
+    /// `Content`, those same keys drive list / folder navigation. Keeping a
+    /// single toggle (rather than two distinct keybindings) means the user
+    /// only needs to remember one shortcut to switch panes.
+    pub fn toggle_focus(&mut self) {
+        self.focus = match self.focus {
+            FocusArea::Content => FocusArea::Tabs,
+            FocusArea::Tabs => FocusArea::Content,
+        };
+    }
+
+    /// Force focus back to the content pane. Used by `Enter`/`Esc`/`↓` from
+    /// the tab bar so the user has multiple intuitive ways to "commit" a
+    /// tab selection and resume list navigation.
+    pub fn focus_content(&mut self) {
+        self.focus = FocusArea::Content;
+    }
+
     pub fn next_tab(&mut self) {
         if let Some(current_idx) = self.available_tabs.iter().position(|t| *t == self.tab) {
             let next_idx = (current_idx + 1) % self.available_tabs.len();
@@ -19,13 +40,6 @@ impl App {
                 current_idx - 1
             };
             self.tab = self.available_tabs[prev_idx];
-            self.list_index = 0;
-        }
-    }
-
-    pub fn set_tab(&mut self, idx: usize) {
-        if let Some(&tab) = self.available_tabs.get(idx) {
-            self.tab = tab;
             self.list_index = 0;
         }
     }
@@ -118,5 +132,95 @@ impl App {
     /// Get current tree view
     pub fn get_tree_view(&self) -> Option<&TreeView> {
         self.tree_views.get(&self.tab)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::app::App;
+
+    fn fresh_app() -> App {
+        // App::new() does filesystem I/O for source resolution which would
+        // make the test brittle, so we hand-construct only the fields the
+        // focus helpers actually touch.
+        App {
+            target_cli: None,
+            available_tabs: Vec::new(),
+            tab: Tab::Skills,
+            current_view: crate::app::View::List,
+            focus: FocusArea::Content,
+            cli_selection_index: 0,
+            should_quit: false,
+            theme: crate::theme::Theme::default(),
+            components: Vec::new(),
+            list_index: 0,
+            tree_views: std::collections::HashMap::new(),
+            mcp_servers: Vec::new(),
+            mcp_index: 0,
+            mcp_scope: crate::mcp::McpScope::default(),
+            mcp_project_path: String::new(),
+            plugins: Vec::new(),
+            plugin_index: 0,
+            diff_content: None,
+            diff_scroll: 0,
+            source_dir: std::path::PathBuf::new(),
+            bundled_git_root: None,
+            sources: Vec::new(),
+            dest_dir: std::path::PathBuf::new(),
+            status_message: None,
+            current_output_style: None,
+            current_statusline: None,
+            processing_progress: None,
+            processing_total: None,
+            processing_log: Vec::new(),
+            processing_queue: Vec::new(),
+            is_removing: false,
+            animation_frame: 0,
+            needs_refresh: false,
+            refreshing: false,
+            processing_complete: false,
+            cancelling: false,
+            env_input_server_idx: None,
+            env_input_vars: Vec::new(),
+            env_input_current: 0,
+            env_input_buffer: String::new(),
+            env_input_values: Vec::new(),
+            project_path_buffer: String::new(),
+            source_entries: Vec::new(),
+            source_auto_update: false,
+            source_list_index: 0,
+            source_add_kind: None,
+            source_input_buffer: String::new(),
+            source_edit_index: None,
+            source_sync_status: None,
+            source_sync_cancel_tx: None,
+            source_input_error: None,
+            source_pending_url: String::new(),
+            source_pending_branch: None,
+            source_pending_root: None,
+            source_sync_rx: None,
+        }
+    }
+
+    #[test]
+    fn toggle_focus_cycles_between_panes() {
+        let mut app = fresh_app();
+        assert_eq!(app.focus, FocusArea::Content);
+        app.toggle_focus();
+        assert_eq!(app.focus, FocusArea::Tabs);
+        app.toggle_focus();
+        assert_eq!(app.focus, FocusArea::Content);
+    }
+
+    #[test]
+    fn focus_content_is_idempotent() {
+        let mut app = fresh_app();
+        app.focus = FocusArea::Tabs;
+        app.focus_content();
+        assert_eq!(app.focus, FocusArea::Content);
+        // Calling again must not flip back to Tabs.
+        app.focus_content();
+        assert_eq!(app.focus, FocusArea::Content);
     }
 }

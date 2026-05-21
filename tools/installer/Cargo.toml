@@ -1,6 +1,6 @@
 [package]
 name = "hibi_ai"
-version = "1.10.0"
+version = "1.11.0"
 edition = "2024"
 
 [[bin]]
@@ -18,15 +18,15 @@ walkdir = "2.5"
 dirs = "6.0"
 
 # Diff
-similar = { version = "2.6", features = ["text"] }
+similar = { version = "3.1", features = ["text"] }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-serde_yaml = "0.9"
+serde_yaml_bw = "2.5"
 
 # Command parsing
-shlex = "1"
+shlex = "2"
 
 # Error handling
 anyhow = "1.0"

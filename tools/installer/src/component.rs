@@ -185,7 +185,7 @@ event: PreToolUse
 type: command
 deprecated: true
 "#;
-        let config: HookConfig = serde_yaml::from_str(yaml).unwrap();
+        let config: HookConfig = serde_yaml_bw::from_str(yaml).unwrap();
         assert!(config.is_deprecated());
         assert_eq!(config.deprecated, Some(true));
     }
@@ -198,7 +198,7 @@ event: PreToolUse
 type: command
 deprecated: false
 "#;
-        let config: HookConfig = serde_yaml::from_str(yaml).unwrap();
+        let config: HookConfig = serde_yaml_bw::from_str(yaml).unwrap();
         assert!(!config.is_deprecated());
     }
 
@@ -209,7 +209,7 @@ name: test-hook
 event: PreToolUse
 type: command
 "#;
-        let config: HookConfig = serde_yaml::from_str(yaml).unwrap();
+        let config: HookConfig = serde_yaml_bw::from_str(yaml).unwrap();
         assert!(!config.is_deprecated());
         assert_eq!(config.deprecated, None);
     }
@@ -258,7 +258,7 @@ event: PreToolUse
 type: command
 deprecated: true
 "#;
-        let config: HookConfig = serde_yaml::from_str(yaml).unwrap();
+        let config: HookConfig = serde_yaml_bw::from_str(yaml).unwrap();
         let c = Component::new(
             ComponentType::Hooks,
             "old-hook".to_string(),
@@ -295,7 +295,7 @@ name: active-hook
 event: PreToolUse
 type: command
 "#;
-        let config: HookConfig = serde_yaml::from_str(yaml).unwrap();
+        let config: HookConfig = serde_yaml_bw::from_str(yaml).unwrap();
         let c = Component::new(
             ComponentType::Hooks,
             "active-hook".to_string(),

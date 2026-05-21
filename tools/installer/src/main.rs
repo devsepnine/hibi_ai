@@ -98,10 +98,11 @@ where
         match app.current_view {
             app::View::Installing => loading::handle_installing_view(app, &mut channels)?,
             app::View::Loading => loading::handle_loading_view(app, &channels.refresh_rx)?,
+            app::View::Preflighting => loading::handle_preflighting_view(app, &mut channels)?,
             app::View::SourceSyncing => cli::handle_source_syncing(app)?,
             _ => {
-                if let Some((code, modifiers)) = cli::read_key_press()? {
-                    cli::dispatch_key(app, code, modifiers, &channels.refresh_tx)?;
+                if let Some(code) = cli::read_key_press()? {
+                    cli::dispatch_key(app, code, &channels.refresh_tx)?;
                 }
             }
         }

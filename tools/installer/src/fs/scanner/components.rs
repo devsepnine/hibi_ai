@@ -163,7 +163,7 @@ fn scan_hooks(
         }
 
         let config_content = std::fs::read_to_string(&hook_yaml)?;
-        let config: HookConfig = serde_yaml::from_str(&config_content)?;
+        let config: HookConfig = serde_yaml_bw::from_str(&config_content)?;
 
         let hook_name = path.file_name()
             .and_then(|n| n.to_str())

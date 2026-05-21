@@ -32,6 +32,19 @@ impl TargetCli {
     }
 }
 
+/// Which pane the keyboard is currently driving.
+///
+/// `Tab`/`Shift+Tab` toggles between the two. Movement keys (`h`/`l`/`←`/`→`,
+/// `j`/`k`/`↑`/`↓`) act on whichever pane is focused, so the same handful of
+/// keys serve both tab switching and list navigation without per-pane
+/// shortcuts.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub enum FocusArea {
+    #[default]
+    Content,
+    Tabs,
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum Tab {
     Agents,
@@ -112,6 +125,7 @@ pub enum View {
     Diff,
     EnvInput,
     ProjectPath,
+    Preflighting,
     Installing,
     Sources,
     SourceAddType,

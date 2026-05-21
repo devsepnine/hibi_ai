@@ -90,7 +90,7 @@ pub fn load_config() -> Result<(Vec<SourceEntry>, bool)> {
     }
 
     let content = std::fs::read_to_string(&config_path)?;
-    let config: SourcesConfig = serde_yaml::from_str(&content)?;
+    let config: SourcesConfig = serde_yaml_bw::from_str(&content)?;
     let auto_update = config.auto_update.unwrap_or(true);
     Ok((config.sources, auto_update))
 }
@@ -113,7 +113,7 @@ pub fn save_config(entries: &[SourceEntry], auto_update: bool) -> Result<()> {
     if let Some(parent) = config_path.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    let yaml = serde_yaml::to_string(&config)?;
+    let yaml = serde_yaml_bw::to_string(&config)?;
     std::fs::write(&config_path, yaml)?;
     Ok(())
 }
@@ -288,8 +288,8 @@ mod tests {
             auto_update: None,
         };
 
-        let yaml = serde_yaml::to_string(&config).unwrap();
-        let parsed: super::SourcesConfig = serde_yaml::from_str(&yaml).unwrap();
+        let yaml = serde_yaml_bw::to_string(&config).unwrap();
+        let parsed: super::SourcesConfig = serde_yaml_bw::from_str(&yaml).unwrap();
 
         assert_eq!(parsed.sources.len(), 3);
         // Verify tag serialization produces "type: git" / "type: local"

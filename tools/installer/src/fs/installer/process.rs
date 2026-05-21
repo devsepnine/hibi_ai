@@ -69,6 +69,7 @@ fn format_process_error(action: &str, item_name: &str, stderr_output: &str) -> S
 
 /// Re-export the shared `run_with_timeout` for use within the installer module.
 pub(super) use crate::fs::run_with_timeout;
+use crate::fs::enrich_spawn_error;
 
 /// Configuration for a cancelable process operation.
 pub(super) struct ProcessConfig<'a> {
@@ -95,7 +96,8 @@ pub(super) fn spawn_cancelable_process(
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .spawn()?;
+        .spawn()
+        .map_err(|e| enrich_spawn_error(command, e))?;
 
     let stdout = child.stdout.take().unwrap();
     let stderr = child.stderr.take().unwrap();
