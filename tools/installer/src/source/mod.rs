@@ -7,18 +7,9 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
-/// Hardcoded repo URL for remote sync. Not user-configurable (unlike sources.yaml).
-const BUNDLED_REPO_URL: &str = "https://github.com/devsepnine/hibi_ai";
-
 /// Discover the source directory containing bundled components.
-/// Prefers cached clone (from previous sync) over package-installed files.
+/// Always uses the package-embedded source files (no remote sync).
 pub(crate) fn find_source_dir() -> Result<PathBuf> {
-    // Cached bundled source takes priority (previously synced)
-    if let Some(cached) = bundled_cache_src_dir() {
-        if validate_source_dir(&cached) {
-            return Ok(cached);
-        }
-    }
     find_package_source_dir()
 }
 
@@ -56,25 +47,6 @@ fn find_package_source_dir() -> Result<PathBuf> {
     anyhow::bail!("Cannot find source directory. Run from dotfiles root or config/ai/claude/tools/installer")
 }
 
-/// `~/.hibi/cache/bundled/src/` — the cached bundled source directory.
-fn bundled_cache_src_dir() -> Option<PathBuf> {
-    Some(dirs::home_dir()?.join(".hibi").join("cache").join("bundled").join("src"))
-}
-
-/// `~/.hibi/cache/bundled/` — the cache base (git clone root).
-fn bundled_cache_base() -> Result<PathBuf> {
-    let home = dirs::home_dir()
-        .ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
-    Ok(home.join(".hibi").join("cache").join("bundled"))
-}
-
-/// Clone or update the remote hibi_ai repo to cache. Returns the `src/` path.
-fn sync_bundled_cache() -> Result<PathBuf> {
-    let cache_dir = bundled_cache_base()?;
-    git::clone_or_update(BUNDLED_REPO_URL, &None, &cache_dir)?;
-    Ok(cache_dir.join("src"))
-}
-
 // ---------------------------------------------------------------------------
 // Sync & Resolve
 // ---------------------------------------------------------------------------
@@ -85,61 +57,37 @@ pub struct ResolveResult {
     pub warnings: Vec<String>,
 }
 
-/// Result of a full sync operation (bundled pull + source resolve).
+/// Result of a full sync operation (source resolve).
 pub(crate) struct SyncReport {
     pub resolved: Vec<ResolvedSource>,
     pub summaries: Vec<String>,
     pub had_error: bool,
 }
 
-/// Pull bundled repo (or clone from remote) then resolve all sources.
-/// Checks `cancel_rx` between phases for cooperative cancellation.
+/// Resolve all user-configured sources. The bundled source is package-embedded
+/// (`source_dir`) and is never fetched from a remote.
+/// Checks `cancel_rx` before resolving for cooperative cancellation.
 pub(crate) fn sync_all_sources(
-    bundled_git_root: Option<&Path>,
     source_dir: &Path,
     cancel_rx: &std::sync::mpsc::Receiver<()>,
 ) -> SyncReport {
     let mut summaries = Vec::new();
-    let mut had_error = false;
 
-    // Phase 1: sync bundled source
-    let effective_source_dir = if let Some(git_root) = bundled_git_root {
-        // In-repo: git pull
-        match git::pull_local_repo(git_root) {
-            Ok(()) => summaries.push("  bundled: updated".to_string()),
-            Err(e) => {
-                summaries.push(format!("  bundled: failed ({})", e));
-                had_error = true;
-            }
-        }
-        source_dir.to_path_buf()
-    } else {
-        // Package manager install: clone/update from remote
-        match sync_bundled_cache() {
-            Ok(cached_dir) => {
-                summaries.push("  bundled: updated (remote)".to_string());
-                cached_dir
-            }
-            Err(e) => {
-                summaries.push(format!("  bundled: failed ({})", e));
-                had_error = true;
-                source_dir.to_path_buf()
-            }
-        }
-    };
+    // Bundled source is package-embedded; nothing to fetch.
+    summaries.push("  bundled: local".to_string());
 
-    // Cooperative cancel check between phases
+    // Cooperative cancel check before resolving user sources
     if cancel_rx.try_recv().is_ok() {
         summaries.push("  cancelled".to_string());
         return SyncReport {
-            resolved: vec![ResolvedSource::bundled(&effective_source_dir)],
+            resolved: vec![ResolvedSource::bundled(source_dir)],
             summaries,
             had_error: true,
         };
     }
 
-    // Phase 2: resolve all sources using effective source dir
-    match resolve_all_sources(&effective_source_dir) {
+    // Resolve all sources using the package-embedded source dir
+    match resolve_all_sources(source_dir) {
         Ok(r) => {
             for s in &r.sources {
                 if s.kind == SourceKind::Git {
@@ -151,12 +99,12 @@ pub(crate) fn sync_all_sources(
                 }
             }
             summaries.extend(r.warnings);
-            SyncReport { resolved: r.sources, summaries, had_error }
+            SyncReport { resolved: r.sources, summaries, had_error: false }
         }
         Err(e) => {
             summaries.push(format!("  re-resolve failed: {}", e));
             SyncReport {
-                resolved: vec![ResolvedSource::bundled(&effective_source_dir)],
+                resolved: vec![ResolvedSource::bundled(source_dir)],
                 summaries,
                 had_error: true,
             }
@@ -317,11 +265,20 @@ mod tests {
     }
 
     #[test]
-    fn test_bundled_cache_src_dir() {
-        let dir = bundled_cache_src_dir();
-        assert!(dir.is_some());
-        let path = dir.unwrap();
-        assert!(path.to_string_lossy().contains("bundled"));
-        assert!(path.to_string_lossy().ends_with("src"));
+    fn test_cleanup_bundled_cache_noop_when_absent() {
+        // When the orphaned cache dir is absent, cleanup is a safe no-op
+        // returning Ok(false). This is the only test that invokes the
+        // function against the real home dir, so no parallel test races it
+        // on that shared path.
+        let absent = dirs::home_dir()
+            .map(|h| !h.join(".hibi").join("cache").join("bundled").exists())
+            .unwrap_or(false);
+        // Only invoke against the real home dir when the cache is absent, so the
+        // test can never delete a real user's bundled cache. When present, skip.
+        if absent {
+            let result = git::cleanup_bundled_cache();
+            assert!(result.is_ok());
+            assert!(!result.unwrap());
+        }
     }
 }

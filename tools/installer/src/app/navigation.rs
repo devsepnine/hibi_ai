@@ -165,7 +165,6 @@ mod tests {
             diff_content: None,
             diff_scroll: 0,
             source_dir: std::path::PathBuf::new(),
-            bundled_git_root: None,
             sources: Vec::new(),
             dest_dir: std::path::PathBuf::new(),
             status_message: None,

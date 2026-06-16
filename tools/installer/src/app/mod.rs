@@ -48,7 +48,6 @@ pub struct App {
     pub diff_scroll: u16,
 
     pub source_dir: PathBuf,
-    pub bundled_git_root: Option<PathBuf>,
     pub sources: Vec<ResolvedSource>,
     pub dest_dir: PathBuf,
 
@@ -98,7 +97,6 @@ pub struct App {
 
 struct InitData {
     source_dir: PathBuf,
-    bundled_git_root: Option<PathBuf>,
     sources: Vec<ResolvedSource>,
     init_warnings: Option<String>,
     source_entries: Vec<SourceEntry>,
@@ -109,13 +107,18 @@ struct InitData {
 
 fn load_init_data() -> Result<InitData> {
     let source_dir = crate::source::find_source_dir()?;
-    let bundled_git_root = crate::source::git::find_git_root(&source_dir);
+
+    // One-time cleanup of the orphaned bundled-source cache (now package-embedded).
+    // Don't fail init if cleanup errors — collect it as a warning instead.
+    let mut warnings = collect_startup_warnings();
+
     let resolve_result = crate::source::resolve_all_sources(&source_dir)?;
     let sources = resolve_result.sources;
-    let init_warnings = if resolve_result.warnings.is_empty() {
+    warnings.extend(resolve_result.warnings);
+    let init_warnings = if warnings.is_empty() {
         None
     } else {
-        Some(resolve_result.warnings.join("; "))
+        Some(warnings.join("; "))
     };
     let (source_entries, source_auto_update) = crate::source::config::load_config()
         .unwrap_or((Vec::new(), true));
@@ -127,9 +130,21 @@ fn load_init_data() -> Result<InitData> {
         .unwrap_or_default();
 
     Ok(InitData {
-        source_dir, bundled_git_root, sources, init_warnings,
+        source_dir, sources, init_warnings,
         source_entries, source_auto_update, dest_dir, default_project,
     })
+}
+
+/// Run the one-time orphaned-bundled-cache cleanup, returning any non-fatal
+/// message as a warning. Never fails init.
+fn collect_startup_warnings() -> Vec<String> {
+    let mut warnings = Vec::new();
+    match crate::source::git::cleanup_bundled_cache() {
+        Ok(true) => warnings.push("Removed orphaned bundled cache (~/.hibi/cache/bundled)".to_string()),
+        Ok(false) => {}
+        Err(e) => warnings.push(format!("Failed to clean bundled cache: {}", e)),
+    }
+    warnings
 }
 
 impl App {
@@ -157,7 +172,6 @@ impl App {
             diff_content: None,
             diff_scroll: 0,
             source_dir: d.source_dir,
-            bundled_git_root: d.bundled_git_root,
             sources: d.sources,
             dest_dir: d.dest_dir,
             status_message: d.init_warnings,

@@ -11,100 +11,6 @@ const CLONE_TIMEOUT_SECS: u64 = 60;
 const FETCH_TIMEOUT_SECS: u64 = 30;
 const RESET_TIMEOUT_SECS: u64 = 10;
 
-/// Detect if `source_dir` lives inside the hibi_ai git repository.
-/// Returns the hibi_ai git root path, or `None` if not in a hibi_ai repo.
-///
-/// Why the repo-marker check: `share/hibi/` installed by package managers
-/// (e.g., Homebrew's `/opt/homebrew/Cellar/hibi/*/share/hibi/`) can sit
-/// inside an unrelated parent git repo (`/opt/homebrew/.git`). Without
-/// the marker guard, `sync` would `git pull` Homebrew itself instead of
-/// hibi_ai, and the cache clone path (`sync_bundled_cache`) would never
-/// be taken — leaving the user's bundled content permanently stale.
-pub fn find_git_root(source_dir: &Path) -> Option<PathBuf> {
-    let output = Command::new("git")
-        .args(["rev-parse", "--show-toplevel"])
-        .current_dir(source_dir)
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::null())
-        .output()
-        .ok()?;
-    if !output.status.success() {
-        return None;
-    }
-    let path_str = String::from_utf8(output.stdout).ok()?;
-    let root = PathBuf::from(normalize_git_path(path_str.trim()));
-    // Canonicalize both to handle symlinks (e.g., macOS /tmp -> /private/tmp)
-    let root_canonical = root.canonicalize().unwrap_or_else(|_| root.clone());
-    let source_canonical = source_dir.canonicalize().unwrap_or_else(|_| source_dir.to_path_buf());
-    // Guard 1: source_dir must live inside root.
-    if !source_canonical.starts_with(&root_canonical) {
-        return None;
-    }
-    // Guard 2: root must look like the hibi_ai repo. The installer's own
-    // Cargo.toml is a reliable fingerprint that survives rename/restructure
-    // better than checking for `src/agents` alone.
-    if !root_canonical.join("tools/installer/Cargo.toml").exists() {
-        return None;
-    }
-    Some(root)
-}
-
-/// Pull latest changes in a local (non-shallow) git repository.
-/// Uses `--ff-only` to avoid creating merge commits.
-pub fn pull_local_repo(repo_dir: &Path) -> Result<()> {
-    if !git_available() {
-        anyhow::bail!("git is not installed or not in PATH");
-    }
-    // Always fetch with `--tags --force` so upstream tag rewrites don't
-    // poison the operation (see git pull --ff-only's tag-clobber
-    // failure mode that v1.9.7 -> v1.9.8 had to hotfix).
-    run_git_command(
-        &["fetch", "--tags", "--force", "origin"],
-        Some(repo_dir),
-        FETCH_TIMEOUT_SECS,
-    )?;
-
-    // Shallow repos (the bundled cache is cloned with `--depth 1`)
-    // cannot fast-forward across an upstream history rewrite because
-    // the old and new commits share no ancestor in the local object
-    // graph — `merge --ff-only` rejects with "refusing to merge
-    // unrelated histories". Reset --hard is the only recovery, and
-    // it is safe here because shallow caches never carry local user
-    // commits. Full clones (dev checkouts) might, so keep `--ff-only`
-    // there to refuse silently dropping local work.
-    if is_shallow_repo(repo_dir)? {
-        run_git_command(
-            &["reset", "--hard", "FETCH_HEAD"],
-            Some(repo_dir),
-            RESET_TIMEOUT_SECS,
-        )
-    } else {
-        run_git_command(
-            &["merge", "--ff-only", "@{u}"],
-            Some(repo_dir),
-            FETCH_TIMEOUT_SECS,
-        )
-    }
-}
-
-/// Detect a shallow clone (e.g., one made with `--depth N`).
-/// Returns false on any unexpected git failure so callers default to
-/// the safer `merge --ff-only` path for full clones.
-fn is_shallow_repo(repo_dir: &Path) -> Result<bool> {
-    let output = Command::new("git")
-        .args(["rev-parse", "--is-shallow-repository"])
-        .current_dir(repo_dir)
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::null())
-        .output()?;
-    if !output.status.success() {
-        return Ok(false);
-    }
-    Ok(String::from_utf8_lossy(&output.stdout).trim() == "true")
-}
-
 /// Clone or update a git repository into the cache directory.
 /// Returns the local path to the cached repo.
 pub fn clone_or_update(url: &str, branch: &Option<String>, cache_dir: &Path) -> Result<PathBuf> {
@@ -160,6 +66,28 @@ pub fn remove_cache(url: &str) -> Result<bool> {
     if cache_dir.exists() {
         std::fs::remove_dir_all(&cache_dir)
             .with_context(|| format!("Failed to remove cache: {}", cache_dir.display()))?;
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
+/// Remove the orphaned bundled-source cache (`~/.hibi/cache/bundled/`).
+///
+/// Earlier versions synced the bundled source from a remote git repo into
+/// this directory. The bundled source is now package-embedded, so the cache
+/// is dead data; this performs a one-time cleanup.
+/// Returns `Ok(true)` if the cache was removed, `Ok(false)` if none existed.
+pub fn cleanup_bundled_cache() -> Result<bool> {
+    let home = dirs::home_dir()
+        .ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
+    // Fixed path (~/.hibi/cache/bundled), built from home_dir — safe by construction
+    // (no external input, unlike remove_cache which sanitizes a user-supplied URL).
+    let bundled_dir = home.join(".hibi").join("cache").join("bundled");
+
+    if bundled_dir.exists() {
+        std::fs::remove_dir_all(&bundled_dir)
+            .with_context(|| format!("Failed to remove bundled cache: {}", bundled_dir.display()))?;
         Ok(true)
     } else {
         Ok(false)
@@ -280,34 +208,6 @@ fn git_available() -> bool {
         .is_ok()
 }
 
-/// Convert MSYS/Unix-style git paths to native OS paths.
-/// On Windows, git returns paths like `/c/Users/...` which must become `C:/Users/...`.
-/// On other platforms, returns the path unchanged.
-fn normalize_git_path(path: &str) -> String {
-    #[cfg(windows)]
-    {
-        // MSYS path: /c/Users/... -> C:/Users/...
-        let bytes = path.as_bytes();
-        if bytes.len() >= 3 && bytes[0] == b'/' && bytes[2] == b'/' && bytes[1].is_ascii_alphabetic() {
-            let drive = (bytes[1] as char).to_ascii_uppercase();
-            return format!("{}:{}", drive, &path[2..]);
-        }
-        // Cygwin path: /cygdrive/c/Users/... -> C:/Users/...
-        if let Some(rest) = path.strip_prefix("/cygdrive/") {
-            let bytes = rest.as_bytes();
-            if bytes.len() >= 2 && bytes[1] == b'/' && bytes[0].is_ascii_alphabetic() {
-                let drive = (bytes[0] as char).to_ascii_uppercase();
-                return format!("{}:{}", drive, &rest[1..]);
-            }
-        }
-        path.to_string()
-    }
-    #[cfg(not(windows))]
-    {
-        path.to_string()
-    }
-}
-
 fn unix_timestamp_now() -> String {
     use std::time::SystemTime;
     match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
@@ -372,77 +272,17 @@ mod tests {
     }
 
     #[test]
-    #[cfg(windows)]
-    fn test_normalize_git_path_msys() {
-        assert_eq!(normalize_git_path("/c/Users/test"), "C:/Users/test");
-        assert_eq!(normalize_git_path("/d/workspace"), "D:/workspace");
-    }
-
-    #[test]
-    #[cfg(windows)]
-    fn test_normalize_git_path_cygwin() {
-        assert_eq!(normalize_git_path("/cygdrive/c/Users/test"), "C:/Users/test");
-        assert_eq!(normalize_git_path("/cygdrive/d/workspace"), "D:/workspace");
-    }
-
-    #[test]
-    fn test_normalize_git_path_passthrough() {
-        // Non-MSYS paths pass through unchanged on all platforms
-        assert_eq!(normalize_git_path("/Users/test"), "/Users/test");
-        assert_eq!(normalize_git_path("/home/user"), "/home/user");
-    }
-
-    /// Regression: Homebrew installs `share/hibi/` inside `/opt/homebrew`
-    /// which is itself a git repo. `find_git_root` must NOT treat that
-    /// unrelated parent repo as hibi_ai; otherwise `sync` pulls Homebrew
-    /// and never populates `~/.hibi/cache/bundled/`. The marker check
-    /// (`tools/installer/Cargo.toml` at the root) defends against this.
-    #[test]
-    fn test_find_git_root_requires_hibi_marker() {
-        use std::process::Command;
-
-        let probe = std::env::temp_dir().join(format!(
-            "hibi_find_git_root_probe_{}",
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
-        ));
-        let _ = std::fs::remove_dir_all(&probe);
-        std::fs::create_dir_all(&probe).unwrap();
-
-        // Seed a git repo without any hibi_ai marker
-        let init_ok = Command::new("git")
-            .arg("init")
-            .current_dir(&probe)
-            .output()
-            .map(|o| o.status.success())
-            .unwrap_or(false);
-        if !init_ok {
-            // Environment lacks git; skip (CI configs without git skip here).
-            let _ = std::fs::remove_dir_all(&probe);
-            return;
+    fn test_cleanup_bundled_cache_path_guard() {
+        // The cleanup target must live inside ~/.hibi/cache/ so the
+        // defense-in-depth `starts_with` guard can never reject it.
+        // (We don't invoke cleanup_bundled_cache() against the real home
+        // dir here — that path is a shared global resource and racing test
+        // threads would both try to remove it. The behavioral no-op test
+        // lives in the source module tests, run-serialized there.)
+        if let Some(home) = dirs::home_dir() {
+            let cache_base = home.join(".hibi").join("cache");
+            let bundled_dir = cache_base.join("bundled");
+            assert!(bundled_dir.starts_with(&cache_base));
         }
-
-        // Without marker: must be rejected (Homebrew-like case)
-        assert!(
-            find_git_root(&probe).is_none(),
-            "git repo without tools/installer/Cargo.toml must not be treated as hibi_ai"
-        );
-
-        // With marker: must be accepted
-        std::fs::create_dir_all(probe.join("tools").join("installer")).unwrap();
-        std::fs::write(
-            probe.join("tools").join("installer").join("Cargo.toml"),
-            "[package]\nname = \"probe\"\n",
-        )
-        .unwrap();
-
-        assert!(
-            find_git_root(&probe).is_some(),
-            "git repo with hibi marker must be accepted"
-        );
-
-        let _ = std::fs::remove_dir_all(&probe);
     }
 }

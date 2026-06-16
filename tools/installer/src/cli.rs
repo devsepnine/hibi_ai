@@ -247,11 +247,17 @@ pub(crate) fn print_help() {
 /// `hibi --sync`: fetch latest from git sources and print summary, no TUI.
 pub(crate) fn run_sync() -> Result<()> {
     let source_dir = source::find_source_dir()?;
-    let bundled_git_root = source::git::find_git_root(&source_dir);
+
+    // One-time cleanup of the orphaned bundled-source cache (now package-embedded).
+    match source::git::cleanup_bundled_cache() {
+        Ok(true) => println!("Removed orphaned bundled cache (~/.hibi/cache/bundled)"),
+        Ok(false) => {}
+        Err(e) => eprintln!("Warning: failed to clean bundled cache: {}", e),
+    }
 
     println!("Syncing sources...");
     let (_, dummy_rx) = std::sync::mpsc::channel::<()>();
-    let report = source::sync_all_sources(bundled_git_root.as_deref(), &source_dir, &dummy_rx);
+    let report = source::sync_all_sources(&source_dir, &dummy_rx);
 
     for s in &report.summaries {
         println!("{}", s);

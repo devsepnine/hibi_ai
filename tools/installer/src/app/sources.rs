@@ -179,7 +179,6 @@ impl App {
     }
 
     fn source_start_sync(&mut self) {
-        let bundled_root = self.bundled_git_root.clone();
         let source_dir = self.source_dir.clone();
         let dest_dir = self.dest_dir.clone();
         let target_cli = self.target_cli;
@@ -190,7 +189,7 @@ impl App {
         self.current_view = View::SourceSyncing;
 
         thread::spawn(move || {
-            let report = source::sync_all_sources(bundled_root.as_deref(), &source_dir, &cancel_rx);
+            let report = source::sync_all_sources(&source_dir, &cancel_rx);
 
             // Rescan component inventory so freshly pulled files appear in the
             // UI. Skip when no CLI target is selected yet (nothing to scan for).
