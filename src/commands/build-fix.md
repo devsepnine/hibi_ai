@@ -7,30 +7,16 @@ effort: low
 
 # Build and Fix
 
-Incrementally fix TypeScript and build errors:
+Incrementally fix TypeScript / build errors by dispatching the **build-error-resolver** agent.
 
-1. Run build: npm run build or pnpm build
+## Invoke
 
-2. Parse error output:
-   - Group by file
-   - Sort by severity
+Run the build (`npm run build` / `pnpm build`), then hand the error output to `build-error-resolver`. It fixes one error at a time with minimal diffs, verifying after each.
 
-3. For each error:
-   - Show error context (5 lines before/after)
-   - Explain the issue
-   - Propose fix
-   - Apply fix
-   - Re-run build
-   - Verify error resolved
+## Command-specific stop gates
 
-4. Stop if:
-   - Fix introduces new errors
-   - Same error persists after 3 attempts
-   - User requests pause
+- Stop if a fix introduces a new error (regression).
+- Stop if the same error persists after 3 attempts.
+- Stop if the user requests a pause.
 
-5. Show summary:
-   - Errors fixed
-   - Errors remaining
-   - New errors introduced
-
-Fix one error at a time for safety!
+Full diagnostic commands, error-pattern table, minimal-diff strategy, safety guards, and report format live in the `build-error-resolver` agent (`src/agents/build-error-resolver.md`). Follow that as the source of truth.

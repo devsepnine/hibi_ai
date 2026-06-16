@@ -7,28 +7,10 @@ effort: low
 
 # Test Coverage
 
-Analyze test coverage and generate missing tests:
+Analyze coverage and generate tests for under-covered files, targeting the **80%+ threshold**.
 
-1. Run tests with coverage: npm test --coverage or pnpm test --coverage
+## Invoke
 
-2. Analyze coverage report (coverage/coverage-summary.json)
+Run tests with coverage (`npm test --coverage` / `pnpm test --coverage`), read `coverage/coverage-summary.json`, and for each file below 80% generate unit / integration / E2E tests. Verify new tests pass and report before/after metrics.
 
-3. Identify files below 80% coverage threshold
-
-4. For each under-covered file:
-   - Analyze untested code paths
-   - Generate unit tests for functions
-   - Generate integration tests for APIs
-   - Generate E2E tests for critical flows
-
-5. Verify new tests pass
-
-6. Show before/after coverage metrics
-
-7. Ensure project reaches 80%+ overall coverage
-
-Focus on:
-- Happy path scenarios
-- Error handling
-- Edge cases (null, undefined, empty)
-- Boundary conditions
+Full TDD standards — Red-Green-Refactor cycle, test-type matrix, mocking checklist, coverage thresholds, common mistakes — live in the `tdd-workflow` skill (`src/skills/tdd-workflow/SKILL.md`). Follow that as the source of truth.

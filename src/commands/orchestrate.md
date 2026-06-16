@@ -1,5 +1,5 @@
 ---
-description: Sequential multi-agent workflow for complex tasks. Coordinates planner, tdd-guide, code-reviewer, security-reviewer in handoff chain.
+description: Sequential multi-agent workflow for complex tasks. Coordinates the built-in Plan agent, tdd-guide, and code-reviewer in handoff chain.
 argument-hint: "[workflow-type] [task-description]"
 allowed-tools: Task, Read, Bash, Grep
 model: opus
@@ -14,10 +14,10 @@ Sequential agent workflow. Usage: `/orchestrate [workflow-type] [task-descriptio
 
 | Type | Agent Chain | Use Case |
 |------|-------------|----------|
-| `feature` | planner -> tdd-guide -> code-reviewer -> security-reviewer | Full feature build |
-| `bugfix` | explorer -> tdd-guide -> code-reviewer | Bug investigation + fix |
+| `feature` | the built-in `Plan` agent -> tdd-guide -> code-reviewer | Full feature build |
+| `bugfix` | the built-in `Explore` agent -> tdd-guide -> code-reviewer | Bug investigation + fix |
 | `refactor` | architect -> code-reviewer -> tdd-guide | Safe refactoring |
-| `security` | security-reviewer -> code-reviewer -> architect | Security audit |
+| `security` | code-reviewer -> architect | Security audit |
 | `custom` | user-defined CSV list | Ad-hoc sequence |
 
 ## Execution Loop
@@ -43,12 +43,11 @@ For each agent in chain:
 
 | Agent | Reads | Produces |
 |-------|-------|----------|
-| planner | requirements | implementation plan, deps, risks |
+| the built-in `Plan` agent | requirements | implementation plan, deps, risks |
 | architect | requirements / plan | design decisions, structure |
-| explorer | bug report | repro steps, root cause |
+| the built-in `Explore` agent | bug report | repro steps, root cause |
 | tdd-guide | plan / handoff | tests-first, then minimal impl |
-| code-reviewer | impl | quality issues, suggestions |
-| security-reviewer | impl | vuln scan, final approval |
+| code-reviewer | impl | quality issues, suggestions, security vuln scan (defers deep OWASP/CWE analysis to the `security-review` skill) |
 
 ## Final Report
 
@@ -68,7 +67,7 @@ RECOMMENDATION — SHIP / NEEDS WORK / BLOCKED
 ## Parallel Phase
 
 For independent checks, fan out simultaneously then merge:
-- code-reviewer (quality) + security-reviewer (security) + architect (design) -> single merged report
+- code-reviewer (quality + security) + architect (design) -> single merged report
 
 ## Examples
 
@@ -80,8 +79,8 @@ For independent checks, fan out simultaneously then merge:
 
 ## Tips
 
-- Start with `planner` for complex features; `architect` for design-heavy work
+- Start with the built-in `Plan` agent for complex features; `architect` for design-heavy work
 - Always include `code-reviewer` before merge
-- Use `security-reviewer` for auth, payment, PII paths
+- Lean on `code-reviewer` for auth, payment, PII paths (it covers security review via the `security-review` skill)
 - Keep handoffs concise — only what the next agent needs
 - Run verification (build/tests) between agents on risky transitions

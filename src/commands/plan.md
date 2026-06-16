@@ -7,7 +7,7 @@ effort: high
 
 # Plan Command
 
-This command invokes the **planner** agent to create a comprehensive implementation plan before writing any code.
+This command invokes the built-in `Plan` agent to create a comprehensive implementation plan before writing any code.
 
 ## What This Command Does
 
@@ -27,7 +27,7 @@ Use `/plan` when:
 
 ## How It Works
 
-The planner agent will:
+The built-in `Plan` agent will:
 
 1. **Analyze the request** and restate requirements in clear terms
 2. **Break down into phases** with specific, actionable steps
@@ -41,7 +41,7 @@ The planner agent will:
 ```
 User: /plan I need to add real-time notifications when markets resolve
 
-Agent (planner):
+Agent (Plan):
 # Implementation Plan: Real-Time Market Resolution Notifications
 
 ## Requirements Restatement
@@ -96,7 +96,7 @@ Agent (planner):
 
 ## Important Notes
 
-**CRITICAL**: The planner agent will **NOT** write any code until you explicitly confirm the plan with "yes" or "proceed" or similar affirmative response.
+**CRITICAL**: The built-in `Plan` agent will **NOT** write any code until you explicitly confirm the plan with "yes" or "proceed" or similar affirmative response.
 
 If you want changes, respond with:
 - "modify: [your changes]"
@@ -112,5 +112,4 @@ After planning:
 
 ## Related Agents
 
-This command invokes the `planner` agent located at:
-`~/.claude/agents/planner.md`
+This command invokes the harness built-in `Plan` agent (no custom agent file required).

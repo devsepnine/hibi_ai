@@ -1,13 +1,7 @@
----
-name: review-checklist
-description: Code review checklist emphasizing SOLID, Clean Code, Functionality, Consistency plus security, testing, performance
-keywords: [리뷰, review, 검토, 레뷰, checklist, code quality, SOLID, clean code, functionality, consistency, security, testing, performance, documentation]
-tools: Read, Grep, Glob
-model: sonnet
-effort: high
----
-
 # Review Checklist
+
+> `coding-standards` skill의 참조 문서. SOLID, Clean Code, Functionality,
+> Consistency + security/testing/performance를 강조한다.
 
 리뷰 우선순위 (집행 가중치 순): **SOLID → Clean Code → Functionality → Consistency**, 그다음 Security / Testing / Performance / Documentation. 후순위 카테고리에서 좋은 점수를 받아도 4대 우선순위 중 하나라도 실패하는 변경은 수정 요청해야 한다.
 
@@ -23,7 +17,7 @@ effort: high
 
 ## 코드 품질
 
-### 크기 한도 (soft/hard 단계는 `rules/code-thresholds.md` 참고)
+### 크기 한도 (soft/hard 단계는 `code-thresholds.md` 참고)
 - [ ] File size ≤ 300 LOC soft / ≤ 500 LOC hard
 - [ ] Function size ≤ 50 LOC soft / ≤ 80 LOC hard
 - [ ] Parameters ≤ 5 soft / ≤ 7 hard
@@ -107,7 +101,7 @@ effort: high
 - [ ] SQL injection 취약점 없음
 - [ ] XSS 취약점 없음
 - [ ] 인증/인가 적용됨
-- [ ] 전체 체크리스트는 [security-rules.md](./security-rules.md) 참고
+- [ ] 전체 체크리스트는 `security-review` skill 참고
 
 ## 테스트 리뷰
 
@@ -115,7 +109,7 @@ effort: high
 - [ ] 버그 수정에 회귀 테스트 있음
 - [ ] 테스트가 결정적임
 - [ ] E2E에 success path와 failure path 있음
-- [ ] 전체 체크리스트는 [testing-rules.md](./testing-rules.md) 참고
+- [ ] 전체 체크리스트는 `tdd-workflow` skill 참고
 
 ## 성능 리뷰
 

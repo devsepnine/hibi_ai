@@ -1,6 +1,6 @@
 ---
 name: obsidian-notes
-description: Generate well-structured Obsidian notes for any context — release notes, ADRs, retrospectives, debugging logs, learning notes, daily logs, weekly reviews, meeting minutes, project MOCs (Map of Content), book notes, and fleeting ideas. Produces Obsidian Flavored Markdown with consistent frontmatter, wikilinks, tags, callouts, Mermaid diagrams, and dataview-friendly properties so notes accumulate into a navigable knowledge graph rather than scattered files. Use whenever the user wants to write, draft, or save ANY markdown note intended for an Obsidian vault — development work, daily planning, meeting capture, learning summaries, reading notes, brainstorming, project overviews, or anything in between. Obsidian 노트, 볼트 문서화, 데일리 노트, 회의록, 학습 노트, ADR, 릴리즈 노트, 회고, 디버깅 로그, 프로젝트 MOC, 독서 노트, Mermaid 다이어그램, dataview.
+description: Generate Obsidian vault notes — release notes, ADRs, retrospectives, debug logs, daily/weekly logs, meeting minutes, MOCs, book notes. Produces Obsidian Flavored Markdown with frontmatter, wikilinks, callouts, Mermaid, and dataview properties. 옵시디언 노트, 데일리 노트, 회의록, 학습 노트, ADR, 릴리즈 노트, 회고, 디버깅 로그, 프로젝트 MOC, dataview.
 keywords: [obsidian, 옵시디언, notes, 노트, vault, 볼트, markdown, OFM, daily-note, 데일리노트, weekly-review, 주간회고, meeting-note, 회의록, adr, release-notes, retrospective, 회고, debug-log, 디버그로그, learning-note, 학습노트, project-moc, MOC, book-note, 독서노트, fleeting, 아이디어, mermaid, dataview, diagrams, 다이어그램]
 ---
 

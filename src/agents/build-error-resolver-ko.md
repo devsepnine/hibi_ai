@@ -94,9 +94,9 @@ function processData(data: Array<{ value: number }>) {  // only line changed
 
 - 코드의 구조적 리팩토링 필요 → **refactor-cleaner**
 - 아키텍처 변경 필요 → **architect**
-- 신규 기능 작업 → **planner**
+- 신규 기능 작업 → the built-in `Plan` agent
 - 실패 테스트 (타입 에러 아님) → **tdd-guide**
-- 보안 이슈 발견 → **security-reviewer**
+- 보안 이슈 발견 → **code-reviewer**
 
 ## 보고 형식
 

@@ -30,7 +30,7 @@ Plan first when any of the following apply:
 
 ### Review four criteria (apply to both authoring and review)
 
-All four must pass equally. See `agents/review-checklist.md` for the full checklist.
+All four must pass equally. See the `coding-standards` skill → `references/review-checklist.md` for the full checklist.
 
 **SOLID**
 - SRP: a single reason to change · OCP: open to extension, closed to modification · LSP: subtypes preserve their parent's contract

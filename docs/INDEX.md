@@ -30,23 +30,20 @@
 
 ### Agents
 
-전문 에이전트 문서는 `agents/affaan-m/` 디렉토리에 위치:
+전문 에이전트 문서는 `agents/` 디렉토리에 위치:
 
-- `planner.md` - 구현 계획 수립
 - `architect.md` - 시스템 설계
-- `tdd-guide.md` - 테스트 주도 개발
-- `code-reviewer.md` - 코드 리뷰
-- `security-reviewer.md` - 보안 검토
 - `build-error-resolver.md` - 빌드 에러 해결
+- `code-reviewer.md` - 코드 리뷰 (security-review 스킬로 보안 검토 포함)
+- `doc-updater.md` - 문서 업데이트
 - `e2e-runner.md` - E2E 테스트
 - `refactor-cleaner.md` - 리팩토링
-- `doc-updater.md` - 문서 업데이트
+- `tdd-guide.md` - 테스트 주도 개발
 
 ### Commands
 
-커스텀 명령어 문서는 `commands/affaan-m/` 디렉토리에 위치:
+커스텀 명령어 문서는 `commands/` 디렉토리에 위치:
 
-- `plan.md` - /plan 명령어
 - `code-review.md` - /code-review 명령어
 - `tdd.md` - /tdd 명령어
 - `e2e.md` - /e2e 명령어
@@ -66,22 +63,18 @@
 - `vercel-react-best-practices/SKILL.md` - Vercel React 최적화
 - `web-design-guidelines/SKILL.md` - 웹 디자인 가이드
 
-### Rules
+### Rules / 정책
 
-코딩 규칙 문서는 `rules/` 디렉토리에 위치 (영문 통일):
+`rules/` 디렉토리는 비어 있다. 상세 정책은 모두 **Skill**로 이동했다 (트리거 시에만 로드되어 always-on 컨텍스트를 가볍게 유지):
 
-- `essential-rules.md` - 필수 규칙
-- `commit-convention.md` - 커밋 규칙
-- `code-thresholds.md` - 코드 크기 제한
-- `pull-request-rules.md` - PR 규칙
-- `security.md` - 보안 규칙 및 체크리스트
-- `development-workflow.md` - 개발 워크플로우 (TDD, 코드 리뷰 포함)
-- `coding-style.md` - 코딩 스타일
-- `testing.md` - 테스팅 규칙
-- `performance.md` - 성능 최적화
-- `patterns.md` - 공통 패턴
-- `hooks.md` - 훅 시스템
-- `agents.md` - 에이전트 오케스트레이션
+- 커밋 규칙 → `commit-rules` skill
+- PR 규칙 → `pull-request` skill
+- 보안 규칙 / OWASP → `security-review` skill
+- 테스트 & TDD → `tdd-workflow` skill
+- 코딩 스타일 / 클린 코드 → `coding-standards` skill
+- 빌드 & 타입 에러 → `verification-loop` skill
+
+코드 임계값·리뷰 체크리스트·공통 패턴은 `skills/coding-standards/references/`(`code-thresholds.md`, `review-checklist.md`, `patterns.md`)에 위치. 항상 적용되는 핵심 불변식·effort/agent 라우팅은 `CLAUDE.md`에 있다.
 
 ## 🛠️ 개발 문서
 
@@ -140,10 +133,10 @@ A: [RUNBOOK.md](RUNBOOK.md)의 "macOS Gatekeeper 경고" 섹션 참조
 A: [RUNBOOK.md](RUNBOOK.md)의 "빌드 실패" 섹션 참조
 
 **Q: 새로운 에이전트를 추가하려면?**
-A: `agents/affaan-m/` 디렉토리의 기존 에이전트 참조
+A: `agents/` 디렉토리의 기존 에이전트 참조
 
 **Q: 커밋 메시지 형식은?**
-A: `rules/commit-convention.md` 참조
+A: `commit-rules` skill 참조 (또는 `/commit` 커맨드)
 
 ## 📝 문서 작성 가이드
 

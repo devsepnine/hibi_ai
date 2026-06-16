@@ -168,4 +168,4 @@ Before ANY production deployment, all 10 categories above must pass, plus:
 
 ---
 
-**Remember**: Security is not optional. One vulnerability can compromise the entire platform. When in doubt, err on the side of caution and invoke the **security-reviewer** agent.
+**Remember**: Security is not optional. One vulnerability can compromise the entire platform. When in doubt, err on the side of caution and invoke the **code-reviewer** agent.

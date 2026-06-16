@@ -96,6 +96,10 @@ src/
 }
 ```
 
+**Coverage tiers:**
+- **80% minimum** for all code.
+- **100% required** for financial calculations, authentication, security-critical paths, and core business logic.
+
 ## Common Mistakes
 
 | Mistake | Result | Fix |

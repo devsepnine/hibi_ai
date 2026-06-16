@@ -7,18 +7,8 @@ effort: medium
 
 # Update Codemaps
 
-코드베이스 구조를 분석하고 아키텍처 문서를 업데이트한다.
+코드베이스 구조를 스캔하여 토큰 효율적인 아키텍처 codemap을 재생성하며, 30%를 초과하는 drift를 감지하면 큰 업데이트를 적용하기 전에 사용자 승인을 요청한다.
 
-1. import, export, 의존성에 대해 모든 소스 파일을 스캔한다
-2. 다음 형식으로 토큰 효율적인 codemap을 생성한다:
-   - codemaps/architecture.md - 전체 아키텍처
-   - codemaps/backend.md - 백엔드 구조
-   - codemaps/frontend.md - 프론트엔드 구조
-   - codemaps/data.md - 데이터 모델 및 스키마
+중요한 아키텍처 변경 후 `/update-codemaps`로 호출하거나 `doc-updater` 에이전트에 위임한다.
 
-3. 이전 버전 대비 diff 비율을 계산한다
-4. 변경이 30%를 초과하면 업데이트 전 사용자 승인을 요청한다
-5. 각 codemap에 신선도 타임스탬프를 추가한다
-6. 보고서를 .reports/codemap-diff.txt에 저장한다
-
-분석에는 TypeScript/Node.js를 사용한다. 구현 세부사항이 아닌 상위 수준 구조에 집중한다.
+전체 워크플로우, codemap 형식, drift 승인 규칙은 `doc-updater` 에이전트에 있다 — 이를 단일 진실 원천으로 따른다.

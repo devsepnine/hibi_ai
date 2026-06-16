@@ -1,6 +1,6 @@
 ---
 name: coding-standards
-description: Universal coding standards, best practices, and patterns for TypeScript, JavaScript, React, and Node.js development. Includes React-specific patterns (forms, error boundaries, animations, accessibility) in references/. Use when reviewing code, writing clean code, 코딩 표준, 코드 스타일, 코딩 컨벤션, 코드 리뷰, 클린 코드, 폼 검증, 에러 바운더리, 접근성.
+description: Universal coding standards for TypeScript/JavaScript/React/Node — naming, immutability, error handling, code smells, testing, file organization. React form/error-boundary/a11y patterns in references/. 코딩 표준, 코드 스타일, 코드 리뷰, 클린 코드, 폼 검증, 에러 바운더리, 접근성.
 keywords: [coding-standards, 코딩표준, 코드스타일, 코드리뷰, clean-code, best-practices, react-patterns, form, error-boundary, a11y, 접근성]
 ---
 
@@ -110,7 +110,7 @@ Descriptive names that read as specifications. No `test('works')`. See `tdd-work
 
 ## File Organization
 
-Many small focused files > few large files. Soft 300 LOC, hard 500 LOC per file (see code-thresholds rule). Organize by feature/domain, not by type.
+Many small focused files > few large files. Soft 300 LOC, hard 500 LOC per file (see `references/code-thresholds.md`). Organize by feature/domain, not by type.
 
 ```
 src/
@@ -129,6 +129,9 @@ src/
 | React performance (memo, lazy, bundle, RSC) | `react-best-practices` |
 | React composition / compound components | `composition-patterns` |
 | React forms, error boundaries, a11y, animations | `references/react-patterns.md` |
+| Full code-review checklist (SOLID, severity, concurrency, cross-platform) | `references/review-checklist.md` |
+| Common TS patterns (API response, custom hooks, repository, skeleton projects) | `references/patterns.md` |
+| Code thresholds (file/function LOC, complexity, params, nesting) | `references/code-thresholds.md` |
 | Zustand global state | `zustand` |
 | REST/Next.js API design, validation, DB queries | `backend-patterns` |
 | Rust (ownership, errors, async) | `rust-best-practices` |

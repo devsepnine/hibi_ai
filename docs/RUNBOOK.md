@@ -23,11 +23,8 @@ vim package.sh
 cd tools/installer
 ./build.sh
 
-# Hooks & Statusline 빌드 (필요시만 - src/에서 Git 관리)
+# Statusline 빌드 (필요시만 - src/에서 Git 관리)
 cd tools/statusline && ./build.sh
-cd tools/hooks/inject_guide && ./build.sh
-cd tools/hooks/memory-persistence && ./build.sh
-cd tools/hooks/strategic-compact && ./build.sh
 
 # 바이너리 검증
 cd ../..

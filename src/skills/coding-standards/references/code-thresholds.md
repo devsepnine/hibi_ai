@@ -53,6 +53,6 @@ Apply the **Rule of Three**: repeating a pattern 3+ times signals extraction. Co
 
 ## Related Rules
 
-- `coding-style.md` — General coding style and file organization
-- `pull-request-rules.md` — PR checklist including these thresholds
-- `development-workflow.md` — TDD and review workflow
+- `coding-standards` skill — General coding style and file organization
+- `pull-request` skill — PR checklist including these thresholds
+- `tdd-workflow` skill — TDD and review workflow

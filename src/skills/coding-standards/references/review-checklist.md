@@ -1,13 +1,7 @@
----
-name: review-checklist
-description: Code review checklist emphasizing SOLID, Clean Code, Functionality, Consistency plus security, testing, performance
-keywords: [리뷰, review, 검토, 레뷰, checklist, code quality, SOLID, clean code, functionality, consistency, security, testing, performance, documentation]
-tools: Read, Grep, Glob
-model: sonnet
-effort: high
----
-
 # Review Checklist
+
+> Reference for the `coding-standards` skill. Emphasizes SOLID, Clean Code,
+> Functionality, Consistency, plus security, testing, performance.
 
 Review priorities (in order of enforcement weight): **SOLID → Clean Code →
 Functionality → Consistency**, followed by Security / Testing / Performance /
@@ -30,7 +24,7 @@ If unsure, default up (Major → Blocker) rather than down.
 
 ## Code Quality
 
-### Size Limits (see `rules/code-thresholds.md` for soft/hard tiers)
+### Size Limits (see `code-thresholds.md` for soft/hard tiers)
 - [ ] File size ≤ 300 LOC soft / ≤ 500 LOC hard
 - [ ] Function size ≤ 50 LOC soft / ≤ 80 LOC hard
 - [ ] Parameters ≤ 5 soft / ≤ 7 hard
@@ -139,7 +133,7 @@ all three.
 - [ ] No SQL injection vulnerabilities
 - [ ] No XSS vulnerabilities
 - [ ] Authentication/authorization applied
-- [ ] See [security-rules.md](./security-rules.md) for full checklist
+- [ ] See the `security-review` skill for the full checklist
 
 ## Testing Review
 
@@ -147,7 +141,7 @@ all three.
 - [ ] Bug fixes have regression tests
 - [ ] Tests are deterministic
 - [ ] E2E has success and failure paths
-- [ ] See [testing-rules.md](./testing-rules.md) for full checklist
+- [ ] See the `tdd-workflow` skill for the full checklist
 
 ## Performance Review
 

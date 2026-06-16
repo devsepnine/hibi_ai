@@ -7,18 +7,8 @@ effort: medium
 
 # Update Codemaps
 
-Analyze the codebase structure and update architecture documentation:
+Scans the codebase structure and regenerates token-lean architecture codemaps, detecting >30% drift and requesting user approval before applying large updates.
 
-1. Scan all source files for imports, exports, and dependencies
-2. Generate token-lean codemaps in the following format:
-   - codemaps/architecture.md - Overall architecture
-   - codemaps/backend.md - Backend structure  
-   - codemaps/frontend.md - Frontend structure
-   - codemaps/data.md - Data models and schemas
+Invoke with `/update-codemaps` after notable architectural changes, or delegate to the `doc-updater` agent.
 
-3. Calculate diff percentage from previous version
-4. If changes > 30%, request user approval before updating
-5. Add freshness timestamp to each codemap
-6. Save reports to .reports/codemap-diff.txt
-
-Use TypeScript/Node.js for analysis. Focus on high-level structure, not implementation details.
+Full workflow, codemap formats, and drift-approval rules live in the `doc-updater` agent — follow that as the source of truth.

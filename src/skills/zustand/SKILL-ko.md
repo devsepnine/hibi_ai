@@ -1,6 +1,6 @@
 ---
 name: zustand-store-ts
-description: Create Zustand v5 stores with TypeScript — proper state/action separation, useShallow for object/array selectors, subscribeWithSelector for outside-React subscriptions, devtools + persist middleware, and slices pattern for larger stores. Use when building React state management, migrating from v4, fixing "infinite loop" selector bugs, or setting up modular stores. 주스탄드 상태관리, Zustand v5 스토어 작성, 전역 상태 관리, useShallow, slices pattern.
+description: Zustand v5 stores in TypeScript — state/action separation, useShallow for object/array selectors, subscribeWithSelector, devtools/persist middleware, slices pattern, v4 migration, and fixing infinite-loop selector bugs. 주스탄드 상태관리, Zustand v5, 전역 상태 관리, useShallow, slices pattern.
 keywords: [zustand, 주스탄드, state-management, 상태관리, store, 스토어, useShallow, slices, v5, middleware, devtools, persist]
 ---
 

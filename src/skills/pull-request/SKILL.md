@@ -71,9 +71,9 @@ Examples:
 
 | Check | Reference |
 |-------|-----------|
-| Code thresholds (file/function/complexity) | `rules/code-thresholds.md` |
-| Security (secrets, injection, XSS, authn) | `security-review` skill, `rules/security.md` |
-| Testing (coverage, regression, E2E paths) | `tdd-workflow` skill, `rules/testing.md` |
+| Code thresholds (file/function/complexity) | `coding-standards` skill → `references/code-thresholds.md` |
+| Security (secrets, injection, XSS, authn) | `security-review` skill |
+| Testing (coverage, regression, E2E paths) | `tdd-workflow` skill |
 | Build / type / lint verification | `verification-loop` skill |
 | Commit message format | `commit-rules` skill |
 

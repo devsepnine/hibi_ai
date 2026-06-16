@@ -7,7 +7,7 @@ effort: high
 
 # Plan Command
 
-이 커맨드는 **planner** 에이전트를 호출하여 코드 작성 전 종합 구현 계획을 수립한다.
+이 커맨드는 built-in `Plan` 에이전트를 호출하여 코드 작성 전 종합 구현 계획을 수립한다.
 
 ## What This Command Does
 
@@ -27,7 +27,7 @@ effort: high
 
 ## How It Works
 
-planner 에이전트는 다음을 수행한다:
+built-in `Plan` 에이전트는 다음을 수행한다:
 
 1. **요청을 분석**하고 명확한 용어로 요구사항을 재진술한다
 2. **단계별로 분해**하여 구체적이고 실행 가능한 단계로 만든다
@@ -41,7 +41,7 @@ planner 에이전트는 다음을 수행한다:
 ```
 User: /plan I need to add real-time notifications when markets resolve
 
-Agent (planner):
+Agent (Plan):
 # Implementation Plan: Real-Time Market Resolution Notifications
 
 ## Requirements Restatement
@@ -96,7 +96,7 @@ Agent (planner):
 
 ## Important Notes
 
-**CRITICAL**: planner 에이전트는 사용자가 "yes" 또는 "proceed" 등 명시적인 긍정 응답으로 계획을 확인할 때까지 **어떤 코드도 작성하지 않는다**.
+**CRITICAL**: built-in `Plan` 에이전트는 사용자가 "yes" 또는 "proceed" 등 명시적인 긍정 응답으로 계획을 확인할 때까지 **어떤 코드도 작성하지 않는다**.
 
 변경을 원할 경우 다음과 같이 응답한다:
 - "modify: [your changes]"
@@ -112,5 +112,4 @@ Agent (planner):
 
 ## Related Agents
 
-이 커맨드는 다음 위치의 `planner` 에이전트를 호출한다:
-`~/.claude/agents/planner.md`
+이 커맨드는 harness built-in `Plan` 에이전트를 호출한다 (별도 커스텀 에이전트 파일 불필요).

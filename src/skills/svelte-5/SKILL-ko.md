@@ -1,6 +1,6 @@
 ---
 name: svelte-5
-description: Write Svelte 5 components and SvelteKit 2 apps using the runes-based reactivity model ($state, $derived, $effect, $props, $bindable), callback-prop events (no createEventDispatcher), and the snippet/@render pattern (no slots). Covers SvelteKit 2 routing, load functions, form actions, hooks, environment variables, and the $app/state APIs that replaced stores. Use whenever the user writes, reviews, or migrates Svelte/SvelteKit code; whenever they mention runes, `.svelte.ts` files, `+page.svelte` / `+layout.ts` / `+page.server.ts`, or ask for "a Svelte component," "a SvelteKit route," a v4→v5 migration, or anything involving reactive declarations in Svelte. 스벨트 컴포넌트, SvelteKit 라우팅, runes 마이그레이션, 스벨트 5 작성.
+description: Svelte 5 + SvelteKit 2 with runes ($state/$derived/$effect/$props/$bindable), snippets (no slots), callback events (no createEventDispatcher), routing, load functions, form actions, and v4→v5 migration. 스벨트 5 컴포넌트, SvelteKit 라우팅, runes 마이그레이션.
 keywords: [svelte, svelte-5, 스벨트, sveltekit, sveltekit-2, 스벨트킷, runes, $state, $derived, $effect, $props, $bindable, snippet, load, form-actions, hooks, migration, 마이그레이션]
 ---
 

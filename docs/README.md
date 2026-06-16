@@ -12,25 +12,16 @@ AI 에이전트, 커스텀 명령어, 스킬, 훅, MCP 서버, 플러그인 등 
 ```
 hibi_ai/
 ├── src/                 # 소스 디렉토리 (Git 관리)
-│   ├── agents/          # AI 에이전트 정의
-│   │   └── affaan-m/    # 전문 에이전트 (planner, architect, tdd-guide 등)
-│   ├── commands/        # 슬래시 커맨드
-│   │   └── affaan-m/    # 커스텀 명령어 (/plan, /code-review, /e2e 등)
-│   ├── contexts/        # 컨텍스트 프리셋
-│   │   └── affaan-m/    # 개발/리서치/리뷰 컨텍스트
-│   ├── hooks/           # 라이프사이클 훅 (바이너리 포함)
-│   │   ├── inject_guide/    # 가이드 자동 주입
-│   │   ├── load-context/    # 컨텍스트 자동 로드
-│   │   ├── persist-session/ # 세션 영속화
-│   │   ├── preserve-context/# 컨텍스트 보존
-│   │   └── suggest-compact/ # 컨텍스트 압축 제안
+│   ├── agents/          # AI 에이전트 정의 (architect, tdd-guide 등)
+│   ├── commands/        # 슬래시 커맨드 (/code-review, /e2e 등)
+│   ├── contexts/        # 컨텍스트 프리셋 (개발/리서치/리뷰)
+│   ├── hooks/           # 라이프사이클 훅 (전부 deprecated — 인스톨러가 기존 설치본에서 자동 제거)
 │   ├── mcps/            # MCP 서버 설정
 │   ├── output-styles/   # 출력 스타일 정의
 │   ├── plugins/         # 플러그인 설정
-│   ├── rules/           # 코드 스타일 및 워크플로우 규칙
-│   │   └── affaan-m/    # 코딩 스타일, Git 워크플로우, 테스팅 등
+│   ├── rules/           # (비어 있음 — 정책은 skills로 이동)
 │   ├── skills/          # 도메인별 스킬
-│   │   ├── affaan-m/    # 백엔드/프론트엔드 패턴, TDD 워크플로우
+│   │   ├── coding-standards/         # 코딩 표준 (code-thresholds, patterns, review-checklist 포함)
 │   │   ├── composition-patterns/     # React 컴포지션 패턴
 │   │   ├── ratatui_rs/              # Ratatui TUI 개발
 │   │   ├── react-native-skills/     # React Native 모바일 개발
@@ -70,15 +61,13 @@ hibi_ai/
 
 전문화된 AI 에이전트들:
 
-- **planner**: 복잡한 기능 구현 계획 수립
 - **architect**: 시스템 설계 및 아키텍처 결정
-- **tdd-guide**: 테스트 주도 개발 가이드
-- **code-reviewer**: 코드 품질 검토
-- **security-reviewer**: 보안 취약점 분석
 - **build-error-resolver**: 빌드 에러 해결
+- **code-reviewer**: 코드 품질 검토 (security-review 스킬로 보안 검토 포함)
+- **doc-updater**: 문서 업데이트
 - **e2e-runner**: E2E 테스트 실행 (Playwright)
 - **refactor-cleaner**: 데드 코드 정리
-- **doc-updater**: 문서 업데이트
+- **tdd-guide**: 테스트 주도 개발 가이드
 
 ### 명령어 (Commands)
 
@@ -97,13 +86,7 @@ hibi_ai/
 
 ### 훅 (Hooks)
 
-설치된 훅 및 용도:
-
-- **inject_guide**: 프롬프트 제출 시 가이드 자동 주입
-- **load-context**: 세션 시작 시 컨텍스트 자동 로드
-- **persist-session**: 세션 종료 시 상태 저장
-- **preserve-context**: 컨텍스트 보존
-- **suggest-compact**: 컨텍스트 크기 초과 시 압축 제안
+활성 훅은 없다. 과거 라이프사이클 훅(`inject_guide`, `load-context`, `persist-session`, `preserve-context`, `suggest-compact`)은 전부 **deprecated**로 전환되어, 인스톨러가 기존 설치본에서 자동 제거한다. 키워드/컨텍스트 주입은 네이티브 Skill 시스템이 대체한다.
 
 ### 스킬 (Skills)
 
@@ -118,13 +101,13 @@ hibi_ai/
 
 ### 규칙 (Rules)
 
-코드 품질 및 워크플로우:
+`rules/` 디렉토리는 비어 있습니다. 상세 정책은 모두 Skills로 이관되었습니다:
 
-- **commit-convention**: 커밋 메시지 규칙
-- **code-thresholds**: 파일/함수 크기 제한
-- **pull-request-rules**: PR 생성 가이드라인
-- **security**: 보안 체크리스트
-- **development-workflow**: 개발 워크플로우
+- **commit-rules**: 커밋 메시지 규칙
+- **pull-request**: PR 생성 가이드라인
+- **security-review**: 보안 체크리스트
+- **tdd-workflow**: 테스트 주도 개발 워크플로우
+- **coding-standards**: 코딩 표준 (code-thresholds / patterns / review-checklist는 `coding-standards/references/`에 위치)
 
 ## 빌드 및 릴리즈
 
@@ -141,11 +124,6 @@ cd tools/installer
 # Statusline
 cd tools/statusline
 ./build.sh
-
-# Hooks
-cd tools/hooks/inject_guide && ./build.sh
-cd tools/hooks/memory-persistence && ./build.sh
-cd tools/hooks/strategic-compact && ./build.sh
 ```
 
 생성되는 바이너리:

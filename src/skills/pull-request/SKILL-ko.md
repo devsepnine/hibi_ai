@@ -71,9 +71,9 @@ keywords: [pull-request, PR, github, gh, 풀리퀘스트]
 
 | Check | Reference |
 |-------|-----------|
-| 코드 임계값 (file/function/complexity) | `rules/code-thresholds.md` |
-| 보안 (시크릿, 인젝션, XSS, authn) | `security-review` skill, `rules/security.md` |
-| 테스팅 (커버리지, 회귀, E2E 경로) | `tdd-workflow` skill, `rules/testing.md` |
+| 코드 임계값 (file/function/complexity) | `coding-standards` skill → `references/code-thresholds.md` |
+| 보안 (시크릿, 인젝션, XSS, authn) | `security-review` skill |
+| 테스팅 (커버리지, 회귀, E2E 경로) | `tdd-workflow` skill |
 | 빌드 / 타입 / lint 검증 | `verification-loop` skill |
 | 커밋 메시지 형식 | `commit-rules` skill |
 

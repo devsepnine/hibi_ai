@@ -30,7 +30,7 @@
 
 ### 리뷰 4대 기준 (작성·검토 공통)
 
-아래 네 가지를 균등하게 통과해야 한다. 상세는 `agents/review-checklist.md`.
+아래 네 가지를 균등하게 통과해야 한다. 상세는 `coding-standards` skill의 `references/review-checklist.md`.
 
 **SOLID**
 - SRP: 변경 이유 하나 / OCP: 확장 열림·수정 닫힘 / LSP: 하위 타입 계약 유지

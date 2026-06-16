@@ -168,4 +168,4 @@ test('enforces rate limits',     async () => { const rs = await Promise.all(Arra
 
 ---
 
-**Remember**: 보안은 선택이 아니다. 단 하나의 취약점이 전체 플랫폼을 위험에 빠뜨릴 수 있다. 의심될 때는 신중하게 판단하고 **security-reviewer** 에이전트를 호출하라.
+**Remember**: 보안은 선택이 아니다. 단 하나의 취약점이 전체 플랫폼을 위험에 빠뜨릴 수 있다. 의심될 때는 신중하게 판단하고 **code-reviewer** 에이전트를 호출하라.

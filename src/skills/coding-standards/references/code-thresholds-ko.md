@@ -53,6 +53,6 @@
 
 ## 관련 규칙
 
-- `coding-style.md` — 일반 코딩 스타일과 파일 구성
-- `pull-request-rules.md` — 이 임계값을 포함한 PR 체크리스트
-- `development-workflow.md` — TDD 및 리뷰 워크플로우
+- `coding-standards` skill — 일반 코딩 스타일과 파일 구성
+- `pull-request` skill — 이 임계값을 포함한 PR 체크리스트
+- `tdd-workflow` skill — TDD 및 리뷰 워크플로우

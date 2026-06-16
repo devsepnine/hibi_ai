@@ -1,6 +1,6 @@
 ---
 name: iced
-description: Use this skill for any task involving `iced`, the Rust GUI framework. Trigger whenever the user mentions iced by name in a Rust, GUI, or desktop-app context — no matter the sub-task: writing a new iced app, adding a widget/feature, debugging a compile error, migrating between iced versions (0.12 → 0.13/0.14, `Application`/`Sandbox` traits → `iced::application()` builder, `Command` → `Task`, styling API changes), explaining any iced API (`Message`/`update`/`view`/`Element`, `Task::perform`, `Subscription`, `canvas::Program`, `window::Settings`, `Theme`/`extended_palette`, widget styles), wiring async work, or choosing iced over Electron/Tauri for a desktop project. Assume iced-flavored intent whenever the user says "iced 앱", "iced::", "러스트 iced", "iced 마이그레이션", pastes iced code, or asks how to do X in iced. Do NOT use for other Rust GUIs (egui, Slint, Dioxus, gtk-rs, Tauri), ratatui (terminal — separate skill), web frameworks, or Rust work without a GUI.
+description: Rust GUI development with the iced framework — building apps, widgets, debugging compile errors, the Message/update/view API, Task/Subscription, async work, and 0.12→0.14 migration. iced 앱, 러스트 iced, iced 마이그레이션. NOT for egui/Slint/Dioxus/Tauri, ratatui (terminal TUI), or non-GUI Rust.
 keywords: [iced, rust-gui, elm, elm-architecture, widget, application, task, subscription, canvas, theme, palette, migration, 마이그레이션, 러스트gui, 데스크톱ui]
 ---
 

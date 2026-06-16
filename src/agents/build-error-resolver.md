@@ -94,9 +94,9 @@ function processData(data: Array<{ value: number }>) {  // only line changed
 
 - Code needs structural refactoring → **refactor-cleaner**
 - Architectural change required → **architect**
-- New feature work → **planner**
+- New feature work → the built-in `Plan` agent
 - Failing tests (not type errors) → **tdd-guide**
-- Security issue surfaced → **security-reviewer**
+- Security issue surfaced → **code-reviewer**
 
 ## Report format
 

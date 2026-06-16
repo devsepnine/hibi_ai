@@ -1,6 +1,6 @@
 ---
 name: vercel-react-native-skills
-description: React Native and Expo best practices for building performant mobile apps. Use when building React Native components, optimizing list performance, implementing animations, or working with native modules. Triggers on tasks involving React Native, Expo, mobile performance, or native platform APIs. 리액트 네이티브, React Native 개발, Expo 앱, 모바일 성능, 네이티브 모듈.
+description: React Native/Expo best practices — list performance (FlashList), animations (Reanimated), navigation, native modules, and monorepo setup for performant mobile apps. 리액트 네이티브, Expo 앱, 모바일 성능 최적화, 네이티브 모듈.
 keywords: [react-native, 리액트네이티브, expo, mobile, 모바일, native]
 license: MIT
 metadata:

@@ -1,6 +1,6 @@
 # CLAUDE.md — Orchestration Flow
 
-Defines workflow and decision-making procedures. For policy details, see `rules/*.md`.
+Defines always-on workflow and decision-making procedures. Detailed, situational policies live in **Skills** (loaded on demand) — see the policy-routing table at the bottom.
 
 ## Pre-work checklist
 
@@ -21,6 +21,7 @@ Defines workflow and decision-making procedures. For policy details, see `rules/
 - Tasks with 3+ steps or architectural decisions → enter plan mode
 - If things drift from intent, STOP immediately and re-plan
 - Reduce ambiguity by writing a detailed spec up front (Q&A first)
+- For complex/unclear problems, draft a **Problem 1-Pager** first: Background / Problem / Goal / Non-goals / Constraints — request an interview if any item is ambiguous
 
 ### 2. Subagent strategy
 - Use subagents aggressively to keep the main context clean
@@ -62,7 +63,7 @@ Defines workflow and decision-making procedures. For policy details, see `rules/
 
 ## Effort × model policy
 
-Per the Anthropic Opus 4.7 guide. See `rules/performance.md` for details.
+Per the Anthropic Opus 4.7 guide.
 
 | Effort | Model | Use cases |
 |---|---|---|
@@ -74,15 +75,28 @@ Per the Anthropic Opus 4.7 guide. See `rules/performance.md` for details.
 
 **Core principle**: *"Don't prompt around — raise the effort."* Opus 4.7 strictly respects effort. At lower effort it scopes to what was asked and nothing more.
 
+**Model selection**: Haiku 4.5 for frequent lightweight workers; Sonnet 4.6 for main dev/tool-heavy work; Opus 4.7 for deep reasoning and long (30min+) agent tasks.
+
 **Tool usage at low effort**: combine calls, use fewer of them, act directly → terse confirmation.
 **Tool usage at high effort**: explain the plan before acting, more calls, detailed summaries.
 
-## Automatic agent invocation
+## Agent routing
 
-- Right after writing code → `code-reviewer`
-- New feature or bug fix → `tdd-guide` (tests first)
-- Build failure → `build-error-resolver`
-- Pre-commit → `security-reviewer`
+Agents are isolated workers (own context window, scoped tools) — use them to keep the main context clean and to parallelize. Subagents default to **`low`/`medium` effort with explicit checklists**; raise to `xhigh` only for agentic exploration (multi-step search, repeated tool calls).
+
+| Trigger | Agent | Effort / Model |
+|---|---|---|
+| Complex feature / refactor planning | the built-in `Plan` agent | high / sonnet-4-6 |
+| Architectural decision | `architect` | xhigh / opus-4-7 |
+| New feature or bug fix (tests first) | `tdd-guide` | medium / sonnet-4-6 |
+| Right after writing code; also pre-commit security checks (secrets, injection, auth) via the `security-review` skill | `code-reviewer` | medium / sonnet-4-6 |
+| Build / type failure | `build-error-resolver` | medium / sonnet-4-6 |
+| Critical user flows | `e2e-runner` | xhigh / sonnet-4-6 |
+| Dead code cleanup | `refactor-cleaner` | xhigh / sonnet-4-6 |
+| Documentation | `doc-updater` | xhigh / sonnet-4-6 |
+
+**Parallel execution**: launch independent agents in a single message (multiple Task calls). Never run unrelated analyses sequentially.
+**Multi-perspective analysis**: for complex problems, split into focused subagents (factual / senior-engineer / security / consistency / redundancy), one scope each.
 
 ## Completion report format
 
@@ -109,14 +123,31 @@ Next:
 - **No laziness**: root-cause analysis. No temporary fixes. Senior-level standard.
 - **Minimal blast radius**: change only what's needed. Avoid side effects.
 - **Compare at least two alternatives** → state trade-offs → confirm reversibility.
+- **Keep it small**: tasks, commits, PRs small. Record assumptions in Issues/PRs/ADRs.
+- **Validate inputs, encode outputs**: never trust unvalidated input.
+- **Names over abstraction**: intention-revealing names; avoid premature abstraction.
 
-## References (DRY — define each policy in one place)
+## Absolute commit rules (always apply — skill carries the rest)
 
-- **Review four-criteria (SOLID, Clean Code, Functionality, Consistency)**: `agents/review-checklist.md`
-- **Code thresholds (LOC, complexity)**: `rules/code-thresholds.md`
-- **Commit convention**: `rules/commit-convention.md`
-- **PR guidelines**: `rules/pull-request-rules.md`
-- **Security rules**: `rules/security.md`
-- **Testing requirements**: `rules/testing.md`
-- **Agent mapping**: `rules/agents.md`
-- **Effort × model details**: `rules/performance.md`
+Even before the `commit-rules` skill loads, these are non-negotiable on any commit:
+- **NO emojis, NO generation markers** (`Co-Authored-By`, "Generated with Claude Code", etc.)
+- **Only commit when the user explicitly asks.** Never auto-commit after finishing work.
+- Format: `<type>: [<ticket>] <title>` — full convention in the `commit-rules` skill.
+
+## Policy routing (DRY — each policy has ONE source of truth)
+
+Detailed policies are **Skills**: their content loads only when triggered, keeping always-on context lean. Invoke the skill (or its `/command`) when the situation matches.
+
+| Policy | Source of truth (SSOT) | How to load |
+|---|---|---|
+| Commit convention | `commit-rules` skill | `/commit` or trigger on git commit |
+| PR guidelines | `pull-request` skill | `/pull-request` or trigger on PR work |
+| Security rules / OWASP | `security-review` skill | `/security-review` or trigger on auth/input/secrets |
+| Testing & TDD | `tdd-workflow` skill | `/tdd` or trigger on new feature/bugfix |
+| Coding style / clean code | `coding-standards` skill | trigger on code review/writing |
+| Build & type errors | `verification-loop` skill | `/verify`, `/build-fix` |
+
+On-demand references (in the `coding-standards` skill, read when relevant):
+- **Code thresholds (LOC, complexity)**: `references/code-thresholds.md`
+- **Review checklist (SOLID, severity, concurrency, cross-platform)**: `references/review-checklist.md`
+- **Common TS patterns**: `references/patterns.md`

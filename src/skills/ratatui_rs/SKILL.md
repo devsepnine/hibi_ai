@@ -1,6 +1,6 @@
 ---
 name: ratatui
-description: Use this skill when the user is building or modifying a terminal UI (TUI) in Rust, especially with the `ratatui` or `crossterm` crates. Triggers include rendering widgets (List, Table, Paragraph, Gauge, Chart, Sparkline, Tabs), stateful selection with ListState/TableState, layouts and constraints, keyboard-driven menus and arrow-key navigation, event loops combining input with background tasks (channels, tokio, esc-to-cancel), panic-safe terminal setup, custom Widget implementations, Ratatui 0.28→0.30 migration and deprecated idioms, or building lazygit/btop/htop-style interactive Rust CLIs. Also triggers on Korean intents: 러스트/Rust로 터미널 UI, TUI, 대화형 CLI, 메뉴 화면, 화살표 이동, 위젯 렌더링/조합, 레이아웃, ListState 하이라이트, 이벤트 루프, crossterm 이벤트, 백그라운드 작업 취소, ratatui 마이그레이션. Do NOT use for ncurses/C, Python rich/textual, bash/tput, non-TUI Rust (web/server/lib/embedded), Tauri/Iced/egui (GUI), or Bubble Tea (Go).
+description: Rust terminal UI (TUI) with ratatui/crossterm — widgets, ListState/TableState selection, layouts, keyboard navigation, event loops with background-task cancel, panic-safe setup, and 0.28→0.30 migration. 러스트 터미널 UI, TUI, 대화형 CLI, 이벤트 루프, 백그라운드 작업 취소, ratatui 마이그레이션. NOT for ncurses, Python rich/textual, GUI (Iced/egui), or Bubble Tea (Go).
 keywords: [ratatui, tui, 터미널ui, rust-tui, cli, crossterm, cancelable, 취소, cross-platform, 크로스플랫폼, listState, migration, 마이그레이션]
 ---
 
