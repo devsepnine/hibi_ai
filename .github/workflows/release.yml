@@ -1,0 +1,74 @@
+name: Release
+
+# Builds all-platform binaries on a macOS runner (reusing tools/installer/build.sh,
+# which cross-compiles macOS Universal + Windows + Linux), packages them with
+# package.sh, and publishes a GitHub Release with the archives + checksums.
+#
+# Trigger by pushing a tag like `v1.12.0`, or run manually via the Actions tab.
+# The tag/input version MUST match `VERSION` in package.sh (guarded below).
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 1.12.0) — must match package.sh"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve and verify version
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          PKG_VERSION="$(grep -E '^VERSION=' package.sh | head -1 | cut -d'"' -f2)"
+          if [ "$VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Release version ($VERSION) does not match package.sh VERSION ($PKG_VERSION). Bump package.sh and tools/installer/Cargo.toml first."
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Install Rust cross targets
+        run: |
+          rustup target add \
+            aarch64-apple-darwin \
+            x86_64-apple-darwin \
+            x86_64-pc-windows-gnu \
+            x86_64-unknown-linux-musl
+
+      - name: Install cross toolchains (mingw-w64, musl-cross)
+        run: |
+          brew install mingw-w64 filosottile/musl-cross/musl-cross
+
+      - name: Build all-platform binaries
+        working-directory: tools/installer
+        run: bash build.sh
+
+      - name: Package release archives
+        run: bash package.sh
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          gh release create "v${VERSION}" \
+            "release/v${VERSION}"/*.tar.gz \
+            "release/v${VERSION}"/*.zip \
+            "release/v${VERSION}/checksums.txt" \
+            --title "v${VERSION}" \
+            --generate-notes
