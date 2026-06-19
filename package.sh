@@ -47,6 +47,12 @@ cp src/CLAUDE.md "$DIST_DIR/" 2>/dev/null || true
 cp src/AGENTS.md "$DIST_DIR/" 2>/dev/null || true
 cp src/mcp.md "$DIST_DIR/" 2>/dev/null || true
 
+# Strip Korean reference files (-ko) from the bundle. The installer scanner
+# skips them at install time (stem ends with "-ko"), so they are never
+# installed; removing them here keeps release archives lean.
+echo "  - Stripping -ko reference files..."
+find "$DIST_DIR" -type f -name '*-ko.md' -delete
+
 echo "✅ dist directory ready"
 
 # Create release directory with version
