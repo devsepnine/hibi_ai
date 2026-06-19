@@ -52,6 +52,7 @@ For each design decision, document:
 - High cohesion, low coupling
 - Clear interfaces between components
 - Independent deployability
+- For coupling/dependency direction, abstraction boundaries, and monorepo layering, defer deep analysis to the `dependency-design` skill
 
 ### 2. Scalability
 - Horizontal scaling capability

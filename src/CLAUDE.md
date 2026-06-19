@@ -145,6 +145,7 @@ Detailed policies are **Skills**: their content loads only when triggered, keepi
 | Security rules / OWASP | `security-review` skill | `/security-review` or trigger on auth/input/secrets |
 | Testing & TDD | `tdd-workflow` skill | `/tdd` or trigger on new feature/bugfix |
 | Coding style / clean code | `coding-standards` skill | trigger on code review/writing |
+| Dependency / coupling design | `dependency-design` skill | `/deps` or trigger on module/coupling/dependency/monorepo design |
 | Build & type errors | `verification-loop` skill | `/verify`, `/build-fix` |
 
 On-demand references (in the `coding-standards` skill, read when relevant):

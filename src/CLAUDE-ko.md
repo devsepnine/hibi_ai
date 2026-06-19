@@ -205,6 +205,7 @@ Anthropic Opus 4.7 가이드 기준.
 | 보안 / OWASP | `security-review` skill | `/security-review` 또는 인증·입력·시크릿 시 트리거 |
 | 테스트 & TDD | `tdd-workflow` skill | `/tdd` 또는 신규 기능·버그 수정 시 트리거 |
 | 코딩 스타일 / 클린 코드 | `coding-standards` skill | 코드 작성·리뷰 시 트리거 |
+| 의존성 / 결합 설계 | `dependency-design` skill | `/deps` 또는 모듈·결합도·의존성·모노레포 설계 시 트리거 |
 | 빌드 & 타입 에러 | `verification-loop` skill | `/verify`, `/build-fix` |
 
 필요 시 읽는 참조 (`coding-standards` skill 내부):

@@ -1,0 +1,61 @@
+{
+  "skill_name": "dependency-design",
+  "evals": [
+    {
+      "id": 1,
+      "name": "control-coupling-flag-argument",
+      "prompt": "Here's a function I use everywhere. Is the signature okay?\n\n```ts\nexport function renderReport(data: ReportData, isSummary: boolean) {\n  if (isSummary) {\n    return renderSummaryLayout(data);\n  }\n  return renderDetailLayout(data);\n}\n```\n\nCallers do `renderReport(d, true)` and `renderReport(d, false)`.",
+      "expected_output": "Identifies this as control coupling: the boolean flag lets the caller steer the callee's internal control flow, so the caller must know how the callee branches. Should name it explicitly (control coupling / flag argument is a code smell) and recommend splitting into two intention-revealing functions (e.g. renderSummaryReport / renderDetailReport) or otherwise removing the behavior-selecting boolean. May reference the coupling-strength ordering (control coupling is stronger/worse than data or stamp coupling). Should not merely tweak the boolean to an enum without explaining the coupling problem.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "circular-import-unidirectional-fix",
+      "prompt": "I'm getting a runtime error about an undefined export. order.ts imports `calcShipping` from shipping.ts, and shipping.ts imports `Order` and `getOrderTotal` from order.ts. Both modules import each other. How do I fix this?",
+      "expected_output": "Recognizes a circular dependency between order.ts and shipping.ts and explains that the root cause is bidirectional coupling, not the import order. Prescribes restoring a unidirectional (acyclic) dependency: extract the shared type/logic into a third module that both depend on, invert one direction via an interface/contract, or move the function to the side that owns the data so only one arrow remains. Should emphasize that modules should form a directed acyclic graph and warn that large cycles (A->B->C->A) are as harmful as a direct A<->B cycle. Should not suggest only reordering imports or lazy-requiring as the real fix.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "monorepo-lib-to-lib-promote-node-modules",
+      "prompt": "Turborepo question. In my monorepo, `packages/domain-billing` needs a helper that currently lives in `packages/lib-format`, and `packages/lib-format` has started importing from `packages/domain-billing` too. The app already depends on both. Lint isn't complaining yet. Is this layering fine?",
+      "expected_output": "Flags the lib<->lib (cross-package) cycle as a layering violation. States the rule that dependencies must stay unidirectional: app -> packages is fine, and within packages a domain may depend on a lib, but a lib must not depend back on a domain. Recommends breaking the cycle and, for a shared lib that other packages consume, treating it as a published/external dependency: move lib-format so it is consumed via node_modules (workspace package boundary) rather than reaching sideways into another package's source, or extract the truly shared piece into its own leaf lib that both depend on. Should reference enforcing the boundary (workspace dependency declaration / dependency-cruiser or eslint boundary rule) rather than relying on convention.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "interface-leaks-db-dto-contract",
+      "prompt": "Review this service interface for our user module:\n\n```ts\nimport { UserRow } from '../db/schema';\n\nexport interface UserService {\n  getUser(id: string): Promise<UserRow>;\n}\n```\n\n`UserRow` is the Prisma/DB row type. Consumers in the web layer call getUser and read fields off it.",
+      "expected_output": "Identifies that the public interface leaks the persistence model (UserRow / DB row type) to consumers, creating tight coupling between the web layer and the database schema — any DB column change now ripples outward. Recommends contract coupling: define a dedicated interaction-only DTO/contract type (e.g. User or UserDto) at the module boundary and map the DB row to it internally, so the interface depends on an encapsulated contract rather than the storage model. Should frame this as 'contract over model' / depend on the published interface, not the internal representation, and may note this is the most stable, lowest-strength coupling form. Should not just re-export UserRow under a new name.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "runtime-coupled-change-test-safety-net-first",
+      "prompt": "Can you change the pricing rule in `applyDiscounts()`? It's called from checkout, cart preview, invoice generation, and the nightly billing job, and a few of those read the result and feed it into downstream totals. I just want the discount cap raised from 30% to 40%.",
+      "expected_output": "Recognizes that applyDiscounts() is a high-coupling / runtime-coupled hot spot whose output flows into multiple downstream consumers, so a change has runtime blast radius that static analysis alone cannot fully reveal. Insists on establishing a test safety net FIRST (characterization/regression tests around the current behavior and the downstream totals across checkout, cart preview, invoice, billing job) before editing the value, so the runtime ripple is observable. Only then makes the minimal 30->40 change. Should not silently change the constant without addressing how the change is verified across the coupled call sites.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "korean-trigger-module-dependency-design",
+      "prompt": "모듈 의존성 어떻게 설계하지? 서비스가 커지면서 모듈끼리 서로 막 참조하기 시작했어.",
+      "expected_output": "The dependency-design skill should engage. Response (in Korean per project policy, technical terms in English) should introduce the core method: keep dependencies unidirectional (acyclic graph), minimize coupling strength (prefer data/contract coupling over content/control coupling), depend on contracts/interfaces rather than internal models, and isolate modules so changes have a small blast radius. Should offer a concrete next step such as mapping current dependencies and finding cycles, rather than a generic 'split into modules' answer.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "name": "content-coupling-reach-into-internals",
+      "prompt": "In paymentGateway.ts I'm doing `import { _httpClient } from './stripeAdapter';` and then calling `_httpClient.request(...)` directly because the adapter doesn't expose the method I need. It works. Any concern?",
+      "expected_output": "Identifies this as content/Contents coupling: one module reaches into another module's private internals (_httpClient) instead of going through its public interface. Explains the fragility — the adapter can change its internals freely and silently break paymentGateway. Recommends the adapter expose the needed capability through its public contract (add/extend a method on stripeAdapter's interface) and have paymentGateway depend only on that contract. Should reject 'it works' as sufficient justification. On ranking, should stay consistent with the modern threat order Control > External > Common > Contents > Stamp > Data: Contents is a direct internals leak that is dangerous precisely because it is ungoverned here (no DI/framework boundary), but it is NOT the single worst form — Control coupling is the most severe. Penalize an answer that calls Contents 'worse than Control'.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "name": "stamp-coupling-pass-whole-object",
+      "prompt": "Is it fine that `sendWelcomeEmail(user: User)` takes the whole User object but only uses `user.email` and `user.firstName`? It's convenient because callers already have a User.",
+      "expected_output": "Names this as stamp coupling: the function receives a whole structured object but uses only a couple of fields, so it is coupled to the entire User shape unnecessarily. Explains the cost (harder to reuse/test, changes to unused User fields can still force the function to move; the signature hides the real data dependency). Recommends narrowing the dependency to what is actually used — pass email and firstName directly, or accept a small purpose-built type (e.g. EmailRecipient) — to reduce coupling strength toward data coupling. Should treat this as a milder smell than control/content coupling but still worth tightening, and may note the trade-off if a stable contract type is intentionally desired.",
+      "files": []
+    }
+  ]
+}

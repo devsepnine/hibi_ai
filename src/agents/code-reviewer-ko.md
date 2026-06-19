@@ -98,4 +98,4 @@ const apiKey = process.env.API_KEY;  // [GOOD]
 
 ## 프로젝트 특화 가이드라인
 
-프로젝트 규칙은 `CLAUDE.md`, `coding-standards` skill(크기/복잡도 한도는 `references/code-thresholds.md`, 체크리스트는 `references/review-checklist.md`), `security-review` skill 에서 상속한다. 여기에 별도 프로젝트 오버라이드는 정의하지 않는다.
+프로젝트 규칙은 `CLAUDE.md`, `coding-standards` skill(크기/복잡도 한도는 `references/code-thresholds.md`, 체크리스트는 `references/review-checklist.md`), `security-review` skill, `dependency-design` skill(결합도·의존성 방향 검토)에서 상속한다. 여기에 별도 프로젝트 오버라이드는 정의하지 않는다.

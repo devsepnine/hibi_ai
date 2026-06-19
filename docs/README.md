@@ -1,6 +1,6 @@
 # hibi-ai 프로젝트 문서
 
-> 마지막 업데이트: 2026-02-26
+> 마지막 업데이트: 2026-06-19
 
 ## 개요
 
@@ -80,6 +80,7 @@ hibi_ai/
 - `/build-fix`: 빌드 에러 수정
 - `/update-docs`: 문서 업데이트
 - `/refactor-clean`: 리팩토링 및 정리
+- `/deps`: 의존성·결합도 감사
 - `/checkpoint`: 체크포인트 생성
 - `/verify`: 검증 실행
 - `/commit`: 커밋 생성
@@ -93,6 +94,7 @@ hibi_ai/
 도메인별 전문 지식:
 
 - **composition-patterns**: React 컴포지션 패턴 (React 19 호환)
+- **dependency-design**: 의존성·결합도 설계 (Cynefin·공생성·DDD·Turbo 모노레포)
 - **ratatui_rs**: Rust 터미널 UI 개발
 - **react-native-skills**: React Native 모바일 앱 개발
 - **rust-best-practices**: Rust 소유권, 에러 처리, 비동기 패턴
@@ -258,6 +260,13 @@ hibi --update
 - git 캐시 위치: `~/.hibi/cache/<sanitized_url>/`
 
 ## 최근 변경사항
+
+### 2026-06-19
+
+**추가됨:**
+- `dependency-design` 스킬: 바이브코딩 의존성 관리 방법론 (복잡성/Cynefin, 결합 모델·공생성, 추상화, AI 오너십, Turbo 모노레포). references/ + rules/ + evals/ + 컴파일된 AGENTS.md
+- `/deps` 커맨드: 의존성 방향·결합도 감사 (위협순위 기반 리포트)
+- CLAUDE.md/AGENTS.md 라우팅 및 architect/code-reviewer 에이전트에 스킬 연동
 
 ### 2026-02-26
 

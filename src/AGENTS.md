@@ -27,6 +27,7 @@ Plan first when any of the following apply:
 - Root-cause first: prevent recurrence rather than mask symptoms.
 - Minimal blast radius: edit only what's needed; control side effects.
 - No over-engineering: defer abstractions and extensions beyond current needs.
+- Dependency hygiene: keep dependencies unidirectional and isolated by change-rate; for module/coupling/monorepo design, consult the `dependency-design` skill.
 
 ### Review four criteria (apply to both authoring and review)
 

@@ -98,4 +98,4 @@ const apiKey = process.env.API_KEY;  // [GOOD]
 
 ## Project-Specific Guidelines
 
-Inherit project rules from `CLAUDE.md`, the `coding-standards` skill (incl. `references/code-thresholds.md` for size/complexity limits and `references/review-checklist.md`), and the `security-review` skill. No custom per-project overrides are defined here.
+Inherit project rules from `CLAUDE.md`, the `coding-standards` skill (incl. `references/code-thresholds.md` for size/complexity limits and `references/review-checklist.md`), the `security-review` skill, and the `dependency-design` skill (coupling and dependency-direction review). No custom per-project overrides are defined here.

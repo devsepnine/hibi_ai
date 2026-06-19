@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "organization": "hibi_ai",
+  "date": "2026-06-19",
+  "abstract": "A methodology for managing dependencies, coupling, and abstraction so that vibe-coded software stays modifiable and AI-ownable as it grows. Modification-resistant code is isolated by responsibility, so each part can change without rippling into others — achieved by minimizing dependencies and keeping them one-directional. The reasoning is portable: classify the problem's understandability via Cynefin, choose a matching coupling strength, enforce one-way dependency, and keep abstraction consistent.",
+  "references": [
+    "references/complexity.md",
+    "references/coupling-models.md",
+    "references/abstraction.md",
+    "references/ai-ownership.md",
+    "references/monorepo.md"
+  ]
+}

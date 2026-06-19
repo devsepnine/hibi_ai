@@ -1,6 +1,6 @@
 # hibi-ai 문서 인덱스
 
-> 마지막 업데이트: 2026-02-26
+> 마지막 업데이트: 2026-06-19
 
 ## 📚 문서 목록
 
@@ -50,6 +50,7 @@
 - `build-fix.md` - /build-fix 명령어
 - `update-docs.md` - /update-docs 명령어
 - `refactor-clean.md` - /refactor-clean 명령어
+- `deps.md` - /deps 명령어 (의존성·결합도 감사)
 - 기타 명령어들...
 
 ### Skills
@@ -57,6 +58,7 @@
 스킬 문서는 각 스킬 디렉토리의 `SKILL.md`에 위치:
 
 - `composition-patterns/SKILL.md` - React 컴포지션 패턴
+- `dependency-design/SKILL.md` - 의존성·결합도 설계 (Cynefin·공생성·DDD·모노레포)
 - `ratatui_rs/SKILL.md` - Ratatui TUI 개발
 - `react-native-skills/SKILL.md` - React Native 개발
 - `rust-best-practices/SKILL.md` - Rust 베스트 프랙티스
@@ -150,5 +152,6 @@ A: `commit-rules` skill 참조 (또는 `/commit` 커맨드)
 
 ## 📅 문서 업데이트 이력
 
+- **2026-06-19**: `dependency-design` 스킬 및 `/deps` 커맨드 추가 반영
 - **2026-02-26**: 인스톨러 모듈 구조 재편 반영 (README.md 업데이트)
 - **2026-02-25**: 초기 문서 생성 (README.md, RUNBOOK.md, INDEX.md)
