@@ -74,6 +74,7 @@ Before marking work complete:
 - Verify both success and failure paths for new features
 - Prove bug fixes via regression tests or a reproduction procedure
 - If verification was skipped, state the reason and the residual risk
+- Mandatory post-work review: before reporting completion, review the diff — run the `code-reviewer` agent (or `/code-review`) on changed files; for dependency/coupling/module changes also apply the `dependency-design` skill. Apply or explicitly defer each finding. Skip only for pure conversation or trivial non-code edits.
 
 ## 8) Security and quality gates
 

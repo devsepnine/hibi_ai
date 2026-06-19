@@ -37,6 +37,7 @@ Defines always-on workflow and decision-making procedures. Detailed, situational
 - Never mark work complete without proof it works
 - Ask: "Would a senior engineer approve this?"
 - Run tests, check logs, prove correctness
+- **Mandatory post-work review**: after any code/content change and before reporting completion, review the diff — run the `code-reviewer` agent (or `/code-review`) on the changed files; for dependency/coupling/module/monorepo changes also apply the `dependency-design` skill. Apply or explicitly defer each finding. Skip only for pure conversation or trivial non-code edits.
 
 ### 5. Pursue elegance (with balance)
 - For non-obvious changes ask: "Is there a more elegant approach?"
