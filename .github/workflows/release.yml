@@ -23,6 +23,10 @@ permissions:
 jobs:
   release:
     runs-on: macos-latest
+    env:
+      # Retry transient crates.io index/download timeouts instead of failing
+      # the whole build on the first network blip.
+      CARGO_NET_RETRY: "10"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,6 +57,11 @@ jobs:
       - name: Install cross toolchains (mingw-w64, musl-cross)
         run: |
           brew install mingw-w64 filosottile/musl-cross/musl-cross
+
+      - name: Cache cargo registry and build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tools/installer
 
       - name: Build all-platform binaries
         working-directory: tools/installer
