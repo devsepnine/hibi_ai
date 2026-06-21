@@ -73,6 +73,17 @@
   - ❌ 금지: `git reset --hard`, `rm -rf`, `git push --force`
   - ✅ 허용: 사용자가 명시적으로 요청한 경우만
 
+### 9. 보증 수준 & 추적성 (DO-178C) — always-on
+- **먼저 분류**: 작업 시작 시 최악의 blast radius 기준으로 criticality tier(A–E)를 부여한다. 이것이 master dial이다 — 아래 게이트들의 강도를 조절할 뿐, 별도 프로세스를 추가하지 않는다.
+  - A (Catastrophic): auth, 결제, 암호화, 데이터 마이그레이션/삭제 등 비가역 작업
+  - B (Hazardous): 핵심 비즈니스 로직, 공개 API 계약, 영속 상태
+  - C (Major): 내부 기능, 대시보드, 비핵심 엔드포인트 · D (Minor): 로깅, 카피, 스타일 · E (No effect): 폐기용 스크립트, 스파이크
+- **tier가 기존 게이트를 다이얼**(새 SSOT 없음): 커버리지 → `tdd-workflow`; 검증 깊이 → 작업 후 리뷰 게이트 + `verification-loop`; 결합도 → `dependency-design`; 보안 sign-off → `security-review`. A/B는 최대, D/E는 생략 가능.
+- **양방향 추적성 (A/B)**: 모든 요구사항(Problem 1-Pager / eval / ticket)이 코드와 테스트에 매핑되고, 변경된 모든 함수는 요구사항으로 역추적된다. orphan code와 미검증 요구사항을 표시한다.
+- **독립 검증 (A/B)**: 구현자 ≠ 유일한 검증자 — 작업 후 필수 `code-reviewer` 리뷰 게이트가 이미 이를 강제한다. A-tier는 `assurance-auditor` 에이전트도 실행하고 사람 리뷰를 요구한다.
+- **파생 요구 피드백**: 스펙에 없던 동작(retry, cache, error code, default)을 추가했다면 스펙 오너에게 surface한다 — 조용히 묻어두지 않는다.
+- 전체 방법론: `do-178c` skill (`/do-178c`).
+
 ## 보안 및 품질 검증
 
 ### 커밋 전 필수 체크
@@ -96,6 +107,7 @@
 - **새 기능/버그 수정** → tdd-guide 에이전트 (테스트 우선)
 - **빌드 실패 시** → build-error-resolver 에이전트
 - **커밋 전** → code-reviewer 에이전트 (`security-review` skill 을 통해 보안 검토도 담당)
+- **A/B-tier(안전필수/고위험) 변경** → assurance-auditor 에이전트 (추적성·구조 커버리지 독립 감사, `do-178c` skill)
 
 ### Effort × 모델 정책
 
@@ -208,6 +220,7 @@ Anthropic Opus 4.7 가이드 기준.
 | 코딩 스타일 / 클린 코드 | `coding-standards` skill | 코드 작성·리뷰 시 트리거 |
 | 의존성 / 결합 설계 | `dependency-design` skill | `/deps` 또는 모듈·결합도·의존성·모노레포 설계 시 트리거 |
 | 빌드 & 타입 에러 | `verification-loop` skill | `/verify`, `/build-fix` |
+| 보증 수준 / 추적성 (안전필수) | `do-178c` skill | `/do-178c` 또는 안전필수·고위험·보증수준·추적성 작업 시 트리거 |
 
 필요 시 읽는 참조 (`coding-standards` skill 내부):
 - **코드 임계값(LOC, 복잡도)**: `references/code-thresholds.md`

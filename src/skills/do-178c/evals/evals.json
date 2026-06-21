@@ -1,0 +1,61 @@
+{
+  "skill_name": "do-178c",
+  "evals": [
+    {
+      "id": 1,
+      "name": "tier-classification-payments-A",
+      "prompt": "We're adding a refund endpoint that moves money and writes to the ledger. How much testing and review does this realistically need before we ship?",
+      "expected_output": "Engages the do-178c assurance methodology and classifies the change as Tier A (Catastrophic): it moves money and mutates persistent ledger state, so failures are irreversible. Explains that the tier is the master dial and then lists the dialed gates for A: requirements-based tests with decision/branch coverage, bidirectional traceability, an INDEPENDENT review (code-reviewer plus the assurance-auditor agent and human review — author cannot self-certify), a security-review sign-off, and the full verification-loop. Should defer the actual coverage percentage to the tdd-workflow skill rather than inventing a number, and should NOT answer with a vague 'write some tests and get a review'. May mention MC/DC only as an aspirational A-tier ideal, not a gate.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "tier-waive-trivial-E",
+      "prompt": "I'm just tweaking the copy on a marketing banner and changing a log message's format string. What's the process I need to follow?",
+      "expected_output": "Classifies this as D/E tier (Minor / No effect): cosmetic, easily reversible, no impact on data, money, security, or persistent state. Correctly WAIVES the heavy machinery — a lint/type-check and an optional quick review are enough; no assurance tier ceremony, no traceability matrix, no structural-coverage gate, no assurance-auditor. The key behavior under test is that the tier dial scales DOWN: penalize any answer that demands requirements baselines, bidirectional traceability, 100% coverage, or an independent audit for a copy/log change (that is the over-engineering the tier system exists to prevent).",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "bidirectional-traceability-orphan-and-untested",
+      "prompt": "Audit my auth change before merge. Requirements: (R1) login must lock the account after 5 failed attempts; (R2) password reset tokens expire in 15 minutes. My diff adds: lockAccount() with a test, expireResetToken() with a test, and a new function shadowBanUser() that silently flags suspicious accounts. There is no test for token expiry timing.",
+      "expected_output": "Applies bidirectional traceability. FORWARD: flags R2 (token expiry) as an untested requirement — expireResetToken() exists but there is no test proving the 15-minute expiry, so the requirement is not verified. BACKWARD: flags shadowBanUser() as ORPHAN code — it traces to no stated requirement (scope creep or a hidden derived requirement) and must be linked to a requirement, surfaced to the spec owner, or removed. Should reuse existing identifiers (ticket / test names) as the trace key rather than inventing a new ID scheme. Bonus: notes this is exactly the work the assurance-auditor agent performs for A/B-tier changes.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "derived-requirement-surface",
+      "prompt": "Finished the bulk user-import feature. The spec didn't mention it, but the upstream API is flaky so I added a 3x retry with exponential backoff and a 30s timeout. Looks good — can I call it done?",
+      "expected_output": "Recognizes the retry/backoff and the timeout as DERIVED REQUIREMENTS: behavior introduced below the spec that the requirements never stated. The rule is to SURFACE each one to the spec owner so it can be explicitly accepted or rejected and, if accepted, folded into the baseline — not silently embedded. Should frame them as unstated decisions (not bugs) that feed back into the requirements baseline, and note that if a derived requirement changes the blast radius the assurance tier should be re-classified. Penalize a plain 'looks good, ship it' that ignores the unspecified behavior.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "structural-coverage-mcdc-aspirational",
+      "prompt": "Our lead says our A-tier payment module must hit 100% MC/DC coverage. Stack is TypeScript with Jest. How do we actually achieve and measure that?",
+      "expected_output": "Explains that MC/DC is the A-tier IDEAL but most JS/TS/Python toolchains — Jest included — cannot measure true MC/DC (they report statement/branch coverage, not modified condition/decision coverage), so the team should NOT gate on a real-MC/DC number. Recommends gating at statement then decision/branch coverage instead, deferring the actual percentage threshold to the tdd-workflow skill, and triaging any coverage gap as needs-test / dead-code (remove) / deactivated (justify). Penalize any claim that Jest measures real MC/DC, or a fabricated coverage percentage presented as the DO-178C requirement.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "independent-verification-self-review-insufficient",
+      "prompt": "I wrote a database schema migration and reviewed it myself; the code-reviewer pass came back clean. That's enough to merge, right?",
+      "expected_output": "Identifies the migration as Tier A (irreversible change to persistent state). Invokes the INDEPENDENCE principle: the verifier must not be the author, so self-review is insufficient for this tier. Notes the post-work code-reviewer gate already enforces reviewer != author, and that A-tier additionally requires the assurance-auditor agent plus human review. Should distinguish the assurance-auditor's job (audit traceability, structural-coverage adequacy, derived requirements, and tier-appropriate rigor) from code-reviewer's job (code quality and security of the diff) — they are complementary, not redundant. Penalize accepting self-review as sufficient for an irreversible migration.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "name": "dry-delegation-defer-coverage-numbers",
+      "prompt": "Quick one: what exact code coverage percentage does the DO-178C methodology require for our Tier B service?",
+      "expected_output": "Demonstrates the skill's DRY/delegation discipline: it gives the tier-to-coverage MAPPING for B (decision/branch coverage) but does NOT fabricate or restate a hard percentage — it defers the actual numeric threshold to the tdd-workflow skill, which owns the numbers (single source of truth). Penalize an answer that invents a specific percentage as if do-178c owned it, or that duplicates tdd-workflow's thresholds verbatim. A strong answer explains why: keeping one SSOT for coverage numbers prevents drift between skills.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "name": "korean-trigger-safety-critical-settlement",
+      "prompt": "이번에 결제 정산 로직을 새로 짜는데 안전필수라 검증을 빡세게 하고 싶어. 어떻게 접근하면 좋을까?",
+      "expected_output": "The do-178c skill should engage. Response is in Korean per project policy (technical terms / skill names kept in English). Classifies the settlement logic as a high tier (A — handles money movement and persistent settlement state). Lays out the core flow: assign the criticality tier first (master dial), establish a requirements baseline (Problem 1-Pager + evals), build bidirectional traceability, run tier-scaled verification by delegating to tdd-workflow and verification-loop, and get independent verification (code-reviewer plus assurance-auditor and human review). Offers a concrete first step (classify the tier and set up the requirement-to-test trace) rather than a generic 'just write more tests' answer, and does not restate coverage numbers owned by tdd-workflow.",
+      "files": []
+    }
+  ]
+}

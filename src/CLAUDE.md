@@ -62,6 +62,17 @@ Defines always-on workflow and decision-making procedures. Detailed, situational
 - **Detect unexpected changes**: stop and confirm if you find changes you did not make
 - **Destructive commands**: `reset --hard`, `rm -rf`, `push --force` require explicit approval
 
+### 9. Assurance level & traceability (DO-178C) — always-on
+- **Classify first**: at task start, assign a criticality tier (A–E) by worst-case blast radius. This is the master dial — it scales the rigor of the gates below; it does NOT add a parallel process.
+  - A (Catastrophic): auth, payments, crypto, data migration/deletion, anything irreversible
+  - B (Hazardous): core business logic, public API contracts, persistent state
+  - C (Major): internal features, dashboards, non-critical endpoints · D (Minor): logging, copy, styling · E (No effect): throwaway scripts, spikes
+- **Tier dials existing gates** (no new SSOT): coverage → `tdd-workflow`; verification depth → the post-work review gate + `verification-loop`; coupling → `dependency-design`; security sign-off → `security-review`. A/B raise to max; D/E may waive.
+- **Bidirectional traceability (A/B)**: every requirement (Problem 1-Pager / eval / ticket) maps to code and a test; every changed function traces back to a requirement. Flag orphan code and untested requirements.
+- **Independent verification (A/B)**: implementer ≠ sole verifier — the mandatory post-work `code-reviewer` review gate already enforces this; for A-tier also run the `assurance-auditor` agent and require human review.
+- **Derived-requirement feedback**: when you add behavior the spec didn't ask for (retry, cache, error code, default), surface it to the spec owner — don't embed it silently.
+- Full method: `do-178c` skill (`/do-178c`).
+
 ## Effort × model policy
 
 Per the Anthropic Opus 4.7 guide.
@@ -95,6 +106,7 @@ Agents are isolated workers (own context window, scoped tools) — use them to k
 | Critical user flows | `e2e-runner` | xhigh / sonnet-4-6 |
 | Dead code cleanup | `refactor-cleaner` | xhigh / sonnet-4-6 |
 | Documentation | `doc-updater` | xhigh / sonnet-4-6 |
+| Independent assurance / traceability audit (A/B-tier) | `assurance-auditor` | high / sonnet-4-6 |
 
 **Parallel execution**: launch independent agents in a single message (multiple Task calls). Never run unrelated analyses sequentially.
 **Multi-perspective analysis**: for complex problems, split into focused subagents (factual / senior-engineer / security / consistency / redundancy), one scope each.
@@ -148,6 +160,7 @@ Detailed policies are **Skills**: their content loads only when triggered, keepi
 | Coding style / clean code | `coding-standards` skill | trigger on code review/writing |
 | Dependency / coupling design | `dependency-design` skill | `/deps` or trigger on module/coupling/dependency/monorepo design |
 | Build & type errors | `verification-loop` skill | `/verify`, `/build-fix` |
+| Assurance level / traceability (safety-critical) | `do-178c` skill | `/do-178c` or trigger on safety-critical / high-blast-radius / assurance-level / traceability work |
 
 On-demand references (in the `coding-standards` skill, read when relevant):
 - **Code thresholds (LOC, complexity)**: `references/code-thresholds.md`

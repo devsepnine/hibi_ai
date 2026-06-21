@@ -101,6 +101,18 @@ Before marking work complete:
 - Add a rule that prevents the same mistake and apply it immediately.
 - Review relevant lessons at session start to avoid repeating errors.
 
+## 12) Assurance level and traceability (DO-178C)
+
+- Classify first: at task start assign a criticality tier (A–E) by worst-case blast radius. The tier is the master dial — it scales the rigor of the gates above; it does not add a parallel process.
+  - A (Catastrophic): auth, payments, crypto, data migration/deletion, irreversible
+  - B (Hazardous): core business logic, public API contracts, persistent state
+  - C (Major): internal features, dashboards, non-critical endpoints · D (Minor): logging, copy, styling · E (No effect): throwaway scripts
+- Tier dials existing gates (no new SSOT): coverage and tests via the `tdd-workflow` skill; verification depth via the post-work `code-reviewer` review gate + the `verification-loop` skill; coupling via the `dependency-design` skill; security sign-off via the `security-review` skill. A/B raise to max; D/E may waive.
+- Bidirectional traceability (A/B): every requirement maps to code and a test; every changed unit traces back to a requirement. Flag orphan code and untested requirements.
+- Independent verification (A/B): the implementer is not the sole verifier — the post-work `code-reviewer` review gate enforces this; for A-tier also run the `assurance-auditor` agent and require human review.
+- Derived-requirement feedback: surface behavior the spec did not ask for (retry, cache, default) instead of embedding it silently.
+- Full method: the `do-178c` skill.
+
 ## Language settings
 
 ### Thinking and response language policy (CRITICAL)

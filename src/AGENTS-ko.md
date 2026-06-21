@@ -4,7 +4,7 @@
 
 ## 1) 적용 우선순위
 
-- 항상 지시 우선순위를 지킨다: System > Developer > User > AGENT.md.
+- 항상 지시 우선순위를 지킨다: System > Developer > User > AGENTS.md.
 - 충돌 시 상위 지시를 따르고, 불명확하면 짧게 확인 질문 후 진행한다.
 
 ## 2) 시작 절차
@@ -100,6 +100,18 @@
 - 반복 실수는 `MEMORY.md`(또는 프로젝트 회고 문서)에 패턴으로 기록한다.
 - 같은 실수를 막는 규칙을 추가하고 이후 작업에 즉시 반영한다.
 - 세션 시작 시 관련 레슨을 확인해 동일 오류를 예방한다.
+
+## 12) 보증 수준 및 추적성 (DO-178C)
+
+- 먼저 분류한다: 작업 시작 시 최악의 blast radius 기준으로 criticality tier(A–E)를 부여한다. tier가 master dial이며, 위 게이트들의 강도를 조절할 뿐 별도 프로세스를 추가하지 않는다.
+  - A (Catastrophic): auth, 결제, 암호화, 데이터 마이그레이션/삭제 등 비가역
+  - B (Hazardous): 핵심 비즈니스 로직, 공개 API 계약, 영속 상태
+  - C (Major): 내부 기능, 대시보드, 비핵심 엔드포인트 · D (Minor): 로깅, 카피, 스타일 · E (No effect): 폐기용 스크립트
+- tier가 기존 게이트를 다이얼한다(새 SSOT 없음): 커버리지·테스트는 `tdd-workflow` skill, 검증 깊이는 작업 후 `code-reviewer` 리뷰 게이트 + `verification-loop` skill, 결합도는 `dependency-design` skill, 보안 sign-off는 `security-review` skill. A/B는 최대, D/E는 생략 가능.
+- 양방향 추적성 (A/B): 모든 요구사항이 코드와 테스트에 매핑되고, 변경된 모든 단위는 요구사항으로 역추적된다. orphan code와 미검증 요구사항을 표시한다.
+- 독립 검증 (A/B): 구현자가 유일한 검증자가 아니다 — 작업 후 `code-reviewer` 리뷰 게이트가 이를 강제한다. A-tier는 `assurance-auditor` 에이전트도 실행하고 사람 리뷰를 요구한다.
+- 파생 요구 피드백: 스펙에 없던 동작(retry, cache, default)은 조용히 묻지 말고 surface한다.
+- 전체 방법론: `do-178c` skill.
 
 ## 언어 설정
 
