@@ -1,7 +1,7 @@
 ---
 name: assurance-auditor
 description: Independent verification and traceability auditor for high-assurance (A/B-tier) changes. Audits bidirectional requirement-to-test traceability, structural-coverage adequacy, and derived-requirement surfacing, independent of the implementer. Use PROACTIVELY for safety-critical or high-blast-radius work after implementation, complementing code-reviewer.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, SendMessage
 model: sonnet
 effort: high
 ---
