@@ -24,9 +24,10 @@ Defines always-on workflow and decision-making procedures. Detailed, situational
 - For complex/unclear problems, draft a **Problem 1-Pager** first: Background / Problem / Goal / Non-goals / Constraints — request an interview if any item is ambiguous
 
 ### 2. Subagent strategy
-- Use subagents aggressively to keep the main context clean
-- Delegate research, exploration, and parallel analysis to subagents
+- Use subagents to keep the main context clean — but Opus 5 already delegates readily, so don't reinforce it: skip delegation for work finishable directly in a few tool calls
+- Delegate research, exploration, and parallel analysis to subagents; once delegated, commit — don't re-derive the subagent's findings
 - One task per subagent (Anthropic guide: low effort + explicit checklist)
+- After synthesizing team results, ask teammates that are no longer needed to shut down — idle teammates stay alive (addressable, no token cost) until the lead session ends
 
 ### 3. Self-improvement loop
 - On every user correction, record the pattern in `MEMORY.md`
@@ -75,19 +76,19 @@ Defines always-on workflow and decision-making procedures. Detailed, situational
 
 ## Effort × model policy
 
-Per the Anthropic Opus 4.7 guide.
+Per the Anthropic Opus 5 guide.
 
 | Effort | Model | Use cases |
 |---|---|---|
 | `low` | `claude-haiku-4-5` | Single-tool checklist, narrow scope (subagents, classification, quick lookups) |
-| `medium` | `claude-sonnet-4-6` | Balanced — tool calls with some reasoning |
-| `high` | `claude-sonnet-4-6` | Complex reasoning, careful judgment |
-| `xhigh` | `claude-opus-4-7` | Coding, exploration, multi-step (repeated tool calls, deep search) |
-| `max` | — | True frontier only (not recommended for typical workloads) |
+| `medium` | `claude-sonnet-5` | Balanced — tool calls with some reasoning |
+| `high` | `claude-sonnet-5` | Complex reasoning, careful judgment |
+| `xhigh` | `claude-opus-5` | Coding, exploration, multi-step (repeated tool calls, deep search) |
+| `max` | `claude-fable-5` | True frontier only — hardest long-horizon work (premium $10/$50 pricing, opt-in; not for typical workloads) |
 
-**Core principle**: *"Don't prompt around — raise the effort."* Opus 4.7 strictly respects effort. At lower effort it scopes to what was asked and nothing more.
+**Core principle**: *"Don't prompt around — raise the effort."* Opus 5 strictly respects effort. At lower effort it scopes to what was asked and nothing more — and `low`/`medium` on Opus 5 punch well above their weight, so sweep down where evals hold.
 
-**Model selection**: Haiku 4.5 for frequent lightweight workers; Sonnet 4.6 for main dev/tool-heavy work; Opus 4.7 for deep reasoning and long (30min+) agent tasks.
+**Model selection**: Haiku 4.5 for frequent lightweight workers; Sonnet 5 for main dev/tool-heavy work; Opus 5 for deep reasoning and long (30min+) agent tasks; Fable 5 only when explicitly chosen for the hardest frontier work (not the default upgrade path).
 
 **Tool usage at low effort**: combine calls, use fewer of them, act directly → terse confirmation.
 **Tool usage at high effort**: explain the plan before acting, more calls, detailed summaries.
@@ -98,15 +99,15 @@ Agents are isolated workers (own context window, scoped tools) — use them to k
 
 | Trigger | Agent | Effort / Model |
 |---|---|---|
-| Complex feature / refactor planning | the built-in `Plan` agent | high / sonnet-4-6 |
-| Architectural decision | `architect` | xhigh / opus-4-7 |
-| New feature or bug fix (tests first) | `tdd-guide` | medium / sonnet-4-6 |
-| Right after writing code; also pre-commit security checks (secrets, injection, auth) via the `security-review` skill | `code-reviewer` | medium / sonnet-4-6 |
-| Build / type failure | `build-error-resolver` | medium / sonnet-4-6 |
-| Critical user flows | `e2e-runner` | xhigh / sonnet-4-6 |
-| Dead code cleanup | `refactor-cleaner` | xhigh / sonnet-4-6 |
-| Documentation | `doc-updater` | xhigh / sonnet-4-6 |
-| Independent assurance / traceability audit (A/B-tier) | `assurance-auditor` | high / sonnet-4-6 |
+| Complex feature / refactor planning | the built-in `Plan` agent | high / sonnet-5 |
+| Architectural decision | `architect` | xhigh / opus-5 |
+| New feature or bug fix (tests first) | `tdd-guide` | medium / sonnet-5 |
+| Right after writing code; also pre-commit security checks (secrets, injection, auth) via the `security-review` skill | `code-reviewer` | medium / sonnet-5 |
+| Build / type failure | `build-error-resolver` | medium / sonnet-5 |
+| Critical user flows | `e2e-runner` | xhigh / sonnet-5 |
+| Dead code cleanup | `refactor-cleaner` | xhigh / sonnet-5 |
+| Documentation | `doc-updater` | xhigh / opus-5 |
+| Independent assurance / traceability audit (A/B-tier) | `assurance-auditor` | high / sonnet-5 |
 
 **Parallel execution**: launch independent agents in a single message (multiple Task calls). Never run unrelated analyses sequentially.
 **Multi-perspective analysis**: for complex problems, split into focused subagents (factual / senior-engineer / security / consistency / redundancy), one scope each.

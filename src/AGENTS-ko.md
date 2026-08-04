@@ -227,17 +227,17 @@ command --option value
 
 ## Effort × 모델 정책
 
-Anthropic Opus 4.7 가이드 기준.
+Anthropic Opus 5 가이드 기준.
 
 | Effort | 모델 | 용도 |
 |---|---|---|
 | `low` | `claude-haiku-4-5` | 단일 도구 체크리스트, 명확한 범위 (서브에이전트, 분류, 빠른 조회) |
-| `medium` | `claude-sonnet-4-6` | 균형형 — 도구 호출 + 일부 추론 |
-| `high` | `claude-sonnet-4-6` | 복잡 추론·신중한 판단 |
-| `xhigh` | `claude-opus-4-7` | 코딩·탐색·다단계 (반복 도구 호출, 깊은 검색) |
-| `max` | — | 진정한 최전선만 (일반 워크로드 비권장) |
+| `medium` | `claude-sonnet-5` | 균형형 — 도구 호출 + 일부 추론 |
+| `high` | `claude-sonnet-5` | 복잡 추론·신중한 판단 |
+| `xhigh` | `claude-opus-5` | 코딩·탐색·다단계 (반복 도구 호출, 깊은 검색) |
+| `max` | `claude-fable-5` | 진정한 최전선만 — 최고난도 장기 작업 (프리미엄 $10/$50 과금, 옵트인; 일반 워크로드 비권장) |
 
-**핵심**: "프롬프트 주변을 길게 쓰기보다 effort를 올려라." Opus 4.7은 더 낮은 effort에서 요청된 것만 한다.
+**핵심**: "프롬프트 주변을 길게 쓰기보다 effort를 올려라." Opus 5는 effort를 엄격히 따른다 — 더 낮은 effort에서 요청된 것만 한다. Opus 5의 `low`/`medium`은 이전 세대 대비 훨씬 강력하므로, 평가로 품질이 유지되면 낮춰 쓴다.
 
 **낮은 effort 도구 사용**: 호출 결합, 적게 사용, 직접 행동 → 간결한 확인.
 **높은 effort 도구 사용**: 행동 전 계획 설명, 많은 호출, 상세 요약, 포괄적 코드 주석.

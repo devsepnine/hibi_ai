@@ -223,17 +223,17 @@ Before marking work complete:
 command --option value
 ```
 
-## Effort × model policy (Anthropic Opus 4.7 guide)
+## Effort × model policy (Anthropic Opus 5 guide)
 
 | Effort | Model | Use cases |
 |---|---|---|
 | `low` | `claude-haiku-4-5` | Single-tool checklist, narrow scope (subagents, classification, quick lookups) |
-| `medium` | `claude-sonnet-4-6` | Balanced — tool calls with some reasoning |
-| `high` | `claude-sonnet-4-6` | Complex reasoning, careful judgment |
-| `xhigh` | `claude-opus-4-7` | Coding, exploration, multi-step (repeated tool calls, deep search) |
-| `max` | — | True frontier only (not recommended for typical workloads) |
+| `medium` | `claude-sonnet-5` | Balanced — tool calls with some reasoning |
+| `high` | `claude-sonnet-5` | Complex reasoning, careful judgment |
+| `xhigh` | `claude-opus-5` | Coding, exploration, multi-step (repeated tool calls, deep search) |
+| `max` | `claude-fable-5` | True frontier only — hardest long-horizon work (premium $10/$50 pricing, opt-in; not for typical workloads) |
 
-**Core principle**: *"Don't prompt around — raise the effort."* Opus 4.7 strictly respects effort. At lower effort it scopes to what was asked and nothing more.
+**Core principle**: *"Don't prompt around — raise the effort."* Opus 5 strictly respects effort. At lower effort it scopes to what was asked and nothing more — and `low`/`medium` on Opus 5 punch well above their weight, so sweep down where evals hold.
 
 **Tool usage at low effort**: combine calls, use fewer of them, act directly → terse confirmation.
 **Tool usage at high effort**: explain the plan before acting, more calls, detailed summaries, comprehensive code comments.
