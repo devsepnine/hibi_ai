@@ -43,7 +43,7 @@ The full objective-to-owner map is in `references/objectives-map.md`.
 3. **Implement; surface derived requirements.** As you build, any behavior introduced below the spec (a retry, a cache, a default, an error code) is a derived requirement — surface it, do not bury it. See Derived-Requirement Feedback below.
 4. **Build bidirectional traceability.** Link every requirement forward to its code and tests, and every changed unit backward to a requirement. Flag orphans. See `references/traceability.md`.
 5. **Run tier-scaled verification.** Delegate the activity to `verification-loop` and the tests/thresholds to `tdd-workflow`, then add structural coverage at the tier's required level. See Structural Coverage below.
-6. **Get independent verification.** Run the CLAUDE.md section-4 post-work `code-reviewer` gate (reviewer != author). For A-tier, also run the `assurance-auditor` agent and require human review.
+6. **Get independent verification.** Reviewer != author: run the post-work review gate — the `code-reviewer` agent where agents are installed, otherwise a separate reviewing pass against `coding-standards` → `references/review-checklist.md`, or a human reviewer. For A-tier, add the `assurance-auditor` agent where available; human review is required either way.
 7. **QA sign-off.** Compose the existing gates rather than inventing a new one: `verification-loop` must report READY and the `pull-request` pre-PR checklist must pass before the change is considered done.
 
 ## Assurance Levels
@@ -59,6 +59,11 @@ The tier is the master dial — it sets the required rigor for coverage, traceab
 | E | No effect | Throwaway/experimental | scratch scripts, spikes | None required |
 
 See `references/assurance-levels.md` for the classification guide.
+
+Agent and slash-command names in the table assume Claude Code. Codex installs
+skills only — there, read `code-reviewer` as "a separate reviewing pass or a
+human reviewer" and `/verify` as the `verification-loop` skill. The required
+rigor does not change with the harness; only the mechanism does.
 
 ## Structural Coverage
 
@@ -101,4 +106,4 @@ Link to these; do not duplicate their content.
 - `security-review` — security sign-off, mandatory at A-tier.
 - `commit-rules` — commit conventions; carries the trace key on commits.
 - `pull-request` — pre-PR checklist and PR conventions.
-- `assurance-auditor` agent / `/do-178c` command — independent assurance audit for A-tier work.
+- `assurance-auditor` agent / `/do-178c` command — independent assurance audit for A-tier work (Claude Code only; on Codex follow this skill directly with a separate reviewing pass).

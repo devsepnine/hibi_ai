@@ -43,7 +43,7 @@ D/E 티어 작업(외형, 일회성, 실험)은 이 skill을 건너뛸 수 있�
 3. **구현하고 derived requirement를 드러낸다.** 구현 중 spec 아래에서 도입되는 모든 동작(retry, cache, default, error code)은 derived requirement다 — 묻어두지 말고 드러낸다. 아래 Derived-Requirement Feedback 참조.
 4. **양방향 traceability를 구축한다.** 모든 요구사항을 그 코드와 테스트로 forward 연결하고, 변경된 모든 unit을 요구사항으로 backward 연결한다. orphan은 표시한다. `references/traceability.md` 참조.
 5. **티어 스케일 검증을 실행한다.** 활동은 `verification-loop`에, 테스트/임계값은 `tdd-workflow`에 위임하고, 그 위에 티어가 요구하는 수준의 structural coverage를 더한다. 아래 Structural Coverage 참조.
-6. **독립 검증을 받는다.** CLAUDE.md section-4 post-work `code-reviewer` 게이트를 실행한다(reviewer != author). A 티어는 `assurance-auditor` 에이전트도 실행하고 human review를 요구한다.
+6. **독립 검증을 받는다.** reviewer != author: 작업 후 리뷰 게이트를 실행한다 — 에이전트가 설치된 환경에서는 `code-reviewer` 에이전트, 그렇지 않으면 `coding-standards` 의 `references/review-checklist.md` 기준으로 별도의 검토 패스 또는 사람 리뷰어. A 티어는 가능한 환경에서 `assurance-auditor` 에이전트를 추가하고, 사람 리뷰는 어느 경우든 필수다.
 7. **QA sign-off.** 새 게이트를 발명하지 말고 기존 게이트를 조합한다. `verification-loop`가 READY를 보고하고 `pull-request` pre-PR checklist가 통과해야 변경이 완료된 것으로 본다.
 
 ## Assurance Levels
@@ -59,6 +59,11 @@ D/E 티어 작업(외형, 일회성, 실험)은 이 skill을 건너뛸 수 있�
 | E | No effect | Throwaway/experimental | scratch scripts, spikes | None required |
 
 분류 가이드는 `references/assurance-levels.md` 참조.
+
+표의 에이전트·슬래시 커맨드 이름은 Claude Code를 전제한다. Codex는 skill만 설치받으므로,
+거기서는 `code-reviewer` 를 "별도의 검토 패스 또는 사람 리뷰어"로, `/verify` 를
+`verification-loop` skill로 읽는다. 요구되는 rigor는 하네스에 따라 달라지지 않고
+수단만 달라진다.
 
 ## Structural Coverage
 
@@ -101,4 +106,4 @@ harness가 이미 생성하는 ID를 trace key로 재사용한다. ticket ID(`co
 - `security-review` — 보안 사인오프, A 티어에서 필수.
 - `commit-rules` — commit 규약; commit에 trace key를 실어 나른다.
 - `pull-request` — pre-PR checklist와 PR 규약.
-- `assurance-auditor` agent / `/do-178c` command — A 티어 작업에 대한 독립 assurance 감사.
+- `assurance-auditor` agent / `/do-178c` command — A 티어 작업에 대한 독립 assurance 감사 (Claude Code 전용; Codex에서는 이 skill을 직접 따르며 별도의 검토 패스로 대체).
