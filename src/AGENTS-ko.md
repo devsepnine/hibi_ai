@@ -75,7 +75,7 @@
 - 신규 기능은 정상/실패 경로를 모두 검증
 - 버그 수정은 회귀 테스트 또는 재현 절차로 효과 입증
 - 검증을 수행하지 못한 경우 이유와 리스크를 명시한다.
-- 작업 후 필수 리뷰: 완료 보고 전에 diff를 리뷰한다 — 변경 파일에 `code-reviewer` 에이전트(또는 `/code-review`)를 실행하고, 의존성·결합도·모듈 변경은 `dependency-design` skill도 적용한다. 각 발견사항은 반영하거나 명시적으로 보류한다. 순수 대화나 사소한 비코드 편집만 예외로 한다.
+- 작업 후 필수 리뷰: 완료 보고 전에 리뷰어의 관점으로 diff를 다시 읽는다. 기준은 `coding-standards` skill의 `references/review-checklist.md` 이고, 의존성·결합도·모듈 변경은 `dependency-design` skill도 적용한다. 각 발견사항은 반영하거나 명시적으로 보류한다. 순수 대화나 사소한 비코드 편집만 예외로 한다.
 
 ## 8) 보안/품질 게이트
 
@@ -109,9 +109,9 @@
   - A (Catastrophic): auth, 결제, 암호화, 데이터 마이그레이션/삭제 등 비가역
   - B (Hazardous): 핵심 비즈니스 로직, 공개 API 계약, 영속 상태
   - C (Major): 내부 기능, 대시보드, 비핵심 엔드포인트 · D (Minor): 로깅, 카피, 스타일 · E (No effect): 폐기용 스크립트
-- tier가 기존 게이트를 다이얼한다(새 SSOT 없음): 커버리지·테스트는 `tdd-workflow` skill, 검증 깊이는 작업 후 `code-reviewer` 리뷰 게이트 + `verification-loop` skill, 결합도는 `dependency-design` skill, 보안 sign-off는 `security-review` skill. A/B는 최대, D/E는 생략 가능.
+- tier가 기존 게이트를 다이얼한다(새 SSOT 없음): 커버리지·테스트는 `tdd-workflow` skill, 검증 깊이는 위의 작업 후 리뷰 게이트 + `verification-loop` skill, 결합도는 `dependency-design` skill, 보안 sign-off는 `security-review` skill. A/B는 최대, D/E는 생략 가능.
 - 양방향 추적성 (A/B): 모든 요구사항이 코드와 테스트에 매핑되고, 변경된 모든 단위는 요구사항으로 역추적된다. orphan code와 미검증 요구사항을 표시한다.
-- 독립 검증 (A/B): 구현자가 유일한 검증자가 아니다 — 작업 후 `code-reviewer` 리뷰 게이트가 이를 강제한다. A-tier는 `assurance-auditor` 에이전트도 실행하고 사람 리뷰를 요구한다.
+- 독립 검증 (A/B): 구현자가 유일한 검증자가 아니다. Codex는 에이전트를 설치받지 않으므로, 위임이 아니라 별도의 검토 패스나 사람 리뷰어로 이를 충족한다. A-tier는 사람 리뷰가 필수이고, 감사 기준은 `do-178c` skill에 있다.
 - 파생 요구 피드백: 스펙에 없던 동작(retry, cache, default)은 조용히 묻지 말고 surface한다.
 - 전체 방법론: `do-178c` skill.
 

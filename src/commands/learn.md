@@ -40,25 +40,36 @@ Look for:
 
 ## Output Format
 
-Create a skill file at `~/.claude/skills/learned/[pattern-name].md`:
+Write a real skill: `~/.claude/skills/<kebab-case-name>/SKILL.md`. A flat file
+without frontmatter never loads, so a pattern saved that way is lost work — the
+directory plus frontmatter is what makes it discoverable.
+
+`description` is what decides whether the skill ever triggers, so write it as one
+or two sentences and end with the phrases a user would actually type, Korean
+included; a short imperative description underperforms on Korean queries. Replace
+every `<...>` below — a placeholder left in the file loads fine and silently
+never matches.
 
 ```markdown
-# [Descriptive Pattern Name]
+---
+name: <kebab-case-name>
+description: <what it does and when to use it, ending with real trigger phrases>
+keywords: [<english-terms>, <한국어용어>]
+---
 
-**Extracted:** [Date]
-**Context:** [Brief description of when this applies]
+# <Descriptive Pattern Name>
 
 ## Problem
-[What problem this solves - be specific]
+<the failure this prevents, specifically — what went wrong and how it looked>
 
 ## Solution
-[The pattern/technique/workaround]
+<the pattern, stated so it can be applied without re-deriving it>
 
 ## Example
-[Code example if applicable]
+<code, if it clarifies>
 
 ## When to Use
-[Trigger conditions - what should activate this skill]
+<trigger conditions, and when NOT to use it>
 ```
 
 ## Process
@@ -67,7 +78,8 @@ Create a skill file at `~/.claude/skills/learned/[pattern-name].md`:
 2. Identify the most valuable/reusable insight
 3. Draft the skill file
 4. Ask user to confirm before saving
-5. Save to `~/.claude/skills/learned/`
+5. Save to `~/.claude/skills/<name>/SKILL.md`
+6. If the pattern would help users beyond this machine, run `/upstream-pr` to propose it for the distributed config — it ships as `src/skills/<name>/SKILL.md` with a `-ko.md` twin
 
 ## Notes
 

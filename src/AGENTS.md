@@ -75,7 +75,7 @@ Before marking work complete:
 - Verify both success and failure paths for new features
 - Prove bug fixes via regression tests or a reproduction procedure
 - If verification was skipped, state the reason and the residual risk
-- Mandatory post-work review: before reporting completion, review the diff — run the `code-reviewer` agent (or `/code-review`) on changed files; for dependency/coupling/module changes also apply the `dependency-design` skill. Apply or explicitly defer each finding. Skip only for pure conversation or trivial non-code edits.
+- Mandatory post-work review: before reporting completion, re-read the diff as a reviewer would, against the checklist in the `coding-standards` skill (`references/review-checklist.md`); for dependency/coupling/module changes also apply the `dependency-design` skill. Apply or explicitly defer each finding. Skip only for pure conversation or trivial non-code edits.
 
 ## 8) Security and quality gates
 
@@ -109,9 +109,9 @@ Before marking work complete:
   - A (Catastrophic): auth, payments, crypto, data migration/deletion, irreversible
   - B (Hazardous): core business logic, public API contracts, persistent state
   - C (Major): internal features, dashboards, non-critical endpoints · D (Minor): logging, copy, styling · E (No effect): throwaway scripts
-- Tier dials existing gates (no new SSOT): coverage and tests via the `tdd-workflow` skill; verification depth via the post-work `code-reviewer` review gate + the `verification-loop` skill; coupling via the `dependency-design` skill; security sign-off via the `security-review` skill. A/B raise to max; D/E may waive.
+- Tier dials existing gates (no new SSOT): coverage and tests via the `tdd-workflow` skill; verification depth via the post-work review gate above + the `verification-loop` skill; coupling via the `dependency-design` skill; security sign-off via the `security-review` skill. A/B raise to max; D/E may waive.
 - Bidirectional traceability (A/B): every requirement maps to code and a test; every changed unit traces back to a requirement. Flag orphan code and untested requirements.
-- Independent verification (A/B): the implementer is not the sole verifier — the post-work `code-reviewer` review gate enforces this; for A-tier also run the `assurance-auditor` agent and require human review.
+- Independent verification (A/B): the implementer is not the sole verifier. Codex installs no agents, so satisfy this with a separate reviewing pass or a human reviewer rather than by delegating; for A-tier, human review is required and the audit criteria live in the `do-178c` skill.
 - Derived-requirement feedback: surface behavior the spec did not ask for (retry, cache, default) instead of embedding it silently.
 - Full method: the `do-178c` skill.
 

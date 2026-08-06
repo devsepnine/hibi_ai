@@ -40,25 +40,35 @@ effort: low
 
 ## Output Format
 
-`~/.claude/skills/learned/[pattern-name].md`에 skill 파일을 생성한다:
+실제 skill로 쓴다: `~/.claude/skills/<kebab-case-name>/SKILL.md`. frontmatter 없는
+평평한 파일은 로드되지 않으므로, 그렇게 저장한 패턴은 그대로 버려진다 — 디렉터리와
+frontmatter가 있어야 발견된다.
+
+`description` 이 트리거 여부를 결정한다. 한두 문장으로 쓰고 마지막에 사용자가 실제로
+입력할 표현을 한국어까지 넣는다 — 짧은 명령형 description은 한국어 질의에서 트리거
+성능이 떨어진다. 아래의 `<...>` 는 모두 실제 내용으로 바꾼다. placeholder가 남은
+파일은 로드는 되면서 아무 질의에도 걸리지 않는다.
 
 ```markdown
-# [Descriptive Pattern Name]
+---
+name: <kebab-case-name>
+description: <무엇을 하고 언제 쓰는지, 마지막에 실제 트리거 표현>
+keywords: [<english-terms>, <한국어용어>]
+---
 
-**Extracted:** [Date]
-**Context:** [Brief description of when this applies]
+# <패턴 이름>
 
 ## Problem
-[What problem this solves - be specific]
+<이 패턴이 막아주는 실패. 무엇이 어떻게 잘못됐는지 구체적으로>
 
 ## Solution
-[The pattern/technique/workaround]
+<다시 유도하지 않고 바로 적용할 수 있게 서술한 패턴>
 
 ## Example
-[Code example if applicable]
+<도움이 되면 코드>
 
 ## When to Use
-[Trigger conditions - what should activate this skill]
+<트리거 조건, 그리고 쓰지 말아야 할 때>
 ```
 
 ## Process
@@ -67,7 +77,8 @@ effort: low
 2. 가장 가치 있고 재사용 가능한 인사이트를 식별한다
 3. skill 파일 초안을 작성한다
 4. 저장 전 사용자에게 확인을 요청한다
-5. `~/.claude/skills/learned/`에 저장한다
+5. `~/.claude/skills/<name>/SKILL.md`에 저장한다
+6. 이 기기를 넘어 다른 사용자에게도 도움이 되는 패턴이면 `/upstream-pr` 을 실행해 배포 설정에 제안한다 — 배포 시에는 `src/skills/<name>/SKILL.md` 와 `-ko.md` 쌍으로 들어간다
 
 ## Notes
 
