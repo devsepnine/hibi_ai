@@ -1,0 +1,26 @@
+{
+  "skill_name": "qa-handoff",
+  "evals": [
+    {
+      "id": 1,
+      "name": "range-from-latest-tag-save-to-file",
+      "prompt": "가장 최근 릴리즈 태그부터 지금까지 개발한 내용을 QA한테 넘길 문서로 정리해줘. QA는 코드 못 읽으니까 뭐가 바뀌었고 뭘 테스트해야 하는지 알 수 있어야 해. docs/handoff/ 아래에 파일로 저장해줘.",
+      "expected_output": "A markdown file under docs/handoff/ whose name contains no slashes or spaces, following assets/handoff-template.md: header stating the resolved range and how it was resolved, at-a-glance block, a plain-language change table where each row states the before → after the user observes and cites commit hashes, a separate internal-changes list for invisible refactors each with a reason, a QA checklist where every item has preconditions / numbered steps / expected result and a must-pass or secondary priority, a regression-watch table, a glossary, and open questions naming who to ask. The range is resolved from the tag actually reachable from HEAD (not a hardcoded version), and the resolution is stated rather than assumed.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "weekly-summary-asks-destination",
+      "prompt": "이번 주에 머지된 커밋들 정리해서 기획팀이랑 QA가 같이 볼 수 있게 변경사항 요약 + 확인 체크리스트 뽑아줘",
+      "expected_output": "Two-part document: a one-screen summary readable by a planner (what changed, affected areas, deploy notes) followed by a QA checklist in which every item carries a must-pass or secondary priority plus preconditions, steps, and expected result. The range is derived without asking (rolling 7 days) and both the range and that interpretation are stated. Commits with no user-visible effect appear in the internal-changes list, each with a clause explaining why they are invisible, rather than as checklist items. Because the ask is to produce a document and no destination was given, the assistant asks where to put it (file / conversation / Confluence) before writing anything.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "release-eve-answers-in-conversation",
+      "prompt": "내일 릴리즈인데 QA가 뭘 봐야 할지 물어봐. 최근 태그 이후 변경점 중에 사용자가 실제로 체감하는 것만 뽑아서 알려줘.",
+      "expected_output": "An answer in the conversation — no file written and no destination question, because the ask is a question rather than a document request — scoped to the newest reachable tag..HEAD, listing only user-observable changes with the before → after difference, plus a checklist marking which items block the release. Internal-only commits appear as a short bulleted list with a reason and commit reference, not folded into the checklist. Any change the assistant could not classify from the diff appears as an open question naming the commit author instead of a guessed expected result. If the range resolves to zero commits, it reports that instead of producing a summary.",
+      "files": []
+    }
+  ]
+}
