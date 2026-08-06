@@ -87,6 +87,27 @@ hibi --update
 
 **Source requirements**: Each source directory must contain at least one of: `agents/`, `commands/`, `rules/`, `skills/`, or `mcps/mcps.yaml`.
 
+### Install Provenance
+
+After every install or removal, hibi records where your configuration came from
+in `~/.hibi/install.json`:
+
+```json
+{
+  "source": "https://github.com/devsepnine/hibi_ai",
+  "version": "v1.14.1",
+  "target": ".claude",
+  "updated_at": "2026-08-06T05:41:00Z",
+  "components": ["agents/architect", "commands/qa-handoff", "skills/qa-handoff"]
+}
+```
+
+This exists so an installed config can name its own origin — the version maps to
+a release tag, so the exact source tree is recoverable, and the upstream is where
+improvements go back. The `upstream-pr` skill reads this file to find the
+repository without needing a clone. Only hibi's own directory is written; the
+agent-owned `~/.claude` tree is left alone.
+
 ## Components
 
 - **Agents**: Specialized AI agents for different tasks

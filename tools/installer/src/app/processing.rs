@@ -1,6 +1,8 @@
+use std::path::PathBuf;
+
 use anyhow::Result;
 
-use super::types::{Tab, View};
+use super::types::{Tab, TargetCli, View};
 use super::{App, build_tree_views};
 use crate::component::Component;
 use crate::fs;
@@ -12,6 +14,15 @@ use crate::plugin::Plugin;
 /// the CLI; running the probe for them would just slow the flow down.
 pub(crate) fn needs_cli_preflight(tab: Tab) -> bool {
     matches!(tab, Tab::Plugins | Tab::McpServers)
+}
+
+/// Where the install manifest should describe, or why it cannot be written.
+///
+/// Split out of `record_install_manifest` so both refusal paths are testable
+/// without resolving — or writing into — a real home directory.
+fn manifest_dest_dir(target_cli: Option<TargetCli>) -> Result<PathBuf, String> {
+    let target_cli = target_cli.ok_or_else(|| "no target CLI selected".to_string())?;
+    target_cli.get_dest_dir().map_err(|e| e.to_string())
 }
 
 impl App {
@@ -208,24 +219,16 @@ impl App {
     /// in the log but never fails the run — the files already landed, and
     /// provenance metadata is not worth discarding a successful install over.
     fn record_install_manifest(&mut self) {
-        let Some(target_cli) = self.target_cli else {
-            self.processing_log
-                .push("[WARN] Skipped install manifest: no target CLI selected".to_string());
-            return;
-        };
-
-        let dest_dir = match target_cli.get_dest_dir() {
-            Ok(dir) => dir,
-            Err(e) => {
-                self.processing_log
-                    .push(format!("[WARN] Skipped install manifest: {}", e));
-                return;
+        match manifest_dest_dir(self.target_cli) {
+            Ok(dest_dir) => {
+                if let Err(e) = fs::manifest::write(&dest_dir, &self.components) {
+                    self.processing_log
+                        .push(format!("[WARN] Failed to write install manifest: {}", e));
+                }
             }
-        };
-
-        if let Err(e) = fs::manifest::write(&dest_dir, &self.components) {
-            self.processing_log
-                .push(format!("[WARN] Failed to write install manifest: {}", e));
+            Err(reason) => self
+                .processing_log
+                .push(format!("[WARN] Skipped install manifest: {}", reason)),
         }
     }
 
@@ -280,6 +283,23 @@ mod tests {
     fn preflight_runs_for_plugin_and_mcp_tabs() {
         assert!(needs_cli_preflight(Tab::Plugins));
         assert!(needs_cli_preflight(Tab::McpServers));
+    }
+
+    #[test]
+    fn manifest_is_skipped_when_no_target_cli_is_selected() {
+        // A refusal has to name its reason: the log line is the only trace a
+        // user gets that provenance was not recorded.
+        let err = manifest_dest_dir(None).unwrap_err();
+        assert!(err.contains("no target CLI"), "unexpected reason: {err}");
+    }
+
+    #[test]
+    fn manifest_targets_the_selected_cli_config_dir() {
+        let claude = manifest_dest_dir(Some(TargetCli::Claude)).unwrap();
+        let codex = manifest_dest_dir(Some(TargetCli::Codex)).unwrap();
+
+        assert!(claude.ends_with(".claude"));
+        assert!(codex.ends_with(".codex"));
     }
 
     #[test]

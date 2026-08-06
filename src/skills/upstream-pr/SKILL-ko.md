@@ -26,8 +26,8 @@ keywords: [upstream-pr, 업스트림PR, 설정개선, 기여, contribute, config
 installer가 관리하는 **모든** 디렉터리를 비교한다. 일부만 보면 안 된다 — 에이전트나
 output style에 대한 교정도 스킬만큼 업스트림 가치가 있다. Claude 대상은 `agents`,
 `commands`, `contexts`, `rules`, `skills`, `output-styles`, `statusline`, `hooks`
-그리고 설정 파일(`CLAUDE.md`, `settings.json`, `mcp.md`)이고, Codex 대상은 `skills`
-와 `AGENTS.md` 다. installer가 실제로 무엇을 설치했는지는 매니페스트의 컴포넌트
+그리고 설정 파일 `CLAUDE.md`·`settings.json` 이고, Codex 대상은 `skills` 와
+`AGENTS.md` 다. installer가 실제로 무엇을 설치했는지는 매니페스트의 컴포넌트
 목록을 기준으로 삼는다.
 
 그다음 잡음을 걷어낸다. 그러지 않으면 실제 실행이 잡음에 묻힌다.

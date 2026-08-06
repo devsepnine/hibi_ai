@@ -121,10 +121,13 @@ pub fn write(dest_dir: &Path, components: &[Component]) -> Result<()> {
 /// `write` with the destination path injected, so the file-writing path itself
 /// is testable without touching the real home directory.
 fn write_to(path: &Path, dest_dir: &Path, components: &[Component]) -> Result<()> {
+    // Refuse rather than stamp 1970: a wrong timestamp in a provenance file is
+    // worse than an absent one, and the caller surfaces the refusal as a
+    // warning without failing the install.
     let epoch_secs = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
+        .context("System clock reads before the Unix epoch; refusing to write a false timestamp")?
+        .as_secs();
     let manifest = build(dest_dir, installed_component_ids(components), epoch_secs);
 
     let parent = path

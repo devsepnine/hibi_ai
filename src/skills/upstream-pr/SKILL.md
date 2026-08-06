@@ -28,8 +28,7 @@ Diff **every** directory the installer manages, not a favourite few — a
 correction to an agent or an output style is as upstreamable as one to a skill.
 For the Claude target that is `agents`, `commands`, `contexts`, `rules`,
 `skills`, `output-styles`, `statusline`, `hooks`, plus the config files
-(`CLAUDE.md`, `settings.json`, `mcp.md`); for Codex it is `skills` and
-`AGENTS.md`. Use the manifest's component list as the ground truth for what the
+`CLAUDE.md` and `settings.json`; for Codex it is `skills` and `AGENTS.md`. Use the manifest's component list as the ground truth for what the
 installer actually put there.
 
 Then subtract the noise, or a real invocation drowns in it:
