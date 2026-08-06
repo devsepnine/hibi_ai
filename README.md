@@ -95,7 +95,7 @@ in `~/.hibi/install.json`:
 ```json
 {
   "source": "https://github.com/devsepnine/hibi_ai",
-  "version": "v1.14.1",
+  "version": "v1.15.0",
   "target": ".claude",
   "updated_at": "2026-08-06T05:41:00Z",
   "components": ["agents/architect", "commands/qa-handoff", "skills/qa-handoff"]
