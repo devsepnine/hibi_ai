@@ -102,6 +102,10 @@ in `~/.hibi/install.json`:
 }
 ```
 
+`components` lists only what came from the bundled source; if you configured
+extra sources, their labels appear under `other_sources` so `source` is never
+read as the origin of a component that came from somewhere else.
+
 This exists so an installed config can name its own origin — the version maps to
 a release tag, so the exact source tree is recoverable, and the upstream is where
 improvements go back. The `upstream-pr` skill reads this file to find the

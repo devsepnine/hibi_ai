@@ -34,7 +34,7 @@ installer actually put there.
 Then subtract the noise, or a real invocation drowns in it:
 
 - **`-ko.md` files and `*/workspace/` subtrees never install by design.** They appear as "missing locally" on every diff. They are exclusions, not gaps.
-- **Not every local file came from this repo.** `~/.hibi/sources.yaml` can add other git or local sources, and users write their own skills. Anything outside this repo's install surface is not a candidate no matter how good it is — check the sources list before treating a local-only file as drift.
+- **Not every local file came from this repo.** `~/.hibi/sources.yaml` can add other git or local sources, and users write their own skills. Anything outside this repo's install surface is not a candidate no matter how good it is. The manifest already separates this: `components` lists only what came from the bundled source, and any other contributing source appears under `other_sources`.
 - **Session evidence** counts as a candidate too: corrections the user made, guidance that was missing when it was needed, defects found in shipped docs (a wrong path, a rule contradicting another).
 
 ## 3. Gate each candidate

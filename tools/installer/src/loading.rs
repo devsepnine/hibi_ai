@@ -29,7 +29,13 @@ pub(crate) enum RefreshResult {
     /// Refresh limited to filesystem-backed component types — Agents,
     /// Commands, Contexts, Rules, Skills, Hooks, Styles, Statusline,
     /// Config. Pure filesystem ops, sub-100ms typical.
-    Components(Vec<component::Component>),
+    Components {
+        components: Vec<component::Component>,
+        /// Why the provenance manifest could not be written, if it failed.
+        /// Carried back instead of logged in the worker so the TUI thread
+        /// stays the only writer of the processing log.
+        manifest_warning: Option<String>,
+    },
     /// Refresh limited to MCP servers. Always shells out to the CLI
     /// (`mcp list`) and is the slow path — only run when the user
     /// actually installed/removed an MCP server.
@@ -219,7 +225,16 @@ fn start_refresh_thread(app: &mut App, refresh_tx: &Sender<Result<RefreshResult>
     thread::spawn(move || {
         let result = match scope {
             RefreshScope::Components => fs::scanner::scan_all_sources(&sources, &dest_dir, target_cli)
-                .map(RefreshResult::Components),
+                .map(|components| {
+                    // Record provenance here rather than in the consumer: the
+                    // consumer runs on the TUI tick, and a home directory can
+                    // be network-mounted or virus-scanned, which would stall
+                    // the very loop this thread exists to keep free.
+                    let manifest_warning = fs::manifest::write(&dest_dir, &components)
+                        .err()
+                        .map(|e| e.to_string());
+                    RefreshResult::Components { components, manifest_warning }
+                }),
             RefreshScope::Mcp => fs::scanner::scan_all_mcp_sources(&sources, target_cli)
                 .map(|(servers, _warning)| RefreshResult::Mcp(servers)),
             RefreshScope::Plugins => fs::scanner::scan_all_plugin_sources(&sources)
@@ -236,7 +251,13 @@ fn start_refresh_thread(app: &mut App, refresh_tx: &Sender<Result<RefreshResult>
 /// views — `app.mcp_servers` and `app.plugins` are left untouched.
 fn check_refresh_completion(app: &mut App, refresh_rx: &Receiver<Result<RefreshResult>>) {
     match refresh_rx.try_recv() {
-        Ok(Ok(RefreshResult::Components(c))) => app.apply_components_refresh(c),
+        Ok(Ok(RefreshResult::Components { components, manifest_warning })) => {
+            if let Some(reason) = manifest_warning {
+                app.processing_log
+                    .push(format!("[WARN] Install manifest not written: {}", reason));
+            }
+            app.apply_components_refresh(components);
+        }
         Ok(Ok(RefreshResult::Mcp(m))) => app.apply_mcp_refresh(m),
         Ok(Ok(RefreshResult::Plugins(p))) => app.apply_plugins_refresh(p),
         // InitialLoad is only sent by start_loading_thread which feeds
