@@ -1,5 +1,5 @@
 ---
-description: Promote session-derived improvements into the distributed config as a reviewable PR — detect drift between installed config and src/, gate by blast radius, and open the PR with its evidence.
+description: Promote a session-derived improvement into the distributed config as a reviewable PR — locate the upstream from the install manifest, gate candidates by blast radius, and open the PR with its evidence.
 argument-hint: "[topic]"
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
@@ -8,58 +8,17 @@ effort: high
 
 # Upstream PR
 
-세션에서 얻은 개선점을 모든 installer 사용자에게 배포되는 `src/`로 환류하기 위한
-얇은 진입점이다. PR의 핵심은 diff가 아니라 **증거와 영향 범위**다. 무엇이 실패했고
-누구에게 도달하는지 모르면 리뷰어는 규칙 변경을 판단할 수 없다.
+세션에서 얻은 것을 다른 사용자에게 배포되는 설정으로 되돌리기 위한 얇은 진입점이다.
+업스트림은 `~/.hibi/install.json` 에서 확인하고(설치만 한 사용자는 clone이 없다),
+installer가 관리하는 모든 디렉터리를 비교해 후보를 모으고, 게이트를 통과시킨 뒤
+`improve/<topic>` 브랜치로 변경을 올린다.
 
-## 먼저 소스 위치를 찾는다
+호출 방법: 배포되는 규칙·스킬·에이전트·커맨드가 바뀌어야 한다는 것이 세션에서 드러났을
+때, 또는 개선을 로컬에만 적용해 두어 다른 사용자에게 전달할 필요가 있을 때 실행한다.
+`$ARGUMENTS` 가 있으면 그 주제로 범위를 좁힌다.
 
-대부분의 사용자는 이 설정을 설치만 하고 저장소를 clone하지 않는다. 저장소가 있다고
-가정하지 말고, 변경이 들어갈 곳을 먼저 확정한다.
+필수 원칙: 이 커맨드 실행은 로컬 브랜치와 커밋까지만 승인한다. 공유될 내용을 보여주고
+`git push` 와 PR 생성 전에 **두 번째** 확인을 받는다 — 둘 다 외부로 나가는 행위이고,
+세션 증거에는 먼저 다시 써야 할 고용주 코드나 내부 경로가 섞일 수 있다.
 
-1. **`~/.hibi/install.json`** — installer가 남기는 매니페스트다. `source`(업스트림 URL), `version`(릴리즈 태그이므로 정확한 소스 트리를 복원 가능), `target`, 설치된 컴포넌트 목록이 들어 있다. 하드코딩된 URL보다 이 파일을 먼저 신뢰한다. 설치만 한 사용자에게 자기 설정의 출처를 알려주는 것도 이 파일이다.
-2. **로컬 clone 있음** — `git remote -v` 가 그 source를 가리키면 그것을 쓴다.
-3. **clone 없음 (설치만 한 사용자)** — 그 사실을 분명히 말하고, 매니페스트의 업스트림을 알려주고 `gh repo fork <owner>/<repo> --clone` 을 제안한다. 변경 내용은 이미 그 사람의 `~/.claude` 에 있고, fork는 리뷰를 받기 위한 수단일 뿐이다.
-4. **fork를 원하지 않음** — 제안 내용을 홈 디렉터리나 스크래치패드의 파일로 남기고 저장소 issues 페이지를 안내해 거기에 붙일 수 있게 한다. 이슈에 남은 아이디어가 세션 종료와 함께 사라진 아이디어보다 낫다.
-5. **매니페스트도 없음** (매니페스트 도입 전에 설치한 경우) — `https://github.com/devsepnine/hibi_ai` 로 폴백하고, 재설치하면 다음부터 출처가 기록된다고 알려준다.
-
-## 후보 수집
-
-- **Drift**: 설치본과 저장소를 비교한다 — `diff -r ~/.claude/skills <repo>/src/skills`, `commands`·`agents`·`CLAUDE.md`·`AGENTS.md`도 동일하게. 로컬에만 있고 `src/`에 없으면 후보다. 반대로 `src/`에만 있고 로컬에 없으면 그것은 설치 누락이지 후보가 아니다.
-- **세션 증거**: 사용자가 교정한 내용, 필요한 시점에 없던 지침, 배포 문서에서 발견된 결함(잘못된 경로, 서로 모순되는 규칙).
-- `$ARGUMENTS` 가 있으면 그 주제로 범위를 좁힌다.
-
-## 후보를 게이트에 통과시킨다
-
-네 가지를 모두 통과해야 배포한다. 후보별로 판정을 밝힌다 — 탈락 사유도 승인만큼 유용하다.
-
-1. **일반화 가능성** — 다른 스택·프로젝트 사용자에게도 이득인가? 저장소 한정 지침은 그 프로젝트의 `CLAUDE.md`로, 개인 취향은 `MEMORY.md`로 간다. 둘 다 `src/` 대상이 아니다.
-2. **증거** — 이번 세션에서 실제로 무엇이 실패했거나 교정됐는지 인용할 수 있는가? 흔적 없는 의견은 PR이 아니라 메모다.
-3. **티어 적합성** — `CLAUDE.md`/`AGENTS.md` 는 모든 사용자의 모든 세션에 로드된다(B 티어): 증거, 검토한 대안 최소 1개, 동작하는 가장 짧은 문구를 요구한다. 스킬·커맨드·에이전트는 조건부 로드다(C/D 티어): 문턱이 낮다.
-4. **되돌릴 수 있는가** — 문구는 깔끔히 revert되지만, 사용자 습관을 바꾸는 규칙은 릴리즈된 뒤에는 완전히 회수되지 않는다. 회수가 어려울수록 문턱을 높인다.
-
-## 커밋 전에 저장소 규약을 강제한다
-
-- `src/` 의 모든 파일은 영문 원본과 `-ko.md` 쌍을 갖고, 설치되는 것은 영문뿐이다 — 따라서 KO 쌍이 `-ko` asset 경로를 참조하면 안 된다.
-- 상세 정책은 스킬 한 곳에만 두고, `CLAUDE.md`/`AGENTS.md` 에는 그것을 가리키는 한 줄만 넣는다. 양쪽에 상세를 중복하는 것이 피해야 할 실패 모드다.
-- 이모지 금지, 생성 마커 금지.
-
-## 무엇이든 밖으로 나가기 전에 묻는다
-
-공유될 내용 — diff와 증거 문장 — 을 보여주고 업스트림에 올릴지 묻는다. 이것이 단계가
-아니라 질문인 이유는 두 가지다.
-
-- **증거는 실제 세션에서 나온다.** 고용주의 코드, 내부 경로, 티켓 ID, 고객명이 섞일 수 있다. 무엇이 실패했는지는 일반적인 형태로만 서술하고 비공개 세부는 절대 넣지 않는다. 그 세부 없이는 설명이 불가능하다면, PR을 내기 전에 증거를 다시 써야 한다고 말한다.
-- **업스트림은 공개 저장소다.** 한번 push되면 나중에 브랜치를 지워도 내용은 공개된 상태로 남는다.
-
-## PR을 올린다
-
-개선은 `improve/<topic>` 브랜치로 가고 `main` 직커밋은 하지 않는다. 커밋은 논리 단위로
-하나씩. PR 본문에는 변경마다 증거, 티어와 도달 범위, 기각한 대안, 롤백 방법을 적는다.
-`src/` 는 패키지에 임베드되므로 머지된 변경은 사용자의 다음 `hibi --sync` 가 아니라
-**다음 릴리즈** 때 도달한다 — 그래서 PR이 마지막 리뷰 게이트다.
-
-`git push` 와 PR 생성 전에 사용자에게 확인받는다. 둘 다 외부로 나가는 행위이고,
-이 커맨드를 실행한 것만으로 승인된 것이 아니다.
-
-**PR 제목·본문 규약은 `pull-request` skill을 source of truth로 삼아 따른다. 변경 요약 섹션은 `qa-handoff` 를, 패턴을 새 스킬로 뽑는 작업은 `/learn` 을 재사용한다.**
+**전체 방법론 — 소스 확인, 후보 선별, 4단 게이트, PR 본문 구성 — 은 `upstream-pr` skill을 source of truth로 삼아 따른다.**

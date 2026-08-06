@@ -33,7 +33,7 @@ Defines always-on workflow and decision-making procedures. Detailed, situational
 - On every user correction, record the pattern in `MEMORY.md`
 - Write a rule that prevents the same mistake — apply it immediately
 - Review relevant lessons at the start of each session
-- When a lesson generalizes past this project, promote it into the distributed config with `/upstream-pr` (branch + PR, never a direct `main` commit); what is personal stays in `MEMORY.md`
+- When a lesson generalizes past this project, surface a proposal to promote it into the distributed config and run `/upstream-pr` once the user agrees; what is personal stays in `MEMORY.md`
 
 ### 4. Verify before completion
 - Never mark work complete without proof it works
