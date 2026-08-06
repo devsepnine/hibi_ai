@@ -140,6 +140,7 @@ Next:
 - **Keep it small**: tasks, commits, PRs small. Record assumptions in Issues/PRs/ADRs.
 - **Validate inputs, encode outputs**: never trust unvalidated input.
 - **Names over abstraction**: intention-revealing names; avoid premature abstraction.
+- **Comments lead with the conclusion**: first line = the point in one sentence, then detail. Why over what, no code narration, no stale comments; match the target file's existing comment language (the response-language policy above governs replies, not comments you write into code). Full rules in `coding-standards`.
 
 ## Absolute commit rules (always apply — skill carries the rest)
 

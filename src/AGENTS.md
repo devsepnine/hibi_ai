@@ -40,6 +40,7 @@ All four must pass equally. See the `coding-standards` skill → `references/rev
 **Clean Code**
 - Names that reveal intent, single-responsibility functions, side effects isolated at boundary layers
 - Guard clauses, symbolized constants, Input → Processing → Return
+- Conclusion-first comments (one-sentence point, then why), no code narration, no stale comments
 - No dead code, no commented-out blocks, no untracked TODOs
 
 **Functionality**

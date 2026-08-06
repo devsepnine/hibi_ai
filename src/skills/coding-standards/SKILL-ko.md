@@ -1,7 +1,7 @@
 ---
 name: coding-standards
-description: Universal coding standards for TypeScript/JavaScript/React/Node — naming, immutability, error handling, code smells, testing, file organization. React form/error-boundary/a11y patterns in references/. 코딩 표준, 코드 스타일, 코드 리뷰, 클린 코드, 폼 검증, 에러 바운더리, 접근성.
-keywords: [coding-standards, 코딩표준, 코드스타일, 코드리뷰, clean-code, best-practices, react-patterns, form, error-boundary, a11y, 접근성]
+description: Universal coding standards for TypeScript/JavaScript/React/Node — naming, immutability, error handling, comment style, code smells, testing, file organization. React form/error-boundary/a11y patterns in references/. 코딩 표준, 코드 스타일, 주석 작성, 코드 리뷰, 클린 코드, 폼 검증, 에러 바운더리, 접근성.
+keywords: [coding-standards, 코딩표준, 코드스타일, 코드리뷰, clean-code, best-practices, code-comments, 코드주석, 두괄식, react-patterns, form, error-boundary, a11y, 접근성]
 ---
 
 # 코딩 표준 & 모범 사례
@@ -92,11 +92,35 @@ if (!market?.isActive) return
 
 ## 주석
 
-**왜**를 설명하라, 무엇을이 아니라. 비자명한 결정, 트레이드오프, 제약사항을 문서화한다. 공개 API에는 JSDoc (params, returns, throws, example).
+**두괄식으로 쓴다.** 첫 줄에 요점을 한 문장으로 못박고, 상세는 필요한 만큼만 뒤에 붙인다. 읽는 사람이 아래 코드를 해석하지 않고 그 한 줄만으로 의도를 파악할 수 있어야 한다.
+
+- **무엇이 아니라 왜** — 비자명한 결정, 트레이드오프, 제약을 남긴다. 코드 나열식 서술 금지: 코드가 이미 말하는 내용을 되풀이하지 않는다.
+- **요약 한 줄 → 상세** — 한 문장 먼저, 필요할 때만 다음 줄에 구체 내용(블록 주석은 빈 줄로 분리, `//` 연속 주석은 그냥 다음 줄에 이어 쓴다). 장문 서술 금지, 결론을 뒤로 미루는 서술 금지.
+- **잡음 제거** — 자명한 주석(`// i 증가`), 변경 이력(`// 2026-01-02 수정`), 주석 처리된 코드, 이모지 금지.
+- **사실과 일치** — 코드가 바뀌면 주석도 고치거나 지운다. 낡은 주석은 없는 것보다 해롭다.
+- **공개 API**: JSDoc/doc 주석 (params, returns, throws, example).
+- **언어**: 파일의 기존 주석 언어를 따른다. 한 파일에 두 언어를 섞지 않는다.
 
 ```typescript
-// Exponential backoff to avoid overwhelming API during outages
+// Bad — 코드를 나열하고 요점을 맨 뒤로 미룬다
+// retryCount를 받아 2의 거듭제곱을 만들고 1000을 곱하는데, 이 값이 무한히
+// 커지므로 Math.min으로 잘라서 API가 과부하되지 않게 한다.
 const delay = Math.min(1000 * 2 ** retryCount, 30000)
+
+// Good — 결론 먼저, 이유는 그다음
+// 30초 상한의 exponential backoff — 장애 시 API 과부하를 막는다.
+const delay = Math.min(1000 * 2 ** retryCount, 30000)
+```
+
+모듈/함수 헤더도 같은 규칙 — 첫 줄이 한 문장 계약이다:
+
+```typescript
+/**
+ * 마켓 스냅샷을 조회한다. 캐시가 유효하면 캐시에서 반환한다.
+ *
+ * TTL 5초는 업스트림 피드가 5초 단위로 업데이트를 모아 보내기 때문이다 —
+ * 더 짧게 잡으면 데이터는 그대로인데 요청 수만 늘어난다.
+ */
 ```
 
 ## 테스팅 (AAA 패턴)

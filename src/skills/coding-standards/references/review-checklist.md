@@ -46,6 +46,7 @@ If unsure, default up (Major → Blocker) rather than down.
 - [ ] Guard clauses preferred over deep nesting
 - [ ] Constants symbolized (no magic numbers/strings, no hardcoded paths)
 - [ ] Code structured as Input → Processing → Return
+- [ ] Comments lead with the conclusion (one-sentence point, then why), explain non-obvious intent, and match current behavior
 - [ ] No dead code, no commented-out blocks, no `TODO` without ticket
 
 ## Functionality Review

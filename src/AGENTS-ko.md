@@ -40,6 +40,7 @@
 **Clean Code**
 - 의도를 드러내는 이름, 단일 책임 함수, 사이드 이펙트 경계 격리
 - Guard clause, 상수 심볼화, Input → Processing → Return
+- 두괄식 주석 (요점 한 문장 → 왜), 코드 나열식 서술 금지, 낡은 주석 금지
 - 죽은 코드/주석처리 블록/티켓 없는 TODO 금지
 
 **Functionality**

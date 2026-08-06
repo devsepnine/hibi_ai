@@ -1,7 +1,7 @@
 ---
 name: coding-standards
-description: Universal coding standards for TypeScript/JavaScript/React/Node — naming, immutability, error handling, code smells, testing, file organization. React form/error-boundary/a11y patterns in references/. 코딩 표준, 코드 스타일, 코드 리뷰, 클린 코드, 폼 검증, 에러 바운더리, 접근성.
-keywords: [coding-standards, 코딩표준, 코드스타일, 코드리뷰, clean-code, best-practices, react-patterns, form, error-boundary, a11y, 접근성]
+description: Universal coding standards for TypeScript/JavaScript/React/Node — naming, immutability, error handling, comment style, code smells, testing, file organization. React form/error-boundary/a11y patterns in references/. 코딩 표준, 코드 스타일, 주석 작성, 코드 리뷰, 클린 코드, 폼 검증, 에러 바운더리, 접근성.
+keywords: [coding-standards, 코딩표준, 코드스타일, 코드리뷰, clean-code, best-practices, code-comments, 코드주석, 두괄식, react-patterns, form, error-boundary, a11y, 접근성]
 ---
 
 # Coding Standards & Best Practices
@@ -92,11 +92,35 @@ if (!market?.isActive) return
 
 ## Comments
 
-Explain **why**, not what. Document non-obvious decisions, tradeoffs, and constraints. JSDoc for public APIs (params, returns, throws, example).
+**Lead with the conclusion (BLUF).** The first line states the point in one sentence; detail follows only if it earns its place. A reader must get the intent from that line alone, without decoding the code under it.
+
+- **Why, not what** — non-obvious decisions, tradeoffs, constraints. No code narration: never restate what the code already says.
+- **Summary line first, detail after** — one sentence; add specifics on the following lines only when needed (in block comments, separate them with a blank line; in `//` runs, just continue on the next line). No wall of prose, no multi-line build-up to the point.
+- **Cut the noise** — no obvious comments (`// increment i`), no change logs (`// fixed 2026-01-02`), no commented-out code, no emojis.
+- **Keep it true** — update or delete the comment when the code changes; a stale comment costs more than no comment.
+- **Public APIs**: JSDoc/doc comment (params, returns, throws, example).
+- **Language**: follow the file's existing comment language; never mix two in one file.
 
 ```typescript
-// Exponential backoff to avoid overwhelming API during outages
+// Bad — narrates the code and buries the point at the end
+// Take retryCount, raise 2 to that power, multiply by 1000, and since that
+// grows without bound clamp it with Math.min so the API is not overwhelmed.
 const delay = Math.min(1000 * 2 ** retryCount, 30000)
+
+// Good — conclusion first, reason second
+// Exponential backoff capped at 30s: protects the API during outages.
+const delay = Math.min(1000 * 2 ** retryCount, 30000)
+```
+
+Same rule scales to module/function headers — first line is the one-sentence contract:
+
+```typescript
+/**
+ * Fetches a market snapshot, served from cache while it is still fresh.
+ *
+ * TTL is 5s because the upstream feed batches updates at that interval —
+ * a shorter TTL multiplies requests without returning fresher data.
+ */
 ```
 
 ## Testing (AAA pattern)
