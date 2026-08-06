@@ -4,6 +4,8 @@ assurance 티어는 `do-178c` 오버레이의 마스터 다이얼이다. 한 번
 
 분류 기준은 **실패 시 최악의 폭발 반경(worst-case blast radius)**이며, 투입 노력이나 코드 크기, 작업의 체감 난이도가 아니다. auth 검사에 대한 세 줄짜리 변경은 Tier A이고, 2,000줄짜리 대시보드 리팩토링은 Tier C일 수 있다. 얼마나 많이 입력했는지가 아니라, 코드가 틀린 채로 배포되면 무엇이 깨지는지를 물어라.
 
+> 아래의 에이전트·슬래시 커맨드 이름은 Claude Code를 전제한다. Codex는 skill만 설치받으므로, 거기서는 `code-reviewer` 를 별도의 검토 패스 또는 사람 리뷰어로, `assurance-auditor` 를 가능한 환경에서만 추가하는 것(사람 리뷰는 어느 경우든 필수)으로, `/verify` 를 `verification-loop` skill로 읽는다. 요구되는 rigor는 하네스에 따라 달라지지 않고 수단만 달라진다.
+
 ## Canonical Tier Table
 
 | Tier | DO-178C | Failure impact | Examples | Required rigor (dials existing gates) |

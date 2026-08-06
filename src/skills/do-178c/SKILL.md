@@ -29,7 +29,7 @@ This skill restates nothing the harness already owns. It points at the SSOT and 
 | Requirements-based tests | `tdd-workflow` | Trace each test to a requirement |
 | Coverage thresholds | `tdd-workflow` | Structural-coverage discipline per tier |
 | Verification activity | `verification-loop` | Scale which checks run by tier |
-| Independent review | CLAUDE.md "Mandatory post-work review" + `code-reviewer` | `assurance-auditor` + human gate for A-tier |
+| Independent review | CLAUDE.md "Mandatory post-work review" + `code-reviewer` | `assurance-auditor` + human gate for A-tier (Codex substitution: Core Flow step 6) |
 | Coupling / dependency direction | `dependency-design` | Tighter scrutiny at A/B |
 | Security sign-off | `security-review` | Mandatory for A-tier |
 | Configuration management / baselines | `commit-rules` + `pull-request` | Trace key on commits/PRs |
@@ -62,8 +62,9 @@ See `references/assurance-levels.md` for the classification guide.
 
 Agent and slash-command names in the table assume Claude Code. Codex installs
 skills only — there, read `code-reviewer` as "a separate reviewing pass or a
-human reviewer" and `/verify` as the `verification-loop` skill. The required
-rigor does not change with the harness; only the mechanism does.
+human reviewer", `assurance-auditor` as optional-where-available with human
+review required either way, and `/verify` as the `verification-loop` skill. The
+required rigor does not change with the harness; only the mechanism does.
 
 ## Structural Coverage
 

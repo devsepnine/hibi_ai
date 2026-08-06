@@ -29,7 +29,7 @@ D/E 티어 작업(외형, 일회성, 실험)은 이 skill을 건너뛸 수 있�
 | Requirements-based tests | `tdd-workflow` | Trace each test to a requirement |
 | Coverage thresholds | `tdd-workflow` | Structural-coverage discipline per tier |
 | Verification activity | `verification-loop` | Scale which checks run by tier |
-| Independent review | CLAUDE.md "Mandatory post-work review" + `code-reviewer` | `assurance-auditor` + human gate for A-tier |
+| Independent review | CLAUDE.md "Mandatory post-work review" + `code-reviewer` | `assurance-auditor` + human gate for A-tier (Codex 대체: Core Flow 6단계) |
 | Coupling / dependency direction | `dependency-design` | Tighter scrutiny at A/B |
 | Security sign-off | `security-review` | Mandatory for A-tier |
 | Configuration management / baselines | `commit-rules` + `pull-request` | Trace key on commits/PRs |
@@ -61,7 +61,8 @@ D/E 티어 작업(외형, 일회성, 실험)은 이 skill을 건너뛸 수 있�
 분류 가이드는 `references/assurance-levels.md` 참조.
 
 표의 에이전트·슬래시 커맨드 이름은 Claude Code를 전제한다. Codex는 skill만 설치받으므로,
-거기서는 `code-reviewer` 를 "별도의 검토 패스 또는 사람 리뷰어"로, `/verify` 를
+거기서는 `code-reviewer` 를 "별도의 검토 패스 또는 사람 리뷰어"로, `assurance-auditor` 를
+가능한 환경에서만 추가하는 것(사람 리뷰는 어느 경우든 필수)으로, `/verify` 를
 `verification-loop` skill로 읽는다. 요구되는 rigor는 하네스에 따라 달라지지 않고
 수단만 달라진다.
 

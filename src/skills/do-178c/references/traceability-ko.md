@@ -4,6 +4,8 @@
 
 이 reference는 trace 규율만을 소유한다. 요구사항을 정의하지 않으며(CLAUDE.md section 1 "Problem 1-Pager"와 `eval-harness` skill 참조), 테스트 자체를 정의하지 않으며(`tdd-workflow` skill 참조), trace를 감사하는 review gate도 정의하지 않는다(CLAUDE.md section 4와 `code-reviewer` agent 참조).
 
+> 아래의 에이전트·슬래시 커맨드 이름은 Claude Code를 전제한다. Codex는 skill만 설치받으므로, 거기서는 `code-reviewer` 를 별도의 검토 패스 또는 사람 리뷰어로, `assurance-auditor` 를 가능한 환경에서만 추가하는 것(사람 리뷰는 어느 경우든 필수)으로, `/verify` 를 `verification-loop` skill로 읽는다. 요구되는 rigor는 하네스에 따라 달라지지 않고 수단만 달라진다.
+
 ## Why Bidirectional
 
 한 방향만으로는 한 종류의 실패만 잡는다. 두 방향이 모두 필요하다.

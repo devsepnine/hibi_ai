@@ -4,6 +4,8 @@
 
 DO-178C는 작업을 다음 프로세스로 묶는다: planning, development, verification, configuration management, quality assurance, 그리고 tool qualification (DO-330). 하니스는 이미 기존 skill, agent, `CLAUDE.md` 정책을 통해 이들 대부분을 구현하고 있다. 아래 표는 각 DO-178C 프로세스 영역을 기존 담당자에 매핑하고, `do-178c`가 무엇을 (있다면) 추가하는지를 기술한다.
 
+> 아래의 에이전트·슬래시 커맨드 이름은 Claude Code를 전제한다. Codex는 skill만 설치받으므로, 거기서는 `code-reviewer` 를 별도의 검토 패스 또는 사람 리뷰어로, `assurance-auditor` 를 가능한 환경에서만 추가하는 것(사람 리뷰는 어느 경우든 필수)으로, `/verify` 를 `verification-loop` skill로 읽는다. 요구되는 rigor는 하네스에 따라 달라지지 않고 수단만 달라진다.
+
 Action legend:
 - `CROSS-REF` — 담당자만으로 충분하다. `do-178c`는 이를 가리킬 뿐이며, 상위 tier에서는 명시적으로 요구할 수 있다.
 - `EXTEND` — 담당자는 존재하지만 `do-178c`가 그 범위를 넓힌다.

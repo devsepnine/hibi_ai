@@ -4,6 +4,8 @@ This is THE anti-duplication map. For each DO-178C process area it names the exi
 
 DO-178C groups work into processes: planning, development, verification, configuration management, and quality assurance, plus tool qualification (DO-330). The harness already implements most of these through existing skills, agents, and `CLAUDE.md` policy. The table below maps each DO-178C process area to its existing owner and states what, if anything, `do-178c` adds.
 
+> Agent and slash-command names below assume Claude Code. Codex installs skills only — there, read `code-reviewer` as a separate reviewing pass or a human reviewer, `assurance-auditor` as optional-where-available with human review either way, and `/verify` as the `verification-loop` skill. The required rigor does not change with the harness; only the mechanism does.
+
 Action legend:
 - `CROSS-REF` — the owner is sufficient; `do-178c` only points to it and may demand it explicitly for higher tiers.
 - `EXTEND` — the owner exists but `do-178c` stretches its scope.

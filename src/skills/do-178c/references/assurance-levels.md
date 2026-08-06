@@ -4,6 +4,8 @@ The assurance tier is the master dial of the `do-178c` overlay. Set it once, and
 
 Classify by the **worst-case blast radius of failure**, never by effort, code size, or how hard the task felt. A three-line change to an auth check is Tier A; a 2,000-line dashboard refactor may be Tier C. Ask what breaks if the code is wrong and ships — not how much you typed.
 
+> Agent and slash-command names below assume Claude Code. Codex installs skills only — there, read `code-reviewer` as a separate reviewing pass or a human reviewer, `assurance-auditor` as optional-where-available with human review either way, and `/verify` as the `verification-loop` skill. The required rigor does not change with the harness; only the mechanism does.
+
 ## Canonical Tier Table
 
 | Tier | DO-178C | Failure impact | Examples | Required rigor (dials existing gates) |

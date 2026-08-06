@@ -4,6 +4,8 @@ Traceability is the connective tissue that proves a change is complete and conta
 
 This reference owns only the trace discipline. It does not define requirements (see CLAUDE.md section 1 "Problem 1-Pager" and the `eval-harness` skill), the tests themselves (see the `tdd-workflow` skill), or the review gate that audits the trace (see CLAUDE.md section 4 and the `code-reviewer` agent).
 
+> Agent and slash-command names below assume Claude Code. Codex installs skills only — there, read `code-reviewer` as a separate reviewing pass or a human reviewer, `assurance-auditor` as optional-where-available with human review either way, and `/verify` as the `verification-loop` skill. The required rigor does not change with the harness; only the mechanism does.
+
 ## Why Bidirectional
 
 A single direction catches only one class of failure. You need both.
