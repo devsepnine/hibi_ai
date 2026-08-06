@@ -101,6 +101,7 @@ Before marking work complete:
 - Record recurring mistakes as patterns in `MEMORY.md` (or a project retro doc).
 - Add a rule that prevents the same mistake and apply it immediately.
 - Review relevant lessons at session start to avoid repeating errors.
+- Promote lessons that generalize past this project into the distributed config with `/upstream-pr` (branch + PR, never a direct `main` commit); keep personal ones in `MEMORY.md`.
 
 ## 12) Assurance level and traceability (DO-178C)
 
