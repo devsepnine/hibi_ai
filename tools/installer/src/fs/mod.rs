@@ -1,6 +1,7 @@
 pub mod scanner;
 pub mod diff;
 pub mod installer;
+pub mod manifest;
 
 use std::process::{Command, Stdio};
 use std::time::Duration;

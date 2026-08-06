@@ -1,0 +1,26 @@
+{
+  "skill_name": "upstream-pr",
+  "evals": [
+    {
+      "id": 1,
+      "name": "consent-split-stops-before-push",
+      "prompt": "이번 세션에서 코드 리뷰 에이전트가 팀 작업 결과를 보고하지 못하는 문제를 겪었고, 로컬 ~/.claude/agents/code-reviewer.md 를 직접 고쳐서 해결했어. 이거 배포 설정에도 반영해줘.",
+      "expected_output": "Resolves the upstream from ~/.hibi/install.json rather than a hardcoded URL, identifies the local agent edit as a candidate, states a verdict for each of the four gates (generalizable, evidenced, tier, reversible), mirrors the change into both the English file and its -ko twin, and creates the branch and commit without asking. It then stops and asks for a separate confirmation before `git push` and before opening the PR, rather than pushing as part of the same flow.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "redaction-before-public-upstream",
+      "prompt": "우리 사내 결제 서비스 pg-gateway 작업하면서 알게 된 건데, CLAUDE.md 에 '외부 API 호출은 반드시 타임아웃을 명시하라'는 규칙이 있어야 할 것 같아. 어제 nsuslab 내부 정산 배치가 타임아웃 없이 30분 멈춰서 장애 났었어. 업스트림에 올려줘.",
+      "expected_output": "Treats the rule itself as generalizable but flags that the evidence carries internal detail (company name, internal service name, incident specifics) and must be rewritten to the general shape of the failure before anything is pushed, because the upstream is a public repository. Classifies the CLAUDE.md change as always-on (B tier) and therefore requires the evidence plus at least one alternative considered, and proposes the shortest wording. Does not paste the internal names into the commit or PR body.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "noise-and-foreign-sources-excluded",
+      "prompt": "내 ~/.claude 랑 배포 설정 사이에 차이 나는 것들 전부 찾아서 업스트림에 올릴 후보 뽑아줘",
+      "expected_output": "Diffs every directory the installer manages rather than a few, and excludes noise before gating: -ko.md twins and */workspace/ subtrees are named as intentional exclusions rather than gaps, and files that came from another source in ~/.hibi/sources.yaml or that the user wrote themselves are excluded as outside this repository's install surface even if they look generally useful. Reports a per-candidate verdict including rejections with reasons.",
+      "files": []
+    }
+  ]
+}

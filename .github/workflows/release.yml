@@ -44,6 +44,14 @@ jobs:
             echo "::error::Release version ($VERSION) does not match package.sh VERSION ($PKG_VERSION). Bump package.sh and tools/installer/Cargo.toml first."
             exit 1
           fi
+          # Cargo's version is compiled into the binary and recorded in every
+          # user's ~/.hibi/install.json as the source-of-truth release tag, so a
+          # forgotten bump would ship provenance pointing at the wrong tree.
+          CARGO_VERSION="$(grep -E '^version = ' tools/installer/Cargo.toml | head -1 | cut -d'"' -f2)"
+          if [ "$VERSION" != "$CARGO_VERSION" ]; then
+            echo "::error::Release version ($VERSION) does not match tools/installer/Cargo.toml version ($CARGO_VERSION). Bump it (and run cargo update -w) first."
+            exit 1
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Install Rust cross targets
