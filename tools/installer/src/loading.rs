@@ -230,9 +230,8 @@ fn start_refresh_thread(app: &mut App, refresh_tx: &Sender<Result<RefreshResult>
                     // consumer runs on the TUI tick, and a home directory can
                     // be network-mounted or virus-scanned, which would stall
                     // the very loop this thread exists to keep free.
-                    let manifest_warning = fs::manifest::write(&dest_dir, &components)
-                        .err()
-                        .map(|e| e.to_string());
+                    let manifest_warning =
+                        manifest_warning_from(fs::manifest::write(&dest_dir, &components));
                     RefreshResult::Components { components, manifest_warning }
                 }),
             RefreshScope::Mcp => fs::scanner::scan_all_mcp_sources(&sources, target_cli)
@@ -244,6 +243,24 @@ fn start_refresh_thread(app: &mut App, refresh_tx: &Sender<Result<RefreshResult>
     });
 }
 
+/// Turn a manifest write result into the warning to carry back to the TUI.
+///
+/// Split out of the worker closure because the closure itself cannot run in a
+/// test without writing to a real home directory, which left the
+/// failure-reporting path — the whole reason a failed write does not fail the
+/// install — unverified.
+fn manifest_warning_from(result: Result<()>) -> Option<String> {
+    result.err().map(|e| format!("{:#}", e))
+}
+
+/// Log line for a manifest that could not be written.
+///
+/// The install itself already succeeded at this point, so the wording says
+/// what was skipped rather than implying the install failed.
+fn manifest_warning_line(reason: &str) -> String {
+    format!("[WARN] Install manifest not written: {}", reason)
+}
+
 /// Check if a refresh thread has completed and apply results.
 ///
 /// Dispatches by `RefreshResult` variant so that, e.g., a Components
@@ -253,8 +270,7 @@ fn check_refresh_completion(app: &mut App, refresh_rx: &Receiver<Result<RefreshR
     match refresh_rx.try_recv() {
         Ok(Ok(RefreshResult::Components { components, manifest_warning })) => {
             if let Some(reason) = manifest_warning {
-                app.processing_log
-                    .push(format!("[WARN] Install manifest not written: {}", reason));
+                app.processing_log.push(manifest_warning_line(&reason));
             }
             app.apply_components_refresh(components);
         }
@@ -522,6 +538,35 @@ pub(crate) fn start_loading_thread(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_successful_manifest_write_produces_no_warning() {
+        assert_eq!(manifest_warning_from(Ok(())), None);
+    }
+
+    #[test]
+    fn a_failed_manifest_write_carries_its_full_context() {
+        // `{:#}` rather than `{}`: the outer context alone ("Failed to
+        // replace ...") does not say why, and the reason is all the user gets.
+        let err = anyhow::anyhow!("Permission denied")
+            .context("Failed to replace /Users/x/.hibi/install.json");
+
+        let warning = manifest_warning_from(Err(err)).expect("a failure must warn");
+
+        assert!(warning.contains("Failed to replace"), "got: {warning}");
+        assert!(warning.contains("Permission denied"), "got: {warning}");
+    }
+
+    #[test]
+    fn the_warning_line_says_what_was_skipped_not_that_the_install_failed() {
+        // The components are already on disk when this fires, so the line must
+        // not read as a failed install.
+        let line = manifest_warning_line("Failed to create /Users/x/.hibi");
+
+        assert!(line.starts_with("[WARN] Install manifest not written:"));
+        assert!(line.contains("Failed to create /Users/x/.hibi"));
+        assert!(!line.contains("[ERROR]"));
+    }
 
     #[test]
     fn reset_preflight_channel_discards_pending_sends() {
