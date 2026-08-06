@@ -3,6 +3,7 @@ use anyhow::Result;
 use super::types::{Tab, View};
 use super::{App, build_tree_views};
 use crate::component::Component;
+use crate::fs;
 use crate::mcp::McpServer;
 use crate::plugin::Plugin;
 
@@ -196,7 +197,36 @@ impl App {
     pub fn apply_components_refresh(&mut self, components: Vec<Component>) {
         self.components = components;
         self.tree_views = build_tree_views(&self.components);
+        self.record_install_manifest();
         self.finish_refresh_status();
+    }
+
+    /// Record where this install came from to `~/.hibi/install.json`.
+    ///
+    /// Runs on the refreshed component list so the manifest describes the
+    /// destination as it actually is, removals included. A failure is surfaced
+    /// in the log but never fails the run — the files already landed, and
+    /// provenance metadata is not worth discarding a successful install over.
+    fn record_install_manifest(&mut self) {
+        let Some(target_cli) = self.target_cli else {
+            self.processing_log
+                .push("[WARN] Skipped install manifest: no target CLI selected".to_string());
+            return;
+        };
+
+        let dest_dir = match target_cli.get_dest_dir() {
+            Ok(dir) => dir,
+            Err(e) => {
+                self.processing_log
+                    .push(format!("[WARN] Skipped install manifest: {}", e));
+                return;
+            }
+        };
+
+        if let Err(e) = fs::manifest::write(&dest_dir, &self.components) {
+            self.processing_log
+                .push(format!("[WARN] Failed to write install manifest: {}", e));
+        }
     }
 
     /// Swap only the MCP server list. Tree views and other tabs stay as

@@ -13,6 +13,17 @@ to every installer user. The point of the PR is not the diff — it is the evide
 and the blast radius, because a reviewer cannot judge a rule change without
 knowing what failed and who it reaches.
 
+## Locate the source first
+
+Most people install this config and never clone the repo, so do not assume one
+is present. Resolve where the change has to land before anything else:
+
+1. **`~/.hibi/install.json`** — the manifest the installer writes: `source` (upstream URL), `version` (a release tag, so the exact source tree is recoverable), `target`, and the installed components. Read it first and trust it over any hardcoded URL; it is also what tells an install-only user where their config came from.
+2. **Local clone** — a git remote pointing at that source (`git remote -v`). Use it.
+3. **No clone (install-only user)** — say so plainly, name the upstream from the manifest, and offer `gh repo fork <owner>/<repo> --clone`. Their `~/.claude` already holds the change; the fork is only the vehicle for review.
+4. **They would rather not fork** — write the proposal to a file in their home or scratchpad directory and point them at the repository's issues page so it can be attached there. An idea in an issue beats an idea lost at session end.
+5. **No manifest either** (installed before manifests existed) — fall back to `https://github.com/devsepnine/hibi_ai` and mention that reinstalling will record provenance for next time.
+
 ## Collect candidates
 
 - **Drift**: compare the installed config against the repo — `diff -r ~/.claude/skills <repo>/src/skills` and the same for `commands`, `agents`, `CLAUDE.md`, `AGENTS.md`. Anything present locally but not in `src/` is a candidate; anything in `src/` but missing locally is an install gap, not a candidate.
@@ -34,6 +45,14 @@ rejections are as useful as approvals.
 - Every `src/` file has an English original and a `-ko.md` twin, and only the English one installs — so KO twins must not reference `-ko` asset paths.
 - Detailed policy lives in one skill; `CLAUDE.md` / `AGENTS.md` carry a single line that links to it. Duplicating detail across both is the failure mode to avoid.
 - No emojis, no generation markers.
+
+## Ask before anything leaves the machine
+
+Show what would be shared — the diff plus the evidence lines — and ask whether to
+upstream it. This is a question, not a step, for two reasons:
+
+- **The evidence comes from a real session**, so it can carry an employer's code, internal paths, ticket IDs, or customer names. Describe the general shape of what failed and never the proprietary detail; if the failure cannot be described without it, say the evidence needs rewriting before the PR can go out.
+- **The upstream is public.** Once pushed, the content is public even if the branch is deleted afterwards.
 
 ## Open the PR
 
