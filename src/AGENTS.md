@@ -40,7 +40,8 @@ All four must pass equally. See the `coding-standards` skill → `references/rev
 **Clean Code**
 - Names that reveal intent, single-responsibility functions, side effects isolated at boundary layers
 - Guard clauses, symbolized constants, Input → Processing → Return
-- Conclusion-first comments (one-sentence point, then why), no code narration, no stale comments
+- Code is the spec: comments carry only the *why* code cannot express — a comment explaining *what* means refactor instead (rename, extract)
+- Conclusion-first comments (one-sentence point, then why), no stale or change-log comments, no over-commenting (meaningless comments are noise, not documentation)
 - No dead code, no commented-out blocks, no untracked TODOs
 
 **Functionality**
@@ -238,7 +239,7 @@ command --option value
 **Core principle**: *"Don't prompt around — raise the effort."* Opus 5 strictly respects effort. At lower effort it scopes to what was asked and nothing more — and `low`/`medium` on Opus 5 punch well above their weight, so sweep down where evals hold.
 
 **Tool usage at low effort**: combine calls, use fewer of them, act directly → terse confirmation.
-**Tool usage at high effort**: explain the plan before acting, more calls, detailed summaries, comprehensive code comments.
+**Tool usage at high effort**: explain the plan before acting, more calls, detailed summaries. (Comment rules stay fixed regardless of effort — effort never licenses over-commenting.)
 
 ## Cautions
 

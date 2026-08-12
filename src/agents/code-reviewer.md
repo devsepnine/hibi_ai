@@ -56,6 +56,9 @@ Do basic detection here (the patterns below); defer deep OWASP/CWE mapping, cryp
 - console.log statements
 - Mutation patterns
 - Missing tests for new code
+- Comments that restate what the code says (code is the spec — the fix is a refactor: rename/extract, not a better comment)
+- Stale comments contradicting current behavior
+- Over-commenting: meaningless/excessive comments that bury the ones that matter
 
 ## Performance (MEDIUM)
 

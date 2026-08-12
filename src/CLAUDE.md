@@ -141,7 +141,7 @@ Next:
 - **Keep it small**: tasks, commits, PRs small. Record assumptions in Issues/PRs/ADRs.
 - **Validate inputs, encode outputs**: never trust unvalidated input.
 - **Names over abstraction**: intention-revealing names; avoid premature abstraction.
-- **Comments lead with the conclusion**: first line = the point in one sentence, then detail. Why over what, no code narration, no stale comments; match the target file's existing comment language (the response-language policy above governs replies, not comments you write into code). Full rules in `coding-standards`.
+- **Code is the spec**: names, types, and structure carry the *what*; comments exist only for the *why* code cannot express. Non-negotiables in "Absolute comment rules" below; full rules in `coding-standards`.
 
 ## Absolute commit rules (always apply — skill carries the rest)
 
@@ -149,6 +149,16 @@ Even before the `commit-rules` skill loads, these are non-negotiable on any comm
 - **NO emojis, NO generation markers** (`Co-Authored-By`, "Generated with Claude Code", etc.)
 - **Only commit when the user explicitly asks.** Never auto-commit after finishing work.
 - Format: `<type>: [<ticket>] <title>` — full convention in the `commit-rules` skill.
+
+## Absolute comment rules (always apply — skill carries the rest)
+
+**Code is the spec.** Names, types, and structure express *what* the code does; a comment exists only for what code cannot say — the *why*: intent, constraints, tradeoffs, invariants, external context. Even before the `coding-standards` skill loads, these are non-negotiable on any code you write or edit:
+
+- **A comment that explains *what* → refactor instead** (rename, extract function/constant). Restating the code is a defect, not documentation.
+- **No over-commenting**: the default is no comment — meaningless comments are noise that buries the few that matter.
+- **NEVER**: code narration, stale comments, commented-out code, change-log comments (`// fixed 2026-01-02`), emojis.
+- **Language**: match the target file's existing comment language (the response-language policy governs replies, not comments in code).
+- **Self-check before reporting completion**: every comment you added or touched passes these rules and the skill's full Comments section (conclusion-first/BLUF, same-edit updates) — treat a violation like a failing test.
 
 ## Policy routing (DRY — each policy has ONE source of truth)
 

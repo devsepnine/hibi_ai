@@ -46,7 +46,9 @@ If unsure, default up (Major → Blocker) rather than down.
 - [ ] Guard clauses preferred over deep nesting
 - [ ] Constants symbolized (no magic numbers/strings, no hardcoded paths)
 - [ ] Code structured as Input → Processing → Return
+- [ ] Code is the spec: no comment restates what the code already says — such comments are replaced by a refactor (rename/extract), and the comments that remain carry only the *why*
 - [ ] Comments lead with the conclusion (one-sentence point, then why), explain non-obvious intent, and match current behavior
+- [ ] No over-commenting: meaningless or excessive comments are flagged as noise — comment density is not quality
 - [ ] No dead code, no commented-out blocks, no `TODO` without ticket
 
 ## Functionality Review

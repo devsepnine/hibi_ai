@@ -1,7 +1,7 @@
 ---
 name: coding-standards
 description: Universal coding standards for TypeScript/JavaScript/React/Node — naming, immutability, error handling, comment style, code smells, testing, file organization. React form/error-boundary/a11y patterns in references/. 코딩 표준, 코드 스타일, 주석 작성, 코드 리뷰, 클린 코드, 폼 검증, 에러 바운더리, 접근성.
-keywords: [coding-standards, 코딩표준, 코드스타일, 코드리뷰, clean-code, best-practices, code-comments, 코드주석, 두괄식, react-patterns, form, error-boundary, a11y, 접근성]
+keywords: [coding-standards, 코딩표준, 코드스타일, 코드리뷰, clean-code, best-practices, code-comments, 코드주석, 두괄식, code-is-the-spec, 코드가곧명세, 과잉주석, react-patterns, form, error-boundary, a11y, 접근성]
 ---
 
 # Coding Standards & Best Practices
@@ -10,7 +10,7 @@ Universal coding standards. Language/framework specifics delegate to sibling ski
 
 ## Core Principles
 
-- **Readability first** — code is read more than written; self-documenting names beat comments.
+- **Readability first — code is the spec** — code is read more than written; names, types, and structure document the *what*, comments carry only the *why* (see Comments below).
 - **KISS** — simplest solution that works; no premature optimization.
 - **DRY** — extract shared logic; no copy-paste.
 - **YAGNI** — don't build for speculative needs; refactor when required.
@@ -90,15 +90,22 @@ if (!market?.isActive) return
 // ... happy path
 ```
 
-## Comments
+## Comments (NON-NEGOTIABLE)
+
+**Code is the spec.** Names, types, and structure express *what* the code does; a comment exists only for what code cannot say — the *why*: intent, constraints, tradeoffs, invariants, external context. The default is **no comment**, and every comment must earn its place. These rules bind every code edit — treat a violation like a failing test: fix it before reporting completion.
+
+**Decision procedure — run it before writing any comment:**
+1. Would it explain *what* the code does? → Don't write it. Make the code say it instead: rename, extract a function/constant, simplify.
+2. Does it carry something code cannot express (why this design, which constraint, what tradeoff, which external fact)? → Write it, conclusion first.
 
 **Lead with the conclusion (BLUF).** The first line states the point in one sentence; detail follows only if it earns its place. A reader must get the intent from that line alone, without decoding the code under it.
 
 - **Why, not what** — non-obvious decisions, tradeoffs, constraints. No code narration: never restate what the code already says.
 - **Summary line first, detail after** — one sentence; add specifics on the following lines only when needed (in block comments, separate them with a blank line; in `//` runs, just continue on the next line). No wall of prose, no multi-line build-up to the point.
 - **Cut the noise** — no obvious comments (`// increment i`), no change logs (`// fixed 2026-01-02`), no commented-out code, no emojis.
-- **Keep it true** — update or delete the comment when the code changes; a stale comment costs more than no comment.
-- **Public APIs**: JSDoc/doc comment (params, returns, throws, example).
+- **No over-commenting** — comment density is not quality. A comment on every line or block is noise that buries the few comments that matter; if everything is annotated, nothing stands out.
+- **Keep it true, in the same edit** — the edit that changes code updates or deletes its comments; a stale comment is worse than no comment because it lies with authority.
+- **Public APIs**: JSDoc/doc comment (params, returns, throws, example) — document the *contract* (inputs, outputs, failure modes), not the implementation. Explicit exception to the decision procedure: the contract is not internal *what* — it is the interface a caller cannot see from the call site, so documenting it is required, not optional.
 - **Language**: follow the file's existing comment language; never mix two in one file.
 
 ```typescript
@@ -110,6 +117,17 @@ const delay = Math.min(1000 * 2 ** retryCount, 30000)
 // Good — conclusion first, reason second
 // Exponential backoff capped at 30s: protects the API during outages.
 const delay = Math.min(1000 * 2 ** retryCount, 30000)
+```
+
+When a comment explains *what*, the fix is a refactor, not a better comment:
+
+```typescript
+// Bad — the comment props up code that can't speak for itself
+// check if the user is allowed to modify this market
+if (user.role === 'admin' || (market.ownerId === user.id && !market.closed)) {
+
+// Good — the name carries the spec; no comment needed
+if (canModifyMarket(user, market)) {
 ```
 
 Same rule scales to module/function headers — first line is the one-sentence contract:
