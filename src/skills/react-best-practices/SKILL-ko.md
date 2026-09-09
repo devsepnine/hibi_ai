@@ -1,7 +1,6 @@
 ---
-name: vercel-react-best-practices
-description: React/Next.js performance optimization (Vercel Engineering) — data-fetching waterfalls, bundle size, server/client fetching, re-render and rendering patterns. Use when writing, reviewing, or refactoring React/Next.js for performance. 리액트 성능 최적화, Next.js 최적화, 번들 최적화.
-keywords: [react, 리액트, nextjs, performance, 성능최적화, bundle, 번들]
+name: react-best-practices
+description: React/Next.js performance (Vercel Engineering) — fetch waterfalls, bundle size, server/client fetching, re-render patterns. Use when tuning React/Next.js performance. 리액트 성능, Next.js 최적화, 번들 최적화.
 license: MIT
 metadata:
   author: vercel
@@ -20,19 +19,6 @@ Vercel이 유지 관리하는 React 및 Next.js 애플리케이션 성능 최적
 - 성능 이슈를 위한 코드 리뷰
 - 기존 React/Next.js 코드 리팩토링
 - 번들 크기 또는 로드 타임 최적화
-
-## 우선순위별 규칙 카테고리
-
-| Priority | Category | Impact | Prefix |
-|----------|----------|--------|--------|
-| 1 | Eliminating Waterfalls | CRITICAL | `async-` |
-| 2 | Bundle Size Optimization | CRITICAL | `bundle-` |
-| 3 | Server-Side Performance | HIGH | `server-` |
-| 4 | Client-Side Data Fetching | MEDIUM-HIGH | `client-` |
-| 5 | Re-render Optimization | MEDIUM | `rerender-` |
-| 6 | Rendering Performance | MEDIUM | `rendering-` |
-| 7 | JavaScript Performance | LOW-MEDIUM | `js-` |
-| 8 | Advanced Patterns | LOW | `advanced-` |
 
 ## Quick Reference
 
@@ -144,6 +130,3 @@ rules/bundle-barrel-imports.md
 - 올바른 코드 예제와 설명
 - 추가 컨텍스트와 참고 자료
 
-## 전체 통합 문서
-
-모든 규칙을 펼친 완전한 가이드: `AGENTS.md`

@@ -1,7 +1,6 @@
 ---
 name: dependency-design
-description: A methodology for managing dependencies, coupling, and abstraction so that vibe-coded software stays modifiable and AI-ownable as it grows. Modification-resistant code is code isolated by responsibility, where each part can change without rippling into others — achieved by minimizing dependencies and keeping them one-directional. Use when designing modules, deciding dependency direction, judging whether a coupling is acceptable, structuring a monorepo, defining abstraction boundaries, or reviewing architecture. 의존성 설계, 결합도 관리, 모듈 설계, 단방향 의존성, 모노레포 구조, 추상화 경계, 바이브코딩 의존성.
-keywords: [dependency-design, coupling, connascence, cynefin, unidirectional-dependency, abstraction, monorepo, 의존성, 결합도, 추상화, 모듈화, 단방향 의존성, 모노레포]
+description: Dependency and coupling design that keeps code modifiable — one-directional deps, responsibility isolation, monorepo structure. Use when designing modules or judging coupling. 의존성 설계, 결합도, 모듈 설계, 추상화 경계, 모노레포 구조.
 ---
 
 # Dependency Design
@@ -21,7 +20,7 @@ Reach for the matching reference when the situation below appears.
 | Choosing what a module exposes vs. hides; keeping abstraction levels consistent | `references/abstraction.md` |
 | Structuring code so an AI can own and modify a slice without loading everything | `references/ai-ownership.md` |
 | Laying out a monorepo with enforceable one-way dependency between layers | `references/monorepo.md` |
-| Enforcing the compiled rules during review | `AGENTS.md` (full rule set) |
+| Enforcing the rules during review | `rules/` (one file per rule; sections in `rules/_sections.md`) |
 
 ## Core decision flow
 
@@ -29,17 +28,6 @@ Reach for the matching reference when the situation below appears.
 2. **Pick a coupling strategy.** Name the coupling you are creating and grade its strength using the module, connascence, and domain models. Push toward weaker, more explicit coupling unless the change rate justifies the cost. See `references/coupling-models.md`.
 3. **Enforce one-way dependency.** Requests imply knowing the target, so direction of interaction fixes the direction of dependency. Keep dependencies acyclic and linear (pipelining) so cause and effect stay traceable and partial edits stay safe. See `references/monorepo.md` and `references/ai-ownership.md`.
 4. **Keep abstraction consistent.** Expose abstracted knowledge, never concrete internals, and apply one consistent abstraction criterion per module/layer — inconsistent abstraction makes modularization meaningless. See `references/abstraction.md`.
-
-## Rule Categories
-
-| # | Category | Impact | Prefix |
-| --- | --- | --- | --- |
-| 1 | Complexity & Context (Cynefin) | HIGH | `complexity-` |
-| 2 | Coupling Types & Threat Ranking | CRITICAL | `coupling-` |
-| 3 | Dependency Direction & Structure | CRITICAL | `dependency-` |
-| 4 | Abstraction & Module Boundary | HIGH | `abstraction-` |
-| 5 | Layered & Monorepo Architecture | MEDIUM | `architecture-` |
-| 6 | AI-Friendly Ownership | MEDIUM | `ai-` |
 
 ## Quick Reference
 
@@ -84,7 +72,7 @@ Reach for the matching reference when the situation below appears.
 - [references/ai-ownership.md](references/ai-ownership.md) — code ownership before and after AI, and structuring code for partial, context-bounded ownership.
 - [references/monorepo.md](references/monorepo.md) — layered abstraction and a Turbo monorepo layout (`apps/` → `packages/`) enforcing one-way dependency.
 
-See `AGENTS.md` for the full compiled rule set.
+Each rule listed above is a file under `rules/` — read the ones the change touches.
 
 ## Related skills
 

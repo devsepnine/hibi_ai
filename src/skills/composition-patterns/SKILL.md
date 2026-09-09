@@ -1,7 +1,6 @@
 ---
-name: vercel-composition-patterns
-description: Scalable React composition — compound components, context, state lifting, render props to replace boolean-prop proliferation; includes React 19 API changes. Use when designing reusable component APIs or refactoring prop-heavy components. 컴포지션 패턴, React 컴포넌트 설계, 컴파운드 컴포넌트.
-keywords: [composition, 컴포지션, compound-components, react, 컴포넌트설계, render-props]
+name: composition-patterns
+description: React composition — compound components, context, state lifting, render props instead of boolean-prop sprawl; React 19 APIs. Use when designing component APIs. 컴포지션 패턴, 컴포넌트 설계, 컴파운드 컴포넌트.
 license: MIT
 metadata:
   author: vercel
@@ -24,15 +23,6 @@ Reference these guidelines when:
 - Designing flexible component APIs
 - Reviewing component architecture
 - Working with compound components or context providers
-
-## Rule Categories by Priority
-
-| Priority | Category                | Impact | Prefix          |
-| -------- | ----------------------- | ------ | --------------- |
-| 1        | Component Architecture  | HIGH   | `architecture-` |
-| 2        | State Management        | MEDIUM | `state-`        |
-| 3        | Implementation Patterns | MEDIUM | `patterns-`     |
-| 4        | React 19 APIs           | MEDIUM | `react19-`      |
 
 ## Quick Reference
 
@@ -81,6 +71,3 @@ Each rule file contains:
 - Correct code example with explanation
 - Additional context and references
 
-## Full Compiled Document
-
-For the complete guide with all rules expanded: `AGENTS.md`

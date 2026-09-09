@@ -1,7 +1,6 @@
 ---
 name: dependency-design
-description: A methodology for managing dependencies, coupling, and abstraction so that vibe-coded software stays modifiable and AI-ownable as it grows. Modification-resistant code is code isolated by responsibility, where each part can change without rippling into others — achieved by minimizing dependencies and keeping them one-directional. Use when designing modules, deciding dependency direction, judging whether a coupling is acceptable, structuring a monorepo, defining abstraction boundaries, or reviewing architecture. 의존성 설계, 결합도 관리, 모듈 설계, 단방향 의존성, 모노레포 구조, 추상화 경계, 바이브코딩 의존성.
-keywords: [dependency-design, coupling, connascence, cynefin, unidirectional-dependency, abstraction, monorepo, 의존성, 결합도, 추상화, 모듈화, 단방향 의존성, 모노레포]
+description: Dependency and coupling design that keeps code modifiable — one-directional deps, responsibility isolation, monorepo structure. Use when designing modules or judging coupling. 의존성 설계, 결합도, 모듈 설계, 추상화 경계, 모노레포 구조.
 ---
 
 # Dependency Design
@@ -21,7 +20,7 @@ harness 단독으로는 수정에 강한 코드를 만들 수 없다. 어려운 
 | 모듈이 무엇을 공개하고 무엇을 은닉할지 선택하고, 추상화 수준을 일관되게 유지할 때 | `references/abstraction.md` |
 | AI가 전체를 로딩하지 않고도 일부분을 소유하고 수정할 수 있도록 코드를 구조화할 때 | `references/ai-ownership.md` |
 | 레이어 간 단방향 의존성을 강제할 수 있는 monorepo를 배치할 때 | `references/monorepo.md` |
-| 리뷰 중에 컴파일된 규칙을 강제할 때 | `AGENTS.md` (전체 rule set) |
+| 리뷰 중에 규칙을 강제할 때 | `rules/` (rule 당 파일 1개, 섹션은 `rules/_sections.md`) |
 
 ## Core decision flow
 
@@ -29,17 +28,6 @@ harness 단독으로는 수정에 강한 코드를 만들 수 없다. 어려운 
 2. **결합 전략을 고른다.** 지금 만들고 있는 결합에 이름을 붙이고 module, connascence, domain 모델로 그 강도를 평가한다. 변화율이 비용을 정당화하지 않는 한 더 약하고 더 명시적인 결합 쪽으로 밀어붙인다. `references/coupling-models.md` 참조.
 3. **단방향 의존성을 강제한다.** 요청하려면 대상을 알아야 하므로, 상호작용의 방향이 의존성의 방향을 확정한다. 의존성을 비순환적이고 선형적으로(pipelining) 유지해서 인과관계를 추적 가능하게 하고 부분 수정을 안전하게 유지한다. `references/monorepo.md`와 `references/ai-ownership.md` 참조.
 4. **추상화를 일관되게 유지한다.** 구체적인 내부가 아니라 추상화된 지식을 공개하고, 모듈/레이어마다 하나의 일관된 추상화 기준을 적용한다. 추상화가 일관되지 않으면 모듈화는 무의미해진다. `references/abstraction.md` 참조.
-
-## Rule Categories
-
-| # | Category | Impact | Prefix |
-| --- | --- | --- | --- |
-| 1 | Complexity & Context (Cynefin) | HIGH | `complexity-` |
-| 2 | Coupling Types & Threat Ranking | CRITICAL | `coupling-` |
-| 3 | Dependency Direction & Structure | CRITICAL | `dependency-` |
-| 4 | Abstraction & Module Boundary | HIGH | `abstraction-` |
-| 5 | Layered & Monorepo Architecture | MEDIUM | `architecture-` |
-| 6 | AI-Friendly Ownership | MEDIUM | `ai-` |
 
 ## Quick Reference
 
@@ -84,7 +72,7 @@ harness 단독으로는 수정에 강한 코드를 만들 수 없다. 어려운 
 - [references/ai-ownership.md](references/ai-ownership.md) — AI 이전과 이후의 code ownership, 그리고 부분적이고 컨텍스트로 제한된 소유를 위한 코드 구조화.
 - [references/monorepo.md](references/monorepo.md) — 레이어 추상화와, 단방향 의존성을 강제하는 Turbo monorepo 배치 (`apps/` → `packages/`).
 
-전체 컴파일된 rule set은 `AGENTS.md`를 참조한다.
+위에 나열된 각 rule은 `rules/` 아래의 파일이다 — 변경이 닿는 것만 읽는다.
 
 ## Related skills
 

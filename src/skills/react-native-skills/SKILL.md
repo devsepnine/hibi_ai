@@ -1,7 +1,6 @@
 ---
-name: vercel-react-native-skills
-description: React Native/Expo best practices — list performance (FlashList), animations (Reanimated), navigation, native modules, and monorepo setup for performant mobile apps. 리액트 네이티브, Expo 앱, 모바일 성능 최적화, 네이티브 모듈.
-keywords: [react-native, 리액트네이티브, expo, mobile, 모바일, native]
+name: react-native-skills
+description: React Native/Expo practices — FlashList performance, Reanimated, navigation, native modules, monorepo setup. Use when building RN/Expo apps. 리액트 네이티브, Expo, 모바일 성능, 네이티브 모듈.
 license: MIT
 metadata:
   author: vercel
@@ -25,22 +24,17 @@ Reference these guidelines when:
 - Configuring native modules or fonts
 - Structuring monorepo projects with native dependencies
 
-## Rule Categories by Priority
+## Rules by Section
 
-| Priority | Category         | Impact   | Prefix               |
-| -------- | ---------------- | -------- | -------------------- |
-| 1        | List Performance | CRITICAL | `list-performance-`  |
-| 2        | Animation        | HIGH     | `animation-`         |
-| 3        | Navigation       | HIGH     | `navigation-`        |
-| 4        | UI Patterns      | HIGH     | `ui-`                |
-| 5        | State Management | MEDIUM   | `react-state-`       |
-| 6        | Rendering        | MEDIUM   | `rendering-`         |
-| 7        | Monorepo         | MEDIUM   | `monorepo-`          |
-| 8        | Configuration    | LOW      | `fonts-`, `imports-` |
+Section order and impact levels come from `rules/_sections.md`. Every entry below
+is a file: `rules/<id>.md` (`rules/<id>-ko.md` for the Korean translation).
 
-## Quick Reference
+### 1. Core Rendering — CRITICAL
 
-### 1. List Performance (CRITICAL)
+- `rendering-text-in-text-component` - Wrap text in Text components
+- `rendering-no-falsy-and` - Avoid falsy && for conditional rendering
+
+### 2. List Performance — HIGH
 
 - `list-performance-virtualize` - Use FlashList for large lists
 - `list-performance-item-memo` - Memoize list item components
@@ -51,17 +45,36 @@ Reference these guidelines when:
 - `list-performance-item-expensive` - Move expensive work outside items
 - `list-performance-item-types` - Use item types for heterogeneous lists
 
-### 2. Animation (HIGH)
+### 3. Animation — HIGH
 
 - `animation-gpu-properties` - Animate only transform and opacity
 - `animation-derived-value` - Use useDerivedValue for computed animations
 - `animation-gesture-detector-press` - Use Gesture.Tap instead of Pressable
 
-### 3. Navigation (HIGH)
+### 4. Scroll Performance — HIGH
+
+- `scroll-position-no-state` - Never track scroll position in useState
+
+### 5. Navigation — HIGH
 
 - `navigation-native-navigators` - Use native stack and native tabs over JS navigators
 
-### 4. UI Patterns (HIGH)
+### 6. React State — MEDIUM
+
+- `react-state-minimize` - Minimize state subscriptions
+- `react-state-dispatcher` - Use dispatcher pattern for callbacks
+- `react-state-fallback` - Show fallback on first render
+
+### 7. State Architecture — MEDIUM
+
+- `state-ground-truth` - State represents ground truth, not derived visual values
+
+### 8. React Compiler — MEDIUM
+
+- `react-compiler-destructure-functions` - Destructure for React Compiler
+- `react-compiler-reanimated-shared-values` - Handle shared values with compiler
+
+### 9. User Interface — MEDIUM
 
 - `ui-expo-image` - Use expo-image for all images
 - `ui-image-gallery` - Use Galeria for image lightboxes
@@ -73,46 +86,28 @@ Reference these guidelines when:
 - `ui-measure-views` - Use onLayout, not measure()
 - `ui-styling` - Use StyleSheet.create or Nativewind
 
-### 5. State Management (MEDIUM)
+### 10. Design System — MEDIUM
 
-- `react-state-minimize` - Minimize state subscriptions
-- `react-state-dispatcher` - Use dispatcher pattern for callbacks
-- `react-state-fallback` - Show fallback on first render
-- `react-compiler-destructure-functions` - Destructure for React Compiler
-- `react-compiler-reanimated-shared-values` - Handle shared values with compiler
+- `design-system-compound-components` - Use compound components over polymorphic children
 
-### 6. Rendering (MEDIUM)
-
-- `rendering-text-in-text-component` - Wrap text in Text components
-- `rendering-no-falsy-and` - Avoid falsy && for conditional rendering
-
-### 7. Monorepo (MEDIUM)
+### 11. Monorepo — LOW
 
 - `monorepo-native-deps-in-app` - Keep native dependencies in app package
 - `monorepo-single-dependency-versions` - Use single versions across packages
 
-### 8. Configuration (LOW)
+### 12. Third-Party Dependencies — LOW
+
+- `imports-design-system-folder` - Organize design system imports
+
+### 13. JavaScript — LOW
+
+- `js-hoist-intl` - Hoist Intl object creation
+
+### 14. Fonts — LOW
 
 - `fonts-config-plugin` - Use config plugins for custom fonts
-- `imports-design-system-folder` - Organize design system imports
-- `js-hoist-intl` - Hoist Intl object creation
 
 ## How to Use
 
-Read individual rule files for detailed explanations and code examples:
-
-```
-rules/list-performance-virtualize.md
-rules/animation-gpu-properties.md
-```
-
-Each rule file contains:
-
-- Brief explanation of why it matters
-- Incorrect code example with explanation
-- Correct code example with explanation
-- Additional context and references
-
-## Full Compiled Document
-
-For the complete guide with all rules expanded: `AGENTS.md`
+Read only the rule files a change touches. Each one gives why the rule matters,
+an incorrect example, a correct example, and references.

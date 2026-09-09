@@ -1,7 +1,6 @@
 ---
-name: vercel-composition-patterns
-description: Scalable React composition — compound components, context, state lifting, render props to replace boolean-prop proliferation; includes React 19 API changes. Use when designing reusable component APIs or refactoring prop-heavy components. 컴포지션 패턴, React 컴포넌트 설계, 컴파운드 컴포넌트.
-keywords: [composition, 컴포지션, compound-components, react, 컴포넌트설계, render-props]
+name: composition-patterns
+description: React composition — compound components, context, state lifting, render props instead of boolean-prop sprawl; React 19 APIs. Use when designing component APIs. 컴포지션 패턴, 컴포넌트 설계, 컴파운드 컴포넌트.
 license: MIT
 metadata:
   author: vercel
@@ -24,15 +23,6 @@ component, 상태 끌어올리기, 내부 컴포지션을 사용해 boolean prop
 - 유연한 컴포넌트 API 설계
 - 컴포넌트 아키텍처 리뷰
 - compound component 또는 context provider 작업
-
-## 우선순위별 규칙 카테고리
-
-| Priority | Category                | Impact | Prefix          |
-| -------- | ----------------------- | ------ | --------------- |
-| 1        | Component Architecture  | HIGH   | `architecture-` |
-| 2        | State Management        | MEDIUM | `state-`        |
-| 3        | Implementation Patterns | MEDIUM | `patterns-`     |
-| 4        | React 19 APIs           | MEDIUM | `react19-`      |
 
 ## 빠른 참조
 
@@ -81,6 +71,3 @@ rules/state-context-interface.md
 - 올바른 코드 예제와 설명
 - 추가 컨텍스트 및 참고 자료
 
-## 전체 컴파일된 문서
-
-모든 규칙이 펼쳐진 전체 가이드: `AGENTS.md`

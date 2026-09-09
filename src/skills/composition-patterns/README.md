@@ -1,60 +1,35 @@
 # React Composition Patterns
 
-A structured repository for React composition patterns that scale. These
-patterns help avoid boolean prop proliferation by using compound components,
-lifting state, and composing internals.
+Composition patterns for React components that stay flexible as they scale.
+
+A vendored rule set. `SKILL.md` is the entry point; the rules themselves live
+in `rules/`, one file per rule. The upstream compiled output `AGENTS.md` is not
+vendored — `rules/` is the source and `SKILL.md` the index.
 
 ## Structure
 
-- `rules/` - Individual rule files (one per rule)
-  - `_sections.md` - Section metadata (titles, impacts, descriptions)
-  - `_template.md` - Template for creating new rules
-  - `area-description.md` - Individual rule files
-- `metadata.json` - Document metadata (version, organization, abstract)
-- **`AGENTS.md`** - Compiled output (generated)
+- `SKILL.md` / `SKILL-ko.md` — entry point: when to apply, rule index by category
+- `rules/` — one file per rule
+  - `_sections.md` — section order, filename prefix, impact level, description
+  - `_template.md` — rule file template (frontmatter shape, Incorrect/Correct format)
+  - `<prefix>-<topic>.md` — the rules
+- `metadata.json` — upstream document metadata (version, abstract, references)
 
-## Rules
+## Impact levels
 
-### Component Architecture (CRITICAL)
+- `CRITICAL` — foundational patterns; prevents unmaintainable code
+- `HIGH` — significant maintainability improvements
+- `MEDIUM` — good practices for cleaner code
 
-- `architecture-avoid-boolean-props.md` - Don't add boolean props to customize
-  behavior
-- `architecture-compound-components.md` - Structure as compound components with
-  shared context
+## Adding a rule
 
-### State Management (HIGH)
+1. Copy `rules/_template.md` to `rules/<prefix>-<topic>.md`.
+2. Use a prefix declared in `rules/_sections.md`; add the section there first if none fits.
+3. Add it to the rule index in `SKILL.md` and `SKILL-ko.md` — there is no build step, so this is manual.
 
-- `state-lift-state.md` - Lift state into provider components
-- `state-context-interface.md` - Define clear context interfaces
-  (state/actions/meta)
-- `state-decouple-implementation.md` - Decouple state management from UI
+## Core principles
 
-### Implementation Patterns (MEDIUM)
-
-- `patterns-children-over-render-props.md` - Prefer children over renderX props
-- `patterns-explicit-variants.md` - Create explicit component variants
-
-## Core Principles
-
-1. **Composition over configuration** — Instead of adding props, let consumers
-   compose
-2. **Lift your state** — State in providers, not trapped in components
-3. **Compose your internals** — Subcomponents access context, not props
-4. **Explicit variants** — Create ThreadComposer, EditComposer, not Composer
-   with isThread
-
-## Creating a New Rule
-
-1. Copy `rules/_template.md` to `rules/area-description.md`
-2. Choose the appropriate area prefix:
-   - `architecture-` for Component Architecture
-   - `state-` for State Management
-   - `patterns-` for Implementation Patterns
-3. Fill in the frontmatter and content
-4. Ensure you have clear examples with explanations
-
-## Impact Levels
-
-- `CRITICAL` - Foundational patterns, prevents unmaintainable code
-- `HIGH` - Significant maintainability improvements
-- `MEDIUM` - Good practices for cleaner code
+1. **Composition over configuration** — instead of adding props, let consumers compose
+2. **Lift your state** — state in providers, not trapped in components
+3. **Compose your internals** — subcomponents access context, not props
+4. **Explicit variants** — `ThreadComposer` / `EditComposer`, not `Composer` with `isThread`
