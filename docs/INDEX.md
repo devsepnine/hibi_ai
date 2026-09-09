@@ -1,157 +1,145 @@
 # hibi-ai 문서 인덱스
 
-> 마지막 업데이트: 2026-06-19
+> 마지막 업데이트: 2026-09-09 · 버전 v1.16.0
 
-## 📚 문서 목록
+컴포넌트 목록은 중복하지 않는다 — 이 문서는 "무엇이 어디에 있는가"만 다루고, 실제 목록은 [README.md](README.md)가 SSOT다.
 
-### 핵심 문서
+## 문서 목록
 
-- **[README.md](README.md)** - 프로젝트 전체 문서
-  - 프로젝트 개요
-  - 디렉토리 구조
-  - 주요 컴포넌트 설명
-  - 설치 및 사용 방법
-  - 최근 변경사항
+### 이 디렉터리
 
-- **[RUNBOOK.md](RUNBOOK.md)** - 운영 가이드
-  - 배포 절차
-  - 모니터링 및 알림
-  - 일반적인 문제 해결
-  - 롤백 절차
-  - 긴급 대응 프로토콜
+- **[README.md](README.md)** — 프로젝트 전체 문서
+  - 프로젝트 구조 / 주요 컴포넌트(에이전트·커맨드·스킬·MCP·플러그인) / 빌드·릴리즈 / 설치·사용법 / 멀티소스 / 최근 변경사항
+- **[RUNBOOK.md](RUNBOOK.md)** — 운영 가이드
+  - 릴리즈 절차(자동/수동) / 릴리즈 후 검증 / 문제 해결 / 롤백 / 긴급 대응 / 유지보수 체크리스트
 
-### 프로젝트 루트 문서
+### 저장소 루트
 
-- **[../README.md](../README.md)** - 프로젝트 소개 (영문)
-- **[../CLAUDE.md](../CLAUDE.md)** - Claude Code 설정 및 규칙
-- **[../AGENTS.md](../AGENTS.md)** - 에이전트 구성 설명
+- **[../README.md](../README.md)** — 프로젝트 소개 (영문, 배포 대상 사용자용)
+- **[../LICENSE](../LICENSE)** — MIT License
 
-## 🔧 컴포넌트별 문서
+루트에는 `CLAUDE.md`·`AGENTS.md`가 없다. 두 파일은 배포되는 설정의 일부이므로 `src/` 아래에 있다:
 
-### Agents
+- **[../src/CLAUDE.md](../src/CLAUDE.md)** — Claude Code 항상-로드 지침 (워크플로 오케스트레이션, effort×model 정책, 에이전트 라우팅, 정책 라우팅 표)
+- **[../src/AGENTS.md](../src/AGENTS.md)** — Codex 항상-로드 지침 (Codex는 `skills/`와 이 파일만 설치되므로 출력 서식 규칙의 유일한 사본)
 
-전문 에이전트 문서는 `agents/` 디렉토리에 위치:
+## 컴포넌트가 있는 곳
 
-- `architect.md` - 시스템 설계
-- `build-error-resolver.md` - 빌드 에러 해결
-- `code-reviewer.md` - 코드 리뷰 (security-review 스킬로 보안 검토 포함)
-- `doc-updater.md` - 문서 업데이트
-- `e2e-runner.md` - E2E 테스트
-- `refactor-cleaner.md` - 리팩토링
-- `tdd-guide.md` - 테스트 주도 개발
+| 컴포넌트 | 경로 | 목록 |
+|---|---|---|
+| 에이전트 | `src/agents/<name>.md` | [README 에이전트 표](README.md#에이전트-8개) |
+| 슬래시 커맨드 | `src/commands/<name>.md` | [README 커맨드 표](README.md#슬래시-커맨드-21개) |
+| 스킬 | `src/skills/<name>/SKILL.md` | [README 스킬 표](README.md#스킬-25개) |
+| 훅 | `src/hooks/<name>/hook.yaml` | 전부 `deprecated: true` — 인스톨러가 자동 제거 |
+| MCP 서버 | `src/mcps/mcps.yaml` | 단일 파일 |
+| 플러그인 | `src/plugins/plugins.yaml` | 단일 파일 |
+| 출력 스타일 | `src/output-styles/hibi_default.md` | 단일 파일 |
+| 전역 설정 | `src/settings.json` | 단일 파일 |
 
-### Commands
+`-ko.md` 접미사 파일은 각 원본의 한국어 미러다. 개발자 가독용이며 설치되지 않는다.
 
-커스텀 명령어 문서는 `commands/` 디렉토리에 위치:
+`src/rules/`와 `src/contexts/`는 존재하지 않는다 — 정책은 스킬로 이관됐고 `contexts/`는 Claude Code가 읽지 않아 v1.16.0에서 삭제했다. 인스톨러는 두 타입을 여전히 지원하므로 사용자 소스에서는 사용할 수 있다.
 
-- `code-review.md` - /code-review 명령어
-- `tdd.md` - /tdd 명령어
-- `e2e.md` - /e2e 명령어
-- `build-fix.md` - /build-fix 명령어
-- `update-docs.md` - /update-docs 명령어
-- `refactor-clean.md` - /refactor-clean 명령어
-- `deps.md` - /deps 명령어 (의존성·결합도 감사)
-- 기타 명령어들...
+## 정책이 있는 곳
 
-### Skills
+상세 정책은 **스킬**에 있다. 트리거될 때만 로드되어 always-on 컨텍스트를 가볍게 유지한다. 라우팅 표의 SSOT는 `src/CLAUDE.md`의 "Policy routing" 섹션이다.
 
-스킬 문서는 각 스킬 디렉토리의 `SKILL.md`에 위치:
+| 정책 | 스킬 | 로드 |
+|---|---|---|
+| 커밋 규약 | `commit-rules` | `/commit` 또는 git commit 시 트리거 |
+| PR 가이드라인 | `pull-request` | `/pull-request` 또는 PR 작업 시 트리거 |
+| 보안 / OWASP | `security-review` | `/security-review` 또는 인증·입력·시크릿 작업 시 트리거 |
+| 테스트 & TDD | `tdd-workflow` | `/tdd` 또는 기능 추가·버그 수정 |
+| 코딩 스타일 | `coding-standards` | 코드 작성·리뷰 시 |
+| 의존성·결합도 | `dependency-design` | `/deps` 또는 모듈·모노레포 설계 |
+| 빌드·타입 에러 | `verification-loop` | `/verify`, `/build-fix` |
+| 보증 티어·추적성 | `do-178c` | `/do-178c` 또는 safety-critical 작업 |
 
-- `composition-patterns/SKILL.md` - React 컴포지션 패턴
-- `dependency-design/SKILL.md` - 의존성·결합도 설계 (Cynefin·공생성·DDD·모노레포)
-- `ratatui_rs/SKILL.md` - Ratatui TUI 개발
-- `react-native-skills/SKILL.md` - React Native 개발
-- `rust-best-practices/SKILL.md` - Rust 베스트 프랙티스
-- `react-best-practices/SKILL.md` - Vercel React 최적화
-- `web-design-guidelines/SKILL.md` - 웹 디자인 가이드
+항상 적용되는 핵심 불변식(커밋 절대 규칙, 주석 절대 규칙, effort×model, 에이전트 라우팅)은 `src/CLAUDE.md`에 있다.
 
-### Rules / 정책
+온디맨드 참조 파일은 `src/skills/coding-standards/references/`에 있다: `code-thresholds.md`(LOC·복잡도 임계값), `review-checklist.md`(SOLID·심각도·동시성·크로스플랫폼), `patterns.md`(공통 TS 패턴).
 
-`rules/` 디렉토리는 비어 있다. 상세 정책은 모두 **Skill**로 이동했다 (트리거 시에만 로드되어 always-on 컨텍스트를 가볍게 유지):
+## 개발 문서
 
-- 커밋 규칙 → `commit-rules` skill
-- PR 규칙 → `pull-request` skill
-- 보안 규칙 / OWASP → `security-review` skill
-- 테스트 & TDD → `tdd-workflow` skill
-- 코딩 스타일 / 클린 코드 → `coding-standards` skill
-- 빌드 & 타입 에러 → `verification-loop` skill
+### 인스톨러 소스 (`tools/installer/src/`)
 
-코드 임계값·리뷰 체크리스트·공통 패턴은 `skills/coding-standards/references/`(`code-thresholds.md`, `review-checklist.md`, `patterns.md`)에 위치. 항상 적용되는 핵심 불변식·effort/agent 라우팅은 `CLAUDE.md`에 있다.
+전체 49 파일 / 10,226줄(테스트·공백 포함 raw 라인 수).
 
-## 🛠️ 개발 문서
+| 모듈 | 파일 / LOC | 내용 |
+|---|---|---|
+| `app/` | 9 / 1,680 | 앱 상태 — `mod.rs`(App), `types.rs`, `navigation.rs`, `selection.rs`, `processing.rs`, `input.rs`, `settings.rs`, `sources.rs`, `source_wizard.rs` |
+| `ui/` | 13 / 1,959 | 렌더링 — 리스트, diff, 탭, MCP/플러그인 목록, 소스 위저드, 로딩 화면 |
+| `fs/scanner/` | 6 / 1,300 | 컴포넌트 스캔 — `mod.rs`, `components.rs`, `validation.rs`, `external.rs`, `mcp.rs`, `plugin.rs` |
+| `fs/installer/` | 6 / 1,080 | 설치·제거 — `mod.rs`, `process.rs`(spawn/cancel), `settings.rs`, `merge.rs`, `mcp.rs`, `plugin.rs` |
+| `fs/` (직속) | 3 / 862 | `mod.rs`, `diff.rs`, `manifest.rs`(install.json) |
+| `source/` | 3 / 875 | `mod.rs`(find/sync/resolve), `git.rs`, `config.rs`(sources.yaml) |
+| 루트 직속 | 9 / 2,470 | `main.rs`(114, 터미널 셋업 + 이벤트 루프), `cli.rs`(267, 키 핸들러 + `--sync`), `loading.rs`, `tree.rs`, `component.rs`, `mcp.rs`, `plugin.rs`, `process_exec.rs`, `theme.rs` |
 
-### 인스톨러 소스 (tools/installer/src/)
+테스트: `cargo test --manifest-path tools/installer/Cargo.toml` — 98 tests.
 
-모듈 구조:
+파일 길이 임계값은 `coding-standards` 스킬의 `references/code-thresholds.md`가 SSOT다 — soft 300줄 / hard 500줄, 공백·주석 전용 줄만 제외한다(`#[cfg(test)]` 블록은 제외 대상이 아니다 — 면제는 top-of-file 주석으로 사유를 밝힌 경우만 인정된다). 이 기준으로 soft 초과는 2개(`loading.rs` 456, `tree.rs` 337)이고 hard 초과는 없다. 둘 다 관심사 분리 리팩터 대상이다. 위 표의 LOC은 raw 라인 수이므로 임계값 판정에 그대로 쓰지 않는다.
 
-- **app/** - 앱 상태 관리 (7 파일, 967 LOC)
-  - `mod.rs` (App struct), `types.rs`, `navigation.rs`, `selection.rs`, `processing.rs`, `input.rs`, `settings.rs`
-- **fs/installer/** - 설치/제거 로직 (5 파일, 845 LOC)
-  - `mod.rs` (component ops), `process.rs` (spawn/cancel), `mcp.rs` (MCP), `plugin.rs` (plugin), `settings.rs` (settings.json)
-- **fs/scanner/** - 컴포넌트 스캔 (2 파일, 682 LOC)
-  - `mod.rs` (scan functions), `validation.rs` (검증 + 13 tests)
-- **main.rs** - 이벤트 루프 (754 LOC)
+### 빌드·릴리즈 스크립트
 
-### 빌드 시스템
-
-- **tools/installer/build.sh** - 전체 플랫폼 빌드 스크립트
-- **package.sh** - 릴리즈 패키징 스크립트
+- `tools/installer/build.sh` — 전 플랫폼 크로스 컴파일 (macOS Universal + Linux musl + Windows mingw)
+- `tools/statusline/build.sh` — 상태 표시줄 바이너리
+- `package.sh` — 릴리즈 아카이브 + `checksums.txt`. `VERSION` 상수가 릴리즈 워크플로의 검증 기준
+- `.github/workflows/release.yml` — 태그 `v*.*.*` 푸시로 트리거. 태그 == `package.sh` VERSION == `Cargo.toml` version 검증 후 빌드·패키징·GitHub Release 발행
 
 ### 설정 파일
 
-- **tools/installer/Cargo.toml** - Rust 프로젝트 설정
-- **settings.json** - Claude Code 설정
-- **plugins/plugins.yaml** - 플러그인 정의
-- **mcps/mcps.yaml** - MCP 서버 설정
+- `tools/installer/Cargo.toml` — Rust 프로젝트 설정 (버전이 바이너리와 `install.json`에 각인됨)
+- `src/settings.json` — Claude Code 전역 설정 (설치 시 기존 설정과 병합)
+- `src/mcps/mcps.yaml` / `src/plugins/plugins.yaml` — MCP·플러그인 정의
 
-## 📖 사용법 가이드
+## 사용법 가이드
 
 ### 신규 사용자
 
-1. [README.md](README.md)의 "설치 방법" 섹션 참조
-2. `hibi` 실행 후 대화형 인터페이스 사용
-3. 필요한 컴포넌트 선택 및 설치
+1. [README.md](README.md) "설치 방법"
+2. `hibi` 실행 → 대상 CLI 선택 → 컴포넌트 선택 → 설치
 
-### 개발자
+### 메인테이너
 
-1. [RUNBOOK.md](RUNBOOK.md)의 "배포 절차" 참조
-2. 빌드 시스템 이해: `tools/installer/build.sh`
-3. 릴리즈 프로세스: `package.sh` → GitHub Release
+1. [RUNBOOK.md](RUNBOOK.md) "릴리즈 절차"
+2. 빌드: `tools/installer/build.sh`
+3. 릴리즈: 버전 3곳 동기화 → 태그 푸시 → Actions → Homebrew/Scoop 수동 갱신
 
 ### 기여자
 
-1. [../CLAUDE.md](../CLAUDE.md)의 개발 규칙 숙지
-2. 에이전트/스킬 추가 시 해당 디렉토리 구조 참조
-3. PR 생성 전 `rules/pull-request-rules.md` 확인
+1. `src/CLAUDE.md`의 워크플로·코드 품질 규칙 숙지
+2. 컴포넌트 추가 시 해당 디렉터리의 기존 파일을 형식 기준으로 삼는다. 스킬을 추가하면 `description`이 목록 예산(8,000자)을 공유하므로 220자 이하로 유지한다
+3. `-ko.md` 미러를 함께 갱신한다 — frontmatter는 원본과 바이트 단위로 동일하게 둔다
+4. PR 전 `/pull-request`로 제목 형식·템플릿·PR 전 체크리스트를 확인한다
 
-## 🔍 빠른 찾기
+## 자주 묻는 질문
 
-### 자주 묻는 질문
-
-**Q: macOS에서 "developer cannot be verified" 경고가 나옵니다.**
-A: [RUNBOOK.md](RUNBOOK.md)의 "macOS Gatekeeper 경고" 섹션 참조
+**Q: macOS에서 "developer cannot be verified" 경고가 납니다.**
+A: [RUNBOOK.md](RUNBOOK.md) "macOS Gatekeeper 경고" 참조
 
 **Q: 빌드가 실패합니다.**
-A: [RUNBOOK.md](RUNBOOK.md)의 "빌드 실패" 섹션 참조
+A: [RUNBOOK.md](RUNBOOK.md) "빌드 실패" 참조
 
-**Q: 새로운 에이전트를 추가하려면?**
-A: `agents/` 디렉토리의 기존 에이전트 참조
+**Q: 새 에이전트/스킬을 추가하려면?**
+A: `src/agents/`·`src/skills/`의 기존 파일 참조. 스킬은 `/learn`으로 세션 패턴에서 추출할 수도 있다
 
 **Q: 커밋 메시지 형식은?**
-A: `commit-rules` skill 참조 (또는 `/commit` 커맨드)
+A: `commit-rules` 스킬 (또는 `/commit`)
 
-## 📝 문서 작성 가이드
+**Q: `-ko.md` 파일은 왜 설치되지 않나요?**
+A: 개발자 가독용 미러다. 인스톨러 스캐너가 stem이 `-ko`로 끝나는 파일을 건너뛰고, `package.sh`가 릴리즈 번들에서 제거한다
 
-새로운 문서를 작성할 때:
+## 문서 작성 규칙
 
-1. **마크다운 형식** 사용
-2. **한글 설명 + 영문 코드/경로** 조합
-3. **명확한 제목 및 섹션 구조**
-4. **코드 예제 포함** (가능한 경우)
-5. **업데이트 날짜 명시**
+1. 마크다운, 한글 설명 + 영문 코드·경로
+2. 헤더 계층 명확히, 이모지 사용하지 않음
+3. 파일 경로는 실제 존재를 확인하고 쓴다 — 끊어진 링크가 있는 문서는 없는 문서보다 나쁘다
+4. 목록·수치를 중복 서술하지 않는다. 한 곳(SSOT)에 두고 나머지는 링크한다
+5. 상단에 "마지막 업데이트" 날짜와 기준 버전을 명시한다
 
-## 📅 문서 업데이트 이력
+## 문서 업데이트 이력
 
+- **2026-09-09**: `src/` 마크다운 재개편(v1.16.0 이후) 반영. 3개 문서 전면 현행화 — 컴포넌트 수·인스톨러 모듈·릴리즈 자동화 반영, 끊어진 링크(`../CLAUDE.md`, `../AGENTS.md`, `rules/pull-request-rules.md`) 정정, 중복 목록을 README로 단일화. `/pull-request`·`/security-review` 커맨드 신규 추가로 정책 라우팅 표 10행 전부가 실제 커맨드를 갖게 됐다 (커맨드 19 → 21)
 - **2026-06-19**: `dependency-design` 스킬 및 `/deps` 커맨드 추가 반영
-- **2026-02-26**: 인스톨러 모듈 구조 재편 반영 (README.md 업데이트)
+- **2026-02-26**: 인스톨러 모듈 구조 재편 반영
 - **2026-02-25**: 초기 문서 생성 (README.md, RUNBOOK.md, INDEX.md)

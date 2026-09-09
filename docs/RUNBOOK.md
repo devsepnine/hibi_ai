@@ -1,138 +1,185 @@
 # hibi-ai 운영 가이드 (RUNBOOK)
 
-> 마지막 업데이트: 2026-02-26
+> 마지막 업데이트: 2026-09-09 · 버전 v1.16.0
 
-## 배포 절차
+릴리즈는 ~v1.13부터 GitHub Actions로 자동화됐다. 아래 절차는 태그 푸시 이전의 준비와, 워크플로가 끝난 뒤 남는 수동 작업을 다룬다.
 
-### 1. 버전 업데이트
+## 릴리즈 절차
+
+### 1. 버전 동기화 (3곳)
+
+릴리즈 워크플로가 세 값의 일치를 검증하고, 어긋나면 빌드 전에 실패한다.
 
 ```bash
-# 1. Cargo.toml 버전 업데이트
+# 1) tools/installer/Cargo.toml
+#    version = "1.16.0"
+#    바이너리에 각인되고 사용자의 ~/.hibi/install.json에 provenance로 기록된다
 vim tools/installer/Cargo.toml
-# version = "0.1.x" 수정
 
-# 2. package.sh 버전 업데이트
+# 2) package.sh
+#    VERSION="1.16.0"
 vim package.sh
-# VERSION="0.1.x" 수정
+
+# 3) Cargo.lock
+cargo update -w --manifest-path tools/installer/Cargo.toml
 ```
 
-### 2. 빌드 및 테스트
+푸시할 태그(`v1.16.0`)의 `v` 접두어를 뗀 값이 위 두 버전과 같아야 한다.
+
+### 2. 로컬 검증
 
 ```bash
-# Installer 빌드 (dist/로 출력)
-cd tools/installer
-./build.sh
+# 테스트
+cargo test --manifest-path tools/installer/Cargo.toml   # 98 tests
 
-# Statusline 빌드 (필요시만 - src/에서 Git 관리)
-cd tools/statusline && ./build.sh
+# 전 플랫폼 빌드 (dist/로 출력)
+cd tools/installer && ./build.sh && cd ../..
 
-# 바이너리 검증
-cd ../..
+# 바이너리 확인
 file dist/hibi
-lipo -info dist/hibi  # macOS Universal Binary 확인
+lipo -info dist/hibi        # macOS Universal: x86_64 + arm64
+file dist/hibi-linux dist/hibi.exe
 
 # 실행 테스트
 ./dist/hibi
 ```
 
-### 3. 릴리즈 패키징
+패키징까지 로컬에서 확인하려면:
 
 ```bash
-# 릴리즈 패키지 생성
 ./package.sh
-
-# 생성 확인
-ls -lh release/v0.1.x/
-cat release/v0.1.x/checksums.txt
+ls -lh release/v1.16.0/
+cat release/v1.16.0/checksums.txt
 ```
 
-### 4. GitHub 릴리즈
+`release/`와 `dist/`는 gitignore 대상이므로 커밋되지 않는다.
+
+### 3. 커밋 및 태그 푸시
 
 ```bash
-# GitHub CLI로 릴리즈 생성
-gh release create v0.1.x \
-  release/v0.1.x/*.tar.gz \
-  release/v0.1.x/*.zip \
-  release/v0.1.x/checksums.txt \
-  --title "hibi-ai v0.1.x" \
-  --notes-file release/v0.1.x/RELEASE_NOTES.md
+git add tools/installer/Cargo.toml tools/installer/Cargo.lock package.sh
+git commit -m "chore: bump version to 1.16.0"
+git push origin main
 
-# 또는 웹 UI 사용:
-# https://github.com/devsepnine/hibi_ai/releases/new
+git tag v1.16.0
+git push origin v1.16.0
 ```
 
-### 5. Homebrew Tap 업데이트
+> **`main` 히스토리를 리라이트하지 말 것.** 메인테이너가 `main`을 rebase하면 모든 사용자 캐시의 태그가 존재하지 않는 커밋을 가리키게 되고, `git pull --ff-only`가 "would clobber existing tag"로 실패한다. v1.9.7 → v1.9.8은 이 때문에 sync 핫픽스를 급히 내보내야 했다. 불가피하게 rebase했다면 같은 릴리즈에 sync 복원 로직을 함께 넣는다.
+
+### 4. GitHub Actions 확인
+
+태그 푸시로 `.github/workflows/release.yml`이 트리거된다. 수동 실행은 Actions 탭의 `workflow_dispatch`(version 입력)로도 가능하다.
+
+워크플로 단계:
+
+1. 버전 검증 (태그 == `package.sh` VERSION == `Cargo.toml` version)
+2. Rust 크로스 타겟 설치 + `mingw-w64`·`musl-cross` 설치
+3. cargo 레지스트리·빌드 캐시 복원 (`Swatinem/rust-cache@v2`, workspace `tools/installer`)
+4. `tools/installer/build.sh` (macOS 러너에서 전 플랫폼 크로스 컴파일)
+5. `package.sh` (아카이브 + `checksums.txt`)
+6. `gh release create v{VERSION} --generate-notes`
 
 ```bash
-# Tap 저장소로 이동
-cd ../homebrew-tap
+# 진행 상황
+gh run list --workflow=release.yml --limit 5
+gh run watch
 
-# Formula 업데이트 (버전, URL, SHA256)
+# 결과 확인
+gh release view v1.16.0
+```
+
+체크리스트:
+
+- [ ] 워크플로 성공
+- [ ] macOS `.tar.gz`, Linux `.tar.gz`, Windows `.zip` 3개 업로드
+- [ ] `checksums.txt` 업로드 및 내용 확인
+
+### 5. Homebrew Tap 갱신 (수동)
+
+```bash
+cd ../homebrew-brew
+
+# checksums.txt에서 sha256을 가져와 version / URL / sha256 갱신
+gh release view v1.16.0 --repo devsepnine/hibi_ai
 vim Formula/hibi.rb
 
-# 커밋 및 푸시
 git add Formula/hibi.rb
-git commit -m "chore: update hibi to v0.1.x"
+git commit -m "chore: update hibi to v1.16.0"
 git push origin main
 ```
 
-### 6. Scoop Bucket 업데이트
+### 6. Scoop Bucket 갱신 (수동)
 
 ```bash
-# Scoop bucket 저장소로 이동
 cd ../scoop-bucket
 
-# Manifest 업데이트 (버전, URL, SHA256)
+# version / URL / hash / extract_dir 갱신
 vim hibi-ai.json
 
-# 커밋 및 푸시
 git add hibi-ai.json
-git commit -m "chore: update hibi-ai to v0.1.x"
+git commit -m "chore: update hibi-ai to v1.16.0"
 git push origin main
 ```
 
-## 모니터링 및 알림
+## 릴리즈 후 검증
 
-### GitHub Actions
+### 설치 경로 확인
 
-릴리즈 후 확인 사항:
-- [ ] GitHub Actions 빌드 성공
-- [ ] 모든 플랫폼 바이너리 업로드 확인
-- [ ] 체크섬 파일 생성 확인
+```bash
+# Homebrew
+brew update
+brew uninstall hibi
+brew install --debug --verbose devsepnine/brew/hibi
+which hibi && hibi --version
+```
+
+```powershell
+# Scoop (Windows)
+scoop uninstall hibi-ai
+scoop update
+scoop install hibi-ai
+where hibi; hibi --version
+```
+
+### 기존 사용자 sync 확인
+
+캐시를 가진 사용자가 새 릴리즈로 넘어오는 경로를 확인한다.
+
+```bash
+hibi --sync       # git 소스 업데이트만 수행 (TUI 없이)
+ls ~/.hibi/cache/
+cat ~/.hibi/install.json   # version이 새 태그를 가리키는지
+```
 
 ### 다운로드 통계
 
 ```bash
-# GitHub CLI로 릴리즈 다운로드 통계 확인
-gh release view v0.1.x --json assets \
+gh release view v1.16.0 --json assets \
   --jq '.assets[] | {name: .name, downloads: .downloadCount}'
 ```
 
-### Homebrew 설치 확인
-
-```bash
-# 로컬 테스트
-brew uninstall hibi
-brew install --debug --verbose devsepnine/brew/hibi
-
-# 설치 확인
-which hibi
-hibi --version
-```
-
-### Scoop 설치 확인
-
-```powershell
-# Windows에서 테스트
-scoop uninstall hibi-ai
-scoop install hibi-ai
-
-# 설치 확인
-where hibi
-hibi --version
-```
-
 ## 일반적인 문제 및 해결
+
+### 릴리즈 워크플로 실패
+
+#### 문제: 버전 불일치로 즉시 실패
+
+```
+# 증상
+::error::Release version (1.16.0) does not match package.sh VERSION (1.15.0).
+
+# 해결
+# 세 곳(Cargo.toml / package.sh / 태그)을 맞춘 뒤 태그를 다시 만든다
+git tag -d v1.16.0
+git push origin :refs/tags/v1.16.0
+# 버전 수정 커밋 후
+git tag v1.16.0 && git push origin v1.16.0
+```
+
+#### 문제: crates.io 네트워크 타임아웃
+
+워크플로에 `CARGO_NET_RETRY: 10`이 설정돼 있어 대부분 자동 복구된다. 그래도 실패하면 `gh run rerun <run-id>`로 재실행한다.
 
 ### 빌드 실패
 
@@ -143,8 +190,8 @@ hibi --version
 error: can't find crate for `std`
 
 # 해결
-rustup target add aarch64-apple-darwin
-rustup target add x86_64-apple-darwin
+rustup target add aarch64-apple-darwin x86_64-apple-darwin \
+  x86_64-pc-windows-gnu x86_64-unknown-linux-musl
 ```
 
 #### 문제: lipo 실패
@@ -153,8 +200,7 @@ rustup target add x86_64-apple-darwin
 # 증상
 fatal error: lipo: can't open input file
 
-# 해결
-# Xcode Command Line Tools 설치
+# 해결 — Xcode Command Line Tools 설치
 xcode-select --install
 ```
 
@@ -168,30 +214,34 @@ error: linker `x86_64-linux-musl-gcc` not found
 brew install filosottile/musl-cross/musl-cross
 ```
 
+#### 문제: mingw 링커 에러 (Windows 타겟)
+
+```bash
+# 증상
+error: linker `x86_64-w64-mingw32-gcc` not found
+
+# 해결
+brew install mingw-w64
+```
+
 ### 패키징 실패
 
 #### 문제: 바이너리 파일 없음
 
 ```bash
 # 증상
-cp: hibi-linux: No such file or directory
+❌ Error: Installer binaries not found in dist/
 
-# 해결
-# 먼저 빌드 실행
-cd tools/installer
-./build.sh
-cd ../..
+# 해결 — 먼저 빌드
+cd tools/installer && ./build.sh && cd ../..
 ./package.sh
 ```
 
-#### 문제: 체크섬 생성 실패
+#### 문제: 체크섬 파일이 비어 있음
 
 ```bash
-# 증상
-checksums.txt 파일이 비어있음
-
 # 해결
-cd release/v0.1.x
+cd release/v1.16.0
 shasum -a 256 *.tar.gz *.zip > checksums.txt
 ```
 
@@ -230,8 +280,7 @@ scoop install hibi-ai
 # 임시 해결
 xattr -d com.apple.quarantine hibi
 
-# 영구 해결
-# Apple Developer ID로 바이너리 서명 필요
+# 영구 해결 — Apple Developer ID 서명 필요
 codesign --sign "Developer ID Application: ..." hibi
 ```
 
@@ -255,12 +304,33 @@ Bad CPU type in executable
 
 # 확인
 file hibi
-lipo -info hibi
+lipo -info hibi   # Intel Mac은 x86_64, Apple Silicon은 arm64 포함 필요
+```
 
-# 해결
-# Universal Binary가 맞는지 확인
-# Intel Mac: x86_64 포함 필요
-# Apple Silicon: arm64 포함 필요
+#### 문제: Windows에서 MCP 서버가 스캔되지 않음
+
+```
+# 증상 — npm으로 설치한 CLI가 목록에 없음
+
+# 원인
+# CreateProcessW는 .exe만 자동 부착하고 PATHEXT를 따르지 않아
+# npm shim의 .cmd 파일이 보이지 않는다
+
+# 해결 — v1.9.7 이상으로 업그레이드
+# fs/mod.rs::resolve_cli_program이 PATH를 .exe -> .cmd -> .bat 순으로 직접 탐색한다
+```
+
+#### 문제: 사용자 캐시 sync 실패
+
+```
+# 증상
+would clobber existing tag
+refusing to merge unrelated histories
+
+# 원인 — 상류 main 히스토리 리라이트
+# 해결 — v1.9.9 이상으로 업그레이드
+# fetch --tags --force 후 shallow는 reset --hard FETCH_HEAD,
+# full clone은 merge --ff-only @{u}로 분기한다
 ```
 
 ## 롤백 절차
@@ -268,28 +338,20 @@ lipo -info hibi
 ### 1. GitHub 릴리즈 롤백
 
 ```bash
-# 문제 있는 릴리즈 삭제
-gh release delete v0.1.x --yes
+gh release delete v1.16.0 --yes
 
 # 태그 삭제 (로컬 + 리모트)
-git tag -d v0.1.x
-git push origin :refs/tags/v0.1.x
+git tag -d v1.16.0
+git push origin :refs/tags/v1.16.0
 ```
+
+`main` 커밋은 되돌리지 않는다 — 태그만 제거하면 배포가 멈춘다. 히스토리 리라이트는 사용자 캐시를 깨뜨린다.
 
 ### 2. Homebrew Formula 롤백
 
 ```bash
-cd ../homebrew-tap
-
-# 이전 버전으로 되돌림
+cd ../homebrew-brew
 git revert HEAD
-git push origin main
-
-# 또는 직접 수정
-vim Formula/hibi.rb
-# 이전 버전으로 수정
-git add Formula/hibi.rb
-git commit -m "revert: rollback to v0.1.y"
 git push origin main
 ```
 
@@ -297,82 +359,58 @@ git push origin main
 
 ```bash
 cd ../scoop-bucket
-
-# 이전 버전으로 되돌림
 git revert HEAD
-git push origin main
-
-# 또는 직접 수정
-vim hibi-ai.json
-# 이전 버전으로 수정
-git add hibi-ai.json
-git commit -m "revert: rollback to v0.1.y"
 git push origin main
 ```
 
 ### 4. 사용자 안내
 
-```bash
-# GitHub Discussions에 공지
-# 또는 README에 경고 추가
-```
+- GitHub Discussions 공지
+- 필요 시 루트 `README.md`에 경고 추가
 
 ## 긴급 대응
 
 ### 보안 취약점 발견
 
-1. **즉시 조치**
-   - 문제 릴리즈 삭제 또는 Draft로 전환
-   - README에 경고 추가
+1. **즉시 조치** — 문제 릴리즈를 Draft로 전환하거나 삭제, 루트 `README.md`에 경고
+2. **수정** — 취약점 수정 커밋 → 패치 버전 릴리즈 (예: v1.16.0 → v1.16.1)
+3. **알림** — GitHub Security Advisory 생성, Homebrew/Scoop 갱신
 
-2. **수정**
-   - 취약점 수정 커밋
-   - 긴급 패치 버전 릴리즈 (예: v0.1.3 → v0.1.4)
-
-3. **알림**
-   - GitHub Security Advisory 생성
-   - Homebrew/Scoop 업데이트
+시크릿이 커밋에 들어간 경우는 릴리즈 롤백만으로 끝나지 않는다. 해당 크리덴셜을 먼저 폐기(rotate)하고, 그다음 이력 처리를 판단한다.
 
 ### 심각한 버그 발견
 
-1. **영향 평가**
-   - 사용자 영향 범위 확인
-   - 데이터 손실 여부 확인
-
-2. **핫픽스 릴리즈**
-   - 긴급 수정
-   - 패치 버전 릴리즈
-
-3. **사용자 안내**
-   - GitHub Discussions 공지
-   - 업그레이드 권장
+1. **영향 평가** — 사용자 영향 범위, 데이터 손실 여부. 인스톨러는 `~/.claude` 트리를 병합 방식으로 다루므로 설정 손상 가능성을 우선 확인한다
+2. **핫픽스 릴리즈** — 긴급 수정 후 패치 버전. 사용자 캐시 sync 경로가 깨졌다면 sync 복원 로직을 같은 릴리즈에 포함한다
+3. **사용자 안내** — Discussions 공지, 업그레이드 권장
 
 ## 유지보수 작업
 
-### 주간 체크리스트
+### 주간
 
 - [ ] GitHub Issues 확인 및 응답
 - [ ] Pull Requests 리뷰
 - [ ] 다운로드 통계 확인
-- [ ] Homebrew/Scoop 설치 테스트
 
-### 월간 체크리스트
+### 월간
 
-- [ ] 의존성 업데이트 (`cargo update`)
-- [ ] Rust 버전 업데이트
-- [ ] 보안 취약점 스캔 (`cargo audit`)
-- [ ] 문서 업데이트 검토
+- [ ] 의존성 업데이트 (`cargo update -w --manifest-path tools/installer/Cargo.toml`)
+- [ ] Rust 툴체인 업데이트
+- [ ] 보안 스캔 (`cargo audit`)
+- [ ] `src/mcps/mcps.yaml`·`src/plugins/plugins.yaml`의 상류 패키지명·URL 유효성 확인
+- [ ] 문서 현행화 (`/update-docs`)
 
-### 분기별 체크리스트
+### 분기별
 
 - [ ] 로드맵 검토
 - [ ] 사용자 피드백 분석
-- [ ] 성능 개선 검토
-- [ ] 아키텍처 리뷰
+- [ ] 아키텍처 리뷰 (`/deps`로 결합도 감사)
+- [ ] 스킬 목록 예산 재측정 — 스킬이 늘면 8,000자를 넘겨 설명이 절삭될 수 있다
 
 ## 연락처 및 리소스
 
 - **GitHub 저장소**: https://github.com/devsepnine/hibi_ai
 - **이슈 트래커**: https://github.com/devsepnine/hibi_ai/issues
+- **Releases**: https://github.com/devsepnine/hibi_ai/releases
 - **Homebrew Tap**: https://github.com/devsepnine/homebrew-brew
 - **Scoop Bucket**: https://github.com/devsepnine/scoop-bucket

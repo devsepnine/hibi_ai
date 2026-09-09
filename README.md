@@ -80,12 +80,12 @@ auto_update: true
 **Update git sources** without launching the TUI:
 
 ```bash
-hibi --update
+hibi --sync
 ```
 
 **Offline behavior**: If a git fetch fails but a cached copy exists, hibi uses the stale cache. Bundled source always works offline.
 
-**Source requirements**: Each source directory must contain at least one of: `agents/`, `commands/`, `rules/`, `skills/`, or `mcps/mcps.yaml`.
+**Source requirements**: Each source directory must contain at least one of `agents/`, `commands/`, `contexts/`, `rules/`, `skills/`, `hooks/`, `output-styles/`, `statusline/`, `mcps/mcps.yaml`, `plugins/plugins.yaml`, `settings.json`, `CLAUDE.md`, or `AGENTS.md`. The bundled source is checked more strictly: it needs both `agents/` and `settings.json`.
 
 ### Install Provenance
 
@@ -95,7 +95,7 @@ in `~/.hibi/install.json`:
 ```json
 {
   "source": "https://github.com/devsepnine/hibi_ai",
-  "version": "v1.15.0",
+  "version": "v1.16.0",
   "target": ".claude",
   "updated_at": "2026-08-06T05:41:00Z",
   "components": ["agents/architect", "commands/qa-handoff", "skills/qa-handoff"]
@@ -117,12 +117,11 @@ agent-owned `~/.claude` tree is left alone.
 - **Agents**: Specialized AI agents for different tasks
 - **Commands**: Custom slash commands
 - **Skills**: Domain-specific skills and knowledge
-- **Hooks**: Lifecycle hooks for automation
 - **MCPs**: Model Context Protocol servers
 - **Plugins**: Additional functionality plugins
-- **Rules**: Code style and workflow rules
-- **Contexts**: Context presets
 - **Output Styles**: Custom output formatting
+- **Hooks**: Lifecycle hooks — all bundled hooks are deprecated and removed from existing installs; the native Skill system replaces them
+- **Rules** / **Contexts**: still supported as component types for your own sources, but the bundled configuration no longer ships either — policies moved into skills
 
 ## Building from Source
 
