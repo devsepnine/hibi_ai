@@ -55,7 +55,7 @@ Defines always-on workflow and decision-making procedures. Detailed, situational
 - **Prevent recurrence**: check whether the same class of bug exists elsewhere
 
 ### 7. Parallel execution principle
-- Independent work always runs in parallel (multiple Task calls in a single message)
+- Independent work always runs in parallel (multiple `Agent` calls in a single message)
 - Never run 3 unrelated analyses sequentially when there are no dependencies
 
 ### 8. Git and change safety (CRITICAL)
@@ -110,7 +110,7 @@ Agents are isolated workers (own context window, scoped tools) — use them to k
 | Documentation | `doc-updater` | xhigh / opus-5 |
 | Independent assurance / traceability audit (A/B-tier) | `assurance-auditor` | high / sonnet-5 |
 
-**Parallel execution**: launch independent agents in a single message (multiple Task calls). Never run unrelated analyses sequentially.
+**Parallel execution**: launch independent agents in a single message (multiple `Agent` calls). Never run unrelated analyses sequentially.
 **Multi-perspective analysis**: for complex problems, split into focused subagents (factual / senior-engineer / security / consistency / redundancy), one scope each.
 
 ## Completion report format

@@ -116,26 +116,18 @@ Before marking work complete:
 - Derived-requirement feedback: surface behavior the spec did not ask for (retry, cache, default) instead of embedding it silently.
 - Full method: the `do-178c` skill.
 
-## Language settings
-
-### Thinking and response language policy (CRITICAL)
+## Language settings (CRITICAL)
 
 - **Thinking step**: reason in English — more precise reasoning
 - **Output**: respond in Korean — user readability first
 - **Code, commands, technical terms**: keep in original (English)
 - **Error message quotes**: keep verbatim
 
-## Markdown format
+## Output formatting
 
-### Header structure
+Headers nest `# Task title` -> `## Stage` -> `### Detail`. Cite files as `src/components/Button.tsx:42`, show edits as a fenced `diff` block with `-`/`+` lines, and commands as a fenced `bash` block with a one-line comment above.
 
-```
-# Task title
-## Stage
-### Detail
-```
-
-### Progress list
+Track ongoing work as a checklist with exactly one item in progress:
 
 ```
 - [x] Done
@@ -143,103 +135,21 @@ Before marking work complete:
 - [ ] Pending
 ```
 
-### Step-by-step description
+Shape the response by where the task stands:
 
-```
-**Step 1: Analysis**
-- Understand current state
-- Identify problems
+- **Starting**: `## Task: <name>` -> `### Current state` (analysis) -> `### Plan` (numbered steps)
+- **In progress**: `### Status` (the checklist) -> `### Next` (upcoming work)
+- **Done**: `## Done` -> `### Changes` (file paths, key edits) -> `### Verification` (test pass/fail, items to confirm)
 
-**Step 2: Plan**
-- Derive a solution
-- Compare alternatives
+When a procedure needs walking through, use bold step headings with bullets under each: `**Step 1: Analysis**`, then Plan, Execute, Verify.
 
-**Step 3: Execute**
-- Modify code
-- Run tests
+## Effort level
 
-**Step 4: Verify**
-- Confirm results
-- Document
-```
+The harness reasoning-effort setting scales how much you explain and how many calls you spend — not what you are allowed to skip.
 
-## Response structure
-
-### Starting a task
-
-```
-## Task: [name]
-
-### Current state
-- analysis
-
-### Plan
-1. First step
-2. Second step
-3. Third step
-```
-
-### In progress
-
-```
-### Status
-- [x] Done
-- [ ] In progress
-
-### Next
-- upcoming work
-```
-
-### On completion
-
-```
-## Done
-
-### Changes
-- File: `path/to/file`
-- Key edits
-
-### Verification
-- Test pass / fail
-- Items to confirm
-```
-
-## Code blocks
-
-### File path
-
-```
-`src/components/Button.tsx:42`
-```
-
-### Code change
-
-```diff
-- removed
-+ added
-```
-
-### Command execution
-
-```bash
-# description
-command --option value
-```
-
-## Effort × model policy (Anthropic Opus 5 guide)
-
-| Effort | Model | Use cases |
-|---|---|---|
-| `low` | `claude-haiku-4-5` | Single-tool checklist, narrow scope (subagents, classification, quick lookups) |
-| `medium` | `claude-sonnet-5` | Balanced — tool calls with some reasoning |
-| `high` | `claude-sonnet-5` | Complex reasoning, careful judgment |
-| `xhigh` | `claude-opus-5` | Coding, exploration, multi-step (repeated tool calls, deep search) |
-| `max` | `claude-fable-5` | True frontier only — hardest long-horizon work (premium $10/$50 pricing, opt-in; not for typical workloads) |
-
-**Core principle**: *"Don't prompt around — raise the effort."* Opus 5 strictly respects effort. At lower effort it scopes to what was asked and nothing more — and `low`/`medium` on Opus 5 punch well above their weight, so sweep down where evals hold.
-
-**Tool usage at low effort**: combine calls, use fewer of them, act directly → terse confirmation.
-**Tool usage at high effort**: explain the plan before acting, more calls, detailed summaries. (Comment rules stay fixed regardless of effort — effort never licenses over-commenting.)
+- **Low**: combine tool calls, use fewer of them, act directly, confirm tersely.
+- **High**: state the plan before acting, more calls, detailed summaries.
+- Comment rules, security gates, and the verification bar hold at every level. Effort never licenses over-commenting or a skipped check.
 
 ## Cautions
 
