@@ -1,7 +1,6 @@
 ---
 name: obsidian-notes
-description: Generate Obsidian vault notes — release notes, ADRs, retrospectives, debug logs, daily/weekly logs, meeting minutes, MOCs, book notes. Produces Obsidian Flavored Markdown with frontmatter, wikilinks, callouts, Mermaid, and dataview properties. 옵시디언 노트, 데일리 노트, 회의록, 학습 노트, ADR, 릴리즈 노트, 회고, 디버깅 로그, 프로젝트 MOC, dataview.
-keywords: [obsidian, 옵시디언, notes, 노트, vault, 볼트, markdown, OFM, daily-note, 데일리노트, weekly-review, 주간회고, meeting-note, 회의록, adr, release-notes, retrospective, 회고, debug-log, 디버그로그, learning-note, 학습노트, project-moc, MOC, book-note, 독서노트, fleeting, 아이디어, mermaid, dataview, diagrams, 다이어그램]
+description: Obsidian vault notes — release notes, ADRs, retrospectives, meeting minutes, MOCs. OFM frontmatter, wikilinks, callouts, dataview. Use when writing vault notes. 옵시디언 노트, 데일리 노트, 릴리즈 노트, 학습 노트, 회의록, 회고, ADR.
 ---
 
 # Obsidian Notes

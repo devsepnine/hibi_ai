@@ -1,7 +1,6 @@
 ---
-name: iced
-description: Rust GUI development with the iced framework — building apps, widgets, debugging compile errors, the Message/update/view API, Task/Subscription, async work, and 0.12→0.14 migration. iced 앱, 러스트 iced, iced 마이그레이션. NOT for egui/Slint/Dioxus/Tauri, ratatui (terminal TUI), or non-GUI Rust.
-keywords: [iced, rust-gui, elm, elm-architecture, widget, application, task, subscription, canvas, theme, palette, migration, 마이그레이션, 러스트gui, 데스크톱ui]
+name: iced_rs
+description: Rust iced GUI — widgets, Message/update/view, Task/Subscription, compile errors, 0.12→0.14 migration. Use when building iced apps. iced 앱, 러스트 GUI, iced 마이그레이션. NOT egui/Slint/Dioxus/Tauri/ratatui.
 ---
 
 # iced (Rust GUI) — Production Guide

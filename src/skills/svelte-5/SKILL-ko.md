@@ -1,7 +1,6 @@
 ---
 name: svelte-5
-description: Svelte 5 + SvelteKit 2 with runes ($state/$derived/$effect/$props/$bindable), snippets (no slots), callback events (no createEventDispatcher), routing, load functions, form actions, and v4→v5 migration. 스벨트 5 컴포넌트, SvelteKit 라우팅, runes 마이그레이션.
-keywords: [svelte, svelte-5, 스벨트, sveltekit, sveltekit-2, 스벨트킷, runes, $state, $derived, $effect, $props, $bindable, snippet, load, form-actions, hooks, migration, 마이그레이션]
+description: Svelte 5 + SvelteKit 2 — runes ($state/$derived/$effect), snippets over slots, callback events, load functions, form actions. Use when writing Svelte components. 스벨트 5, SvelteKit 라우팅, 컴포넌트, runes 마이그레이션.
 ---
 
 # Svelte 5

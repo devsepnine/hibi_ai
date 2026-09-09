@@ -1,7 +1,6 @@
 ---
 name: coding-standards
-description: Universal coding standards for TypeScript/JavaScript/React/Node — naming, immutability, error handling, comment style, code smells, testing, file organization. React form/error-boundary/a11y patterns in references/. 코딩 표준, 코드 스타일, 주석 작성, 코드 리뷰, 클린 코드, 폼 검증, 에러 바운더리, 접근성.
-keywords: [coding-standards, 코딩표준, 코드스타일, 코드리뷰, clean-code, best-practices, code-comments, 코드주석, 두괄식, code-is-the-spec, 코드가곧명세, 과잉주석, react-patterns, form, error-boundary, a11y, 접근성]
+description: TS/JS/React/Node coding standards — naming, immutability, error handling, comment rules, code smells, file layout. Use when writing or reviewing code. 코딩 표준, 코드 스타일, 주석 규칙, 코드 리뷰, 클린 코드.
 ---
 
 # 코딩 표준 & 모범 사례

@@ -1,7 +1,6 @@
 ---
 name: tdd-workflow
-description: Use this skill when writing new features, fixing bugs, or refactoring code. Enforces test-driven development with 80%+ coverage including unit, integration, and E2E tests. TDD 워크플로우, 테스트 주도 개발, 테스트 우선 작성, 테스트 커버리지.
-keywords: [tdd, test, 테스트, 테스트주도개발, 테스트우선, coverage, 커버리지]
+description: Test-first development — red/green/refactor, unit/integration/E2E, 80%+ coverage. Use when adding a feature, fixing a bug, or refactoring. TDD, 테스트 주도 개발, 테스트 우선, 커버리지.
 ---
 
 # Test-Driven Development Workflow
@@ -117,7 +116,7 @@ src/
 작업을 완료로 표시하기 전에:
 - [ ] 테스트를 먼저 작성했고 실패를 확인했다 (Red 입증)
 - [ ] 구현은 테스트를 수정하지 않고 통과시킨다
-- [ ] 엣지 케이스: empty / null / max / concurrent / partial failure
+- [ ] 엣지 케이스: empty / null / 잘못된 타입 / min-max 경계 / concurrent / partial failure / 대용량 입력(10k+ 항목) / 특수문자(Unicode, 이모지, SQL 메타문자)
 - [ ] 에러 경로는 구체적인 assertion으로 (단순 "throws"가 아니라)
 - [ ] 변경된 파일에 커버리지 ≥ 80%
 - [ ] `.skip` / `.only` / 비활성 테스트 없음

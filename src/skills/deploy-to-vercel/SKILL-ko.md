@@ -1,7 +1,6 @@
 ---
 name: deploy-to-vercel
-description: Deploy apps/sites to Vercel — interactive (vercel login) or token-based (VERCEL_TOKEN, CI/CD) auth; preview by default, production only when explicit. "deploy my app", "preview deployment". 버셀 배포, Vercel 배포, 토큰 배포, CI 배포.
-keywords: [vercel, deploy, 배포, 버셀배포, preview, 프리뷰, token, 토큰, ci-cd, vercel-token]
+description: Deploy to Vercel — interactive or VERCEL_TOKEN auth, preview by default, production only when explicit. Use when deploying a site. 버셀 배포, Vercel 배포, 프리뷰 배포, CI 배포.
 metadata:
   author: vercel
   version: "3.1.0"

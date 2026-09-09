@@ -1,7 +1,6 @@
 ---
-name: zustand-store-ts
-description: Zustand v5 stores in TypeScript — state/action separation, useShallow for object/array selectors, subscribeWithSelector, devtools/persist middleware, slices pattern, v4 migration, and fixing infinite-loop selector bugs. 주스탄드 상태관리, Zustand v5, 전역 상태 관리, useShallow, slices pattern.
-keywords: [zustand, 주스탄드, state-management, 상태관리, store, 스토어, useShallow, slices, v5, middleware, devtools, persist]
+name: zustand
+description: Zustand v5 — state/action split, useShallow selectors, subscribeWithSelector, devtools/persist, slices, v4 migration, infinite-loop fixes. Use when managing React state. 주스탄드, 전역 상태 관리, useShallow.
 ---
 
 # Zustand Store (v5)

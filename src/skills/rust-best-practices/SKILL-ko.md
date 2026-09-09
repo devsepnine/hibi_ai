@@ -1,13 +1,7 @@
 ---
 name: rust-best-practices
-description: Comprehensive Rust best practices covering ownership, error handling, async patterns, testing, and project structure. Use when writing Rust code, reviewing Rust, 러스트 코드 작성, Rust 모범사례, Rust 리뷰, 소유권 패턴.
-keywords: [rust, 러스트, ownership, 소유권, async, best-practices, 모범사례]
+description: Rust practices — ownership, error handling, async, testing, project structure. Use when writing or reviewing Rust. 러스트 코드 작성, Rust 모범사례, 소유권, Rust 리뷰. NOT iced/ratatui specifics.
 version: 1.0.0
-categories:
-  - rust
-  - best-practices
-  - programming
-  - systems
 ---
 
 # Rust Best Practices

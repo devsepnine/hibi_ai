@@ -1,7 +1,6 @@
 ---
-name: ratatui
-description: Rust terminal UI (TUI) with ratatui/crossterm — widgets, ListState/TableState selection, layouts, keyboard navigation, event loops with background-task cancel, panic-safe setup, and 0.28→0.30 migration. 러스트 터미널 UI, TUI, 대화형 CLI, 이벤트 루프, 백그라운드 작업 취소, ratatui 마이그레이션. NOT for ncurses, Python rich/textual, GUI (Iced/egui), or Bubble Tea (Go).
-keywords: [ratatui, tui, 터미널ui, rust-tui, cli, crossterm, cancelable, 취소, cross-platform, 크로스플랫폼, listState, migration, 마이그레이션]
+name: ratatui_rs
+description: Rust TUI with ratatui/crossterm — widgets, List/TableState, layouts, cancelable event loops, panic-safe, 0.28→0.30 migration. Use when building a Rust TUI. 러스트 TUI, 터미널 UI, 대화형 CLI, 이벤트 루프. NOT GUI, ncurses.
 ---
 
 # Ratatui (Rust TUI) — Production Guide

@@ -1,7 +1,6 @@
 ---
 name: upstream-pr
-description: Promote a session-derived improvement into the distributed config as a reviewable PR — find the upstream from the install manifest, separate real candidates from local noise, gate each one on generalizability, evidence, blast radius, and reversibility, then open the PR carrying that evidence. Use when a session reveals that a shipped rule, skill, agent, or command should change; when someone asks how to contribute a config improvement back; or when an improvement was applied locally and has to reach other users. 설정 개선 환류, 업스트림 PR, 배포 설정 기여, 세션 교훈 반영, 로컬 수정 업스트림, 기여 방법.
-keywords: [upstream-pr, 업스트림PR, 설정개선, 기여, contribute, config-improvement, drift, 세션교훈, provenance, install-manifest, fork, PR]
+description: Promote a session-derived improvement upstream as a PR — gate on generalizability, evidence, blast radius, reversibility. Use when a shipped rule, skill, or agent should change. 업스트림 PR, 설정 개선 환류, 배포 설정 기여.
 ---
 
 # Upstream PR

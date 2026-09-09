@@ -1,7 +1,6 @@
 ---
 name: backend-patterns
-description: Backend architecture patterns, API design, database optimization, and server-side best practices for Node.js, Express, and Next.js API routes. Use when writing server-side code, designing REST APIs, 백엔드 패턴, 서버 아키텍처, API 설계, 데이터베이스 최적화.
-keywords: [backend, api, server, 백엔드, 서버, rest, node, nextjs]
+description: Backend and API patterns for Node, Express, and Next.js routes — REST design, DB optimization, server-side structure. Use when writing server code or designing APIs. 백엔드 패턴, 서버 아키텍처, API 설계, DB 최적화.
 ---
 
 # Backend Development Patterns

@@ -1,7 +1,6 @@
 ---
 name: web-design-guidelines
-description: Review UI code for Web Interface Guidelines compliance. Use when asked to "review my UI", "check accessibility", "audit design", "review UX", or "check my site against best practices". UI 리뷰, 웹 디자인 검토, 접근성 점검, UX 리뷰, 디자인 감사.
-keywords: [ui, ux, 디자인, design, accessibility, 접근성, web-design]
+description: Review UI code against Web Interface Guidelines — accessibility, UX, design audit. Use when asked to review UI/UX or check accessibility. UI 리뷰, 웹 디자인 검토, 접근성 점검, UX 리뷰.
 metadata:
   author: vercel
   version: "1.0.0"

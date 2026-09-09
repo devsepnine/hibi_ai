@@ -1,7 +1,6 @@
 ---
 name: qa-handoff
-description: Turn recent git history into a handoff document a non-developer can act on — a plain-language summary of what changed, plus a QA checklist that can actually be run, with regression risks, a glossary, and commit references for traceability. Use whenever finished development work has to be explained to QA, planners, or CS; when someone asks what changed and what should be tested; before a release or a QA request; or when test scope has to be derived from commits. 개발 내역 정리, QA 인수인계, QA 체크리스트, 비개발자 공유, 변경사항 요약, 테스트 범위 정리, 릴리즈 확인 사항.
-keywords: [qa-handoff, QA인수인계, 개발내역정리, QA체크리스트, 변경사항요약, 테스트범위, 비개발자공유, 릴리즈확인, handoff, release-summary, test-scope, git-history]
+description: Turn git history into a non-developer handoff — change summary, runnable QA checklist, regression risks, commit references. Use before a release or a QA request. QA 인수인계, 비개발자 공유, 개발 내역 정리, 테스트 범위, 변경사항 요약.
 ---
 
 # QA Handoff Notes

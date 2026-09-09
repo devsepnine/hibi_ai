@@ -1,7 +1,6 @@
 ---
 name: do-178c
-description: Pragmatic DO-178C-derived assurance methodology for general/AI-assisted development - risk-tiered rigor, bidirectional traceability, independent verification, structural coverage, and derived-requirement feedback. Use when working on safety-critical or high-blast-radius changes, assigning an assurance level, building traceability, or auditing verification rigor. 안전필수 개발, 보증수준, 위험도 티어, 양방향 추적성, 독립 검증, 구조 커버리지, 파생요구, DO-178C 개발론.
-keywords: [do-178c, assurance-level, traceability, structural-coverage, derived-requirements, 보증수준, 추적성, 안전필수, 위험도티어]
+description: DO-178C-derived assurance — risk tiers, bidirectional traceability, independent verification, structural coverage. Use for safety-critical or high-blast-radius changes. 안전필수, 위험도 티어, 보증수준, 양방향 추적성, 독립 검증.
 ---
 
 # DO-178C Assurance Methodology

@@ -1,7 +1,6 @@
 ---
 name: superset
-description: Apache Superset 대시보드·차트·데이터셋·SQL Lab 관리 (MCP 도구) — 대시보드/차트 탐색, 차트 생성·수정, 데이터셋 메트릭·계산 컬럼, 필터, SQL Lab. dashboards, BI charts, 대시보드 생성/수정, Superset 차트, 데이터셋 메트릭, BI 분석, 슈퍼셋, Apache Superset.
-keywords: [superset, 슈퍼셋, dashboard, 대시보드, bi, chart, 차트, dataset, 데이터셋, sql-lab, apache-superset]
+description: Apache Superset via MCP — dashboards, charts, datasets, metrics, calculated columns, filters, SQL Lab. Use when working in Superset. 슈퍼셋, 대시보드 생성, 차트 수정, 데이터셋 메트릭, BI 분석.
 ---
 
 # Apache Superset via MCP
