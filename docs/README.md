@@ -14,7 +14,6 @@ hibi_ai/
 ├── src/                 # 소스 디렉토리 (Git 관리)
 │   ├── agents/          # AI 에이전트 정의 (architect, tdd-guide 등)
 │   ├── commands/        # 슬래시 커맨드 (/code-review, /e2e 등)
-│   ├── contexts/        # 컨텍스트 프리셋 (개발/리서치/리뷰)
 │   ├── hooks/           # 라이프사이클 훅 (전부 deprecated — 인스톨러가 기존 설치본에서 자동 제거)
 │   ├── mcps/            # MCP 서버 설정
 │   ├── output-styles/   # 출력 스타일 정의
@@ -26,12 +25,11 @@ hibi_ai/
 │   │   ├── ratatui_rs/              # Ratatui TUI 개발
 │   │   ├── react-native-skills/     # React Native 모바일 개발
 │   │   ├── rust-best-practices/     # Rust 베스트 프랙티스
-│   │   ├── vercel-react-best-practices/ # Vercel React 성능 최적화
+│   │   ├── react-best-practices/     # React 성능 최적화
 │   │   └── web-design-guidelines/   # 웹 디자인 가이드라인
 │   ├── statusline/      # 상태 표시줄 바이너리
 │   ├── AGENTS.md        # 에이전트 가이드
 │   ├── CLAUDE.md        # Claude 설정
-│   ├── mcp.md           # MCP 문서
 │   └── settings.json    # 전역 설정
 ├── dist/                # 빌드 산출물 (gitignore)
 │   ├── hibi             # macOS Universal Binary
@@ -98,7 +96,7 @@ hibi_ai/
 - **ratatui_rs**: Rust 터미널 UI 개발
 - **react-native-skills**: React Native 모바일 앱 개발
 - **rust-best-practices**: Rust 소유권, 에러 처리, 비동기 패턴
-- **vercel-react-best-practices**: Vercel 엔지니어링 성능 가이드
+- **react-best-practices**: Vercel 엔지니어링 성능 가이드
 - **web-design-guidelines**: 웹 인터페이스 가이드라인
 
 ### 규칙 (Rules)

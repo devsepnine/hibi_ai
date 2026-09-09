@@ -62,7 +62,7 @@
 - `ratatui_rs/SKILL.md` - Ratatui TUI 개발
 - `react-native-skills/SKILL.md` - React Native 개발
 - `rust-best-practices/SKILL.md` - Rust 베스트 프랙티스
-- `vercel-react-best-practices/SKILL.md` - Vercel React 최적화
+- `react-best-practices/SKILL.md` - Vercel React 최적화
 - `web-design-guidelines/SKILL.md` - 웹 디자인 가이드
 
 ### Rules / 정책
