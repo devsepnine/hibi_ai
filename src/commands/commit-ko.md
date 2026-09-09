@@ -1,6 +1,5 @@
 ---
 description: Create a commit following project conventions and security rules
-keywords: [커밋, commit, コミット]
 allowed-tools: Bash, Read, Grep
 model: haiku
 effort: low

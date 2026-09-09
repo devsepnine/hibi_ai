@@ -1,7 +1,7 @@
 ---
 description: Sequential multi-agent workflow for complex tasks. Coordinates the built-in Plan agent, tdd-guide, and code-reviewer in handoff chain.
 argument-hint: "[workflow-type] [task-description]"
-allowed-tools: Task, Read, Bash, Grep
+allowed-tools: Agent, Read, Bash, Grep
 model: opus
 effort: xhigh
 ---

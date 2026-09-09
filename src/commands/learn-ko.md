@@ -44,16 +44,32 @@ effort: low
 평평한 파일은 로드되지 않으므로, 그렇게 저장한 패턴은 그대로 버려진다 — 디렉터리와
 frontmatter가 있어야 발견된다.
 
-`description` 이 트리거 여부를 결정한다. 한두 문장으로 쓰고 마지막에 사용자가 실제로
-입력할 표현을 한국어까지 넣는다 — 짧은 명령형 description은 한국어 질의에서 트리거
-성능이 떨어진다. 아래의 `<...>` 는 모두 실제 내용으로 바꾼다. placeholder가 남은
-파일은 로드는 되면서 아무 질의에도 걸리지 않는다.
+트리거 여부를 결정하는 필드는 `description` 하나뿐이고, 이 필드는 고정된 예산을 두고
+경쟁한다. 설치된 모든 스킬의 `name` + `description` 합계가 약 8,000자(컨텍스트 윈도우의
+1%) 안에 들어가야 한다. 예산을 넘기면 들어가지 못한 스킬은 description이 **통째로**
+사라지고 이름만 남는다 — 자동 트리거가 아예 불가능해진다. 따라서:
+
+- **200자 이하를 목표로, 상한 220자.** 여기서 쓰지 않은 산문이 다른 모든 스킬의 트리거
+  신뢰도가 된다.
+- **`when_to_use:` 로 옮겨도 절약되지 않는다** — 같은 예산 안에서 `description` 뒤에
+  이어붙여진다. `keywords:` 는 스키마가 받아주지만 무시되며, 아무 역할도 하지 않는다.
+- **한국어를 유지한다.** 한글은 음절 하나가 1자이고(`코드리뷰` 4 vs `code review` 11)
+  사용자가 실제로 입력하는 표현이다. 짧은 영문 명령형 description은 한국어 질의에서
+  측정 가능하게 실패한다.
+
+네 부분을 이 순서로 — 네 번째는 혼동될 만한 형제 스킬이 실제로 있을 때만:
+
+```
+<what it does: compressed noun phrase> Use when <trigger condition>. <한국어 트리거 어휘>. NOT for <confusable skill>.
+```
+
+템플릿의 `<...>` 는 모두 실제 내용으로 바꾼다. placeholder가 남은 파일은 로드는 되면서
+아무 질의에도 걸리지 않는다.
 
 ```markdown
 ---
 name: <kebab-case-name>
-description: <무엇을 하고 언제 쓰는지, 마지막에 실제 트리거 표현>
-keywords: [<english-terms>, <한국어용어>]
+description: <what it does> Use when <trigger condition>. <한국어 트리거 어휘>.
 ---
 
 # <패턴 이름>

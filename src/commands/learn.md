@@ -44,17 +44,33 @@ Write a real skill: `~/.claude/skills/<kebab-case-name>/SKILL.md`. A flat file
 without frontmatter never loads, so a pattern saved that way is lost work — the
 directory plus frontmatter is what makes it discoverable.
 
-`description` is what decides whether the skill ever triggers, so write it as one
-or two sentences and end with the phrases a user would actually type, Korean
-included; a short imperative description underperforms on Korean queries. Replace
-every `<...>` below — a placeholder left in the file loads fine and silently
-never matches.
+`description` is the only field that decides whether the skill ever triggers, and it
+competes for a fixed budget: every installed skill's `name` + `description` has to fit in
+about 8,000 characters combined (1% of the context window). Over budget, the skills that
+do not fit lose their description **entirely** and collapse to a bare name — they stop
+auto-triggering at all. So:
+
+- **Target under 200 characters**, hard ceiling 220. Prose you don't write here is trigger
+  reliability for every other skill.
+- **`when_to_use:` saves nothing** — it is concatenated onto `description` inside the same
+  budget. `keywords:` is accepted by the schema but ignored; it does nothing.
+- **Keep the Korean.** A Hangul syllable costs one character (`코드리뷰` 4 vs `code review`
+  11) and it is what the user actually types; a terse English-imperative description
+  measurably fails Korean queries.
+
+Four parts, in this order — the fourth only when a sibling skill is genuinely confusable:
+
+```
+<what it does: compressed noun phrase> Use when <trigger condition>. <한국어 트리거 어휘>. NOT for <confusable skill>.
+```
+
+Replace every `<...>` in the template — a placeholder left in the file loads fine and
+silently never matches.
 
 ```markdown
 ---
 name: <kebab-case-name>
-description: <what it does and when to use it, ending with real trigger phrases>
-keywords: [<english-terms>, <한국어용어>]
+description: <what it does> Use when <trigger condition>. <한국어 트리거 어휘>.
 ---
 
 # <Descriptive Pattern Name>
