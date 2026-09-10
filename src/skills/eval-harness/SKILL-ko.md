@@ -41,15 +41,27 @@ frontmatter 의 `name:` 이 아니라 디렉터리명이다.
   않음을 먼저 증명한다. 둘 중 하나라도 실패하면 exit 2 로 끝나고 점수를 아예
   보고하지 않는다. "dirty" 를 보고할 수 없는 검출기의 "clean" 은 아무것도
   증명하지 않는다.
-- **완료 추적.** 타임아웃으로 죽은 실행은 `result` 이벤트를 내보내지 않으므로
-  "Skill 호출 없음" 과 "실행 자체가 없음" 을 구별할 수 없다. 해당 행은
-  INCONCLUSIVE 이며 PASS 도 FAIL 도 아니다. 이것이 없으면 모든 should-NOT 질의가
-  공허하게 통과하고, 느린 양성은 실패로 읽힌다.
+- **완료 추적.** 스킬이 선택되지 **않았다**고 증언할 수 있는 것은 자기 답변까지
+  도달한 실행 — subtype 이 `success` 인 `result` 이벤트 — 뿐이다. 타임아웃은
+  `result` 를 아예 내보내지 않고, `error_max_turns` 는 턴 예산이 먼저 소진된
+  것이다. **발동하지 않은** 행이 이렇게 끝나면 INCONCLUSIVE 이며 PASS 도 FAIL 도
+  아니다. 반면 **발동한** 행은 이후 실행이 죽었어도 기대값대로 채점된다 — 발동은
+  뒤이은 실패가 취소하지 못하는 증거이므로, 느린 양성은 재실행 대상이 아니라
+  PASS 다. 이것이 없으면 모든 should-NOT 질의가 공허하게 통과한다.
+
+거짓 실패를 만들어내는 가장 흔한 설정은 `--max-turns`(기본 6)다. nested 세션은
+당신의 `CLAUDE.md` 를 그대로 상속하므로, 스킬을 저울질하기 전에 그 파일이
+지시하는 사전 점검(`git status` 류)에 앞선 턴을 쓴다. subtype 규칙이 없던 때는
+`--max-turns 2` 로 돌리면 eval set 전체가 `tools=["Bash","Bash"], skills=[]` 인
+FAIL 로 돌아왔다. 현재 규칙에서는 그런 행이 INCONCLUSIVE(exit 3)이고, 게이트
+탐침이 같은 식으로 죽으면 exit 2 다. 어느 쪽이든 설명에 대한 판정이 아니라 턴
+예산이 만든 인공물이다 — `error_max_turns` 행은 일어나지 않은 측정으로 취급하고
+예산을 늘려 재실행한다.
 
 Exit status: 0 정상, 1 FAIL 존재, 2 자기검증 게이트 실패, 3 INCONCLUSIVE 존재,
 4 하네스 자체가 실행되지 못함(PATH 에 `claude` 없음, eval set 사용 불가).
-INCONCLUSIVE 행은 `--timeout` 을 늘려 순차 재실행한 뒤에 숫자를 인용한다 —
-부분 배치는 점수가 아니다.
+INCONCLUSIVE 행은 `--timeout` 을, subtype 이 그렇게 말하면 `--max-turns` 를
+늘려 순차 재실행한 뒤에 숫자를 인용한다 — 부분 배치는 점수가 아니다.
 
 측정 대상은 작업 사본이 아니라 **설치된** 설명이다: nested 세션은
 `~/.claude/skills/` 를 읽고, `src/skills/` 같은 저장소 경로는 Claude Code 가

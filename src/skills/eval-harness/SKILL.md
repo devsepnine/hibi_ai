@@ -41,15 +41,30 @@ look like measurements but are not:
   positive fires and a known negative does not. Either failing exits 2 and
   reports no score at all. A detector that cannot report "dirty" proves
   nothing by reporting "clean".
-- **Completion tracking.** A run killed by timeout emits no `result` event, so
-  "no Skill call" is indistinguishable from "no run". Those rows are
-  INCONCLUSIVE, never PASS and never FAIL. Without this, every should-NOT
-  query passes vacuously and slow positives read as failures.
+- **Completion tracking.** Only a run that reached its own answer — a `result`
+  event with subtype `success` — can testify that the skill was *not* chosen. A
+  timeout emits no `result` at all, and `error_max_turns` means the turn budget
+  ran out first. An **unfired** row that ended either way is INCONCLUSIVE, never
+  PASS and never FAIL. A row that **fired** still scores by expectation even if
+  the run died afterwards — firing is evidence no later failure retracts, so a
+  slow positive is a PASS, not a re-run. Without this, every should-NOT query
+  passes vacuously.
+
+`--max-turns` (default 6) is the setting most likely to fabricate failures.
+The nested session inherits your `CLAUDE.md`, so it spends early turns on the
+pre-work checks that file mandates — `git status` and the like — before it ever
+weighs a skill. Before the subtype rule existed, `--max-turns 2` made whole
+eval sets read as FAIL with `tools=["Bash","Bash"], skills=[]`; under the
+current rule those rows return INCONCLUSIVE (exit 3), or exit 2 if the gate
+probe dies the same way. Either code is a turn-budget artifact, not a verdict on
+the description — treat any `error_max_turns` row as a measurement that did not
+happen and re-run it with a larger budget.
 
 Exit status: 0 clear, 1 some FAIL, 2 self-test gate failed, 3 some
 INCONCLUSIVE, 4 the harness could not run (no `claude` on PATH, unusable eval
-set). Re-run INCONCLUSIVE rows serially with a longer `--timeout` before quoting
-a figure — a partial batch is not a score.
+set). Re-run INCONCLUSIVE rows serially with a longer `--timeout`, or a larger
+`--max-turns` when the subtype says so, before quoting a figure — a partial
+batch is not a score.
 
 It measures the *installed* description, never the working copy: the nested
 session reads `~/.claude/skills/`, and a repo path like `src/skills/` is not a

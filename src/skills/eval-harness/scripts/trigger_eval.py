@@ -11,10 +11,16 @@ Two properties every number here depends on:
 - Bidirectional self-test. A known positive must fire and a known negative must
   not, in the same batch, or the run is void. A detector that cannot report
   "dirty" proves nothing when it reports "clean".
-- Completion tracking. A run killed by timeout emits no `result` event, so the
-  absence of a Skill call is indistinguishable from the absence of a run. That
-  is INCONCLUSIVE -- never PASS, never FAIL. Without this, every should-NOT
-  query passes vacuously and slow positives read as failures.
+- Completion tracking. Only a run that reached its own answer -- a `result`
+  event with subtype `success` -- can testify that the skill was *not* chosen. A
+  timeout emits no `result` at all, and `error_max_turns` means the turn budget
+  ran out first: the nested session spends early turns on the pre-work checks
+  its CLAUDE.md mandates, so a skill it would have picked at turn 3 never gets
+  the chance. An unfired row that ended either way is INCONCLUSIVE -- never
+  PASS, never FAIL. A row that fired still scores by expectation even if the run
+  died afterwards, because firing is evidence no later failure retracts. Without
+  this, every should-NOT query passes vacuously and the harness scores its own
+  `--max-turns` instead of the description.
 
 Exit status: 0 all clear, 1 at least one FAIL, 2 self-test gate failed (no
 scores produced), 3 no FAIL but at least one INCONCLUSIVE, 4 the harness could
@@ -30,6 +36,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import traceback
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -51,9 +58,11 @@ class Outcome:
 
     @property
     def verdict(self) -> str:
+        # Firing is positive evidence however the run ended; not firing only
+        # counts against the description if the run got far enough to answer.
         if self.fired:
             return "PASS" if self.expect else "FAIL"
-        if not self.completed:
+        if self.subtype != "success":
             return "INCONCLUSIVE"
         return "FAIL" if self.expect else "PASS"
 
@@ -65,12 +74,12 @@ def cannot_run(reason: str) -> SystemExit:
 
 
 def as_text(buf: bytes | str | None) -> str:
-    """Decode leniently: a killed run can be cut mid-codepoint.
+    """Decode leniently: a nested run's bytes are not guaranteed to be UTF-8.
 
-    `subprocess.run` raises TimeoutExpired carrying the raw byte buffers even
-    under `text=True`, and the kill lands wherever it lands. Strict decoding
-    would turn a truncated Korean stream into a crash instead of the
-    INCONCLUSIVE row it actually is, losing the complete events before the cut.
+    Both paths need this. A timeout kill lands mid-codepoint wherever it lands,
+    and even a clean run can emit an invalid byte. Strict decoding would turn a
+    truncated or malformed Korean stream into a crash instead of the row it
+    actually is, losing every complete event before the bad byte.
     """
     if isinstance(buf, bytes):
         return buf.decode(errors="replace")
@@ -92,24 +101,33 @@ def parse_stream(raw: str, target: str) -> tuple[bool, bool, str, list[str], lis
         if event.get("type") == "result":
             completed = True
             subtype = event.get("subtype", "")
-        for block in (event.get("message") or {}).get("content") or []:
+        # `message` is a plain string on some system events, and `content` is a
+        # string on text-only assistant turns. Assuming either is structured
+        # crashes the whole batch on one unexpected event.
+        message = event.get("message")
+        content = message.get("content") if isinstance(message, dict) else None
+        if not isinstance(content, list):
+            continue
+        for block in content:
             if not isinstance(block, dict) or block.get("type") != "tool_use":
                 continue
             tools.append(block.get("name", ""))
             if block.get("name") == "Skill":
-                name = (block.get("input") or {}).get("skill", "")
+                tool_input = block.get("input")
+                name = tool_input.get("skill", "") if isinstance(tool_input, dict) else ""
                 skills.append(name)
                 if name == target:
                     fired = True
     return fired, completed, subtype, tools, skills
 
 
-def run_query(query: str, expect: bool, target: str, cwd: Path, timeout: int) -> Outcome:
+def run_query(query: str, expect: bool, target: str, cwd: Path, timeout: int,
+              max_turns: int) -> Outcome:
     cmd = [
         "claude", "-p", query,
         "--output-format", "stream-json",
         "--verbose",
-        "--max-turns", "2",
+        "--max-turns", str(max_turns),
     ]
     # The prompt travels in argv, so an inherited stdin only makes the nested CLI
     # stall 3s waiting for input it will never get and emit a warning on every
@@ -117,23 +135,27 @@ def run_query(query: str, expect: bool, target: str, cwd: Path, timeout: int) ->
     try:
         proc = subprocess.run(
             cmd, cwd=cwd, stdin=subprocess.DEVNULL,
-            capture_output=True, text=True, timeout=timeout,
+            capture_output=True, timeout=timeout,
         )
-        raw, err = proc.stdout, proc.stderr
+        raw, err = as_text(proc.stdout), as_text(proc.stderr)
     except subprocess.TimeoutExpired as exc:
         raw = as_text(exc.stdout)
         err = f"{as_text(exc.stderr)}\ntimeout after {timeout}s".strip()
     except FileNotFoundError:
-        raise cannot_run("`claude` not found on PATH -- the harness needs the CLI")
+        # Also raised when `cwd` has been deleted under us, so name both causes
+        # rather than sending the operator after a PATH problem they don't have.
+        raise cannot_run(f"could not spawn `claude` in {cwd} -- missing CLI, or the "
+                         "scratch cwd no longer exists")
 
     fired, completed, subtype, tools, skills = parse_stream(raw, target)
     return Outcome(query, expect, fired, completed, subtype, tools, skills, err.strip())
 
 
-def run_batch(rows, target, cwd, timeout, jobs) -> list[Outcome]:
+def run_batch(rows, target, cwd, timeout, jobs, max_turns) -> list[Outcome]:
     with ThreadPoolExecutor(max_workers=jobs) as pool:
         futures = [
-            pool.submit(run_query, q, e, target, cwd, timeout) for q, e in rows
+            pool.submit(run_query, q, e, target, cwd, timeout, max_turns)
+            for q, e in rows
         ]
         return [f.result() for f in futures]
 
@@ -167,11 +189,14 @@ def render(outcomes: list[Outcome], label: str) -> None:
     print("-" * len(label))
     for out in outcomes:
         want = "should-trigger" if out.expect else "should-NOT"
+        # Keyed off the same condition the verdict uses, so an INCONCLUSIVE row
+        # never prints without the reason it is one.
         note = ""
-        if not out.completed:
-            note = "  [no result event]"
-        elif out.subtype and out.subtype != "success":
-            note = f"  [{out.subtype}]"
+        if out.subtype != "success":
+            if not out.completed:
+                note = "  [no result event]"
+            else:
+                note = f"  [{out.subtype or 'result without subtype'}]"
         query = out.query if len(out.query) <= 58 else out.query[:57] + "…"
         print(f"  {out.verdict:<13} {want:<15} {query}{note}")
         if out.stderr:
@@ -189,6 +214,9 @@ def main() -> int:
     ap.add_argument("--skill", required=True, help="skill directory name, as emitted in Skill{skill:...}")
     ap.add_argument("--eval-set", required=True, type=Path, help='JSON list of {"query","should_trigger"}')
     ap.add_argument("--timeout", type=int, default=300, help="per-query seconds (default 300)")
+    ap.add_argument("--max-turns", type=int, default=6,
+                    help="nested turn budget (default 6; below ~4 the pre-work "
+                         "checks in CLAUDE.md consume the budget first)")
     ap.add_argument("--jobs", type=int, default=4, help="parallel queries (default 4)")
     ap.add_argument("--cwd", type=Path, help="scratch working directory (default: a temp dir)")
     ap.add_argument("--negative-probe", default=SELFTEST_NEGATIVE, help="self-test query that must NOT fire")
@@ -197,27 +225,34 @@ def main() -> int:
 
     if not shutil.which("claude"):
         raise cannot_run("`claude` not found on PATH -- the harness needs the CLI")
+    if args.jobs < 1:
+        raise cannot_run(f"--jobs must be at least 1, got {args.jobs}")
 
     rows = load_eval_set(args.eval_set)
 
     scratch = args.cwd or Path(tempfile.mkdtemp(prefix="trigger-eval-"))
     scratch.mkdir(parents=True, exist_ok=True)
 
-    print(f"skill={args.skill}  queries={len(rows)}  jobs={args.jobs}  timeout={args.timeout}s")
+    print(f"skill={args.skill}  queries={len(rows)}  jobs={args.jobs}  "
+          f"timeout={args.timeout}s  max-turns={args.max_turns}")
     print(f"scratch cwd: {scratch}")
 
     gate_rows = [
         (SELFTEST_POSITIVE.format(skill=args.skill), True),
         (args.negative_probe, False),
     ]
-    gate = run_batch(gate_rows, args.skill, scratch, args.timeout, min(2, args.jobs))
+    gate = run_batch(gate_rows, args.skill, scratch, args.timeout,
+                     min(2, args.jobs), args.max_turns)
     render(gate, "Self-test gate")
     if any(g.verdict != "PASS" for g in gate):
         print("\nGATE FAILED -- the detector is not known-good, so no score is reported.")
         print("A positive that will not fire, or a negative that does, invalidates every row.")
+        print("An INCONCLUSIVE probe means it never got far enough to answer: raise")
+        print("--max-turns or --timeout, which is the same cure as for an eval row.")
         return 2
 
-    outcomes = run_batch(rows, args.skill, scratch, args.timeout, args.jobs)
+    outcomes = run_batch(rows, args.skill, scratch, args.timeout, args.jobs,
+                         args.max_turns)
     render(outcomes, f"Eval set ({args.eval_set})")
 
     passed = sum(1 for o in outcomes if o.verdict == "PASS")
@@ -225,17 +260,24 @@ def main() -> int:
     unknown = [o for o in outcomes if o.verdict == "INCONCLUSIVE"]
     print(f"\n{passed}/{len(outcomes)} PASS   {len(failed)} FAIL   {len(unknown)} INCONCLUSIVE")
     if unknown:
-        print("INCONCLUSIVE rows did not complete -- re-run them serially with a longer")
-        print("--timeout before quoting any figure. They are not passes and not failures.")
+        print("INCONCLUSIVE rows never reached an answer -- re-run them serially with a")
+        print("longer --timeout, or a larger --max-turns if the subtype is error_max_turns,")
+        print("before quoting any figure. They are not passes and not failures.")
 
     if args.json:
-        args.json.write_text(json.dumps({
-            "skill": args.skill,
-            "eval_set": str(args.eval_set),
-            "self_test": [vars(g) | {"verdict": g.verdict} for g in gate],
-            "results": [vars(o) | {"verdict": o.verdict} for o in outcomes],
-            "summary": {"pass": passed, "fail": len(failed), "inconclusive": len(unknown)},
-        }, ensure_ascii=False, indent=2), encoding="utf-8")
+        # A clean run that dies here would exit 1 and read as "some FAIL". The
+        # scores above are already valid, but a consumer expecting the file got
+        # nothing, which is closer to "did not run" than to a verdict.
+        try:
+            args.json.write_text(json.dumps({
+                "skill": args.skill,
+                "eval_set": str(args.eval_set),
+                "self_test": [vars(g) | {"verdict": g.verdict} for g in gate],
+                "results": [vars(o) | {"verdict": o.verdict} for o in outcomes],
+                "summary": {"pass": passed, "fail": len(failed), "inconclusive": len(unknown)},
+            }, ensure_ascii=False, indent=2), encoding="utf-8")
+        except OSError as exc:
+            raise cannot_run(f"results computed but --json could not be written: {exc}")
         print(f"wrote {args.json}")
 
     if failed:
@@ -244,4 +286,12 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # Any uncaught exception would exit 1, which is the documented code for "at
+    # least one FAIL" -- a crash would be read as a measurement. `Exception`
+    # spares SystemExit and KeyboardInterrupt, so 0-4 and 130 keep their meaning.
+    try:
+        sys.exit(main())
+    except Exception:
+        traceback.print_exc()
+        print("harness error -- not a measurement", file=sys.stderr)
+        sys.exit(4)
