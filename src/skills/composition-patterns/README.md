@@ -13,7 +13,6 @@ vendored — `rules/` is the source and `SKILL.md` the index.
   - `_sections.md` — section order, filename prefix, impact level, description
   - `_template.md` — rule file template (frontmatter shape, Incorrect/Correct format)
   - `<prefix>-<topic>.md` — the rules
-- `metadata.json` — upstream document metadata (version, abstract, references)
 
 ## Impact levels
 

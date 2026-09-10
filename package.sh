@@ -34,7 +34,7 @@ cp -r src/hooks "$DIST_DIR/"
 
 # Copy config directories from src
 echo "  - Copying configuration directories..."
-for dir in agents commands skills rules contexts mcps plugins output-styles; do
+for dir in agents commands skills mcps plugins output-styles; do
     if [ -d "src/$dir" ]; then
         cp -r "src/$dir" "$DIST_DIR/"
     fi
@@ -45,7 +45,6 @@ echo "  - Copying configuration files..."
 cp src/settings.json "$DIST_DIR/" 2>/dev/null || true
 cp src/CLAUDE.md "$DIST_DIR/" 2>/dev/null || true
 cp src/AGENTS.md "$DIST_DIR/" 2>/dev/null || true
-cp src/mcp.md "$DIST_DIR/" 2>/dev/null || true
 
 # Strip Korean reference files (-ko) from the bundle. The installer scanner
 # skips them at install time (stem ends with "-ko"), so they are never
@@ -82,7 +81,7 @@ for PLATFORM in "macos" "linux" "windows"; do
     fi
 
     # Copy all config directories from dist
-    for dir in agents commands skills hooks mcps plugins rules contexts output-styles statusline; do
+    for dir in agents commands skills hooks mcps plugins output-styles statusline; do
         if [ -d "$DIST_DIR/$dir" ]; then
             cp -r "$DIST_DIR/$dir" "$PKG_DIR/"
         fi
@@ -92,7 +91,6 @@ for PLATFORM in "macos" "linux" "windows"; do
     cp "$DIST_DIR/settings.json" "$PKG_DIR/" 2>/dev/null || true
     cp "$DIST_DIR/CLAUDE.md" "$PKG_DIR/" 2>/dev/null || true
     cp "$DIST_DIR/AGENTS.md" "$PKG_DIR/" 2>/dev/null || true
-    cp "$DIST_DIR/mcp.md" "$PKG_DIR/" 2>/dev/null || true
 
     # Create archive
     cd "$PROJECT_ROOT/$RELEASE_DIR"

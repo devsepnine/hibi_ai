@@ -13,7 +13,6 @@ rule 당 파일 하나로 들어 있다. 상류의 컴파일 산출물 `AGENTS.m
   - `_sections.md` — 섹션 순서, 파일명 prefix, impact 등급, 설명
   - `_template.md` — rule 파일 템플릿 (frontmatter 형태, Incorrect/Correct 형식)
   - `<prefix>-<topic>.md` — 개별 rule
-- `metadata.json` — 상류 문서 메타데이터 (버전, 요약, 참고 링크)
 - `references/` — 필요할 때 읽는 심화 방법론 (복잡성, coupling 모델, 추상화, AI 소유권, monorepo)
 - `evals/` — 스킬이 올바르게 트리거되고 적용되는지 검증하는 eval 케이스
 
