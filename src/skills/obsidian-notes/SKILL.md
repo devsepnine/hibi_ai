@@ -1,6 +1,6 @@
 ---
 name: obsidian-notes
-description: Obsidian vault notes — release notes, ADRs, retrospectives, meeting minutes, MOCs. OFM frontmatter, wikilinks, callouts, dataview. Use when writing vault notes. 옵시디언 노트, 데일리 노트, 릴리즈 노트, 학습 노트, 회의록, 회고, ADR.
+description: Obsidian vault notes — release notes, ADRs, retrospectives, meeting minutes, MOCs. OFM frontmatter, wikilinks, callouts, dataview. Use when writing up a note to keep. 옵시디언 노트, 데일리 노트, 릴리즈 노트, 학습 노트 작성, 회의록, 회고, ADR.
 ---
 
 # Obsidian Notes

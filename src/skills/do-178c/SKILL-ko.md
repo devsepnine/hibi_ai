@@ -1,6 +1,6 @@
 ---
 name: do-178c
-description: DO-178C-derived assurance — risk tiers, bidirectional traceability, independent verification, structural coverage. Use for safety-critical or high-blast-radius changes. 안전필수, 위험도 티어, 보증수준, 양방향 추적성, 독립 검증.
+description: DO-178C assurance — risk tiers, derived requirements, traceability, independent verification, structural coverage. Use to decide a change's required rigor and verifier. 안전필수, 리스크 등급, 파생 요구사항, 독립 검증, safety-critical.
 ---
 
 # DO-178C Assurance Methodology

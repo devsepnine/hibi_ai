@@ -1,6 +1,6 @@
 ---
 name: qa-handoff
-description: Turn git history into a non-developer handoff — change summary, runnable QA checklist, regression risks, commit references. Use before a release or a QA request. QA 인수인계, 비개발자 공유, 개발 내역 정리, 테스트 범위, 변경사항 요약.
+description: Turn git history into a non-developer handoff — change summary, QA checklist, regression risks, commit references. Use when summarizing merged work for non-developers. QA 인수인계, 비개발자 공유, 변경사항 요약, 확인 체크리스트, 개발 내역 정리.
 ---
 
 # QA 인수인계 문서

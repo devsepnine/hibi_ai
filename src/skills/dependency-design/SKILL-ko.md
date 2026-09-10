@@ -1,6 +1,6 @@
 ---
 name: dependency-design
-description: Dependency and coupling design that keeps code modifiable — one-directional deps, responsibility isolation, monorepo structure. Use when designing modules or judging coupling. 의존성 설계, 결합도, 모듈 설계, 추상화 경계, 모노레포 구조.
+description: Dependency design — one-directional deps, circular imports, change ripple, responsibility isolation, abstraction boundaries. Use when designing modules or judging coupling. 의존성 설계, 결합도, 순환 참조, 책임 분리, 영향 범위, 모노레포 구조.
 ---
 
 # Dependency Design
