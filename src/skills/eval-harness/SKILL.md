@@ -15,6 +15,74 @@ Eval-Driven Development treats evals as the "unit tests of AI development":
 - Track regressions with each change
 - Use pass@k metrics for reliability measurement
 
+## Runnable scripts
+
+Two measurements here are executable rather than templates. Both need only
+Python 3.9+ and the `claude` CLI. Paths below are relative to this skill's own
+directory — prefix them with wherever it lives (`~/.claude/skills/eval-harness/`
+when installed, `src/skills/eval-harness/` in the hibi-ai repo).
+
+### Does a skill's description actually trigger?
+
+```bash
+python3 scripts/trigger_eval.py --skill iced_rs \
+  --eval-set path/to/eval_set.json --timeout 300 --jobs 4
+```
+
+The eval set is a JSON list of `{"query": ..., "should_trigger": true|false}`.
+Each query runs in a nested `claude -p` and the stream is searched for a
+`Skill` tool_use whose `input.skill` equals the skill's **directory** name —
+that is what the runtime emits, not the frontmatter `name:`.
+
+Two gates it gives you, and why a harness without them yields numbers that
+look like measurements but are not:
+
+- **Bidirectional self-test.** Before scoring anything it proves a known
+  positive fires and a known negative does not. Either failing exits 2 and
+  reports no score at all. A detector that cannot report "dirty" proves
+  nothing by reporting "clean".
+- **Completion tracking.** A run killed by timeout emits no `result` event, so
+  "no Skill call" is indistinguishable from "no run". Those rows are
+  INCONCLUSIVE, never PASS and never FAIL. Without this, every should-NOT
+  query passes vacuously and slow positives read as failures.
+
+Exit status: 0 clear, 1 some FAIL, 2 self-test gate failed, 3 some
+INCONCLUSIVE, 4 the harness could not run (no `claude` on PATH, unusable eval
+set). Re-run INCONCLUSIVE rows serially with a longer `--timeout` before quoting
+a figure — a partial batch is not a score.
+
+It measures the *installed* description, never the working copy: the nested
+session reads `~/.claude/skills/`, and a repo path like `src/skills/` is not a
+location Claude Code loads from. Install or sync the edited skill first, or the
+run scores the previous description.
+
+Do not substitute the `skill-creator` plugin's `run_eval` for this: it matches
+a `<name>-skill-<uuid>` string the runtime never emits, gives up when the
+first tool call is not Skill/Read, and discards nested stderr — so it returns
+a stable, plausible, meaningless number.
+
+### Skill-listing budget
+
+```bash
+python3 scripts/skill_budget.py ~/.claude/skills   # what the model actually sees
+python3 scripts/skill_budget.py src/skills         # a repo tree before installing
+```
+
+The model-facing skill listing has a hard character budget,
+`floor(context_window * 4 * 0.01)` = 8,000 at a 200K window. Over budget the
+truncation is **all-or-nothing per skill**: whichever skills do not fit keep
+only `- name` and lose their description, so they stop auto-triggering
+entirely. Exits 1 when over (2 on a usage error, so a bad path never reads as
+over budget), and flags descriptions past the 200-char authoring target plus any
+`name:` that disagrees with its directory.
+
+Two facts it encodes, both of which change how descriptions get written:
+
+- `when_to_use` is concatenated onto `description` and measured as one string,
+  so moving trigger vocabulary there saves nothing.
+- Lengths count UTF-16 units, so a Hangul syllable costs the same as an ASCII
+  letter — Korean trigger vocabulary is budget-efficient.
+
 ## Eval Types
 
 ### Capability Evals

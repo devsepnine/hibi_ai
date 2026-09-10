@@ -405,7 +405,9 @@ git push origin main
 - [ ] 로드맵 검토
 - [ ] 사용자 피드백 분석
 - [ ] 아키텍처 리뷰 (`/deps`로 결합도 감사)
-- [ ] 스킬 목록 예산 재측정 — 스킬이 늘면 8,000자를 넘겨 설명이 절삭될 수 있다
+- [ ] 스킬 목록 예산 재측정 — `python3 src/skills/eval-harness/scripts/skill_budget.py src/skills`
+  (초과면 exit 1. 스킬이 늘면 8,000자를 넘겨 설명이 절삭되고, 절삭된 스킬은
+  자동 트리거를 잃는다)
 
 ## 연락처 및 리소스
 
