@@ -4,12 +4,12 @@ TUI installer for Claude Code and Codex CLI configurations.
 
 ## Features
 
-- 🎨 Interactive TUI for easy configuration management
-- 🔧 Support for both Claude Code and Codex CLI
-- 📦 Component-based installation (agents, commands, skills, hooks, MCPs, plugins)
-- 🌍 Cross-platform support (macOS Universal Binary [Intel + Apple Silicon], Linux, Windows)
-- 🔍 Automatic MCP server detection
-- ⚡ Fast and lightweight
+- Interactive TUI for easy configuration management
+- Support for both Claude Code and Codex CLI
+- Component-based installation (agents, commands, skills, hooks, MCPs, plugins)
+- Cross-platform support (macOS Universal Binary [Intel + Apple Silicon], Linux, Windows)
+- Automatic MCP server detection
+- Fast and lightweight
 
 ## Installation
 
