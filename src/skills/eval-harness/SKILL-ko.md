@@ -25,11 +25,14 @@ Eval-Driven Development는 eval을 "AI 개발의 단위 테스트"로 다룬다:
 ### 스킬 설명이 실제로 트리거되는가
 
 ```bash
-python3 scripts/trigger_eval.py --skill iced_rs \
-  --eval-set path/to/eval_set.json --timeout 300 --jobs 4
+python3 scripts/trigger_eval.py --skill do-178c \
+  --eval-set ../do-178c/evals/trigger-eval.json --timeout 300 --jobs 4
 ```
 
-eval set 은 `{"query": ..., "should_trigger": true|false}` 의 JSON 리스트다.
+eval set 은 `{"query": ..., "should_trigger": true|false}` 의 JSON 리스트이고,
+측정 대상 스킬 옆 `<skill>/evals/trigger-eval.json` 에 둔다. 실행 산출물이 아니라
+추적되는 입력이므로 gitignore 대상인 `workspace/` 에는 둘 수 없다 — 남이 clone
+할 수 없는 세트는 회귀 게이트를 재실행 불가능하게 만든다.
 각 질의를 nested `claude -p` 로 실행하고, 스트림에서 `input.skill` 이 스킬
 **디렉터리명**과 일치하는 `Skill` tool_use 를 찾는다 — 런타임이 내보내는 값은
 frontmatter 의 `name:` 이 아니라 디렉터리명이다.
@@ -71,7 +74,10 @@ INCONCLUSIVE 행은 `--timeout` 을, subtype 이 그렇게 말하면 `--max-turn
 `skill-creator` 플러그인의 `run_eval` 로 대체하지 말 것: 런타임이 절대 내보내지
 않는 `<name>-skill-<uuid>` 문자열을 매칭하고, 첫 tool call 이 Skill/Read 가
 아니면 즉시 포기하며, nested stderr 를 버린다 — 그래서 안정적이고 그럴듯하며
-무의미한 숫자를 돌려준다.
+무의미한 숫자를 돌려준다. 세 결함 모두 이미 upstream 에 패치까지 붙어 각각
+독립적으로 올라와 있다: `anthropics/skills` #1419 (uuid 매칭), #1559 (첫 tool
+call, `run_eval.py:137-141`·`150-154` 인용), #1478 (버려진 실패를 판정으로
+기록). 여기서 새로 제출할 것은 없다.
 
 ### 스킬 목록 예산
 

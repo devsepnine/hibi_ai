@@ -14,7 +14,7 @@ rule 당 파일 하나로 들어 있다. 상류의 컴파일 산출물 `AGENTS.m
   - `_template.md` — rule 파일 템플릿 (frontmatter 형태, Incorrect/Correct 형식)
   - `<prefix>-<topic>.md` — 개별 rule
 - `references/` — 필요할 때 읽는 심화 방법론 (복잡성, coupling 모델, 추상화, AI 소유권, monorepo)
-- `evals/` — 스킬이 올바르게 트리거되고 적용되는지 검증하는 eval 케이스
+- `evals/` — `evals.json`은 출력 품질을, `trigger-eval.json`은 설명이 발화하는지를 측정
 
 ## Impact 등급
 

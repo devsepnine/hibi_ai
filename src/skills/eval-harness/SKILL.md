@@ -25,11 +25,14 @@ when installed, `src/skills/eval-harness/` in the hibi-ai repo).
 ### Does a skill's description actually trigger?
 
 ```bash
-python3 scripts/trigger_eval.py --skill iced_rs \
-  --eval-set path/to/eval_set.json --timeout 300 --jobs 4
+python3 scripts/trigger_eval.py --skill do-178c \
+  --eval-set ../do-178c/evals/trigger-eval.json --timeout 300 --jobs 4
 ```
 
-The eval set is a JSON list of `{"query": ..., "should_trigger": true|false}`.
+The eval set is a JSON list of `{"query": ..., "should_trigger": true|false}`,
+kept beside the skill it measures as `<skill>/evals/trigger-eval.json`. It is a
+tracked input, not a run artifact, so `workspace/` — gitignored — cannot hold it:
+a set nobody else can clone makes the regression gate unrepeatable.
 Each query runs in a nested `claude -p` and the stream is searched for a
 `Skill` tool_use whose `input.skill` equals the skill's **directory** name —
 that is what the runtime emits, not the frontmatter `name:`.
@@ -74,7 +77,10 @@ run scores the previous description.
 Do not substitute the `skill-creator` plugin's `run_eval` for this: it matches
 a `<name>-skill-<uuid>` string the runtime never emits, gives up when the
 first tool call is not Skill/Read, and discards nested stderr — so it returns
-a stable, plausible, meaningless number.
+a stable, plausible, meaningless number. All three are already open upstream
+with patches, filed independently: `anthropics/skills` #1419 (uuid match),
+#1559 (first tool call, cites `run_eval.py:137-141` and `150-154`), #1478
+(discarded failure scored as a verdict). Nothing here is worth re-filing.
 
 ### Skill-listing budget
 

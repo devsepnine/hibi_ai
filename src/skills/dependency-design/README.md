@@ -14,7 +14,7 @@ vendored — `rules/` is the source and `SKILL.md` the index.
   - `_template.md` — rule file template (frontmatter shape, Incorrect/Correct format)
   - `<prefix>-<topic>.md` — the rules
 - `references/` — deep-dive methodology, read on demand (complexity, coupling models, abstraction, AI ownership, monorepo)
-- `evals/` — eval cases verifying the skill triggers and applies correctly
+- `evals/` — `evals.json` scores output quality; `trigger-eval.json` scores whether the description fires at all
 
 ## Impact levels
 
