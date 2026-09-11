@@ -63,7 +63,7 @@
 
 ### 인스톨러 소스 (`tools/installer/src/`)
 
-전체 49 파일 / 10,226줄(테스트·공백 포함 raw 라인 수).
+전체 57 파일 / 10,440줄(테스트·공백 포함 raw 라인 수).
 
 | 모듈 | 파일 / LOC | 내용 |
 |---|---|---|
@@ -73,11 +73,13 @@
 | `fs/installer/` | 6 / 1,080 | 설치·제거 — `mod.rs`, `process.rs`(spawn/cancel), `settings.rs`, `merge.rs`, `mcp.rs`, `plugin.rs` |
 | `fs/` (직속) | 3 / 862 | `mod.rs`, `diff.rs`, `manifest.rs`(install.json) |
 | `source/` | 3 / 875 | `mod.rs`(find/sync/resolve), `git.rs`, `config.rs`(sources.yaml) |
-| 루트 직속 | 9 / 2,470 | `main.rs`(114, 터미널 셋업 + 이벤트 루프), `cli.rs`(267, 키 핸들러 + `--sync`), `loading.rs`, `tree.rs`, `component.rs`, `mcp.rs`, `plugin.rs`, `process_exec.rs`, `theme.rs` |
+| `loading/` | 6 / 684 | 배경 스레드를 기다리는 세 화면 — `channels.rs`(채널 소유), `scan.rs`(refresh 페이로드), `initial_load.rs`, `install.rs`, `preflight.rs` |
+| `tree/` | 4 / 586 | 접히는 폴더 트리 — `mod.rs`(`TreeNode`·`TreeView`), `build.rs`(경로→노드), `navigate.rs`(커서·펼침), `selection.rs`(폴더 단위 선택) |
+| 루트 직속 | 7 / 1,414 | `main.rs`(114, 터미널 셋업 + 이벤트 루프), `cli.rs`(267, 키 핸들러 + `--sync`), `component.rs`, `mcp.rs`, `plugin.rs`, `process_exec.rs`, `theme.rs` |
 
-테스트: `cargo test --manifest-path tools/installer/Cargo.toml` — 98 tests.
+테스트: `cargo test --manifest-path tools/installer/Cargo.toml` — 105 tests.
 
-파일 길이 임계값은 `coding-standards` 스킬의 `references/code-thresholds.md`가 SSOT다 — soft 300줄 / hard 500줄, 공백·주석 전용 줄만 제외한다(`#[cfg(test)]` 블록은 제외 대상이 아니다 — 면제는 top-of-file 주석으로 사유를 밝힌 경우만 인정된다). 이 기준으로 soft 초과는 2개(`loading.rs` 456, `tree.rs` 337)이고 hard 초과는 없다. 둘 다 관심사 분리 리팩터 대상이다. 위 표의 LOC은 raw 라인 수이므로 임계값 판정에 그대로 쓰지 않는다.
+파일 길이 임계값은 `coding-standards` 스킬의 `references/code-thresholds.md`가 SSOT다 — soft 300줄 / hard 500줄, 공백·주석 전용 줄만 제외한다(`#[cfg(test)]` 블록은 제외 대상이 아니다 — 면제는 top-of-file 주석으로 사유를 밝힌 경우만 인정된다). 이 기준으로 **soft·hard 초과 모두 0개다.** 직전까지 초과했던 `loading.rs`(456)와 `tree.rs`(337)는 각각 `loading/`·`tree/` 디렉터리 모듈로 분리했다. 위 표의 LOC은 raw 라인 수이므로 임계값 판정에 그대로 쓰지 않는다.
 
 ### 빌드·릴리즈 스크립트
 

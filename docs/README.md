@@ -84,7 +84,7 @@ hibi_ai/
 
 ### 스킬 (25개)
 
-트리거될 때만 로드된다. 설명은 스킬 목록 문자 예산(200K 윈도우 기준 8,000자)을 공유하므로 각 `description`을 220자 이하로 유지한다 — 예산을 넘으면 초과한 스킬의 설명이 **통째로** 사라져 자동 트리거가 불가능해진다. 예산에 계상되는 값은 `description` 합계가 아니라 목록 항목 합계(스킬명 + 4 + `description`, 항목 구분자 포함)다 — 현재 5,091 / 8,000자.
+트리거될 때만 로드된다. 설명은 스킬 목록 문자 예산(200K 윈도우 기준 8,000자)을 공유하므로 각 `description`을 220자 이하로 유지한다 — 예산을 넘으면 초과한 스킬의 설명이 **통째로** 사라져 자동 트리거가 불가능해진다. 예산에 계상되는 값은 `description` 합계가 아니라 목록 항목 합계(스킬명 + 4 + `description`, 항목 구분자 포함)다 — 현재값은 `python3 src/skills/eval-harness/scripts/skill_budget.py src/skills` 로 측정한다.
 
 **정책 (CLAUDE.md 라우팅 표의 SSOT)**
 
@@ -126,7 +126,7 @@ hibi_ai/
 | `superset` | Apache Superset (MCP 경유) |
 | `deploy-to-vercel` | Vercel 배포 |
 
-스킬별 부가 자산: 점진적 공개용 `references/` 10개(`backend-patterns`, `coding-standards`, `dependency-design`, `do-178c`, `iced_rs`, `obsidian-notes`, `ratatui_rs`, `rust-best-practices`, `svelte-5`, `zustand`), 벤더링된 상류 규칙 `rules/` 4개(`composition-patterns`, `dependency-design`, `react-best-practices`, `react-native-skills`), 트리거 회귀 평가 `evals/` 9개(`dependency-design`, `do-178c`, `iced_rs`, `obsidian-notes`, `qa-handoff`, `ratatui_rs`, `svelte-5`, `upstream-pr`, `zustand`).
+스킬별 부가 자산: 점진적 공개용 `references/` 10개(`backend-patterns`, `coding-standards`, `dependency-design`, `do-178c`, `iced_rs`, `obsidian-notes`, `ratatui_rs`, `rust-best-practices`, `svelte-5`, `zustand`), 벤더링된 상류 규칙 `rules/` 4개(`composition-patterns`, `dependency-design`, `react-best-practices`, `react-native-skills`), 평가 세트 `evals/` 9개(`dependency-design`, `do-178c`, `iced_rs`, `obsidian-notes`, `qa-handoff`, `ratatui_rs`, `svelte-5`, `upstream-pr`, `zustand`). `evals/`에는 두 종류가 들어간다 — `evals.json`은 출력 품질 평가(`prompt` + `expected_output`), `trigger-eval.json`은 설명이 실제로 발화하는지 보는 트리거 회귀 세트(`query` + `should_trigger`)로 `trigger_eval.py --eval-set`이 소비한다.
 
 ### 훅 (활성 없음)
 
@@ -176,7 +176,7 @@ cd tools/statusline && ./build.sh
 ### 테스트
 
 ```bash
-cargo test --manifest-path tools/installer/Cargo.toml   # 98 tests
+cargo test --manifest-path tools/installer/Cargo.toml   # 105 tests
 ```
 
 ### 릴리즈 (GitHub Actions 자동화, ~v1.13부터)
