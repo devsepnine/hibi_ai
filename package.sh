@@ -36,6 +36,10 @@ cp -r src/hooks "$DIST_DIR/"
 echo "  - Copying configuration directories..."
 for dir in agents commands skills mcps plugins output-styles; do
     if [ -d "src/$dir" ]; then
+        # cp -r overwrites but never deletes, so a file dropped from src/ would
+        # linger in an existing dist/ and ship in the release. statusline and
+        # hooks above already clear their target for the same reason.
+        rm -rf "$DIST_DIR/$dir"
         cp -r "src/$dir" "$DIST_DIR/"
     fi
 done
