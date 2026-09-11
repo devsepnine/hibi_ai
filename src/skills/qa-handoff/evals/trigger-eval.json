@@ -1,0 +1,26 @@
+[
+  {
+    "query": "이번 주에 머지된 커밋들 정리해서 기획팀이랑 QA가 같이 볼 수 있게 변경사항 요약 + 확인 체크리스트 뽑아줘",
+    "should_trigger": true
+  },
+  {
+    "query": "가장 최근 릴리즈 태그부터 지금까지 개발한 내용을 QA한테 넘길 문서로 정리해줘. QA는 코드 못 읽으니까 뭐가 바뀌었고 뭘 테스트해야 하는지 알 수 있어야 해. docs/handoff/ 아래에 파일로 저장해줘.",
+    "should_trigger": true
+  },
+  {
+    "query": "내일 릴리즈인데 QA가 뭘 봐야 할지 물어봐. 최근 태그 이후 변경점 중에 사용자가 실제로 체감하는 것만 뽑아서 알려줘.",
+    "should_trigger": true
+  },
+  {
+    "query": "이 PR 올리기 전에 리뷰어가 확인할 체크리스트 좀 만들어줘.",
+    "should_trigger": false
+  },
+  {
+    "query": "방금 수정한 내용 변경사항 요약해서 커밋 메시지로 써줘.",
+    "should_trigger": false
+  },
+  {
+    "query": "이 API 응답 스키마를 프론트 개발자한테 공유할 문서로 만들어줘.",
+    "should_trigger": false
+  }
+]

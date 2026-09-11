@@ -1,0 +1,26 @@
+[
+  {
+    "query": "Zustand v5로 올리면서 useShallow를 처음 알게 됐는데 이걸 학습 노트로 정리해둘래. 핵심 포인트: v5는 React의 기본 참조 동등성(Object.is)을 따르기 때문에 selector가 매 렌더마다 새 객체/배열을 리턴하면 무한 루프 발생 → useShallow로 감싸야 해결. 올바른 import 경로는 `zustand/shallow` (구버전의 `zustand/react/shallow` 아님). v4에서 넘어온다면 createWithEqualityFn (from `zustand/traditional`)로 마이그레이션 가능하지만 새 코드는 useShallow 우선. 이 프로젝트에서는 src/skills/zustand/SKILL.md에서 가이드하고 있음. 학습 노트 작성.",
+    "should_trigger": true
+  },
+  {
+    "query": "오늘 스프린트 회고를 볼트에 남길 회고 노트로 정리해줘. 잘된 것, 아쉬운 것, 다음에 시도할 것으로 나눠서.",
+    "should_trigger": true
+  },
+  {
+    "query": "어제 팀 회의 내용 회의록으로 정리해서 옵시디언에 넣어줘. 결정 사항과 액션 아이템 분리해서.",
+    "should_trigger": true
+  },
+  {
+    "query": "이번 세션에서 배운 패턴을 재사용 가능한 스킬로 추출해줘.",
+    "should_trigger": false
+  },
+  {
+    "query": "릴리즈 노트를 GitHub Release 본문에 넣을 마크다운으로 만들어줘.",
+    "should_trigger": false
+  },
+  {
+    "query": "회고 회의를 어떻게 진행하면 좋을지 방법 알려줘.",
+    "should_trigger": false
+  }
+]

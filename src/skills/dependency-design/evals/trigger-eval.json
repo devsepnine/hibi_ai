@@ -1,0 +1,34 @@
+[
+  {
+    "query": "I'm getting a runtime error about an undefined export. order.ts imports `calcShipping` from shipping.ts, and shipping.ts imports `Order` and `getOrderTotal` from order.ts. Both modules import each other. How do I fix this?",
+    "should_trigger": true
+  },
+  {
+    "query": "Can you change the pricing rule in `applyDiscounts()`? It's called from checkout, cart preview, invoice generation, and the nightly billing job, and a few of those read the result and feed it into downstream totals. I just need the rule changed.",
+    "should_trigger": true
+  },
+  {
+    "query": "결제 모듈이랑 정산 모듈이 서로 import 하고 있어서 순환 참조가 났어. 어느 방향으로 끊어야 해?",
+    "should_trigger": true
+  },
+  {
+    "query": "이 while 루프가 순환하다가 무한 루프에 빠지는데 종료 조건이 왜 안 걸리는지 봐줘.",
+    "should_trigger": false
+  },
+  {
+    "query": "이번 배포 영향 범위를 QA팀이 볼 수 있는 체크리스트 문서로 정리해줘.",
+    "should_trigger": false
+  },
+  {
+    "query": "이 변수명이 `d` 인데 더 의도가 드러나는 이름으로 바꿔줘.",
+    "should_trigger": false
+  },
+  {
+    "query": "Where should the abstraction boundary sit between our api layer and the domain modules? I keep leaking internal types through the interface.",
+    "should_trigger": true
+  },
+  {
+    "query": "This module has grown to handle auth, billing, and email templates. How do I isolate the responsibilities so a change to one doesn't touch the others?",
+    "should_trigger": true
+  }
+]

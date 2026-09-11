@@ -1,0 +1,18 @@
+[
+  {
+    "query": "내 ~/.claude 랑 배포 설정 사이에 차이 나는 것들 전부 찾아서 업스트림에 올릴 후보 뽑아줘",
+    "should_trigger": true
+  },
+  {
+    "query": "로컬에서 작업하던 기능 브랜치 GitHub PR 로 올려줘",
+    "should_trigger": false
+  },
+  {
+    "query": "npm 의존성 최신 upstream 버전으로 올려줘",
+    "should_trigger": false
+  },
+  {
+    "query": "이 PR 리뷰 피드백 반영해서 수정해줘",
+    "should_trigger": false
+  }
+]

@@ -1,0 +1,30 @@
+[
+  {
+    "query": "I'm just tweaking the copy on a marketing banner and changing a log message's format string. What's the process I need to follow?",
+    "should_trigger": true
+  },
+  {
+    "query": "Finished the bulk user-import feature. The spec didn't mention it, but the upstream API is flaky so I added a 3x retry with exponential backoff and a 30s timeout. Looks good — can I call it done?",
+    "should_trigger": true
+  },
+  {
+    "query": "I wrote a database schema migration and reviewed it myself; the code-reviewer pass came back clean. That's enough to merge, right?",
+    "should_trigger": true
+  },
+  {
+    "query": "Quick one: what exact code coverage percentage does the DO-178C methodology require for our Tier B service?",
+    "should_trigger": true
+  },
+  {
+    "query": "이 API 응답의 status code 를 등급별로 나눠서 에러 핸들링 분기해줘.",
+    "should_trigger": false
+  },
+  {
+    "query": "버튼 배경색을 브랜드 컬러 #1F6FEB 로 바꿔줘.",
+    "should_trigger": false
+  },
+  {
+    "query": "이 PR 올리기 전에 리뷰어가 확인할 체크리스트 좀 만들어줘.",
+    "should_trigger": false
+  }
+]

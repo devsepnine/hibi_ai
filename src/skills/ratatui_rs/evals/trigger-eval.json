@@ -1,0 +1,23 @@
+[
+  { "query": "Rust로 cli 도구 만드는 중인데 메뉴 화면이 너무 칙칙해. ratatui 써서 화살표로 이동하는 메뉴 만들어줘.", "should_trigger": true },
+  { "query": "tokio task가 백그라운드에서 도는데, 사용자가 esc 누르면 작업 취소하고 싶어. crossterm 이벤트 루프 안에서 어떻게 채널 처리하는지 알려줘.", "should_trigger": true },
+  { "query": "내가 만들고 있는 cargo 기반 tui 앱이 panic 났을 때 터미널이 raw mode에 갇혀버려. 이거 어떻게 고치냐", "should_trigger": true },
+  { "query": "Windows 사용자가 내 ratatui 앱에서 path 잘려서 보인다고 함. /c/Users/이런 거. 처리 방법?", "should_trigger": true },
+  { "query": "rust로 lazygit 같은 분위기의 brewfile 매니저 만들고 싶다. 키보드 navigation 위주로.", "should_trigger": true },
+  { "query": "내 src/ui/list.rs에서 ListState 써서 highlight 적용하려는데 select(Some(idx)) 한 다음에 어떻게 그려?", "should_trigger": true },
+  { "query": "ratatui 0.30으로 업데이트했더니 Layout::default().direction()이 뭔가 deprecated 같음. 새 idiom?", "should_trigger": true },
+  { "query": "tools/installer 디렉토리에서 cargo run 하면 알트 스크린으로 들어가는데 q 눌러도 안 빠져나옴. 이벤트 처리 코드 좀 봐줘", "should_trigger": true },
+  { "query": "rust crossterm으로 전체화면 인터랙티브 앱 만들어야 하는데, 더블 버퍼링 자동인지 수동인지?", "should_trigger": true },
+  { "query": "ratatui로 sparkline 위에 percentage 같이 표시하는 widget 어떻게 합치냐", "should_trigger": true },
+
+  { "query": "rust로 reqwest 써서 https get 요청 보내는 함수 작성", "should_trigger": false },
+  { "query": "터미널에서 ssh-copy-id로 키 자동 등록하는 alias 만들어줘", "should_trigger": false },
+  { "query": "Tauri로 데스크탑 앱 만들 때 webview 통신 구조 어떻게 잡는지", "should_trigger": false },
+  { "query": "내가 ratatui라고 이름 붙인 git 저장소를 main에 push 하려는데 protected branch라고 거부됨", "should_trigger": false },
+  { "query": "Rust 비동기 함수 안에서 ? 연산자로 에러 propagate 하는 베스트 프랙티스", "should_trigger": false },
+  { "query": "Bubble Tea (Go TUI) 라이브러리에서 view 함수 분리하는 패턴", "should_trigger": false },
+  { "query": "ncurses C 라이브러리에서 wgetch 블로킹 안 되게 하는 옵션", "should_trigger": false },
+  { "query": "Python rich으로 Markdown 렌더링하는 법", "should_trigger": false },
+  { "query": "내 npm package.json scripts에 cross-env 어떻게 넣어서 windows 변수 설정", "should_trigger": false },
+  { "query": "Bash에서 tput으로 색깔 입히고 cursor 이동하는 거", "should_trigger": false }
+]

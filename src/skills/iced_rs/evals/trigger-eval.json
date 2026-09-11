@@ -1,0 +1,23 @@
+[
+  {"query": "러스트로 데스크톱 앱 만들려는데 Electron 무거워서 iced 쓰려고 해. 간단한 노트 필기 앱 좀 만들어줘 — 좌측에 노트 목록, 우측에 에디터. 단일 main.rs 로.", "should_trigger": true},
+  {"query": "```rust\nuse iced::{Application, Command, Element, Settings, executor};\n\nimpl Application for MyApp { type Message = Msg; ... }\n```\n이 코드 최신 iced 로 올려줘. `cannot find trait Application` 컴파일 에러 나네.", "should_trigger": true},
+  {"query": "iced 앱에서 button(\"Save\").on_press(Message::Save) 넣었는데 버튼이 계속 회색 disabled 로 보여. 왜 그러지?", "should_trigger": true},
+  {"query": "iced 0.14 의 canvas::Program 으로 시계열 line chart 그리고 싶어. Cache 써야 재드로잉 안 할 거 같은데 Path::line 반복이 맞는 접근인가?", "should_trigger": true},
+  {"query": "내 iced 앱에서 Fetch 버튼 누르면 https://api.github.com/users/nochat 에서 JSON 받아와서 bio 표시하고 싶어. Task::perform + reqwest 조합 맞지? tokio feature 도 켜야 되지?", "should_trigger": true},
+  {"query": "iced::application(App::new, App::update, App::view) 이렇게 시작했는데 초기 윈도우 크기 800x600 은 어떻게 지정해? window::Settings 써야 되는 거 같은데 .settings() 빌더가 어디에 끼어들지?", "should_trigger": true},
+  {"query": "iced 앱이 화면이 Loading / List / Detail / Modal 4개라 match 로만 처리하니 한 두개 깜빡하는 거 있을 듯. View enum 으로 모델링하는 패턴 예시 보여줘.", "should_trigger": true},
+  {"query": "iced subscription 으로 time::every(Duration::from_secs(1)) 돌리는데 일시정지 체크박스 켜지면 타이머 중단되게 하고 싶어. if self.paused { Subscription::none() } 이 맞나?", "should_trigger": true},
+  {"query": "Rust iced 앱 다크 테마는 그대로 쓰고 싶은데 primary 버튼만 회사 브랜드 블루(#4C8BF5)로 바꾸고 싶음. button::Style 클로저 시그니처가 (theme, status) -> Style 인거 알겠는데 Hovered 상태 분기 어떻게 짜야 해?", "should_trigger": true},
+  {"query": "iced 0.12 코드 0.14 로 포팅 중인데 Application trait 없어진 거 말고 Command -> Task 이름 바뀐 거 알겠어. button::Appearance 는 뭐로 대체됐어?", "should_trigger": true},
+
+  {"query": "egui + eframe 0.28 로 immediate-mode GUI 만들고 있는데 SidePanel::left 로 사이드바 고정하면서 CentralPanel 이 나머지 채우게 하는 법?", "should_trigger": false},
+  {"query": "Tauri 2.0 + React 19 로 데스크톱 앱 만드는 중. tauri.conf.json 에서 main window 를 기본 fullscreen 으로 띄우는 설정이 어딘지 못 찾겠어.", "should_trigger": false},
+  {"query": "ratatui 0.30 로 TUI 짜는데 arrow 키로 List 상하 이동할 때 ListState::select 쓰는 거 맞지? 선택 스크롤도 자동으로 처리해 주나 아니면 내가 offset 계산해야 돼?", "should_trigger": false},
+  {"query": "gtk-rs 4 로 러스트 이미지 뷰어 만들어보려고 해. GTK4 의 DragSource + DropTarget 으로 drag-and-drop 파일 받는 예제 필요해.", "should_trigger": false},
+  {"query": "Elm 언어로 직접 counter 프로그램 하나 짜봐줘. The Elm Architecture 공부 중이라 실제 elm 0.19 문법으로 보고 싶어 — init / update / view 전부.", "should_trigger": false},
+  {"query": "wgpu 0.20 로 winit 에서 3D 큐브 회전시키는 minimal 예제 짜줘. RenderPipeline 셋업 + vertex/fragment shader 포함. iced 같은 고수준 프레임워크 말고 pure wgpu.", "should_trigger": false},
+  {"query": "React Native + Expo SDK 50 앱에서 FlatList 스크롤 랙 심해. getItemLayout / initialNumToRender / removeClippedSubviews 중에 뭘 조합해야 iOS 에서 부드러워져?", "should_trigger": false},
+  {"query": "토키오로 HTTP 요청 1000 개 동시에 날리고 join_all 로 결과 합치는 패턴 보여줘. 러스트 백엔드 서비스 — GUI 전혀 없음.", "should_trigger": false},
+  {"query": "Slint 1.5 로 러스트 데스크톱 앱 만들려고 하는데 .slint 파일에서 ListView 의 delegate 안에 Button 넣으면 클릭 이벤트가 부모로 전달되나?", "should_trigger": false},
+  {"query": "Dioxus 0.5 로 데스크톱 앱 만드는데 use_state 의 re-render 사이클이 예상이랑 다르게 돈다. React useEffect 랑 뭐가 달라?", "should_trigger": false}
+]
