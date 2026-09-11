@@ -1,5 +1,5 @@
 ---
-description: Extract reusable patterns from the current session into a new skill — its description, trigger vocabulary, and progressive-disclosure body. Not for writing a note about what you learned.
+description: Extract reusable patterns from the current session into a new skill — its description, trigger vocabulary, and progressive-disclosure body. NOT for writing a note about what you learned — 학습 노트 작성은 obsidian-notes.
 allowed-tools: Read, Grep, Write
 model: haiku
 effort: low
