@@ -33,9 +33,9 @@ description: Commit convention — type/ticket/title format, pre-commit security
 Extract it, do not invent it:
 
 - The branch name carries it — `feature/ABC-123-thing` → `ABC-123`
-- `git log --oneline -20` shows the prefix existing commits actually use
+- `git log --oneline -20` shows the prefix existing commits actually use — the shape to follow, not a number to reuse
 - **When branch and history yield none, omit the prefix entirely** — the title is the summary alone. A personal project, a config repo, and a repo with no tracker all legitimately have no ticket, and a placeholder like `[TICKET-1]` is worse than none.
-- When one does apply, it must match the feature branch
+- **The branch decides.** When history carries a prefix the branch does not, say so and ask instead of borrowing the number — someone else's real ticket reads as valid in the title, which makes it worse than an omitted one.
 
 ### Mandatory Rules
 

@@ -47,13 +47,17 @@ integration branch instead. When the two disagree, say so and ask.
 
 ```bash
 git branch --show-current          # feature/ABC-123-thing → ABC-123
-git log --oneline -20              # what prefix do existing commits use?
+git log --oneline -20              # the prefix existing commits use, not a number to reuse
 ```
 
 If the branch and history yield no ticket, **omit the prefix entirely** — the
 title is the summary alone. A config PR, a personal project, and a repo with no
 tracker all legitimately have no ticket, and inventing a placeholder like
 `[TICKET-1]` is worse than having none.
+
+The branch decides. When history carries a prefix the branch does not, say so
+and ask instead of borrowing the number — someone else's real ticket reads as
+valid in the title, which makes it worse than an omitted one.
 
 Title format, therefore:
 
