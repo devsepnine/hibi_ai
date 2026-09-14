@@ -148,7 +148,7 @@ Next:
 Even before the `commit-rules` skill loads, these are non-negotiable on any commit:
 - **NO emojis, NO generation markers** (`Co-Authored-By`, "Generated with Claude Code", etc.)
 - **Only commit when the user explicitly asks.** Never auto-commit after finishing work.
-- Format: `<type>: [<ticket>] <title>` — full convention in the `commit-rules` skill.
+- Format: `<type>: [<ticket>] <title>`, or `<type>: <title>` when branch and history yield no ticket — full convention in the `commit-rules` skill.
 
 ## Absolute comment rules (always apply — skill carries the rest)
 

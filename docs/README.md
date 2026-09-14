@@ -303,11 +303,17 @@ bundled (최저) → sources.yaml 첫 번째 → ... → sources.yaml 마지막 
 
 ## 최근 변경사항
 
+### 2026-09-14
+
+- `commit-rules`에서 조직 하드코딩 제거 — `[PP-XXXX]`(예: PP-6050)가 배포되는 공개 설정에 박혀 있었다. `pull-request` §1과 같은 규칙으로 교체: 브랜치와 `git log`에서 추출하고, 어느 쪽에도 없으면 접두사를 완전히 생략한다(`[TICKET-1]` 같은 자리표시자는 없는 것보다 나쁘다)
+- 같은 수정으로 컨벤션이 자기 저장소와 어긋나던 문제가 닫혔다 — 형식이 `<type>: [<ticket-number>] <title>` 하나뿐이어서 티켓을 필수로 요구했는데, 이 저장소 최근 커밋 30개 중 접두사를 가진 것은 0개였다. 즉 규약을 지킨 커밋이 하나도 없는 상태였다. 형식 블록이 티켓 있는 경우와 없는 경우 두 줄을 함께 보여준다
+- 전파 지점 6곳을 함께 맞췄다 — `src/skills/commit-rules/SKILL.md:13-14,31-38`, `src/commands/commit.md:13`, `src/CLAUDE.md:151` 및 각 `-ko` 트윈. `src/AGENTS.md`는 커밋 형식을 갖고 있지 않아 대상이 아니다(CLAUDE/AGENTS는 중복시키지 않는 구조)
+
 ### 2026-09-11
 
 - `upstream-pr` 스킬을 `pull-request`로 통합 (스킬 25 → 24). 실체가 PR의 변종이 아니라 설정 기여 판단 워크플로였고, PR 메커닉은 6개 섹션 중 하나뿐이었다. 방법론은 `pull-request/references/upstream-config.md`로 이동, `/upstream-pr` 커맨드는 진입점으로 유지. `src/CLAUDE.md`의 정책 라우팅 행이 두 진입점을 모두 명시한다(`AGENTS.md`는 Codex용이라 커맨드를 쓰지 않으므로 스킬 이름만 가리킨다)
 - 통합 과정에서 경계 결함 정리 — 단방향 위임(역참조 `Related` 표 부재), 티켓 없는 설정 PR에 `[TICKET-ID]`를 강제하던 모순, 권한 규칙의 두 버전(베이스 vs 공개 상류 2단 확인) 관계 미명시, 일반 스킬에 없던 브랜치 네이밍 규약
-- `pull-request` 스킬에서 조직 하드코딩 제거 — `ggnetwork.atlassian.net`, `PP-XXXX`, `upstream/develop`. 규약을 기억이 아니라 저장소에서 읽는다: base 브랜치는 `gh`로 확인, 티켓은 브랜치·히스토리에서 추출(없으면 접두사 생략), 본문은 `.github/pull_request_template.md`가 무조건 우선. `commit-rules`와 `/commit`의 `[PP-XXXX]`(예: PP-6050)는 이번 범위를 벗어나 그대로 남아 있다 — 같은 종류의 하드코딩이고 새 §1("티켓은 추출하되 만들어내지 않는다")과 상충하므로 후속 정리 대상이다
+- `pull-request` 스킬에서 조직 하드코딩 제거 — `ggnetwork.atlassian.net`, `PP-XXXX`, `upstream/develop`. 규약을 기억이 아니라 저장소에서 읽는다: base 브랜치는 `gh`로 확인, 티켓은 브랜치·히스토리에서 추출(없으면 접두사 생략), 본문은 `.github/pull_request_template.md`가 무조건 우선. `commit-rules`와 `/commit`의 같은 하드코딩은 이번 범위를 벗어나 후속으로 미뤘다 — 2026-09-14 항목에서 정리했다
 - `gh pr create` 메커닉(`--draft`/`--base`/`--body-file`)과 기존 PR 리뷰 절차 신규 추가 — 종전 description이 리뷰를 주장했으나 체크리스트만 있었다
 - `pull-request/evals/` 추가. 구 `upstream-pr` 트리거 세트를 옮길 때 네거티브 2건이 포지티브로 반전됨(디렉터리명 기준 매칭이므로)
 - `pull-request`에 §2 "본문은 diff에서 쓴다" 신규 — `git diff <base>...HEAD`(점 세 개)로 읽고, 본문과 hunk를 양방향으로 대응시켜 미대응 항목을 범위 이탈 또는 허구로 잡아낸다. 간결함의 정의를 "짧게"가 아니라 "diff가 보여줄 수 없는 것만"으로 못박았다

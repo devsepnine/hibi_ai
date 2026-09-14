@@ -10,7 +10,8 @@ description: Commit convention — type/ticket/title format, pre-commit security
 ### Commit Message Format
 
 ```
-<type>: [<ticket-number>] <title>
+<type>: [<ticket>] <title>     # a tracker ticket applies
+<type>: <title>                # no tracker, or none applies
 
 <body content>
 - Specific changes
@@ -27,11 +28,14 @@ description: Commit convention — type/ticket/title format, pre-commit security
 - test: Add/modify test code
 - chore: Build scripts, package manager, and other tasks
 
-### Ticket Number Format
+### Ticket Number
 
-- `[PP-XXXX]`: Project ticket number (e.g., PP-6050)
-- Ticket number can be found in branch name
-- Must match feature branch name
+Extract it, do not invent it:
+
+- The branch name carries it — `feature/ABC-123-thing` → `ABC-123`
+- `git log --oneline -20` shows the prefix existing commits actually use
+- **When branch and history yield none, omit the prefix entirely** — the title is the summary alone. A personal project, a config repo, and a repo with no tracker all legitimately have no ticket, and a placeholder like `[TICKET-1]` is worse than none.
+- When one does apply, it must match the feature branch
 
 ### Mandatory Rules
 

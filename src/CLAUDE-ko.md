@@ -148,7 +148,7 @@ Next:
 `commit-rules` skill이 로드되기 전이라도 커밋 시 다음은 협상 불가다:
 - **이모지 금지, 생성 마커 금지** (`Co-Authored-By`, "Generated with Claude Code" 등)
 - **사용자가 명시적으로 요청할 때만 커밋한다.** 작업이 끝났다고 자동 커밋하지 않는다.
-- 형식: `<type>: [<ticket>] <title>` — 전체 컨벤션은 `commit-rules` skill.
+- 형식: `<type>: [<ticket>] <title>`, 브랜치와 이력에 티켓이 없으면 `<type>: <title>` — 전체 컨벤션은 `commit-rules` skill.
 
 ## Absolute comment rules (always apply — skill carries the rest)
 

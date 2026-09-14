@@ -10,7 +10,8 @@ description: Commit convention — type/ticket/title format, pre-commit security
 ### 커밋 메시지 형식
 
 ```
-<type>: [<ticket-number>] <title>
+<type>: [<ticket>] <title>     # 트래커 티켓이 있을 때
+<type>: <title>                # 트래커가 없거나 해당되지 않을 때
 
 <body content>
 - Specific changes
@@ -27,11 +28,14 @@ description: Commit convention — type/ticket/title format, pre-commit security
 - test: 테스트 코드 추가/수정
 - chore: 빌드 스크립트, 패키지 매니저, 기타 작업
 
-### 티켓 번호 형식
+### 티켓 번호
 
-- `[PP-XXXX]`: 프로젝트 티켓 번호 (예: PP-6050)
-- 티켓 번호는 브랜치명에서 확인 가능
-- feature 브랜치명과 일치해야 함
+추출하되 만들어내지 않는다:
+
+- 브랜치명이 갖고 있다 — `feature/ABC-123-thing` → `ABC-123`
+- `git log --oneline -20`으로 기존 커밋이 실제로 쓰는 접두사를 확인한다
+- **브랜치와 이력 어디에도 없으면 접두사를 완전히 생략한다** — 제목은 요약만이다. 개인 프로젝트, 설정 저장소, 트래커가 없는 저장소는 모두 정당하게 티켓이 없고, `[TICKET-1]` 같은 자리표시자는 없는 것보다 나쁘다.
+- 티켓이 있는 경우에는 feature 브랜치명과 일치해야 한다
 
 ### 필수 규칙
 
