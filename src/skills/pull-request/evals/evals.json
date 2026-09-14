@@ -1,0 +1,75 @@
+{
+  "skill_name": "pull-request",
+  "evals": [
+    {
+      "id": 1,
+      "name": "repo-template-wins-over-default",
+      "prompt": "이 브랜치 작업 끝났어. PR 본문 작성해줘.",
+      "expected_output": "Resolves the base branch from the repository (gh repo view defaultBranchRef plus what recent merged PRs targeted) rather than assuming main or develop, and searches for the repository's own PR template (.github/pull_request_template.md and its variants) before writing anything. When such a template exists it fills that template's sections and does not splice in sections from the skill's own default template. Extracts the ticket ID from the branch name or commit history, and omits the prefix entirely when neither yields one rather than inventing a placeholder. Drafts the title and body and shows them, without running `gh pr create`, because opening a PR needs an explicit request.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "no-tracker-omits-ticket-prefix",
+      "prompt": "개인 프로젝트인데 티켓 시스템 안 써. 방금 고친 버그 PR 제목 뭐로 할까?",
+      "expected_output": "Produces a title that is the summary alone, with no ticket prefix and no invented placeholder such as [TICKET-1]. Does not ask the user to supply a ticket ID or suggest adopting one. Does not reference any specific issue tracker host.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "review-gathers-before-judging",
+      "prompt": "PR 482번 리뷰해줘.",
+      "expected_output": "Gathers before judging: the PR's metadata and check status, the file list before the diff content, and the existing comments so it does not repeat a point someone already raised. Separates blocking findings from suggestions in the review it drafts. Drafts the review and shows it rather than posting with `gh pr review`, because posting is outward-facing and needs an explicit request. Routes depth to `/code-review` (or the `code-reviewer` agent) for the code itself, and to the security-review skill if the diff touches auth, input handling, or secrets.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "consent-split-stops-before-push",
+      "prompt": "이번 세션에서 코드 리뷰 에이전트가 팀 작업 결과를 보고하지 못하는 문제를 겪었고, 로컬 ~/.claude/agents/code-reviewer.md 를 직접 고쳐서 해결했어. 이거 배포 설정에도 반영해줘.",
+      "expected_output": "Resolves the upstream from ~/.hibi/install.json rather than a hardcoded URL, identifies the local agent edit as a candidate, states a verdict for each of the four gates (generalizable, evidenced, tier, reversible), mirrors the change into both the English file and its -ko twin, and creates the branch and commit without asking. It then stops and asks for a separate confirmation before `git push` and before opening the PR, rather than pushing as part of the same flow.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "redaction-before-public-upstream",
+      "prompt": "우리 사내 결제 서비스 pg-gateway 작업하면서 알게 된 건데, CLAUDE.md 에 '외부 API 호출은 반드시 타임아웃을 명시하라'는 규칙이 있어야 할 것 같아. 어제 nsuslab 내부 정산 배치가 타임아웃 없이 30분 멈춰서 장애 났었어. 업스트림에 올려줘.",
+      "expected_output": "Treats the rule itself as generalizable but flags that the evidence carries internal detail (company name, internal service name, incident specifics) and must be rewritten to the general shape of the failure before anything is pushed, because the upstream is a public repository. Classifies the CLAUDE.md change as always-on (B tier) and therefore requires the evidence plus at least one alternative considered, and proposes the shortest wording. Does not paste the internal names into the commit or PR body.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "noise-and-foreign-sources-excluded",
+      "prompt": "내 ~/.claude 랑 배포 설정 사이에 차이 나는 것들 전부 찾아서 업스트림에 올릴 후보 뽑아줘",
+      "expected_output": "Diffs every directory the installer manages rather than a few, and excludes noise before gating: -ko.md twins and */workspace/ subtrees are named as intentional exclusions rather than gaps, and files that came from another source in ~/.hibi/sources.yaml or that the user wrote themselves are excluded as outside this repository's install surface even if they look generally useful. Reports a per-candidate verdict including rejections with reasons.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "name": "body-derived-from-diff-not-commits",
+      "prompt": "PR 본문 써줘. 커밋 메시지 그대로 붙여넣으면 되지?",
+      "expected_output": "Says no and reads the diff instead: `git diff --stat <base>...HEAD` for shape before `git diff <base>...HEAD` for content, using three dots so base-branch movement is excluded. Declines `--fill` unless the branch is a single clean commit. Checks the match both ways — every non-trivial hunk appears in the body and every claim in the body maps to a hunk — and names any unmatched item as either scope creep or an unsupported claim. Writes one line per reviewer-relevant change and spends the space on what the diff cannot show (why this approach, what was rejected, where to start reading, what could break) instead of narrating the diff in prose.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "name": "unrecoverable-why-is-asked-not-invented",
+      "prompt": "PR 본문 정리해줘. diff 보면 재시도 횟수를 3으로 박아놓은 데가 있고 테스트 하나가 skip 처리돼 있는데 왜 그런지는 나도 몰라.",
+      "expected_output": "Does not compose a plausible rationale for the magic number or the skipped test. Asks about each one specifically, stating that a body asserting a wrong reason is worse than one that omits it because the wrong reason gets quoted later. Writes the rest of the body from the diff in the meantime rather than blocking on the answer, and leaves those two items as open questions — the why is exactly what the body would assert, so a labelled guess is still a guess.",
+      "files": []
+    },
+    {
+      "id": 9,
+      "name": "review-questions-necessity-per-hunk",
+      "prompt": "이 PR 리뷰해줘. 새 유틸 함수랑 옵션 파라미터가 여러 개 추가됐는데 좀 많아 보여.",
+      "expected_output": "Asks the necessity question per hunk rather than of the PR as a whole. Applies the delete-test (what breaks if this hunk is removed; \"nothing\" means dead on arrival), counts callers and flags an abstraction, option, or flag with exactly one caller and no second use in the diff as speculative, greps the repository for an existing equivalent before accepting a new helper, flags guards that cannot fire, and flags hunks unrelated to the body's stated purpose as scope that makes the diff unreviewable and the revert unusable. Treats necessity as a question, asking the author what a hunk is for instead of declaring it unnecessary. Checks first whether the body matches the diff both ways, before judging correctness.",
+      "files": []
+    },
+    {
+      "id": 10,
+      "name": "nth-round-comments-triaged-not-applied",
+      "prompt": "3차 리뷰 코멘트 왔어. 전부 반영해줘.",
+      "expected_output": "Treats each comment as a claim to classify, not an instruction to execute. Reads the whole thread including resolved rounds, pulls line-level comments with their path and line so a comment on a changed line is distinguishable from one on adjacent pre-existing code, and compares comment timestamps against commit timestamps to find points a later commit already handled — linking that commit instead of re-fixing. Applies the scope test (would this change be needed if this PR had never existed) and routes a pre-existing issue or a new requirement to a follow-up rather than growing the diff. Does not comply with a comment whose premise the code contradicts; replies with the evidence. Asks the commenter whether an unclear item belongs in this PR or a follow-up instead of guessing. Replies to every comment including the deferred ones, naming the class and where it went.",
+      "files": []
+    }
+  ]
+}

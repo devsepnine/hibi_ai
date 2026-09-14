@@ -33,7 +33,7 @@ Defines always-on workflow and decision-making procedures. Detailed, situational
 - On every user correction, record the pattern in `MEMORY.md`
 - Write a rule that prevents the same mistake — apply it immediately
 - Review relevant lessons at the start of each session
-- When a lesson generalizes past this project, surface a proposal to promote it into the distributed config and run `/upstream-pr` once the user agrees; what is personal stays in `MEMORY.md`
+- When a lesson generalizes past this project, surface a proposal to promote it into the distributed config and run the `/upstream-pr` command — it loads the `pull-request` skill, which owns this path — once the user agrees; what is personal stays in `MEMORY.md`
 
 ### 4. Verify before completion
 - Never mark work complete without proof it works
@@ -167,7 +167,7 @@ Detailed policies are **Skills**: their content loads only when triggered, keepi
 | Policy | Source of truth (SSOT) | How to load |
 |---|---|---|
 | Commit convention | `commit-rules` skill | `/commit` or trigger on git commit |
-| PR guidelines | `pull-request` skill | `/pull-request` or trigger on PR work |
+| PR guidelines · upstream config contribution | `pull-request` skill | `/pull-request`, `/upstream-pr`, or trigger on PR work |
 | Security rules / OWASP | `security-review` skill | `/security-review` or trigger on auth/input/secrets |
 | Testing & TDD | `tdd-workflow` skill | `/tdd` or trigger on new feature/bugfix |
 | Coding style / clean code | `coding-standards` skill | trigger on code review/writing |

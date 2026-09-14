@@ -22,4 +22,4 @@ more. Show what would be shared and get a **second** confirmation before `git
 push` and before opening the PR — both are outward-facing, and session evidence
 can carry an employer's code or internal paths that must be rewritten first.
 
-**The full method — source resolution, candidate filtering, the four gates, and PR contents — lives in the `upstream-pr` skill. Follow that as the source of truth.**
+**Load the `pull-request` skill first — it owns this path.** The full method — source resolution, candidate filtering, the four gates, and PR contents — is its `references/upstream-config.md`; follow that as the source of truth. The conventions it builds on are the skill's own §1–§7: the title in §1, the body derived from the diff in §2, branch naming in §7.

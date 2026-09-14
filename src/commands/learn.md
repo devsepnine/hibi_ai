@@ -95,7 +95,7 @@ description: <what it does> Use when <trigger condition>. <한국어 트리거 �
 3. Draft the skill file
 4. Ask user to confirm before saving
 5. Save to `~/.claude/skills/<name>/SKILL.md`
-6. If the pattern would help users beyond this machine, run `/upstream-pr` to propose it for the distributed config — it ships as `src/skills/<name>/SKILL.md` with a `-ko.md` twin
+6. If the pattern would help users beyond this machine, run the `/upstream-pr` command (it loads the `pull-request` skill) to propose it for the distributed config — it ships as `src/skills/<name>/SKILL.md` with a `-ko.md` twin
 
 ## Notes
 

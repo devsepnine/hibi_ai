@@ -1,6 +1,6 @@
 # hibi-ai 문서 인덱스
 
-> 마지막 업데이트: 2026-09-09 · 버전 v1.16.0
+> 마지막 업데이트: 2026-09-11 · 버전 v1.16.0
 
 컴포넌트 목록은 중복하지 않는다 — 이 문서는 "무엇이 어디에 있는가"만 다루고, 실제 목록은 [README.md](README.md)가 SSOT다.
 
@@ -29,7 +29,7 @@
 |---|---|---|
 | 에이전트 | `src/agents/<name>.md` | [README 에이전트 표](README.md#에이전트-8개) |
 | 슬래시 커맨드 | `src/commands/<name>.md` | [README 커맨드 표](README.md#슬래시-커맨드-21개) |
-| 스킬 | `src/skills/<name>/SKILL.md` | [README 스킬 표](README.md#스킬-25개) |
+| 스킬 | `src/skills/<name>/SKILL.md` | [README 스킬 표](README.md#스킬-24개) |
 | 훅 | `src/hooks/<name>/hook.yaml` | 전부 `deprecated: true` — 인스톨러가 자동 제거 |
 | MCP 서버 | `src/mcps/mcps.yaml` | 단일 파일 |
 | 플러그인 | `src/plugins/plugins.yaml` | 단일 파일 |
@@ -47,7 +47,7 @@
 | 정책 | 스킬 | 로드 |
 |---|---|---|
 | 커밋 규약 | `commit-rules` | `/commit` 또는 git commit 시 트리거 |
-| PR 가이드라인 | `pull-request` | `/pull-request` 또는 PR 작업 시 트리거 |
+| PR 가이드라인 · 업스트림 설정 기여 | `pull-request` | `/pull-request`, `/upstream-pr` 또는 PR 작업 시 트리거 |
 | 보안 / OWASP | `security-review` | `/security-review` 또는 인증·입력·시크릿 작업 시 트리거 |
 | 테스트 & TDD | `tdd-workflow` | `/tdd` 또는 기능 추가·버그 수정 |
 | 코딩 스타일 | `coding-standards` | 코드 작성·리뷰 시 |
@@ -141,6 +141,7 @@ A: 개발자 가독용 미러다. 인스톨러 스캐너가 stem이 `-ko`로 끝
 
 ## 문서 업데이트 이력
 
+- **2026-09-11**: `pull-request`가 §2 본문-diff 도출, §5 필요성 검증 리뷰, §6 리뷰 코멘트 분류를 갖게 됨(§1–§7). 통합으로 생긴 댕글링 지시문(`"run /upstream-pr"` → 존재하지 않는 스킬 호출)을 `src/CLAUDE.md:36`·`commands/learn.md:98`·`commands/upstream-pr.md:25`에서 정리하고, 후자의 방법론 참조를 삭제된 `upstream-pr` 스킬에서 `pull-request` §1–§7로 재지정. `upstream-pr` 스킬이 `pull-request`로 통합됨을 반영 (스킬 25 → 24). 정책 라우팅 표에서 `pull-request`가 PR 가이드라인과 업스트림 설정 기여를 함께 소유하고 `/upstream-pr`이 두 번째 진입점이 됐다. README 스킬 표 앵커(`#스킬-24개`)를 헤딩과 함께 갱신 — 한쪽만 바꾸면 링크가 끊긴다
 - **2026-09-09**: `src/` 마크다운 재개편(v1.16.0 이후) 반영. 3개 문서 전면 현행화 — 컴포넌트 수·인스톨러 모듈·릴리즈 자동화 반영, 끊어진 링크(`../CLAUDE.md`, `../AGENTS.md`, `rules/pull-request-rules.md`) 정정, 중복 목록을 README로 단일화. `/pull-request`·`/security-review` 커맨드 신규 추가로 정책 라우팅 표 10행 전부가 실제 커맨드를 갖게 됐다 (커맨드 19 → 21)
 - **2026-06-19**: `dependency-design` 스킬 및 `/deps` 커맨드 추가 반영
 - **2026-02-26**: 인스톨러 모듈 구조 재편 반영

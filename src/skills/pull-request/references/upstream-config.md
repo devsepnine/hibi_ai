@@ -1,14 +1,13 @@
----
-name: upstream-pr
-description: Promote a session-derived improvement upstream as a PR — gate on generalizability, evidence, blast radius, reversibility. Use when a shipped rule, skill, or agent should change. 업스트림 PR, 설정 개선 환류, 배포 설정 기여.
----
-
-# Upstream PR
+# Upstreaming a Config Improvement
 
 Feed what a session taught back into the config that ships to other users. The
 PR's value is not the diff — it is the evidence and the blast radius, because a
 reviewer cannot judge a rule change without knowing what failed and who it
 reaches.
+
+This is the config-contribution case of the `pull-request` skill. Title, body,
+and branch conventions come from that skill; what follows is what this case adds
+on top.
 
 ## 1. Locate the source
 
@@ -64,22 +63,17 @@ upstream it. This is a question, not a step, for two reasons:
 
 ## 6. Open the PR
 
-Being asked to run this workflow is the explicit request that authorizes the
-local branch and commits — `improve/<topic>`, one logical unit per commit, never
-straight to `main`. Pushing and opening the PR are outward-facing and need a
-**second** confirmation, which running the workflow does not imply.
+Being asked to run this workflow is the explicit request the base permission rule
+needs, and it authorizes the local branch and commits — `improve/<topic>`, one
+logical unit per commit, never straight to `main`. A public upstream then demands
+**more** than the base rule: pushing and opening the PR need a *second*
+confirmation, which running the workflow does not imply.
+
+There is no ticket for a config change, so the title is the summary alone — the
+ticket prefix is omitted, per the title rule in `SKILL.md`.
 
 The PR body states, per change: the evidence, the tier and who it reaches, the
 alternative rejected, and how to revert. Note that the config is embedded in the
 release package, so merged changes reach other users at the **next release**
 rather than at their next `hibi --sync` — which is what makes the PR the last
 review gate.
-
-## Related
-
-| Need | Where |
-|---|---|
-| PR title and body conventions | `pull-request` skill |
-| Change summary for the PR body | `qa-handoff` skill |
-| Tier definitions (A–E) | `do-178c` skill |
-| Extracting a pattern into a skill first | `/learn` (emits a promotable skill; add the `-ko.md` twin when promoting) |

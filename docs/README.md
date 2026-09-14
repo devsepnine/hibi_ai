@@ -1,6 +1,6 @@
 # hibi-ai 프로젝트 문서
 
-> 마지막 업데이트: 2026-09-09 · 버전 v1.16.0
+> 마지막 업데이트: 2026-09-11 · 버전 v1.16.0
 
 ## 개요
 
@@ -16,7 +16,7 @@ hibi_ai/
 ├── src/                    # 배포되는 설정 원본 (Git 관리)
 │   ├── agents/             # 에이전트 정의 8개 (+ -ko 미러)
 │   ├── commands/           # 슬래시 커맨드 21개 (+ -ko 미러)
-│   ├── skills/             # 스킬 25개 (+ 각 SKILL-ko.md)
+│   ├── skills/             # 스킬 24개 (+ 각 SKILL-ko.md)
 │   ├── hooks/              # 라이프사이클 훅 5개 — 전부 deprecated
 │   ├── mcps/mcps.yaml      # MCP 서버 정의 21개
 │   ├── plugins/plugins.yaml# 플러그인 마켓플레이스 4개 / 플러그인 28개
@@ -82,7 +82,7 @@ hibi_ai/
 | `/update-codemaps` | 아키텍처 코드맵 생성 |
 | `/checkpoint` | 워크플로 체크포인트 저장·검증 |
 
-### 스킬 (25개)
+### 스킬 (24개)
 
 트리거될 때만 로드된다. 설명은 스킬 목록 문자 예산(200K 윈도우 기준 8,000자)을 공유하므로 각 `description`을 220자 이하로 유지한다 — 예산을 넘으면 초과한 스킬의 설명이 **통째로** 사라져 자동 트리거가 불가능해진다. 예산에 계상되는 값은 `description` 합계가 아니라 목록 항목 합계(스킬명 + 4 + `description`, 항목 구분자 포함)다 — 현재값은 `python3 src/skills/eval-harness/scripts/skill_budget.py src/skills` 로 측정한다.
 
@@ -91,7 +91,7 @@ hibi_ai/
 | 스킬 | 정책 |
 |---|---|
 | `commit-rules` | 커밋 타입/티켓/제목 형식, 커밋 전 보안 점검, 커밋 분할 |
-| `pull-request` | PR 제목·템플릿·사전 체크리스트 |
+| `pull-request` | PR 제목, diff에서 쓰는 본문, 사전 게이트, 필요성 검증 리뷰, 리뷰 코멘트 분류, 업스트림 설정 기여 |
 | `security-review` | 인증·입력·시크릿·결제·OWASP 체크리스트 |
 | `tdd-workflow` | red/green/refactor, 커버리지 80%+ |
 | `coding-standards` | TS/JS/React/Node 표준, 주석 규칙, 코드 스멜 |
@@ -104,7 +104,6 @@ hibi_ai/
 | 스킬 | 용도 |
 |---|---|
 | `qa-handoff` | git 이력을 QA 인수 문서로 |
-| `upstream-pr` | 개선을 배포 설정으로 승격 |
 | `eval-harness` | eval 주도 개발, pass@k |
 | `obsidian-notes` | Obsidian 볼트 노트 (ADR, 릴리즈 노트, 회고) |
 
@@ -126,7 +125,7 @@ hibi_ai/
 | `superset` | Apache Superset (MCP 경유) |
 | `deploy-to-vercel` | Vercel 배포 |
 
-스킬별 부가 자산: 점진적 공개용 `references/` 10개(`backend-patterns`, `coding-standards`, `dependency-design`, `do-178c`, `iced_rs`, `obsidian-notes`, `ratatui_rs`, `rust-best-practices`, `svelte-5`, `zustand`), 벤더링된 상류 규칙 `rules/` 4개(`composition-patterns`, `dependency-design`, `react-best-practices`, `react-native-skills`), 평가 세트 `evals/` 9개(`dependency-design`, `do-178c`, `iced_rs`, `obsidian-notes`, `qa-handoff`, `ratatui_rs`, `svelte-5`, `upstream-pr`, `zustand`). `evals/`에는 두 종류가 들어간다 — `evals.json`은 출력 품질 평가(`prompt` + `expected_output`), `trigger-eval.json`은 설명이 실제로 발화하는지 보는 트리거 회귀 세트(`query` + `should_trigger`)로 `trigger_eval.py --eval-set`이 소비한다.
+스킬별 부가 자산: 점진적 공개용 `references/` 11개(`backend-patterns`, `coding-standards`, `dependency-design`, `do-178c`, `iced_rs`, `obsidian-notes`, `pull-request`, `ratatui_rs`, `rust-best-practices`, `svelte-5`, `zustand`), 벤더링된 상류 규칙 `rules/` 4개(`composition-patterns`, `dependency-design`, `react-best-practices`, `react-native-skills`), 평가 세트 `evals/` 9개(`dependency-design`, `do-178c`, `iced_rs`, `obsidian-notes`, `pull-request`, `qa-handoff`, `ratatui_rs`, `svelte-5`, `zustand`). `evals/`에는 두 종류가 들어간다 — `evals.json`은 출력 품질 평가(`prompt` + `expected_output`), `trigger-eval.json`은 설명이 실제로 발화하는지 보는 트리거 회귀 세트(`query` + `should_trigger`)로 `trigger_eval.py --eval-set`이 소비한다.
 
 ### 훅 (활성 없음)
 
@@ -300,9 +299,25 @@ bundled (최저) → sources.yaml 첫 번째 → ... → sources.yaml 마지막 
 }
 ```
 
-`components`는 번들 소스에서 온 것만 나열하고, 추가 소스는 `other_sources`에 분리된다. `upstream-pr` 스킬이 이 파일로 클론 없이 상류 저장소를 찾는다. hibi 자신의 디렉터리만 쓰고 `~/.claude` 트리는 건드리지 않는다.
+`components`는 번들 소스에서 온 것만 나열하고, 추가 소스는 `other_sources`에 분리된다. `pull-request` 스킬이 이 파일로 클론 없이 상류 저장소를 찾는다. hibi 자신의 디렉터리만 쓰고 `~/.claude` 트리는 건드리지 않는다.
 
 ## 최근 변경사항
+
+### 2026-09-11
+
+- `upstream-pr` 스킬을 `pull-request`로 통합 (스킬 25 → 24). 실체가 PR의 변종이 아니라 설정 기여 판단 워크플로였고, PR 메커닉은 6개 섹션 중 하나뿐이었다. 방법론은 `pull-request/references/upstream-config.md`로 이동, `/upstream-pr` 커맨드는 진입점으로 유지. `src/CLAUDE.md`의 정책 라우팅 행이 두 진입점을 모두 명시한다(`AGENTS.md`는 Codex용이라 커맨드를 쓰지 않으므로 스킬 이름만 가리킨다)
+- 통합 과정에서 경계 결함 정리 — 단방향 위임(역참조 `Related` 표 부재), 티켓 없는 설정 PR에 `[TICKET-ID]`를 강제하던 모순, 권한 규칙의 두 버전(베이스 vs 공개 상류 2단 확인) 관계 미명시, 일반 스킬에 없던 브랜치 네이밍 규약
+- `pull-request` 스킬에서 조직 하드코딩 제거 — `ggnetwork.atlassian.net`, `PP-XXXX`, `upstream/develop`. 규약을 기억이 아니라 저장소에서 읽는다: base 브랜치는 `gh`로 확인, 티켓은 브랜치·히스토리에서 추출(없으면 접두사 생략), 본문은 `.github/pull_request_template.md`가 무조건 우선. `commit-rules`와 `/commit`의 `[PP-XXXX]`(예: PP-6050)는 이번 범위를 벗어나 그대로 남아 있다 — 같은 종류의 하드코딩이고 새 §1("티켓은 추출하되 만들어내지 않는다")과 상충하므로 후속 정리 대상이다
+- `gh pr create` 메커닉(`--draft`/`--base`/`--body-file`)과 기존 PR 리뷰 절차 신규 추가 — 종전 description이 리뷰를 주장했으나 체크리스트만 있었다
+- `pull-request/evals/` 추가. 구 `upstream-pr` 트리거 세트를 옮길 때 네거티브 2건이 포지티브로 반전됨(디렉터리명 기준 매칭이므로)
+- `pull-request`에 §2 "본문은 diff에서 쓴다" 신규 — `git diff <base>...HEAD`(점 세 개)로 읽고, 본문과 hunk를 양방향으로 대응시켜 미대응 항목을 범위 이탈 또는 허구로 잡아낸다. 간결함의 정의를 "짧게"가 아니라 "diff가 보여줄 수 없는 것만"으로 못박았다
+- §5 리뷰에 판단 순서(본문-diff 대응 → 필요성 → 정확성 → 테스트)와 **필요성 검증** 추가 — 삭제 테스트, 호출자 수, 기존 구현 grep, 실행될 일 없는 가드, 목적 무관 hunk. 필요성은 판결이 아니라 질문이므로 판단이 안 되면 작성자에게 묻는다
+- §6 "리뷰 코멘트를 처리한다" 신규 — 코멘트를 지시가 아니라 분류할 주장으로 다룬다. 6분류 표(범위 내 블로킹 / 스타일 / 기존 문제 / 새 요구사항 / 이미 처리됨 / 잘못된 전제), 범위 테스트("이 PR이 없었어도 필요했나"), n차 라운드는 코멘트·커밋 타임스탬프 비교로 이미 처리된 지적을 걸러낸다
+- "추측하지 말고 묻는다"를 도입부 원칙으로 세우고 §2·§5·§6이 각각 구체적 트리거를 갖게 했다 — 답이 쓸 내용을 바꿀 때만 묻고, 그렇지 않으면 가정을 본문에 적는다. `description`은 `리뷰 코멘트 반영` 어휘를 얻고 216자(한도 220)
+- 통합이 만든 댕글링 지시문 정리 — `"run /upstream-pr"` 형태의 지시는 모델이 존재하지 않는 `Skill{upstream-pr}` 호출로 해석한다(트리거 측정에서 3회 재현). `src/CLAUDE.md:36`·`commands/learn.md:98`·`commands/upstream-pr.md:25`가 모두 커맨드임을 밝히고 로드할 스킬 이름(`pull-request`)을 명시하도록 고쳤다. 같은 파일의 방법론 참조는 삭제된 `upstream-pr` 스킬에서 `pull-request` §1–§7로 재지정했다
+- 사후 리뷰 findings 반영 — (a) 라우팅 대상 이름 정정: `code-review`는 스킬로 존재하지 않는다(`/code-review` 커맨드와 `code-reviewer` 에이전트가 실체). `SKILL.md`·`SKILL-ko.md`의 §5c와 Related 표, `evals.json` #3의 expected_output을 함께 고쳤다. (b) §6 코멘트 조회에 `--paginate` 추가 — REST 한 페이지가 30건에서 끊겨 "해결된 라운드까지 스레드 전체를 읽는다"는 전제와 배치됐고, n차 리뷰에서 이미 처리된 지적을 놓치는 무음 실패가 된다(`per_page=2`로 실증: 플래그 없이 2건, 붙이면 3건). (c) KO 표현 2건 정정 — "싼 질문"→"가장 저렴한 질문", "발화할 수 없는 가드"→"실행될 일 없는 가드". (d) 통합 때 유실된 `/learn` 역포인터를 Related 표에 복구 — 순방향(`learn.md:98` → `/upstream-pr`)만 남아 있었다. (e) §6의 커밋 조회를 `gh pr view --json commits`에서 `gh api --paginate .../pulls/<n>/commits`로 교체 — 전자는 100건에서 끊기고 **가장 오래된** 100건을 주므로 긴 PR에서 head 커밋이 빠진다(kubernetes/kubernetes#141727로 실증: 반환 100건, 마지막이 `3e8a81e`인데 실제 head는 `9c3b2d0`). n차 라운드 판별이 최근 커밋 타임스탬프에 걸려 있으므로 무음 오판이 된다. REST 페이지네이션은 같은 PR에서 head를 포함한다
+- `description`은 고치지 않았다 — "PR 템플릿" 어휘 손실과 설정 변경 트리거 갭이 지적됐으나 두 질의(`이 저장소 PR 템플릿 …`, `이번 세션에서 배운 규칙을 배포 설정에 반영해줘`) 모두 격리 리그에서 트리거되어 전제가 재현되지 않았다(2/2 PASS). 216/220자에서 재작성하는 대신 그 두 질의를 회귀 세트에 고정했다 — 트리거 케이스 9 → 11(true 6 → 8)
+- 2차 사후 리뷰(diff 전체 독립 검토) findings 7건 반영 — (a) 이 변경 이력 자체의 허위 주장 삭제: `commands/upstream-pr.md:25`의 `§1–§5` 참조를 §1–§7로 "정정"했다고 적었으나 HEAD의 그 줄에는 § 참조가 없었고(삭제된 `upstream-pr` 스킬을 SSOT로 가리키는 문장이었다) 구 스킬은 5섹션도 아니었다 — 작업 중 초안 수정을 HEAD 대비 정정으로 오기한 것이므로 "방법론 참조 재지정"으로 바꿨다(`docs/INDEX.md:144`도 동일). (b) §6 코멘트 조회 jq에 `\(.created_at)` 추가 — "어떤 커밋보다 먼저 쓰인 코멘트는 이미 처리됐을 수 있다"는 §6의 근거와 `evals.json` #10이 코멘트·커밋 타임스탬프 비교를 요구하는데 조회는 `path:line`·`user`·`body`만 투영해, 스킬을 그대로 따른 모델이 비교할 입력을 갖지 못했다. 필드 실재와 형식은 실측 확인(`cli/cli#12444` → `2026-01-08T01:09:41Z`, `.commit.committer.date`와 같은 ISO-8601이라 직접 비교된다). 두 조회가 모두 타임스탬프로 시작하게 되어 본문 설명도 그에 맞췄다. (c) `evals.json` #8의 과잉 수용 제거 — "명시적으로 라벨링한 가정으로 기록"도 통과시켰는데, magic number와 skip된 테스트는 그 *이유*가 본문에 쓸 내용을 바꾸므로 스킬 자체 논리("답이 쓸 내용을 바꾸지 않을 때만 가정을 적는다")로는 물어야 한다 — 라벨 붙인 추측을 통과시키던 절이었다. (d) 폴백 템플릿의 `perf` 삭제 — "커밋 type과 일치하는 하나"라고 하면서 `commit-rules`에 없는 type을 제시했다(두 트윈). (e) KO 조사 오류 정정 — `SKILL-ko.md:167` "hunk가 가장 빨리 찾을 수 있고"는 hunk를 찾는 주체로 만든다 → "hunk는 가장 빨리 찾아낼 수 있고". (f) 과장 표현 완화 — "셸 보간을 온전히 통과하지 못한다"는 반증 가능하다(제대로 인용하면 통과한다) → "셸 인용 과정에서 쉽게 망가진다". (g) 트윈 마크업 비대칭 1건 해소(`upstream-config-ko.md:4` 볼드 제거)
 
 ### 2026-09-09 (v1.16.0 이후)
 

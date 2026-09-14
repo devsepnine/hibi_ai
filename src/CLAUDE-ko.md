@@ -33,7 +33,7 @@ always-on 워크플로우와 의사결정 절차를 정의한다. 상세하고 �
 - 사용자 수정이 있을 때마다 그 패턴을 `MEMORY.md`에 기록한다
 - 같은 실수를 막는 규칙을 쓰고 — 즉시 적용한다
 - 세션 시작 시 관련 레슨을 검토한다
-- 이 프로젝트를 넘어 일반화되는 교훈은 배포 설정에 반영하자고 제안하고, 사용자가 동의하면 `/upstream-pr`을 실행한다. 개인적인 것은 `MEMORY.md`에 남긴다
+- 이 프로젝트를 넘어 일반화되는 교훈은 배포 설정에 반영하자고 제안하고, 사용자가 동의하면 `/upstream-pr` 커맨드를 실행한다 — 이 경로를 소유한 `pull-request` 스킬을 로드한다. 개인적인 것은 `MEMORY.md`에 남긴다
 
 ### 4. Verify before completion
 - 작동을 증명하지 않고 작업을 완료로 표시하지 않는다
@@ -167,7 +167,7 @@ Next:
 | 정책 | 단일 출처(SSOT) | 로드 방법 |
 |---|---|---|
 | 커밋 컨벤션 | `commit-rules` skill | `/commit` 또는 git commit 시 트리거 |
-| PR 가이드 | `pull-request` skill | `/pull-request` 또는 PR 작업 시 트리거 |
+| PR 가이드 · 업스트림 설정 기여 | `pull-request` skill | `/pull-request`, `/upstream-pr` 또는 PR 작업 시 트리거 |
 | 보안 규칙 / OWASP | `security-review` skill | `/security-review` 또는 인증·입력·시크릿 시 트리거 |
 | 테스트 & TDD | `tdd-workflow` skill | `/tdd` 또는 신규 기능·버그 수정 시 트리거 |
 | 코딩 스타일 / 클린 코드 | `coding-standards` skill | 코드 리뷰·작성 시 트리거 |

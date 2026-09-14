@@ -1,129 +1,264 @@
 ---
 name: pull-request
-description: PR creation per project convention — title format, template, pre-PR checklist, review guidance. Use when opening or reviewing a GitHub PR. PR 생성, 풀리퀘스트, PR 템플릿, PR 리뷰.
+description: PR body from the diff, review that questions whether each change is needed, comment triage. Use when opening, reviewing, or answering review comments on a GitHub PR. PR 생성, 풀리퀘스트, PR 리뷰, 리뷰 코멘트 반영, 업스트림 PR, 설정 개선 환류.
 ---
 
-## PR 제목 형식
+# Pull Request
 
-```
-[TICKET-ID] <One-line Summary>
-```
+PR은 배송 수단이 아니라 리뷰 요청이다. 다른 사람이 변경을 판단할 수 있게 만드는 것이
+PR의 임무다 — 무엇을 하는지, 왜 하는지, 무엇이 깨질 수 있는지, 동작한다는 증거는
+무엇인지. 아래 모든 것이 그것을 위해 존재한다. 규약을 이 문서가 아니라 작업 중인
+저장소에서 가져오는 이유도 같다 — 자기 팀이 정의한 필드를 찾는 리뷰어는 기대한 자리에서
+그것을 찾을 수 있어야 한다.
 
-예시:
-- `[PP-XXXX] Add user authentication system`
-- `[PP-XXXX] Fix payment module bug`
+**추측하지 말고 묻는다.** 나쁜 PR은 대개 두 가지 추측에서 나온다. 본문을 diff가 아니라
+브랜치명이 암시하는 것에서 쓰는 것, 그리고 리뷰 코멘트가 이 PR에 속하는지 확인하지 않고
+반영하는 것. diff도 스레드도 티켓도 답을 주지 않으면 묻는다 — 질문 한 번이 리뷰어가
+믿고 인용하게 될 근거를 지어내는 것보다 싸다. 답이 쓸 내용을 바꾸지 않는 경우라면
+막히지 말고 그 가정을 본문에 적어 둔다.
 
-## PR 설명 템플릿
+## 두 가지 케이스
 
-```markdown
-#### Issue Type
-- [ ] feat (feature add) / [ ] feat (feature remove)
-- [ ] fix (bug fix)
-- [ ] refactor / [ ] perf / [ ] chore / [ ] style / [ ] docs / [ ] test
+| 필요한 것 | 위치 |
+|---|---|
+| 어떤 저장소에서든 PR을 열거나 갱신·리뷰하거나 코멘트에 답할 때 | 아래 §1–§7 |
+| 세션에서 얻은 개선을 배포 설정으로 승격할 때 | `references/upstream-config.md` — §1–§7 위에 소스 확인, 4단 게이트, 프라이버시 검토를 더한다 |
+| 기본 본문 템플릿과 리뷰 체크리스트 (폴백 전용) | `references/pr-body.md` |
 
-#### Priority
-> Per JIRA Priority criteria
-- [ ] Blocker / [ ] Urgent / [ ] Critical / [ ] Major / [ ] Trivial
+## 1. 규약은 기억이 아니라 저장소에서 읽는다
 
-#### Background
-> What this PR does and why.
+아래 값은 모두 탐색 가능하다. 하나라도 가정하면 존재하지 않는 브랜치를 타깃하거나
+프로젝트가 쓰지 않는 티켓 접두사를 붙인 PR이 나온다.
 
-#### Changes
-> Major modifications. Add reviewer notes for non-obvious parts.
-
-**API Changes:**
-- [ ] No Breaking / [ ] Breaking (affects backward compat)
-
-**Database Changes:**
-- [ ] No schema / [ ] Schema (migration required) / [ ] Data migration
-
-**Major Files:** `path/file.ext` — summary
-
-#### Testing
-**Automated:**
-- [ ] Unit / Integration / E2E pass
-- [ ] New tests for new code · Regression for bug fixes
-
-**Manual:**
-- [ ] Local + dev env confirmed
-- [ ] Browser / mobile (if UI)
-
-**Performance:**
-- [ ] No impact / Improvement / Degradation (reason: …)
-
-#### Screenshots (UI changes only)
-**Before / After**
-
-#### Links
-- JIRA: [PP-XXXX](https://ggnetwork.atlassian.net/browse/PP-XXXX)
-- Docs / Design / Related PR
-
-#### Checklist
-- [ ] Self-review done
-- [ ] Commits follow `commit-rules` skill
-- [ ] No console.logs / debug code
-- [ ] No secrets or sensitive data
-- [ ] Docs updated · package-lock if deps changed · CHANGELOG for breaking
-```
-
-## 필수 체크 (다른 skill/rule에 위임)
-
-| Check | Reference |
-|-------|-----------|
-| 코드 임계값 (file/function/complexity) | `coding-standards` skill → `references/code-thresholds.md` |
-| 보안 (시크릿, 인젝션, XSS, authn) | `security-review` skill |
-| 테스팅 (커버리지, 회귀, E2E 경로) | `tdd-workflow` skill |
-| 빌드 / 타입 / lint 검증 | `verification-loop` skill |
-| 커밋 메시지 형식 | `commit-rules` skill |
-
-**PR 사이즈 원칙**: 작업 / 커밋 / PR을 작게 유지한다. 논리 단위로 분할한다. 각 커밋은 독립적으로 빌드 및 테스트 가능해야 한다.
-
-## PR 전 체크리스트
-
-1. **코드 품질**: `verification-loop` 실행 (lint, type-check, tests).
-2. **브랜치 확인**: feature 브랜치 확인.
-3. **업데이트**: 타깃에 rebase (`upstream/develop` 또는 `origin/develop`).
-4. **커밋 정리**: 노이즈 squash, `commit-rules` 따름.
-5. **충돌**: 해결.
-6. **테스트**: 모두 통과.
-7. **문서**: 동작 또는 API가 변경되면 업데이트.
-8. **빌드**: 성공.
-9. **보안**: 시크릿/PII/디버그 코드/console.log 없음.
-
-## 리뷰 가이드라인
-
-**리뷰어:**
-- [ ] 기능성 — 요구사항 충족
-- [ ] 코드 품질 — 가독성, 유지보수성
-- [ ] 설계 — 적절한 아키텍처/패턴
-- [ ] 보안 — 취약점 없음 (깊이는 `security-review` skill에 위임)
-- [ ] 성능 — 부정적 영향 없음
-- [ ] 테스팅 — 커버리지 적절
-- [ ] 문서 — 필요한 곳에 업데이트
-
-**작성자:**
-- [ ] PR 열기 전 셀프 리뷰
-- [ ] 컨텍스트 제공 (무엇만이 아닌 왜)
-- [ ] 24h 내에 피드백 응답
-- [ ] 요청된 변경 즉시 적용
-- [ ] CI/CD 통과
-
-## gh CLI 명령어
+**base 브랜치** — `main` 이나 `develop` 을 가정하지 않는다:
 
 ```bash
-# View
-gh pr list
-gh pr view <PR-number>
-gh pr checkout <PR-number>
-
-# Update
-gh pr edit <PR-number> --title "..." --body "..."
-gh pr ready <PR-number>
-gh pr merge <PR-number> --squash
+gh repo view --json defaultBranchRef -q .defaultBranchRef.name
+gh pr list --state merged --limit 10 --json baseRefName -q '.[].baseRefName' | sort | uniq -c
 ```
 
-## PR 언어 가이드라인
+기본 브랜치는 출발점 추측이고, 최근 머지된 PR이 실제로 무엇을 타깃했는지가 더 강한
+신호다. 통합 브랜치로 머지하는 프로젝트가 적지 않기 때문이다. 둘이 어긋나면 그 사실을
+말하고 묻는다.
 
-- 기술 용어는 영어 (API, database, migration, refactoring 등)
-- 언어 지정이 없으면 기본은 영어
-- 예: "Add caching logic to improve API response speed"
+**티켓 ID** — 추출하되 만들어내지 않는다:
+
+```bash
+git branch --show-current          # feature/ABC-123-thing → ABC-123
+git log --oneline -20              # 기존 커밋은 어떤 접두사를 쓰는가?
+```
+
+브랜치와 히스토리에서 티켓이 나오지 않으면 **접두사를 통째로 생략한다** — 제목은 요약만
+쓴다. 설정 PR, 개인 프로젝트, 트래커가 없는 저장소는 모두 정당하게 티켓이 없고,
+`[TICKET-1]` 같은 자리표시자를 만들어 넣는 것은 없는 것보다 나쁘다.
+
+따라서 제목 형식은:
+
+```
+[ABC-123] Add user authentication system     # 티켓이 있을 때
+Add user authentication system               # 트래커가 없거나 해당되지 않을 때
+```
+
+**본문** — 저장소 자체 템플릿이 무조건 우선한다:
+
+```bash
+ls .github/pull_request_template.md .github/PULL_REQUEST_TEMPLATE.md \
+   .github/PULL_REQUEST_TEMPLATE/ docs/pull_request_template.md 2>/dev/null
+```
+
+그 템플릿의 섹션을 §2가 뽑아낸 내용으로 채운다. 아무것도 없을 때만
+`references/pr-body.md` 로 폴백한다. 둘을 섞지 않는다 — 자기 템플릿에 낯선 섹션이 끼어든
+것을 읽는 리뷰어는 프로젝트가 무엇을 요구하는지 구분할 수 없다.
+
+**트래커 링크** — 저장소가 문서화한 규약을 따른다(기존 PR 본문에 드러난다). 트래커
+호스트를 코드에 박지 않는다.
+
+## 2. 본문은 diff에서 쓴다
+
+한 글자라도 쓰기 전에 diff를 읽는다. 브랜치명·티켓·커밋 메시지는 누군가의 의도를
+말하지만, PR이 실제로 무엇을 하는지 말하는 것은 diff뿐이다.
+
+```bash
+git diff --stat "$BASE"...HEAD     # 먼저 형태: 몇 파일, 얼마나 큰지
+git diff "$BASE"...HEAD            # 그다음 내용, hunk 단위로
+git log --oneline "$BASE"..HEAD    # 작성자가 진행하면서 남긴 말
+```
+
+점 두 개가 아니라 세 개다: `"$BASE"...HEAD` 는 이 브랜치가 갈라진 뒤 더한 것이므로,
+base 브랜치가 움직인 내역이 설명할 diff에 섞이지 않는다.
+
+**본문과 diff를 양방향으로 맞춘다.** 자명하지 않은 모든 hunk가 본문 어딘가에 등장하고,
+본문의 모든 주장이 hunk로 대응된다. 대응되지 않는 항목은 리뷰어가 찾기 전에 고칠 수 있는
+결함이다 — 목록에 없는 hunk는 흘러들어온 범위이고, 대응 없는 주장은 허구다.
+
+**diff가 보여줄 수 없는 것을 써서 간결해진다.** 리뷰어가 알아야 할 변경 하나에 한 줄.
+diff는 그들이 읽을 수 있으므로 서술하지 않고, 그 지면을 왜 이 방식인지·무엇을 버렸는지·
+어디서부터 읽어야 하는지·무엇이 깨질 수 있는지에 쓴다. diff를 산문으로 되풀이한 본문은
+보이지 않는 것을 말하는 세 줄보다 길고 덜 유용하다.
+
+**왜를 복원할 수 없으면 묻는다.** 매직 넘버, 건너뛴 테스트, 의존성 버전 상승, 티켓이
+암시하지 않는 동작 변경 — diff도 히스토리도 설명하지 않으면 그럴듯한 이유를 짜지 말고
+작성자에게 묻는다. 틀린 이유를 적은 본문은 이유를 뺀 본문보다 나쁘다. 틀린 이유는 다음
+설계 논의에서 인용되기 때문이다.
+
+Changes 섹션이 리뷰어가 머릿속에 담을 수 있는 크기를 넘기면 문제는 본문이 아니라 PR이다 —
+쪼갠다 (§3의 크기).
+
+## 3. PR 전 게이트를 통과한다
+
+1. **검증** — lint, type-check, 테스트 통과 (`verification-loop`).
+2. **브랜치** — base 브랜치가 아니라 feature 브랜치에 있다.
+3. **최신화** — §1에서 확인한 타깃에 rebase.
+4. **커밋** — 노이즈 squash, 각 커밋이 독립적으로 빌드 가능 (`commit-rules`).
+5. **충돌** — 해결.
+6. **문서** — 동작이나 API가 변경되면 갱신.
+7. **시크릿** — diff에 자격 증명, PII, 디버그 코드, 남은 로깅 없음.
+
+각각의 깊이는 다른 곳에 있다. 이 표는 정책이 아니라 라우팅이다:
+
+| 확인 | Source of truth |
+|-------|-----------------|
+| 파일·함수 크기, 복잡도 | `coding-standards` → `references/code-thresholds.md` |
+| 시크릿, 인젝션, XSS, authn | `security-review` |
+| 커버리지, 회귀, E2E 경로 | `tdd-workflow` |
+| 빌드, 타입, lint | `verification-loop` |
+| 커밋 메시지 형식 | `commit-rules` |
+| 결합도와 모듈 경계 | `dependency-design` |
+| 본문에 넣을 변경 요약 | `qa-handoff` |
+| 이 변경에 필요한 엄격도 | `do-178c` (A–E 티어) |
+
+**크기** — PR을 작게 유지하고 논리 단위로 나눈다. 희소한 자원은 리뷰어의 주의력이다.
+리뷰 가능한 PR 둘이 도장만 받는 PR 하나보다 낫다.
+
+## 4. 요청받았을 때만 올린다
+
+**브랜치를 준비하고 설명을 작성하는 것은 PR을 열 권한이 아니다.** PR을 여는 것은 외부로
+나가는 행위다 — 사람들에게 알림이 가고 브랜치가 공개된다. 커밋과 같은 규칙으로, 명시적
+요청이 있을 때만 한다. 공개 저장소로 나가는 경우는 문턱이 더 높다 —
+`references/upstream-config.md` 참조.
+
+렌더링된 제목과 본문을 먼저 보여주고, 그다음:
+
+```bash
+gh pr create --base "$BASE" --title "$TITLE" --body-file pr-body.md --draft
+gh pr ready <PR-number>      # draft가 아니게 될 때
+```
+
+- **`--body` 가 아니라 `--body-file`** — 백틱과 따옴표가 섞인 멀티라인 본문은 셸 인용 과정에서 쉽게 망가진다.
+- **아직 움직이는 것이 있으면 `--draft`** — CI 미확인, 미해결 질문, rebase 가능성.
+- **`--fill` 은 깔끔한 단일 커밋에서만** — 커밋 메시지로 본문을 만들어 §2를 통째로 건너뛰므로, 노이즈 커밋이 있는 브랜치에서는 아무도 쓰지 않은 본문이 나온다.
+
+## 5. 기존 PR을 리뷰한다
+
+판단하기 전에 수집한다 — diff만으로는 CI가 통과했는지, 누가 이미 그 지적을 했는지 알 수
+없다:
+
+```bash
+gh pr view <n> --json title,body,baseRefName,isDraft,reviewDecision,statusCheckRollup
+gh pr diff <n> --name-only     # 먼저 형태
+gh pr diff <n>                 # 그다음 내용
+gh pr view <n> --comments      # 이미 나온 이야기
+gh pr checks <n>
+```
+
+그다음 가장 저렴한 질문부터 이 순서로 판단한다:
+
+**a. diff가 본문과 맞는가?** §2처럼 양방향으로 대응시킨다. 본문이 언급조차 하지 않는
+hunk는 가장 빨리 찾아낼 수 있고, 작성자가 올릴 의도가 없던 범위일 가능성이 가장 높다.
+
+**b. 각 변경이 정말 필요한가?** PR 전체가 아니라 hunk 단위로 묻는다. 본문은 목적을
+명시하는데, 그 목적에 기여하지 않는 hunk는 언급되지 않은 범위이거나 아무도 요청하지 않은
+코드다.
+
+- **삭제 테스트** — 이 hunk를 지우면 무엇이 깨지는가? "아무것도"라면 태어날 때부터 죽은 코드다: 쓰이지 않는 export, 어떤 호출자도 넘기지 않는 파라미터, 어떤 입력도 닿을 수 없는 분기.
+- **호출자 수** — 호출자가 정확히 하나이고 diff 안에 두 번째 용례가 없는 새 추상화·옵션·플래그·제네릭 파라미터는 투기적이다. 두 번째 용례가 무엇이 될지 묻고, 없다면 구체적인 쪽이 더 작은 변경이다.
+- **이미 있다** — 새 헬퍼를 받아들이기 전에 저장소를 grep한다. 재구현은 가장 비싼 추가다. 이제 두 사본 모두를 유지해야 하기 때문이다.
+- **실행될 일 없는 가드** — non-nullable 타입에 붙은 null 체크, throw하지 않는 코드를 감싼 `try`, 호출자가 이미 한 검증. 하나하나가 다음 독자에게 그 조건이 도달 가능하다고 말한다.
+- **목적과 무관** — 기능 PR에 끼워 넣은 이름 변경, 포매팅 일괄 적용, 지나가며 한 수정. 원하는 것이 잘못은 아니지만 여기 숨기는 것은 잘못이다. diff를 리뷰 불가능하게, revert를 쓸 수 없게 만든다.
+
+필요성은 판결이 아니라 질문이다. hunk가 무엇을 위한 것인지 판단할 수 없으면 작성자에게
+묻는다 — 답은 보통 한 문장이고, 애초에 본문에 있어야 했던 문장이다.
+
+**c. 맞게 동작하는가?** 엣지 케이스, 에러 경로, 기존 호출자. 깊이는 `/code-review`,
+diff가 인증·입력 처리·시크릿을 건드리면 `security-review`.
+
+**d. 테스트되는가?** 이 변경을 되돌리면 실패하는 테스트가 있는가? 없다면 커버리지 수치와
+무관하게 그 주장은 검증되지 않았다 (`tdd-workflow`).
+
+리뷰를 게시하는 것도 외부로 나가는 행위다 — 작성해서 보여주고, 요청받았을 때만 게시한다:
+
+```bash
+gh pr review <n> --comment --body-file review.md
+gh pr review <n> --approve | --request-changes --body-file review.md
+```
+
+블로킹 지적과 제안을 명시적으로 구분한다. 동등한 무게의 코멘트 8개를 나열한 리뷰는
+작성자가 그중 어느 둘이 실제로 블로킹인지 추측하게 만든다.
+
+## 6. 리뷰 코멘트를 처리한다
+
+리뷰 코멘트는 지시가 아니라 주장이다. 분류 없이 전부 반영하는 것이 집중된 PR을 리뷰
+불가능하게 만드는 경로이고, 잘못된 코멘트가 배포되는 코드가 되는 경로다.
+
+해결된 라운드까지 포함해 스레드 전체를 먼저 읽는다. 여기 쓰이는 조회는 모두 기본값에서
+조용히 잘리므로 페이지를 이어붙인다 — REST 한 페이지는 30건에서 끊기고, `gh pr view
+--json commits` 는 가장 오래된 100건에서 끊긴다. 긴 PR에서는 n차 라운드가 기준으로 삼는
+최근 커밋이 바로 그 잘리는 부분이다.
+
+```bash
+gh pr view <n> --comments                     # 훑어보기 — 최근 것만 렌더링된다
+gh api --paginate "repos/{owner}/{repo}/pulls/<n>/comments" \
+  --jq '.[] | "\(.created_at) \(.path):\(.line // .original_line) \(.user.login): \(.body)"'
+gh api --paginate "repos/{owner}/{repo}/pulls/<n>/commits" \
+  --jq '.[] | "\(.commit.committer.date) \(.sha[0:7]) \(.commit.message | split("\n")[0])"'
+```
+
+라인 단위 코멘트는 `path` 와 `line` 을 갖는데, 이 PR이 바꾼 줄에 달린 코멘트와 그저 옆에
+있는 코드에 달린 코멘트를 구분해 주는 것이 그 값이다. 두 조회 모두 타임스탬프로 시작하는
+것이 2차·3차 라운드를 다룰 수 있게 해 준다 — 어떤 커밋보다 먼저 쓰인 코멘트는 이미
+처리됐을 수 있고, 그것에 다시 답하면 리뷰어의 다음 라운드를 아무것도 아닌 데 쓰게 한다.
+
+코드를 건드리기 전에 각 코멘트를 분류한다:
+
+| 코멘트가 | 무엇인가 | 무엇을 하는가 |
+|---|---|---|
+| 이 PR이 바꾼 줄의 결함을 지적한다 | 범위 내, 블로킹 | 여기서 고친다 |
+| 바뀐 줄 안의 스타일·이름 문제다 | 범위 내 | 싸면 여기서 고치고, 보류하면 보류한다고 밝힌다 |
+| 이 PR이 옮기기만 했거나 우연히 스친 코드를 가리킨다 | 기존 문제 | 후속 작업으로 제안하고, 이 diff를 키우지 않는다 |
+| 아무도 합의하지 않은 동작을 요구한다 | 새 요구사항 | 이 PR에 들어오기 전에 작성자와 리뷰어의 합의가 필요하다 |
+| 앞선 라운드에서 정리된 지적을 반복한다 | 이미 처리됨 | 커밋이나 앞선 답변을 링크하고, 다시 고치지 않는다 |
+| 코드가 반증하는 전제에 기대고 있다 | 잘못된 지적 | 근거를 들어 답하고, 조용히 따르지 않는다 |
+
+**범위 테스트**: 이 PR이 애초에 없었더라도 이 변경이 필요했을까? 그렇다면 이 PR의 일이
+아니라 후속 작업이다. 범위를 키우는 것은 작성자와 리뷰어가 함께 내려 스레드에 기록하는
+결정이고, 조용한 추가 커밋이 되어서는 안 된다.
+
+**분류가 불분명하면 코멘트 작성자에게 묻는다.** "이걸 이 PR에서 할까요, 후속으로 할까요?"
+한 줄이면 정리된다. 추측은 두 방향 중 하나로 실패한다 — 리뷰 가능한 크기를 넘겨 자란 PR,
+또는 지적이 조용히 버려진 리뷰어.
+
+반영하지 않은 것까지 모든 코멘트에 답한다 — 어느 분류였고 어디로 갔는지 밝힌다. 답이
+없는 코멘트는 무시된 것으로 읽히고, 다음 라운드에서 다시 올라온다.
+
+## 7. 브랜치 네이밍
+
+```
+<type>/<ticket>-<short-topic>     # feat/ABC-123-oauth-login
+<type>/<short-topic>              # fix/token-refresh-race — 티켓 없음
+improve/<topic>                   # 설정 기여 (references/upstream-config.md 참조)
+```
+
+`<type>` 은 `commit-rules` 의 커밋 type과 일치시킨다. base 브랜치에 직커밋하지 않는다.
+
+## 관련 스킬
+
+| 필요한 것 | 위치 |
+|---|---|
+| 설정 기여 방법론 (게이트, 프라이버시, 소스 확인) | `references/upstream-config.md` 또는 `/upstream-pr` |
+| 기여 전에 세션 패턴을 스킬로 먼저 추출 | `/learn` |
+| 기본 본문 템플릿, 리뷰어·작성자 체크리스트 | `references/pr-body.md` |
+| 커밋 메시지 형식과 분리 | `commit-rules` |
+| 본문에 붙일 변경 요약 | `qa-handoff` |
+| 코드 리뷰 깊이 | `/code-review` 또는 `code-reviewer` 에이전트 |
+| 보안 사인오프 | `security-review` |
+| 엄격도를 정하는 티어 정의 (A–E) | `do-178c` |

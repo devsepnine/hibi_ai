@@ -108,7 +108,7 @@ read as the origin of a component that came from somewhere else.
 
 This exists so an installed config can name its own origin — the version maps to
 a release tag, so the exact source tree is recoverable, and the upstream is where
-improvements go back. The `upstream-pr` skill reads this file to find the
+improvements go back. The `pull-request` skill reads this file to find the
 repository without needing a clone. Only hibi's own directory is written; the
 agent-owned `~/.claude` tree is left alone.
 
