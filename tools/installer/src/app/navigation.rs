@@ -1,15 +1,14 @@
-use super::types::{FocusArea, Tab};
+use super::types::{FocusArea, Tab, View};
 use super::App;
 use crate::tree::TreeView;
 
 impl App {
     /// Cycle keyboard focus between the tab bar and the content pane.
     ///
-    /// Bound to `Tab`/`Shift+Tab` from the List view. While focus sits on
-    /// `Tabs`, arrow/`h`/`l` keys move between tabs; while it sits on
-    /// `Content`, those same keys drive list / folder navigation. Keeping a
-    /// single toggle (rather than two distinct keybindings) means the user
-    /// only needs to remember one shortcut to switch panes.
+    /// Bound to `Tab`/`Shift+Tab` from the List view, kept alongside the
+    /// `1`/`2` pane jumps for muscle memory. While focus sits on `Tabs`,
+    /// arrow/`h`/`l` keys move between tabs; while it sits on `Content`,
+    /// those same keys drive list / folder navigation.
     pub fn toggle_focus(&mut self) {
         self.focus = match self.focus {
             FocusArea::Content => FocusArea::Tabs,
@@ -17,11 +16,81 @@ impl App {
         };
     }
 
-    /// Force focus back to the content pane. Used by `Enter`/`Esc`/`↓` from
-    /// the tab bar so the user has multiple intuitive ways to "commit" a
-    /// tab selection and resume list navigation.
+    /// Move focus to the tab bar. Bound to `1` — the lazygit convention of
+    /// addressing panes by number instead of cycling through them.
+    pub fn focus_tabs(&mut self) {
+        self.focus = FocusArea::Tabs;
+    }
+
+    /// Force focus back to the content pane. Bound to `2`, and to
+    /// `Enter`/`Esc`/`↓` from the tab bar so the user has multiple intuitive
+    /// ways to "commit" a tab selection and resume list navigation.
     pub fn focus_content(&mut self) {
         self.focus = FocusArea::Content;
+    }
+
+    /// Open the `?` keybinding reference.
+    ///
+    /// The scroll resets so the table always opens at the first section — a
+    /// remembered offset from a previous visit would hide the top rows with no
+    /// visible reason.
+    pub fn open_help(&mut self) {
+        self.help_scroll = 0;
+        self.current_view = View::Help;
+    }
+
+    /// Dismiss the reference and hand the keyboard back to the list.
+    ///
+    /// Help is only reachable from `View::List`, so returning there is exact
+    /// rather than a guess at where the user came from.
+    pub fn close_help(&mut self) {
+        self.current_view = View::List;
+    }
+
+    /// Scroll the binding table down, stopping once the last row is on screen.
+    ///
+    /// `max` comes from the caller because it depends on the terminal height,
+    /// which `App` deliberately knows nothing about. Clamping matters here in a
+    /// way it does not for the diff: the table is short, so an unclamped scroll
+    /// would leave the user staring at an empty box with no hint that the way
+    /// back is `k`.
+    pub fn scroll_help_down(&mut self, max: u16) {
+        self.help_scroll = self.help_scroll.saturating_add(1).min(max);
+    }
+
+    pub fn scroll_help_up(&mut self) {
+        self.help_scroll = self.help_scroll.saturating_sub(1);
+    }
+
+    /// Answer `Esc` from the content pane: leave for the CLI picker, asking
+    /// first if there is anything to lose.
+    ///
+    /// The prompt is conditional rather than always-on because the cost of
+    /// leaving is: with nothing ticked the trip is free and a confirmation
+    /// would be noise, while with ticks it is one keystroke away from
+    /// discarding work the picker's re-scan cannot restore.
+    pub fn request_exit_to_main(&mut self) {
+        if self.has_selection() {
+            self.current_view = View::ConfirmExit;
+        } else {
+            self.exit_to_main();
+        }
+    }
+
+    /// Discard the selections and hand the keyboard back to the CLI picker.
+    ///
+    /// The stale status message is left alone: the picker and the loading screen
+    /// both return before the status bar is drawn, and `finish_loading` always
+    /// overwrites it on the way back, so clearing it here would be a write no
+    /// render can observe.
+    pub fn exit_to_main(&mut self) {
+        self.clear_all_selections();
+        self.current_view = View::CliSelection;
+    }
+
+    /// Dismiss the exit prompt, leaving every selection as it was.
+    pub fn cancel_exit(&mut self) {
+        self.current_view = View::List;
     }
 
     pub fn next_tab(&mut self) {
@@ -138,69 +207,7 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::app::App;
-
-    fn fresh_app() -> App {
-        // App::new() does filesystem I/O for source resolution which would
-        // make the test brittle, so we hand-construct only the fields the
-        // focus helpers actually touch.
-        App {
-            target_cli: None,
-            available_tabs: Vec::new(),
-            tab: Tab::Skills,
-            current_view: crate::app::View::List,
-            focus: FocusArea::Content,
-            cli_selection_index: 0,
-            should_quit: false,
-            theme: crate::theme::Theme::default(),
-            components: Vec::new(),
-            list_index: 0,
-            tree_views: std::collections::HashMap::new(),
-            mcp_servers: Vec::new(),
-            mcp_index: 0,
-            mcp_scope: crate::mcp::McpScope::default(),
-            mcp_project_path: String::new(),
-            plugins: Vec::new(),
-            plugin_index: 0,
-            diff_content: None,
-            diff_scroll: 0,
-            source_dir: std::path::PathBuf::new(),
-            sources: Vec::new(),
-            dest_dir: std::path::PathBuf::new(),
-            status_message: None,
-            current_output_style: None,
-            current_statusline: None,
-            processing_progress: None,
-            processing_total: None,
-            processing_log: Vec::new(),
-            processing_queue: Vec::new(),
-            is_removing: false,
-            animation_frame: 0,
-            needs_refresh: false,
-            refreshing: false,
-            processing_complete: false,
-            cancelling: false,
-            env_input_server_idx: None,
-            env_input_vars: Vec::new(),
-            env_input_current: 0,
-            env_input_buffer: String::new(),
-            env_input_values: Vec::new(),
-            project_path_buffer: String::new(),
-            source_entries: Vec::new(),
-            source_auto_update: false,
-            source_list_index: 0,
-            source_add_kind: None,
-            source_input_buffer: String::new(),
-            source_edit_index: None,
-            source_sync_status: None,
-            source_sync_cancel_tx: None,
-            source_input_error: None,
-            source_pending_url: String::new(),
-            source_pending_branch: None,
-            source_pending_root: None,
-            source_sync_rx: None,
-        }
-    }
+    use crate::app::test_support::fresh_app;
 
     #[test]
     fn toggle_focus_cycles_between_panes() {
@@ -221,5 +228,74 @@ mod tests {
         // Calling again must not flip back to Tabs.
         app.focus_content();
         assert_eq!(app.focus, FocusArea::Content);
+    }
+
+    /// Reopening must not resume where the last visit left off, and closing
+    /// must land back on the list rather than on whatever view came before.
+    #[test]
+    fn help_opens_at_the_top_and_closes_back_to_the_list() {
+        let mut app = fresh_app();
+        app.help_scroll = 7;
+
+        app.open_help();
+        assert_eq!(app.current_view, View::Help);
+        assert_eq!(app.help_scroll, 0);
+
+        app.close_help();
+        assert_eq!(app.current_view, View::List);
+    }
+
+    /// The clamp is the point: scrolling past `max` would show a blank box, and
+    /// every press held past the end would then need an answering `k` before the
+    /// table moved again.
+    #[test]
+    fn help_scroll_stops_at_the_last_row() {
+        let mut app = fresh_app();
+
+        for _ in 0..5 {
+            app.scroll_help_down(2);
+        }
+        assert_eq!(app.help_scroll, 2);
+
+        app.scroll_help_up();
+        assert_eq!(app.help_scroll, 1);
+    }
+
+    /// A terminal tall enough for the whole table must not scroll at all.
+    #[test]
+    fn help_does_not_scroll_when_everything_fits() {
+        let mut app = fresh_app();
+        app.scroll_help_down(0);
+        assert_eq!(app.help_scroll, 0);
+    }
+
+    /// Coming back from the picker re-scans, and a shorter result would leave
+    /// the cursors past the end of their lists. The three are asserted together
+    /// because each indexes a different list and only one of them is reset by
+    /// anything else — a fix that reached `mcp_index` alone would leave `Space`
+    /// dead in the Plugins tab.
+    #[test]
+    fn re_entering_from_the_picker_resets_every_list_cursor() {
+        let mut app = fresh_app();
+        app.list_index = 3;
+        app.mcp_index = 7;
+        app.plugin_index = 5;
+
+        app.exit_to_main();
+        assert_eq!(app.current_view, View::CliSelection);
+
+        app.select_cli(crate::app::TargetCli::Claude)
+            .expect("select_cli needs only a home directory");
+        assert_eq!((app.list_index, app.mcp_index, app.plugin_index), (0, 0, 0));
+    }
+
+    #[test]
+    fn focus_tabs_is_idempotent() {
+        let mut app = fresh_app();
+        app.focus_tabs();
+        assert_eq!(app.focus, FocusArea::Tabs);
+        // Repeated `1` presses must not bounce focus back to Content.
+        app.focus_tabs();
+        assert_eq!(app.focus, FocusArea::Tabs);
     }
 }

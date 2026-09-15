@@ -63,6 +63,36 @@ impl App {
         }
     }
 
+    /// Whether anything is selected anywhere, not just in the visible tab.
+    ///
+    /// Every other helper here is scoped to `self.tab`, which is right for keys
+    /// the user aims at one list. The exit prompt is not one of those: ticks
+    /// survive tab switches, so a tab-scoped check would wave the user off the
+    /// screen while their choices in another tab were still pending.
+    pub fn has_selection(&self) -> bool {
+        self.components.iter().any(|c| c.selected)
+            || self.mcp_servers.iter().any(|m| m.selected)
+            || self.plugins.iter().any(|p| p.selected)
+    }
+
+    /// Drop every selection in every tab.
+    ///
+    /// Leaving the List view for the CLI picker already discards the ticks in
+    /// practice, because coming back re-scans and replaces all three lists.
+    /// Clearing them here makes that the exit's own doing rather than a
+    /// side effect of the loader it happens to be followed by.
+    pub fn clear_all_selections(&mut self) {
+        for c in &mut self.components {
+            c.selected = false;
+        }
+        for m in &mut self.mcp_servers {
+            m.selected = false;
+        }
+        for p in &mut self.plugins {
+            p.selected = false;
+        }
+    }
+
     pub fn deselect_all(&mut self) {
         if self.tab == Tab::McpServers {
             for m in &mut self.mcp_servers {

@@ -68,13 +68,13 @@ impl Default for TreeView {
     }
 }
 
-/// Component fixtures shared by the sibling modules' tests.
+/// Component fixtures shared across module tests.
 #[cfg(test)]
-mod test_support {
+pub(crate) mod test_support {
     use crate::component::{Component, ComponentType, InstallStatus};
     use std::path::PathBuf;
 
-    pub(super) fn make_component(name: &str) -> Component {
+    pub(crate) fn make_component(name: &str) -> Component {
         Component::new(
             ComponentType::Skills,
             name.to_string(),

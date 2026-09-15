@@ -7,6 +7,7 @@ use ratatui::{
 };
 
 use crate::app::{App, FocusArea};
+use super::{pane_border_style, pane_title};
 
 /// Glyphs shown when one or more tabs are scrolled off-screen.
 const LEFT_INDICATOR: &str = "‹";
@@ -19,9 +20,11 @@ const INDICATOR_WIDTH: usize = 1;
 const DIVIDER_WIDTH: usize = 3;
 
 pub fn render(f: &mut Frame, app: &App, area: Rect) {
-    // Titles are just the display names now — keyboard nav has replaced the
-    // legacy 1-0/- direct shortcuts, so there's no reason to spend columns
-    // on number prefixes.
+    // No number prefixes on the tab *items* — the pane *titles* carry them,
+    // this block's own `[1]-` included, on the border above these items.
+    // Tabs are reached by h/l navigation and the digit keys address panes
+    // rather than tabs, so a prefix here would advertise a key that does not
+    // exist while costing columns the truncation budget already fights for.
     let titles: Vec<String> = app.available_tabs
         .iter()
         .map(|tab| tab.display_name().to_string())
@@ -44,20 +47,18 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
     let (visible_titles, visible_selected) =
         build_visible_tabs(&titles, selected_idx, inner_width);
 
-    // Focus styling: when the user has the tab bar focused, brighten the
-    // border and bold/underline the selected title so it's obvious which
-    // pane the next keystroke will affect. Without this cue the focus
-    // toggle would be invisible.
+    // On top of the shared border cue, the focused tab bar also underlines
+    // the selected title — the tab bar is the only pane where the cursor
+    // itself needs to read as "armed for h/l".
     let focused = app.focus == FocusArea::Tabs;
-    let border_color = if focused { app.theme.accent_primary() } else { app.theme.border() };
     let highlight_mod = if focused { Modifier::BOLD | Modifier::UNDERLINED } else { Modifier::BOLD };
 
     let tabs = RataTabs::new(visible_titles.into_iter().map(Line::from).collect::<Vec<_>>())
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .border_style(Style::default().fg(border_color))
-                .title(title)
+                .border_style(pane_border_style(app, FocusArea::Tabs))
+                .title(pane_title(FocusArea::Tabs, &title))
                 .title_style(Style::default().fg(app.theme.text_primary())),
         )
         .select(visible_selected)

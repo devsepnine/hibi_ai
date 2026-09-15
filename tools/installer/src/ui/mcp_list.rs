@@ -6,7 +6,8 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::App;
+use super::{pane_border_style, pane_title};
+use crate::app::{App, FocusArea};
 use crate::mcp::McpStatus;
 
 pub fn render(f: &mut Frame, app: &App, area: Rect) {
@@ -20,8 +21,8 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .border_style(Style::default().fg(app.theme.border()))
-                .title(" MCP Servers ")
+                .border_style(pane_border_style(app, FocusArea::Content))
+                .title(pane_title(FocusArea::Content, "MCP Servers"))
                 .title_style(Style::default().fg(app.theme.text_primary())),
         );
         f.render_widget(empty, area);
@@ -91,8 +92,8 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .border_style(Style::default().fg(app.theme.border()))
-                .title(title)
+                .border_style(pane_border_style(app, FocusArea::Content))
+                .title(pane_title(FocusArea::Content, &title))
                 .title_style(Style::default().fg(app.theme.text_primary())),
         )
         .highlight_style(

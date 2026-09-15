@@ -6,6 +6,8 @@ mod input;
 mod settings;
 pub mod sources;
 mod source_wizard;
+#[cfg(test)]
+pub(crate) mod test_support;
 
 pub use types::{TargetCli, Tab, View, SyncStatus, FocusArea};
 
@@ -46,6 +48,9 @@ pub struct App {
 
     pub diff_content: Option<String>,
     pub diff_scroll: u16,
+
+    /// First visible row of the `?` overlay's binding table.
+    pub help_scroll: u16,
 
     pub source_dir: PathBuf,
     pub sources: Vec<ResolvedSource>,
@@ -171,6 +176,7 @@ impl App {
             plugin_index: 0,
             diff_content: None,
             diff_scroll: 0,
+            help_scroll: 0,
             source_dir: d.source_dir,
             sources: d.sources,
             dest_dir: d.dest_dir,
@@ -218,6 +224,14 @@ impl App {
 
         // Switch to first available tab
         self.tab = self.available_tabs.first().copied().unwrap_or(Tab::Skills);
+
+        // These three index into lists the scan below is about to replace, and a
+        // shorter result leaves them past the end. ratatui clamps the highlight
+        // it draws but not the index behind it, so `Space` would silently toggle
+        // nothing under a cursor the user can plainly see.
+        self.list_index = 0;
+        self.mcp_index = 0;
+        self.plugin_index = 0;
 
         // Switch to loading view - actual scanning will be done in background
         self.current_view = View::Loading;

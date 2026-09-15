@@ -34,6 +34,8 @@ pub(crate) fn dispatch_key(
         app::View::ProjectPath => { handle_project_path_input(app, code); Ok(()) }
         app::View::List => handle_list_input(app, code),
         app::View::Diff => handle_diff_input(app, code),
+        app::View::Help => handle_help_input(app, code),
+        app::View::ConfirmExit => { handle_confirm_exit(app, code); Ok(()) }
         app::View::Sources => app.handle_sources_key(code),
         app::View::SourceAddType => app.handle_source_type_key(code),
         app::View::SourceAddMapTo => app.handle_source_map_to_key(code),
@@ -73,6 +75,21 @@ fn handle_list_input(app: &mut App, key: KeyCode) -> Result<()> {
             app.status_message = Some(format!("Theme: {}", app.theme.mode().name()));
             return Ok(());
         }
+        // The status bar lists only these three keys; `?` is where the rest of
+        // them are documented, so it has to work from either pane.
+        KeyCode::Char('?') => { app.open_help(); return Ok(()); }
+        // Panes are addressable by number (lazygit convention). The digits come
+        // from `FocusArea::shortcut` because each pane's border title prints the
+        // same value — a literal here could drift out from under the label.
+        // `Tab` stays as the cycling variant.
+        KeyCode::Char(c) if c == app::FocusArea::Tabs.shortcut() => {
+            app.focus_tabs();
+            return Ok(());
+        }
+        KeyCode::Char(c) if c == app::FocusArea::Content.shortcut() => {
+            app.focus_content();
+            return Ok(());
+        }
         KeyCode::Tab | KeyCode::BackTab => { app.toggle_focus(); return Ok(()); }
         _ => {}
     }
@@ -102,8 +119,8 @@ fn handle_tab_focus_keys(app: &mut App, key: KeyCode) {
     }
 }
 
-/// Keys consumed while the content pane holds focus — the original list
-/// view bindings without the now-removed `1`-`0`/`-` direct tab shortcuts.
+/// Keys consumed while the content pane holds focus — the full action set.
+/// Digits are absent here on purpose: they belong to the global pane jumps.
 fn handle_content_focus_keys(app: &mut App, key: KeyCode) -> Result<()> {
     match key {
         KeyCode::Char('h') | KeyCode::Left => handle_folder_collapse(app),
@@ -121,6 +138,12 @@ fn handle_content_focus_keys(app: &mut App, key: KeyCode) -> Result<()> {
         KeyCode::Char('r') => app.remove_selected()?,
         KeyCode::Char('s') | KeyCode::Char('u') => handle_default_toggle(app, key)?,
         KeyCode::Char('o') => { if app.tab == app::Tab::McpServers { app.toggle_mcp_scope(); } }
+        // Scoped to this pane rather than to the global block above: in the tab
+        // bar `Esc` already means "back to the list", and that inner step has to
+        // survive or the outer one would swallow it. Nested `Esc` is also what
+        // the user gets elsewhere — the sources screen leaves for the picker on
+        // the same key.
+        KeyCode::Esc => app.request_exit_to_main(),
         _ => {}
     }
     Ok(())
@@ -158,6 +181,44 @@ fn handle_diff_input(app: &mut App, key: KeyCode) -> Result<()> {
         _ => {}
     }
     Ok(())
+}
+
+/// Keys consumed by the `?` keybinding reference.
+///
+/// `?` closes as well as opens, so the key that summoned the box also dismisses
+/// it without the user having to remember a second one.
+fn handle_help_input(app: &mut App, key: KeyCode) -> Result<()> {
+    match key {
+        KeyCode::Char('q') | KeyCode::Char('?') | KeyCode::Esc => app.close_help(),
+        KeyCode::Down | KeyCode::Char('j') => app.scroll_help_down(help_max_scroll()),
+        KeyCode::Up | KeyCode::Char('k') => app.scroll_help_up(),
+        _ => {}
+    }
+    Ok(())
+}
+
+/// Keys consumed by the exit confirmation.
+///
+/// `y` and nothing else commits, matching the source-removal prompt: `Enter`
+/// would be the key the user was already pressing on the list behind the box,
+/// and the answer that discards a selection should cost a deliberate reach.
+fn handle_confirm_exit(app: &mut App, key: KeyCode) {
+    match key {
+        KeyCode::Char('y') => app.exit_to_main(),
+        KeyCode::Esc | KeyCode::Char('n') => app.cancel_exit(),
+        _ => {}
+    }
+}
+
+/// How far the reference can scroll in the terminal as it is right now.
+///
+/// The bound depends on the terminal height, which `App` has no business
+/// knowing, so it is measured here — this module already owns crossterm. A
+/// failed query yields 0, which pins the scroll rather than letting it run past
+/// content nobody can measure.
+fn help_max_scroll() -> u16 {
+    let height = crossterm::terminal::size().map(|(_, h)| h).unwrap_or(0);
+    crate::ui::help::max_scroll(height)
 }
 
 /// Number of rows on the CLI selection screen: Claude, Codex, Sources.
@@ -265,3 +326,6 @@ pub(crate) fn run_sync() -> Result<()> {
     println!("\nRun `hibi` to install changes.");
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;

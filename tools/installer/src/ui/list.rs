@@ -6,7 +6,8 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::{App, Tab};
+use super::{pane_border_style, pane_title};
+use crate::app::{App, FocusArea, Tab};
 use crate::component::InstallStatus;
 use crate::tree::TreeNode;
 
@@ -49,8 +50,8 @@ fn render_tree(f: &mut Frame, app: &App, tree: &crate::tree::TreeView, area: Rec
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .border_style(Style::default().fg(app.theme.border()))
-                .title(title)
+                .border_style(pane_border_style(app, FocusArea::Content))
+                .title(pane_title(FocusArea::Content, &title))
                 .title_style(Style::default().fg(app.theme.text_primary()))
                 .style(Style::default().bg(app.theme.bg_primary())),
         )
@@ -271,8 +272,8 @@ fn render_flat(f: &mut Frame, app: &App, area: Rect) {
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .border_style(Style::default().fg(app.theme.border()))
-                .title(title)
+                .border_style(pane_border_style(app, FocusArea::Content))
+                .title(pane_title(FocusArea::Content, &title))
                 .title_style(Style::default().fg(app.theme.text_primary())),
         )
         .highlight_style(

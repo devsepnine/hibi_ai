@@ -34,15 +34,31 @@ impl TargetCli {
 
 /// Which pane the keyboard is currently driving.
 ///
-/// `Tab`/`Shift+Tab` toggles between the two. Movement keys (`h`/`l`/`←`/`→`,
-/// `j`/`k`/`↑`/`↓`) act on whichever pane is focused, so the same handful of
-/// keys serve both tab switching and list navigation without per-pane
-/// shortcuts.
+/// `1`/`2` address the panes directly and `Tab`/`Shift+Tab` toggles between
+/// them. Movement keys (`h`/`l`/`←`/`→`, `j`/`k`/`↑`/`↓`) act on whichever
+/// pane is focused, so the same handful of keys serve both tab switching and
+/// list navigation.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub enum FocusArea {
     #[default]
     Content,
     Tabs,
+}
+
+impl FocusArea {
+    /// The digit key that jumps to this pane.
+    ///
+    /// The one place the digit is decided: the `cli` dispatch honors it and
+    /// every label derives from it, so no label can advertise a key the
+    /// dispatch ignores. Tests spell the digits out literally on purpose —
+    /// changing this method has to fail loudly rather than quietly rename the
+    /// keys everywhere at once.
+    pub fn shortcut(self) -> char {
+        match self {
+            Self::Tabs => '1',
+            Self::Content => '2',
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -117,12 +133,20 @@ impl Tab {
     }
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum View {
     CliSelection,
     Loading,
     List,
     Diff,
+    /// The `?` keybinding reference, overlaid on the List view.
+    Help,
+    /// The `Esc` "leave for the CLI picker?" prompt, overlaid on the List view.
+    ///
+    /// Reached only when something is selected — the picker re-scans on the way
+    /// back, so leaving with a selection throws it away, and leaving without
+    /// one costs nothing worth a keystroke to confirm.
+    ConfirmExit,
     EnvInput,
     ProjectPath,
     Preflighting,
