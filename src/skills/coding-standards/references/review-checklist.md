@@ -49,6 +49,9 @@ If unsure, default up (Major → Blocker) rather than down.
 - [ ] Code is the spec: no comment restates what the code already says — such comments are replaced by a refactor (rename/extract), and the comments that remain carry only the *why*
 - [ ] Comments lead with the conclusion (one-sentence point, then why), explain non-obvious intent, and match current behavior
 - [ ] No over-commenting: meaningless or excessive comments are flagged as noise — comment density is not quality
+- [ ] Comments moved with the code they describe: after an extract/split/rename no doc is left on the wrong declaration, and no two doc blocks are stacked on one
+- [ ] Comments outside the diff hunk still hold: renamed symbols and changed behaviour are not still described at call sites, in module headers, in sibling files, or in docs
+- [ ] Every *why* comment's claim rests on a code path, config, or external source you can point at — an unfounded rationale is a defect even when the code it sits on is correct
 - [ ] No dead code, no commented-out blocks, no `TODO` without ticket
 
 ## Functionality Review

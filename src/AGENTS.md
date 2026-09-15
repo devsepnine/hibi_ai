@@ -42,6 +42,8 @@ All four must pass equally. See the `coding-standards` skill → `references/rev
 - Guard clauses, symbolized constants, Input → Processing → Return
 - Code is the spec: comments carry only the *why* code cannot express — a comment explaining *what* means refactor instead (rename, extract)
 - Conclusion-first comments (one-sentence point, then why), no stale or change-log comments, no over-commenting (meaningless comments are noise, not documentation)
+- Comments follow the code they describe: an extract/split/rename moves the comment and re-reads what is left — no doc on the wrong declaration, no two doc blocks stacked on one. Grep the old name afterwards; the stale comment is often outside the diff
+- Claim only what you can verify: a *why* comment is a defect even when the code is right if you cannot point at the code path, config, or external source that makes its claim true
 - No dead code, no commented-out blocks, no untracked TODOs
 
 **Functionality**

@@ -124,13 +124,16 @@ problem is the PR, not the body — split it (§3, Size).
 4. **Commits** — squash noise; each commit independently buildable (`commit-rules`).
 5. **Conflicts** — resolved.
 6. **Docs** — updated if behavior or an API changed.
-7. **Secrets** — no credentials, PII, debug code, or stray logging in the diff.
+7. **Code comments** — every comment the diff touched, and every comment it
+   invalidated elsewhere, still holds (`coding-standards` → Comments).
+8. **Secrets** — no credentials, PII, debug code, or stray logging in the diff.
 
 Depth for each lives elsewhere — this table is the routing, not the policy:
 
 | Check | Source of truth |
 |-------|-----------------|
 | File/function size, complexity | `coding-standards` → `references/code-thresholds.md` |
+| Code comments (stale, orphaned, unfounded) | `coding-standards` → Comments and `references/review-checklist.md` |
 | Secrets, injection, XSS, authn | `security-review` |
 | Coverage, regression, E2E paths | `tdd-workflow` |
 | Build, type, lint | `verification-loop` |

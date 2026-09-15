@@ -157,8 +157,10 @@ Even before the `commit-rules` skill loads, these are non-negotiable on any comm
 - **A comment that explains *what* → refactor instead** (rename, extract function/constant). Restating the code is a defect, not documentation.
 - **No over-commenting**: the default is no comment — meaningless comments are noise that buries the few that matter.
 - **NEVER**: code narration, stale comments, commented-out code, change-log comments (`// fixed 2026-01-02`), emojis.
+- **Comments follow the code they describe**: an extract/split/rename moves the comment with it and re-reads what is left behind — never leave a doc on the wrong declaration or two doc blocks stacked on one. Then grep the old name across the tree: the stale comment is often in a file the diff never showed.
+- **Claim only what you can verify**: a *why* comment asserts a fact about the system. Point at the code path, config, or external source that makes it true, or state the narrower claim you can support — an invented rationale is a defect even when the code is right.
 - **Language**: match the target file's existing comment language (the response-language policy governs replies, not comments in code).
-- **Self-check before reporting completion**: every comment you added or touched passes these rules and the skill's full Comments section (conclusion-first/BLUF, same-edit updates) — treat a violation like a failing test.
+- **Self-check before reporting completion**: every comment you added or touched — plus the ones your change invalidated elsewhere — passes these rules and the skill's full Comments section (conclusion-first/BLUF, same-edit updates, comment maintenance) — treat a violation like a failing test.
 
 ## Policy routing (DRY — each policy has ONE source of truth)
 

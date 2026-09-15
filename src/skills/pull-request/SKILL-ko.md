@@ -116,13 +116,16 @@ Changes 섹션이 리뷰어가 머릿속에 담을 수 있는 크기를 넘기�
 4. **커밋** — 노이즈 squash, 각 커밋이 독립적으로 빌드 가능 (`commit-rules`).
 5. **충돌** — 해결.
 6. **문서** — 동작이나 API가 변경되면 갱신.
-7. **시크릿** — diff에 자격 증명, PII, 디버그 코드, 남은 로깅 없음.
+7. **코드 주석** — diff가 건드린 모든 주석과 diff가 다른 곳에서 무효화한 모든 주석이
+   여전히 성립한다 (`coding-standards` → 주석).
+8. **시크릿** — diff에 자격 증명, PII, 디버그 코드, 남은 로깅 없음.
 
 각각의 깊이는 다른 곳에 있다. 이 표는 정책이 아니라 라우팅이다:
 
 | 확인 | Source of truth |
 |-------|-----------------|
 | 파일·함수 크기, 복잡도 | `coding-standards` → `references/code-thresholds.md` |
+| 코드 주석 (낡음, 고아, 근거 없음) | `coding-standards` → 주석과 `references/review-checklist.md` |
 | 시크릿, 인젝션, XSS, authn | `security-review` |
 | 커버리지, 회귀, E2E 경로 | `tdd-workflow` |
 | 빌드, 타입, lint | `verification-loop` |

@@ -103,7 +103,7 @@ if (!market?.isActive) return
 - **Summary line first, detail after** — one sentence; add specifics on the following lines only when needed (in block comments, separate them with a blank line; in `//` runs, just continue on the next line). No wall of prose, no multi-line build-up to the point.
 - **Cut the noise** — no obvious comments (`// increment i`), no change logs (`// fixed 2026-01-02`), no commented-out code, no emojis.
 - **No over-commenting** — comment density is not quality. A comment on every line or block is noise that buries the few comments that matter; if everything is annotated, nothing stands out.
-- **Keep it true, in the same edit** — the edit that changes code updates or deletes its comments; a stale comment is worse than no comment because it lies with authority.
+- **Keep it true, in the same edit** — the edit that changes code updates or deletes its comments; a stale comment is worse than no comment because it lies with authority. See *Comment maintenance* below for the refactor cases.
 - **Public APIs**: JSDoc/doc comment (params, returns, throws, example) — document the *contract* (inputs, outputs, failure modes), not the implementation. Explicit exception to the decision procedure: the contract is not internal *what* — it is the interface a caller cannot see from the call site, so documenting it is required, not optional.
 - **Language**: follow the file's existing comment language; never mix two in one file.
 
@@ -139,6 +139,29 @@ Same rule scales to module/function headers — first line is the one-sentence c
  * a shorter TTL multiplies requests without returning fresher data.
  */
 ```
+
+### Comment maintenance — the edit that changes code owns its comments
+
+A comment defect is often not written wrong; it is left behind by a later change to the code around it. Run these three checks on every edit that moves, renames, or changes behaviour, before reporting completion. Deleting is a valid outcome for all three: a comment whose reason no longer holds is removed, not reworded.
+
+**1. Move the comment with the code it describes.** Extracting, splitting, inlining, or reordering leaves comments attached to the wrong subject. After an extraction, decide for each line of the original comment which side it now belongs to — a comment that described the whole must not silently become the doc of the part.
+
+```typescript
+// Bad — extracting cacheKeyFor left the parent's doc stranded above the child,
+// so two doc blocks stack on one declaration and the child's real contract is
+// buried under a description of its caller
+/** Fetches a market snapshot, served from cache while it is still fresh. */
+/** Cache key for a market, namespaced by feed version. */
+function cacheKeyFor(marketId: string): string {
+
+// Good — each function carries only its own contract
+/** Cache key for a market, namespaced by feed version. */
+function cacheKeyFor(marketId: string): string {
+```
+
+**2. Sweep past the diff hunk.** A rename or behaviour change invalidates comments the diff never shows — at call sites, in module headers, in sibling files, in docs. Grep the old name and the old behaviour across the tree: the hunk you edited is where the defect starts, not where it ends.
+
+**3. Verify the *why* you claim.** A *why* comment asserts a fact about the system, and an unverifiable one is a defect even when it reads well — it sends the next reader hunting a constraint that does not exist. Point at the code path, config, or external source that makes the claim true; if you cannot, state the narrower claim you can support. "Callers may pass a non-ASCII label" is checkable at the signature. "This is the first place user data arrives" is a guess unless you traced every caller.
 
 ## Testing (AAA pattern)
 
