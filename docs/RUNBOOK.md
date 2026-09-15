@@ -1,6 +1,6 @@
 # hibi-ai 운영 가이드 (RUNBOOK)
 
-> 마지막 업데이트: 2026-09-09 · 버전 v1.16.0
+> 마지막 업데이트: 2026-09-15 · 버전 v1.17.0
 
 릴리즈는 ~v1.13부터 GitHub Actions로 자동화됐다. 아래 절차는 태그 푸시 이전의 준비와, 워크플로가 끝난 뒤 남는 수동 작업을 다룬다.
 
@@ -12,19 +12,19 @@
 
 ```bash
 # 1) tools/installer/Cargo.toml
-#    version = "1.16.0"
+#    version = "1.17.0"
 #    바이너리에 각인되고 사용자의 ~/.hibi/install.json에 provenance로 기록된다
 vim tools/installer/Cargo.toml
 
 # 2) package.sh
-#    VERSION="1.16.0"
+#    VERSION="1.17.0"
 vim package.sh
 
 # 3) Cargo.lock
 cargo update -w --manifest-path tools/installer/Cargo.toml
 ```
 
-푸시할 태그(`v1.16.0`)의 `v` 접두어를 뗀 값이 위 두 버전과 같아야 한다.
+푸시할 태그(`v1.17.0`)의 `v` 접두어를 뗀 값이 위 두 버전과 같아야 한다.
 
 ### 2. 로컬 검증
 
@@ -48,8 +48,8 @@ file dist/hibi-linux dist/hibi.exe
 
 ```bash
 ./package.sh
-ls -lh release/v1.16.0/
-cat release/v1.16.0/checksums.txt
+ls -lh release/v1.17.0/
+cat release/v1.17.0/checksums.txt
 ```
 
 `release/`와 `dist/`는 gitignore 대상이므로 커밋되지 않는다.
@@ -58,11 +58,11 @@ cat release/v1.16.0/checksums.txt
 
 ```bash
 git add tools/installer/Cargo.toml tools/installer/Cargo.lock package.sh
-git commit -m "chore: bump version to 1.16.0"
+git commit -m "chore: bump version to 1.17.0"
 git push origin main
 
-git tag v1.16.0
-git push origin v1.16.0
+git tag v1.17.0
+git push origin v1.17.0
 ```
 
 > **`main` 히스토리를 리라이트하지 말 것.** 메인테이너가 `main`을 rebase하면 모든 사용자 캐시의 태그가 존재하지 않는 커밋을 가리키게 되고, `git pull --ff-only`가 "would clobber existing tag"로 실패한다. v1.9.7 → v1.9.8은 이 때문에 sync 핫픽스를 급히 내보내야 했다. 불가피하게 rebase했다면 같은 릴리즈에 sync 복원 로직을 함께 넣는다.
@@ -86,7 +86,7 @@ gh run list --workflow=release.yml --limit 5
 gh run watch
 
 # 결과 확인
-gh release view v1.16.0
+gh release view v1.17.0
 ```
 
 체크리스트:
@@ -101,11 +101,11 @@ gh release view v1.16.0
 cd ../homebrew-brew
 
 # checksums.txt에서 sha256을 가져와 version / URL / sha256 갱신
-gh release view v1.16.0 --repo devsepnine/hibi_ai
+gh release view v1.17.0 --repo devsepnine/hibi_ai
 vim Formula/hibi.rb
 
 git add Formula/hibi.rb
-git commit -m "chore: update hibi to v1.16.0"
+git commit -m "chore: update hibi to v1.17.0"
 git push origin main
 ```
 
@@ -118,8 +118,8 @@ cd ../scoop-bucket
 vim hibi-ai.json
 
 git add hibi-ai.json
-git commit -m "chore: update hibi-ai to v1.16.0"
-git push origin main
+git commit -m "chore: update hibi-ai to v1.17.0"
+git push origin master
 ```
 
 ## 릴리즈 후 검증
@@ -155,7 +155,7 @@ cat ~/.hibi/install.json   # version이 새 태그를 가리키는지
 ### 다운로드 통계
 
 ```bash
-gh release view v1.16.0 --json assets \
+gh release view v1.17.0 --json assets \
   --jq '.assets[] | {name: .name, downloads: .downloadCount}'
 ```
 
@@ -167,14 +167,14 @@ gh release view v1.16.0 --json assets \
 
 ```
 # 증상
-::error::Release version (1.16.0) does not match package.sh VERSION (1.15.0).
+::error::Release version (1.17.0) does not match package.sh VERSION (1.15.0).
 
 # 해결
 # 세 곳(Cargo.toml / package.sh / 태그)을 맞춘 뒤 태그를 다시 만든다
-git tag -d v1.16.0
-git push origin :refs/tags/v1.16.0
+git tag -d v1.17.0
+git push origin :refs/tags/v1.17.0
 # 버전 수정 커밋 후
-git tag v1.16.0 && git push origin v1.16.0
+git tag v1.17.0 && git push origin v1.17.0
 ```
 
 #### 문제: crates.io 네트워크 타임아웃
@@ -241,7 +241,7 @@ cd tools/installer && ./build.sh && cd ../..
 
 ```bash
 # 해결
-cd release/v1.16.0
+cd release/v1.17.0
 shasum -a 256 *.tar.gz *.zip > checksums.txt
 ```
 
@@ -338,11 +338,11 @@ refusing to merge unrelated histories
 ### 1. GitHub 릴리즈 롤백
 
 ```bash
-gh release delete v1.16.0 --yes
+gh release delete v1.17.0 --yes
 
 # 태그 삭제 (로컬 + 리모트)
-git tag -d v1.16.0
-git push origin :refs/tags/v1.16.0
+git tag -d v1.17.0
+git push origin :refs/tags/v1.17.0
 ```
 
 `main` 커밋은 되돌리지 않는다 — 태그만 제거하면 배포가 멈춘다. 히스토리 리라이트는 사용자 캐시를 깨뜨린다.
@@ -360,7 +360,7 @@ git push origin main
 ```bash
 cd ../scoop-bucket
 git revert HEAD
-git push origin main
+git push origin master
 ```
 
 ### 4. 사용자 안내
@@ -373,7 +373,7 @@ git push origin main
 ### 보안 취약점 발견
 
 1. **즉시 조치** — 문제 릴리즈를 Draft로 전환하거나 삭제, 루트 `README.md`에 경고
-2. **수정** — 취약점 수정 커밋 → 패치 버전 릴리즈 (예: v1.16.0 → v1.16.1)
+2. **수정** — 취약점 수정 커밋 → 패치 버전 릴리즈 (예: v1.17.0 → v1.17.1)
 3. **알림** — GitHub Security Advisory 생성, Homebrew/Scoop 갱신
 
 시크릿이 커밋에 들어간 경우는 릴리즈 롤백만으로 끝나지 않는다. 해당 크리덴셜을 먼저 폐기(rotate)하고, 그다음 이력 처리를 판단한다.
