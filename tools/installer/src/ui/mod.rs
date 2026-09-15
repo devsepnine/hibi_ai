@@ -83,73 +83,8 @@ pub fn draw(f: &mut Frame, app: &App) {
         f.area()
     );
 
-    // CLI selection screen takes full screen and self-contains its
-    // version footer; skip the global status bar to keep the first
-    // impression uncluttered.
-    if app.current_view == View::CliSelection {
-        cli_selection::render(f, app, f.area());
+    if render_full_screen(f, app) {
         return;
-    }
-
-    // Loading screen takes full screen
-    if app.current_view == View::Loading {
-        render_loading_screen(f, app);
-        return;
-    }
-
-    // Preflighting (CLI `--version` probe) reuses the loading screen.
-    if app.current_view == View::Preflighting {
-        render_preflighting_screen(f, app);
-        return;
-    }
-
-    // Sources views take full screen (like CLI selection)
-    match app.current_view {
-        View::Sources => {
-            sources::render(f, app, f.area());
-            return;
-        }
-        View::SourceAddType => {
-            sources::render(f, app, f.area());
-            source_wizard::render_type_select(f, app, f.area());
-            return;
-        }
-        View::SourceAddUrl => {
-            sources::render(f, app, f.area());
-            source_wizard::render_text_input(f, app, f.area(), "Git URL", "URL");
-            return;
-        }
-        View::SourceAddBranch => {
-            sources::render(f, app, f.area());
-            source_wizard::render_text_input(f, app, f.area(), "Git Branch (optional)", "Branch");
-            return;
-        }
-        View::SourceAddPath => {
-            sources::render(f, app, f.area());
-            source_wizard::render_text_input(f, app, f.area(), "Local Path", "Path");
-            return;
-        }
-        View::SourceAddRoot => {
-            sources::render(f, app, f.area());
-            source_wizard::render_text_input(f, app, f.area(), "Subdirectory (optional)", "Root");
-            return;
-        }
-        View::SourceAddMapTo => {
-            sources::render(f, app, f.area());
-            source_wizard::render_map_to_select(f, app, f.area());
-            return;
-        }
-        View::SourceConfirmRemove => {
-            sources::render(f, app, f.area());
-            source_wizard::render_confirm_remove(f, app, f.area());
-            return;
-        }
-        View::SourceSyncing => {
-            sources::render(f, app, f.area());
-            source_wizard::render_syncing(f, app, f.area());
-            return;
-        }
-        _ => {}
     }
 
     let chunks = Layout::default()
@@ -162,37 +97,7 @@ pub fn draw(f: &mut Frame, app: &App) {
         .split(f.area());
 
     tabs::render(f, app, chunks[0]);
-
-    match app.current_view {
-        View::CliSelection => unreachable!(),
-        View::Loading => unreachable!(),
-        View::Preflighting => unreachable!(),
-        // Both overlays paint their box over the list rather than replacing it,
-        // so all three views share a body and dismissing a box restores the
-        // screen unchanged.
-        View::List | View::Help | View::ConfirmExit => render_list_pane(f, app, chunks[1]),
-        View::Diff => {
-            diff::render(f, app, chunks[1]);
-        }
-        View::EnvInput => {
-            // Show MCP list in background, then overlay env input dialog
-            mcp_list::render(f, app, chunks[1]);
-            env_input::render(f, app, chunks[1]);
-        }
-        View::ProjectPath => {
-            // Show MCP list in background, then overlay project path dialog
-            mcp_list::render(f, app, chunks[1]);
-            project_path::render(f, app, chunks[1]);
-        }
-        View::Installing => {
-            installing::render(f, app, chunks[1]);
-        }
-        // Sources views are handled above (full-screen early return)
-        View::Sources | View::SourceAddType | View::SourceAddUrl
-        | View::SourceAddBranch | View::SourceAddPath | View::SourceAddRoot
-        | View::SourceAddMapTo | View::SourceConfirmRemove | View::SourceSyncing => unreachable!(),
-    }
-
+    render_content_pane(f, app, chunks[1]);
     render_status_bar(f, app, chunks[2]);
 
     // Painted after the status bar so a box may cover it — in a short terminal
@@ -205,8 +110,99 @@ pub fn draw(f: &mut Frame, app: &App) {
     }
 }
 
+/// Draw the views that own the whole terminal, reporting whether one did.
+///
+/// These skip both the tab bar and the status bar: each already carries its own
+/// footer, and `draw`'s three-chunk layout would crop them to make room for bars
+/// they do not use. The CLI picker in particular is the first impression, and
+/// borrowing the global status bar there would clutter it.
+///
+/// Every Sources arm repaints the list beneath its wizard step, because the step
+/// is an overlay on that list rather than a screen of its own.
+fn render_full_screen(f: &mut Frame, app: &App) -> bool {
+    let area = f.area();
+    match app.current_view {
+        View::CliSelection => cli_selection::render(f, app, area),
+        View::Loading => render_loading_screen(f, app),
+        // The CLI `--version` probe has nothing of its own to show.
+        View::Preflighting => render_preflighting_screen(f, app),
+        View::Sources => sources::render(f, app, area),
+        View::SourceAddType => {
+            sources::render(f, app, area);
+            source_wizard::render_type_select(f, app, area);
+        }
+        View::SourceAddUrl => {
+            sources::render(f, app, area);
+            source_wizard::render_text_input(f, app, area, "Git URL", "URL");
+        }
+        View::SourceAddBranch => {
+            sources::render(f, app, area);
+            source_wizard::render_text_input(f, app, area, "Git Branch (optional)", "Branch");
+        }
+        View::SourceAddPath => {
+            sources::render(f, app, area);
+            source_wizard::render_text_input(f, app, area, "Local Path", "Path");
+        }
+        View::SourceAddRoot => {
+            sources::render(f, app, area);
+            source_wizard::render_text_input(f, app, area, "Subdirectory (optional)", "Root");
+        }
+        View::SourceAddMapTo => {
+            sources::render(f, app, area);
+            source_wizard::render_map_to_select(f, app, area);
+        }
+        View::SourceConfirmRemove => {
+            sources::render(f, app, area);
+            source_wizard::render_confirm_remove(f, app, area);
+        }
+        View::SourceSyncing => {
+            sources::render(f, app, area);
+            source_wizard::render_syncing(f, app, area);
+        }
+        _ => return false,
+    }
+    true
+}
+
+/// Draw the middle chunk for whichever view is live.
+///
+/// Only reached for the views `render_full_screen` declined, so every arm here
+/// is one that wants the tab bar above it and the status bar below.
+fn render_content_pane(f: &mut Frame, app: &App, area: Rect) {
+    match app.current_view {
+        // Both overlays paint their box over the list rather than replacing it,
+        // so all three views share a body and dismissing a box restores the
+        // screen unchanged.
+        View::List | View::Help | View::ConfirmExit => render_tab_list(f, app, area),
+        View::Diff => diff::render(f, app, area),
+        // The dialogs sit over the MCP list they were opened from, which stays
+        // visible so the user can see which server they are answering for.
+        View::EnvInput => {
+            mcp_list::render(f, app, area);
+            env_input::render(f, app, area);
+        }
+        View::ProjectPath => {
+            mcp_list::render(f, app, area);
+            project_path::render(f, app, area);
+        }
+        View::Installing => installing::render(f, app, area),
+        View::CliSelection
+        | View::Loading
+        | View::Preflighting
+        | View::Sources
+        | View::SourceAddType
+        | View::SourceAddUrl
+        | View::SourceAddBranch
+        | View::SourceAddPath
+        | View::SourceAddRoot
+        | View::SourceAddMapTo
+        | View::SourceConfirmRemove
+        | View::SourceSyncing => unreachable!("drawn full-screen"),
+    }
+}
+
 /// Draw whichever list belongs to the current tab.
-fn render_list_pane(f: &mut Frame, app: &App, area: Rect) {
+fn render_tab_list(f: &mut Frame, app: &App, area: Rect) {
     if app.tab == Tab::McpServers {
         mcp_list::render(f, app, area);
     } else if app.tab == Tab::Plugins {
@@ -280,15 +276,12 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
     // Render help text left-aligned, version right-aligned
     let inner_width = area.width.saturating_sub(2) as usize; // subtract border
     let left_text = Line::from(spans);
-    // Columns, not bytes: the arrow glyphs in these strings are three bytes
-    // wide and one column, so byte length would push the version left of the
-    // right edge by one column per arrow.
-    let left_len: usize = left_text
-        .spans
-        .iter()
-        .map(|s| s.content.chars().count())
-        .sum();
-    let padding = inner_width.saturating_sub(left_len + version.len());
+    // `Line::width` is the measure ratatui itself paints with, so the padding
+    // computed from it lands the version flush right whatever the content is.
+    // Counting bytes would short the padding on the arrow glyphs (three bytes,
+    // one column); counting chars would overrun it on a CJK status message
+    // (one char, two columns) and push the version off the edge.
+    let padding = inner_width.saturating_sub(left_text.width() + layout::columns(version));
 
     let mut all_spans = left_text.spans;
     all_spans.push(Span::raw(" ".repeat(padding)));
@@ -326,16 +319,13 @@ fn render_preflighting_screen(f: &mut Frame, app: &App) {
     );
 }
 
-/// Centered spinner box used by both the initial scan and the CLI
-/// preflight. Same layout, theme, and animation — only the title and
-/// the single line of message text vary.
-fn render_spinner_box(f: &mut Frame, app: &App, title: &str, message: &str) {
-    use ratatui::{
-        layout::{Alignment, Constraint},
-        style::{Modifier, Style},
-        text::{Line, Span},
-        widgets::{Block, Borders, Paragraph},
-    };
+/// The seven-row box the spinner screens draw into, centred in `area`.
+///
+/// Height is fixed because the contents are fixed — a blank line, the spinner
+/// row, a blank line, and the border. Width stays proportional so a long message
+/// gets more room on a wide terminal instead of wrapping at a constant column.
+fn spinner_box_area(area: Rect) -> Rect {
+    use ratatui::layout::Constraint;
 
     let vertical = Layout::default()
         .direction(Direction::Vertical)
@@ -344,17 +334,30 @@ fn render_spinner_box(f: &mut Frame, app: &App, title: &str, message: &str) {
             Constraint::Length(7),
             Constraint::Percentage(40),
         ])
-        .split(f.area());
+        .split(area);
 
-    let horizontal = Layout::default()
+    Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
             Constraint::Percentage(30),
             Constraint::Percentage(40),
             Constraint::Percentage(30),
         ])
-        .split(vertical[1]);
+        .split(vertical[1])[1]
+}
 
+/// Centered spinner box used by both the initial scan and the CLI
+/// preflight. Same layout, theme, and animation — only the title and
+/// the single line of message text vary.
+fn render_spinner_box(f: &mut Frame, app: &App, title: &str, message: &str) {
+    use ratatui::{
+        layout::Alignment,
+        style::{Modifier, Style},
+        text::{Line, Span},
+        widgets::{Block, Borders, Paragraph},
+    };
+
+    let area = spinner_box_area(f.area());
     let spinner = get_spinner(app.animation_frame);
 
     let text = vec![
@@ -387,5 +390,5 @@ fn render_spinner_box(f: &mut Frame, app: &App, title: &str, message: &str) {
                 .style(Style::default().bg(app.theme.bg_secondary())),
         );
 
-    f.render_widget(widget, horizontal[1]);
+    f.render_widget(widget, area);
 }

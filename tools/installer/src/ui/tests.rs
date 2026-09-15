@@ -4,7 +4,7 @@ use ratatui::style::{Color, Style};
 use ratatui::Frame;
 
 use super::{
-    confirm_exit, help, list, mcp_list, pane_border_style, pane_title, plugin_list,
+    confirm_exit, help, layout, list, mcp_list, pane_border_style, pane_title, plugin_list,
     render_status_bar, tabs, LIST_HELP,
 };
 use crate::app::test_support::fresh_app;
@@ -228,7 +228,7 @@ fn the_status_bar_keeps_every_key_it_names_at_any_usable_width() {
 /// than a detail — the `?` overlay is where anything longer belongs.
 #[test]
 fn the_list_help_fits_the_narrowest_width_it_claims() {
-    assert!(LIST_HELP.chars().count() <= 30, "{LIST_HELP}");
+    assert!(layout::columns(LIST_HELP) <= 30, "{LIST_HELP}");
 }
 
 /// The version is right-aligned by padding, and the padding is measured in
@@ -238,6 +238,21 @@ fn the_list_help_fits_the_narrowest_width_it_claims() {
 fn the_version_sits_flush_right_past_arrow_glyphs() {
     let mut app = fresh_app();
     app.current_view = View::Diff;
+    let buf = paint_at(&app, render_status_bar, 80, 3);
+    let line = inner_row(&buf, 1);
+    assert!(line.ends_with(crate::fs::VERSION), "{line}");
+}
+
+/// The status message interpolates runtime strings — the path typed into the
+/// project-path modal, a component filename, error text — so nothing restricts it
+/// to ASCII. A codepoint measure under-counts a double-width glyph by one column,
+/// so the padding overshoots and `Paragraph` clips the version it was meant to
+/// align — the opposite direction of the arrow bug above, which is why both are
+/// pinned.
+#[test]
+fn the_version_stays_flush_right_under_a_cjk_status_message() {
+    let mut app = fresh_app();
+    app.status_message = Some(String::from("한글 상태 메시지"));
     let buf = paint_at(&app, render_status_bar, 80, 3);
     let line = inner_row(&buf, 1);
     assert!(line.ends_with(crate::fs::VERSION), "{line}");

@@ -155,66 +155,86 @@ fn resolve_entry(
 ) -> Result<ResolvedSource> {
     match entry {
         SourceEntry::Git { url, branch, root, map_to } => {
-            config::validate_git_url(url)?;
-            let cache_dir = git::cache_path_for(url)?;
-
-            let make_resolved = |base_path: std::path::PathBuf, stale: bool| {
-                let path = apply_root(base_path, root.as_deref());
-                ResolvedSource {
-                    label: url.clone(),
-                    kind: SourceKind::Git,
-                    path,
-                    is_stale: stale,
-                    branch: branch.clone(),
-                    map_to: map_to.clone(),
-                }
-            };
-
-            if auto_update {
-                match git::clone_or_update(url, branch, &cache_dir) {
-                    Ok(path) => Ok(make_resolved(path, false)),
-                    Err(e) => {
-                        if git::cache_exists(&cache_dir) {
-                            warnings.push(format!("Git fetch failed, using stale cache: {}", e));
-                            Ok(make_resolved(cache_dir, true))
-                        } else {
-                            Err(e)
-                        }
-                    }
-                }
-            } else if git::cache_exists(&cache_dir) {
-                Ok(make_resolved(cache_dir, false))
-            } else {
-                match git::clone_or_update(url, branch, &cache_dir) {
-                    Ok(path) => Ok(make_resolved(path, false)),
-                    Err(e) => Err(e),
-                }
-            }
+            resolve_git(url, branch, root.as_deref(), map_to, auto_update, warnings)
         }
         SourceEntry::Local { path, root, map_to } => {
-            config::validate_local_path(path)?;
-            let expanded = config::expand_tilde(path);
-
-            if !expanded.exists() {
-                anyhow::bail!("Local source path does not exist: {}", expanded.display());
-            }
-
-            let final_path = apply_root(expanded, root.as_deref());
-            let label = path.to_string_lossy().to_string();
-            Ok(ResolvedSource {
-                label,
-                kind: SourceKind::Local,
-                path: final_path,
-                is_stale: false,
-                branch: None,
-                map_to: map_to.clone(),
-            })
+            resolve_local(path, root.as_deref(), map_to)
         }
     }
 }
 
+/// Resolve a git source to a directory on disk.
+///
+/// `auto_update` picks which cost the caller accepts: set, every resolve reaches
+/// the network so the components are current; unset, an existing cache is taken
+/// as-is and the network is touched only when there is no cache to take.
+fn resolve_git(
+    url: &str,
+    branch: &Option<String>,
+    root: Option<&str>,
+    map_to: &Option<String>,
+    auto_update: bool,
+    warnings: &mut Vec<String>,
+) -> Result<ResolvedSource> {
+    config::validate_git_url(url)?;
+    let cache_dir = git::cache_path_for(url)?;
+
+    let make_resolved = |base: PathBuf, is_stale: bool| ResolvedSource {
+        label: url.to_string(),
+        kind: SourceKind::Git,
+        path: apply_root(base, root),
+        is_stale,
+        branch: branch.clone(),
+        map_to: map_to.clone(),
+    };
+
+    // Read before the fetch rather than after it fails: an aborted first clone
+    // can leave a partial `.git` behind, and falling back to that would announce
+    // a stale cache the user never successfully synced.
+    let had_cache = git::cache_exists(&cache_dir);
+
+    if !auto_update && had_cache {
+        return Ok(make_resolved(cache_dir, false));
+    }
+
+    match git::clone_or_update(url, branch, &cache_dir) {
+        Ok(path) => Ok(make_resolved(path, false)),
+        // A failed fetch is survivable while a previous clone is still on disk:
+        // an offline user gets what they last synced, flagged stale, rather than
+        // an empty component list.
+        Err(e) if had_cache => {
+            warnings.push(format!("Git fetch failed, using stale cache: {}", e));
+            Ok(make_resolved(cache_dir, true))
+        }
+        Err(e) => Err(e),
+    }
+}
+
+/// Resolve a local source, which must already exist — there is nothing to fetch.
+fn resolve_local(
+    path: &Path,
+    root: Option<&str>,
+    map_to: &Option<String>,
+) -> Result<ResolvedSource> {
+    config::validate_local_path(path)?;
+    let expanded = config::expand_tilde(path);
+
+    if !expanded.exists() {
+        anyhow::bail!("Local source path does not exist: {}", expanded.display());
+    }
+
+    Ok(ResolvedSource {
+        label: path.to_string_lossy().to_string(),
+        kind: SourceKind::Local,
+        path: apply_root(expanded, root),
+        is_stale: false,
+        branch: None,
+        map_to: map_to.clone(),
+    })
+}
+
 /// Apply `root` subdirectory to a base path.
-fn apply_root(base: std::path::PathBuf, root: Option<&str>) -> std::path::PathBuf {
+fn apply_root(base: PathBuf, root: Option<&str>) -> PathBuf {
     match root {
         Some(sub) if !sub.is_empty() => base.join(sub),
         _ => base,

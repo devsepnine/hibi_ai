@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use ratatui::{
     layout::Rect,
     style::{Modifier, Style},
@@ -7,7 +9,7 @@ use ratatui::{
 };
 
 use crate::app::{App, FocusArea};
-use super::{pane_border_style, pane_title};
+use super::{layout, pane_border_style, pane_title};
 
 /// Glyphs shown when one or more tabs are scrolled off-screen.
 const LEFT_INDICATOR: &str = "‹";
@@ -89,7 +91,7 @@ fn build_visible_tabs(
     }
 
     // Fast path: everything fits, render as-is.
-    let total_width: usize = titles.iter().map(|t| t.len()).sum::<usize>()
+    let total_width: usize = titles.iter().map(|t| layout::columns(t)).sum::<usize>()
         + titles.len().saturating_sub(1) * DIVIDER_WIDTH;
     if total_width <= available_width {
         return (titles.to_vec(), selected_idx);
@@ -99,18 +101,46 @@ fn build_visible_tabs(
     // window ends up flush against an edge, the unused slot just becomes
     // a few columns of slack — cheaper than retrying the layout.
     let indicator_cost = (INDICATOR_WIDTH + DIVIDER_WIDTH) * 2;
-    let usable = available_width.saturating_sub(indicator_cost);
+    let window = expand_window(titles, selected_idx, available_width.saturating_sub(indicator_cost));
 
+    let has_left = window.start > 0;
+    let has_right = window.end < titles.len();
+
+    let mut visible: Vec<String> = titles[window.start..window.end].to_vec();
+    let mut visible_selected = selected_idx - window.start;
+
+    if has_left {
+        visible.insert(0, LEFT_INDICATOR.to_string());
+        visible_selected += 1;
+    }
+    if has_right {
+        visible.push(RIGHT_INDICATOR.to_string());
+    }
+
+    (visible, visible_selected)
+}
+
+/// Grow a window outward from `selected_idx` while a neighbour still fits in
+/// `usable` columns, returning the range it reached.
+///
+/// The selected title is charged against the budget clamped rather than in full,
+/// so a title wider than the whole budget still yields a window of one rather
+/// than none. Keeping the cursor inside the window is all this function promises;
+/// columns that title still overruns are `Tabs`' to truncate.
+///
+/// Expansion alternates right then left, right first: the cursor most often
+/// arrives here moving rightwards, and leading with that side keeps the tabs it
+/// is heading towards visible.
+fn expand_window(titles: &[String], selected_idx: usize, usable: usize) -> Range<usize> {
     let mut start = selected_idx;
     let mut end = selected_idx + 1;
-    let mut used = titles[selected_idx].len().min(usable);
+    let mut used = layout::columns(&titles[selected_idx]).min(usable);
 
-    // Expand alternately right then left while a neighbor still fits.
     loop {
         let mut grew = false;
 
         if end < titles.len() {
-            let cost = DIVIDER_WIDTH + titles[end].len();
+            let cost = DIVIDER_WIDTH + layout::columns(&titles[end]);
             if used + cost <= usable {
                 used += cost;
                 end += 1;
@@ -118,7 +148,7 @@ fn build_visible_tabs(
             }
         }
         if start > 0 {
-            let cost = DIVIDER_WIDTH + titles[start - 1].len();
+            let cost = DIVIDER_WIDTH + layout::columns(&titles[start - 1]);
             if used + cost <= usable {
                 used += cost;
                 start -= 1;
@@ -131,21 +161,7 @@ fn build_visible_tabs(
         }
     }
 
-    let has_left = start > 0;
-    let has_right = end < titles.len();
-
-    let mut visible: Vec<String> = titles[start..end].to_vec();
-    let mut visible_selected = selected_idx - start;
-
-    if has_left {
-        visible.insert(0, LEFT_INDICATOR.to_string());
-        visible_selected += 1;
-    }
-    if has_right {
-        visible.push(RIGHT_INDICATOR.to_string());
-    }
-
-    (visible, visible_selected)
+    start..end
 }
 
 #[cfg(test)]
@@ -210,6 +226,26 @@ mod tests {
         // Selected ("Hooks") sits inside the visible slice, offset by the
         // leading indicator.
         assert_eq!(out[sel], "Hooks");
+    }
+
+    /// The budget is in painted columns, and only a double-width glyph separates
+    /// that from the two measures it could be mistaken for: `한글` is 6 bytes, 2
+    /// codepoints and 4 columns, making this list 14, 10 and 12 wide. Both bounds
+    /// are asserted because the wrong measures fail in opposite directions — at 13
+    /// a byte measure truncates a list that fits, and at 11 a codepoint measure
+    /// renders one that does not. Every bundled tab name is ASCII today, so this
+    /// pins the contract of the parameter rather than a live regression.
+    #[test]
+    fn cjk_titles_are_budgeted_in_columns() {
+        let t = titles(&["한글", "B", "C"]);
+
+        let (fits, sel) = build_visible_tabs(&t, 0, 13);
+        assert_eq!(fits, t);
+        assert_eq!(sel, 0);
+
+        let (cropped, sel) = build_visible_tabs(&t, 0, 11);
+        assert_eq!(cropped, titles(&["한글", RIGHT_INDICATOR]));
+        assert_eq!(sel, 0);
     }
 
     #[test]

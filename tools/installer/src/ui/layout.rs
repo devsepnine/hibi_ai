@@ -1,4 +1,17 @@
 use ratatui::layout::Rect;
+use ratatui::text::Span;
+
+/// Terminal columns `s` occupies once painted.
+///
+/// Deferred to ratatui rather than measured here, because the number that
+/// matters is the one the painter will use — a budget computed by any other
+/// measure can only agree with the screen by coincidence. Both obvious
+/// shortcuts drift, and in opposite directions: `str::len` counts bytes, so a
+/// three-byte `→` over-charges by two, while `chars().count()` counts
+/// codepoints, so a double-width CJK glyph under-charges by one.
+pub fn columns(s: &str) -> usize {
+    Span::raw(s).width()
+}
 
 /// Centre a box of at most `w` x `h` in `area`, shrinking rather than
 /// overflowing.
