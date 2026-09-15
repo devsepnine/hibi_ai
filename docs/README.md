@@ -175,7 +175,7 @@ cd tools/statusline && ./build.sh
 ### 테스트
 
 ```bash
-cargo test --manifest-path tools/installer/Cargo.toml   # 105 tests
+cargo test --manifest-path tools/installer/Cargo.toml   # 131 tests
 ```
 
 ### 릴리즈 (GitHub Actions 자동화, ~v1.13부터)

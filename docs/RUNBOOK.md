@@ -30,7 +30,7 @@ cargo update -w --manifest-path tools/installer/Cargo.toml
 
 ```bash
 # 테스트
-cargo test --manifest-path tools/installer/Cargo.toml   # 105 tests
+cargo test --manifest-path tools/installer/Cargo.toml   # 131 tests
 
 # 전 플랫폼 빌드 (dist/로 출력)
 cd tools/installer && ./build.sh && cd ../..
