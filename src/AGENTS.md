@@ -65,7 +65,8 @@ All four must pass equally. See the `coding-standards` skill → `references/rev
 
 ## 6) Git and change safety
 
-- Do not `commit`, `push`, or change branch strategy unless requested.
+- Run `commit`, `push`, and `gh pr create` ONLY on an explicit request for that specific commit, push, or PR. An earlier "just handle it", an approval that covered a previous commit or push, an accepted plan, and a permission mode that would auto-approve the command are not that request — leave the tree as it is, report what is ready, and ask.
+- Do not change branch strategy unless requested.
 - Do not silently undo existing user changes.
 - Stop and confirm if you discover unexpected external changes during work.
 - Destructive commands (`reset --hard`, mass deletion, etc.) require explicit approval.

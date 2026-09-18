@@ -127,7 +127,7 @@ The CLI is working but the project isn't linked yet. This is the opportunity to 
    This prompts the user to select or create a project. It creates `.vercel/project.json`.
 
 4. **Then deploy using the best available method:**
-   - If a git remote exists → commit and push (see git push method above)
+   - If a git remote exists → ask, then commit and push (the Git Push method's approval gate above applies; step 2's "do not ask for separate confirmation" covers linking only, never a commit or push)
    - If no git remote → `vercel deploy [path] -y --no-wait --scope <team-slug>`, then `vercel inspect <url>` to check status
 
 ---
@@ -155,7 +155,7 @@ The Vercel CLI isn't set up at all.
    vercel link --scope <team-slug>          # if no git remote
    ```
 
-5. **Deploy** using the best available method (git push if remote exists, otherwise `vercel deploy -y --no-wait --scope <team-slug>`, then `vercel inspect <url>` to check status).
+5. **Deploy** using the best available method — git push if a remote exists (**ask first**: the Git Push method's approval gate applies here too), otherwise `vercel deploy -y --no-wait --scope <team-slug>`, then `vercel inspect <url>` to check status.
 
 ---
 

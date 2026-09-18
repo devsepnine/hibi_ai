@@ -19,7 +19,7 @@ effort: low
 체크포인트 생성 시:
 
 1. `/verify quick`을 실행해 현재 상태가 깨끗한지 확인한다
-2. 체크포인트 이름으로 git stash 또는 commit을 생성한다
+2. 체크포인트 이름으로 git stash를 생성한다. commit은 기본 동작이 아니다 — `/checkpoint`가 지칭하는 것은 체크포인트이지 커밋이 아니므로, 커밋에는 별도의 명시적 요청이 필요하다 (`commit-rules` skill)
 3. 체크포인트를 `.claude/checkpoints.log`에 기록한다:
 
 ```bash

@@ -94,7 +94,7 @@ description: <what it does> Use when <trigger condition>. <한국어 트리거 �
 3. skill 파일 초안을 작성한다
 4. 저장 전 사용자에게 확인을 요청한다
 5. `~/.claude/skills/<name>/SKILL.md`에 저장한다
-6. 이 기기를 넘어 다른 사용자에게도 도움이 되는 패턴이면 `/upstream-pr` 커맨드(`pull-request` 스킬을 로드한다)를 실행해 배포 설정에 제안한다 — 배포 시에는 `src/skills/<name>/SKILL.md` 와 `-ko.md` 쌍으로 들어간다
+6. 이 기기를 넘어 다른 사용자에게도 도움이 되는 패턴이면 배포 설정에 제안하고, 사용자가 동의한 뒤에만 `/upstream-pr` 커맨드(`pull-request` 스킬을 로드한다)를 실행한다 — 배포 시에는 `src/skills/<name>/SKILL.md` 와 `-ko.md` 쌍으로 들어간다
 
 ## Notes
 

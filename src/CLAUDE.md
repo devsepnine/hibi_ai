@@ -59,7 +59,7 @@ Defines always-on workflow and decision-making procedures. Detailed, situational
 - Never run 3 unrelated analyses sequentially when there are no dependencies
 
 ### 8. Git and change safety (CRITICAL)
-- **Forbidden**: `commit`, `push`, or branch-strategy changes the user did not explicitly request
+- **Forbidden**: `commit`, `push`, `gh pr create`, or branch-strategy changes the user did not explicitly request — the bar is in "Absolute commit and push rules" below
 - **Protect existing changes**: never silently undo user changes
 - **Detect unexpected changes**: stop and confirm if you find changes you did not make
 - **Destructive commands**: `reset --hard`, `rm -rf`, `push --force` require explicit approval
@@ -143,11 +143,13 @@ Next:
 - **Names over abstraction**: intention-revealing names; avoid premature abstraction.
 - **Code is the spec**: names, types, and structure carry the *what*; comments exist only for the *why* code cannot express. Non-negotiables in "Absolute comment rules" below; full rules in `coding-standards`.
 
-## Absolute commit rules (always apply — skill carries the rest)
+## Absolute commit and push rules (always apply — skill carries the rest)
 
-Even before the `commit-rules` skill loads, these are non-negotiable on any commit:
+Even before the `commit-rules` or `pull-request` skill loads, these are non-negotiable:
+- **`commit`, `push`, and `gh pr create` run ONLY on an explicit request for that specific commit, push, or PR.** Finishing the work, a green gate, or it being the obvious next step is not a request. Without one: leave the tree as it is, report what is ready, and ask.
+- **These three have NO standing authorization.** An earlier "just handle it" / "알아서 해줘", an approval that covered a previous commit or push, an accepted plan, and a permission mode that would auto-approve the command are each NOT the request — permission to write code is never permission to publish it. Doing it "because the user would obviously want it" is the exact failure this rule exists to stop.
+- A slash command the user just typed is a request scoped to that turn and to exactly what the command names, nothing past it: `/commit` authorizes that commit; neither `/pull-request` nor `/upstream-pr` authorizes the `push` or `gh pr create`, which need their own go-ahead — see the `pull-request` skill.
 - **NO emojis, NO generation markers** (`Co-Authored-By`, "Generated with Claude Code", etc.)
-- **Only commit when the user explicitly asks.** Never auto-commit after finishing work.
 - Format: `<type>: [<ticket>] <title>`, or `<type>: <title>` when branch and history yield no ticket — full convention in the `commit-rules` skill.
 
 ## Absolute comment rules (always apply — skill carries the rest)

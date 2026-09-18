@@ -303,11 +303,21 @@ bundled (최저) → sources.yaml 첫 번째 → ... → sources.yaml 마지막 
 
 ## 최근 변경사항
 
+### 2026-09-18
+
+- 커밋 권한 규칙이 `commit`만 덮고 있던 비대칭을 닫았다 — `src/CLAUDE.md`의 절대 규칙 섹션이 `commit`·`push`·`gh pr create` 셋을 함께 다루고, 제목도 "Absolute commit and push rules"가 됐다. §8 Git 안전 항목은 이 섹션을 가리킨다(같은 규칙을 두 곳에서 서로 다른 강도로 말하지 않도록)
+- **포괄적 사전 승인은 없다**는 조항을 신설했다 — 이전의 "알아서 해줘", 직전 커밋·푸시에 대한 승인, 승인받은 계획, 명령을 자동 승인하는 권한 모드는 어느 것도 요청이 아니다. 실패 양상이 "규칙이 없어서"가 아니라 "과거 승인을 현재 승인으로 읽어서"였기 때문에, 금지 문장보다 승인의 유효 범위를 못 박는 쪽이 실효가 있다
+- 슬래시 커맨드의 승인 범위를 명시했다 — **그 턴에 한해**, 커맨드가 지칭하는 행위 하나까지다. `/commit`은 그 커밋까지고 `/pull-request`·`/upstream-pr`은 push도 `gh pr create`도 승인하지 않는다(`commands/pull-request.md:15`·`pull-request/references/upstream-config.md:66`이 이미 요구하던 두 번째 확인과 일치). 명시하지 않으면 "커맨드를 불렀으니 푸시도 승인됐다"로 읽힌다
+- 리뷰에서 초안 결함 둘을 걷어냈다 — (1) 초안은 `/pull-request`·`/upstream-pr`이 "브랜치 준비와 커밋까지 승인"한다고 썼는데, 그 근거는 `/upstream-pr` 워크플로에만 있는 문장(`upstream-config.md:66`)이었고 커밋 SSOT(`commit-rules/SKILL.md:42`)에는 없는 예외였다. 상시 계층이 SSOT보다 느슨한 규칙을 말하게 되므로 그 주장을 삭제했다. (2) "방금 입력한"이 유효기간을 정하는 유일한 표현인데 정의되지 않아, 세션 초반의 커맨드 한 번이 계속 승인으로 읽힐 수 있었다 — 규칙이 막으려던 이월과 같은 형태여서 "그 턴에 한해"로 닫았다
+- 규칙을 조용히 무력화하던 경로 3곳을 함께 닫았다(규칙 텍스트만 강화하면 이 경로들이 그대로 남는다) — `commands/checkpoint.md:22`는 "stash 또는 commit"을 정규 2단계로 지시했다(`model: haiku`·`effort: low`라 되묻지 않고 실행되는 경로다). `/checkpoint`가 지칭하는 것은 체크포인트이지 커밋이 아니므로 stash를 기본으로 하고 커밋에는 별도 요청을 요구한다. `deploy-to-vercel/SKILL.md:130,158`은 같은 파일 59행의 push 승인 게이트로 되돌리는 참조 없이 `commit and push`·`git push`를 단계로 지시했다 — 특히 130행은 112행의 "별도 확인을 요청하지 않는다"(linking 한정)의 연장선으로 읽혔다. 두 곳 모두 승인 게이트를 명시했다. `commands/learn.md:98`은 전역 지침이 같은 문장에 달아둔 "사용자가 동의한 뒤에만"이 빠져 있어 복원했다. 각 `-ko` 트윈 동반
+- 손대지 않은 항목: 번들 플러그인 `commit-commands`의 `/commit-push-pr`은 커맨드 이름 자체가 커밋·푸시·PR 셋을 지칭하므로 새 규칙("커맨드가 지칭하는 행위까지 승인") 하에서 호출이 셋 모두에 대한 요청이 된다 — 구조적 충돌이 아니다. 외부 마켓플레이스 항목이라 `src/` 안에 지시문 텍스트도 없다
+- 전파 지점 8곳을 함께 맞췄다 — `src/CLAUDE.md`(§8 + 절대 규칙 섹션), `src/AGENTS.md` §6, `src/skills/commit-rules/SKILL.md:42`, `src/skills/pull-request/SKILL.md` §4 및 각 `-ko` 트윈. "자동 승인 권한 모드도 요청이 아니다" 조항은 처음에 `CLAUDE.md`에만 넣었는데, `AGENTS.md`는 `CLAUDE.md`를 로드하지 않는 별개 계통이어서 자동 승인 모드로 도는 Codex 세션에 구멍이 남았다 — 네 계층 전부에 넣었다. 얇은 진입점인 `src/commands/commit.md:12`·`commands/pull-request.md:15`는 이미 같은 문턱을 명시하고 있어 대상이 아니다
+
 ### 2026-09-14
 
 - `commit-rules`에서 조직 하드코딩 제거 — `[PP-XXXX]`(예: PP-6050)가 배포되는 공개 설정에 박혀 있었다. `pull-request` §1과 같은 규칙으로 교체: 브랜치와 `git log`에서 추출하고, 어느 쪽에도 없으면 접두사를 완전히 생략한다(`[TICKET-1]` 같은 자리표시자는 없는 것보다 나쁘다)
 - 같은 수정으로 컨벤션이 자기 저장소와 어긋나던 문제가 닫혔다 — 형식이 `<type>: [<ticket-number>] <title>` 하나뿐이어서 티켓을 필수로 요구했는데, 이 저장소 최근 커밋 30개 중 접두사를 가진 것은 0개였다. 즉 규약을 지킨 커밋이 하나도 없는 상태였다. 형식 블록이 티켓 있는 경우와 없는 경우 두 줄을 함께 보여준다
-- 전파 지점 6곳을 함께 맞췄다 — `src/skills/commit-rules/SKILL.md:13-14,31-38`, `src/commands/commit.md:13`, `src/CLAUDE.md:151` 및 각 `-ko` 트윈. `src/AGENTS.md`는 커밋 형식을 갖고 있지 않아 대상이 아니다(CLAUDE/AGENTS는 중복시키지 않는 구조)
+- 전파 지점 6곳을 함께 맞췄다 — `src/skills/commit-rules/SKILL.md:13-14,31-38`, `src/commands/commit.md:13`, `src/CLAUDE.md:153` 및 각 `-ko` 트윈. `src/AGENTS.md`는 커밋 형식을 갖고 있지 않아 대상이 아니다(CLAUDE/AGENTS는 중복시키지 않는 구조)
 - 티켓 추출의 결정 불가 구간을 닫았다 — 브랜치엔 티켓이 없고 이력에만 접두사가 있으면(트래커 쓰는 저장소의 `fix/typo` 브랜치, main 직접 커밋) "둘 다 없으면 생략"이 발동하지 않아 무관한 커밋의 번호를 가져다 붙일 수 있었다. 남의 실재 티켓은 형식상 유효해 보여서 자리표시자보다 잡기 어렵다. `pull-request/SKILL.md:44`가 base 브랜치에 이미 쓰던 관용구("둘이 어긋나면 말하고 묻는다")를 티켓에도 적용: **판단은 브랜치가 한다**. `commit-rules`와 `pull-request` §1 양쪽을 같은 커밋에서 고쳤다 — 한쪽만 고치면 "같은 규칙" 주장이 깨진다
 
 ### 2026-09-11

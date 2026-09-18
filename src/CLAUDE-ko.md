@@ -59,7 +59,7 @@ always-on 워크플로우와 의사결정 절차를 정의한다. 상세하고 �
 - 의존성이 없는 3개의 무관한 분석을 순차 실행하지 않는다
 
 ### 8. Git and change safety (CRITICAL)
-- **절대 금지**: 사용자가 명시적으로 요청하지 않은 `commit`, `push`, 브랜치 전략 변경
+- **절대 금지**: 사용자가 명시적으로 요청하지 않은 `commit`, `push`, `gh pr create`, 브랜치 전략 변경 — 기준은 아래 "Absolute commit and push rules"에 있다
 - **기존 변경 보호**: 사용자의 변경을 조용히 되돌리지 않는다
 - **예상치 못한 변경 감지**: 내가 만들지 않은 변경을 발견하면 멈추고 확인한다
 - **파괴적 명령**: `reset --hard`, `rm -rf`, `push --force`는 명시적 승인이 필요하다
@@ -143,11 +143,13 @@ Next:
 - **추상화보다 이름**: 의도를 드러내는 이름, 성급한 추상화 금지.
 - **코드가 곧 명세다**: *무엇*은 이름·타입·구조가 담고, 주석은 코드가 표현할 수 없는 *왜*에만 존재한다. 절대 규칙은 아래 "Absolute comment rules", 전체 규칙은 `coding-standards`.
 
-## Absolute commit rules (always apply — skill carries the rest)
+## Absolute commit and push rules (always apply — skill carries the rest)
 
-`commit-rules` skill이 로드되기 전이라도 커밋 시 다음은 협상 불가다:
+`commit-rules`·`pull-request` skill이 로드되기 전이라도 다음은 협상 불가다:
+- **`commit`, `push`, `gh pr create`는 그 커밋·푸시·PR 각각에 대한 명시적 요청이 있을 때만 실행한다.** 작업이 끝났다는 사실, 게이트 통과, 다음 단계가 명백하다는 판단은 요청이 아니다. 요청이 없으면 트리를 그대로 두고, 무엇이 준비됐는지 보고하고, 묻는다.
+- **이 셋에는 포괄적 사전 승인이 없다.** 이전의 "알아서 해줘" / "just handle it", 직전 커밋이나 푸시에 대한 승인, 승인받은 계획, 명령을 자동 승인하는 권한 모드 — 어느 것도 그 요청이 아니다. 코드를 쓸 권한은 결코 그것을 내보낼 권한이 아니다. "사용자가 당연히 원할 테니까"라는 판단으로 실행하는 것이 이 규칙이 막으려는 바로 그 실패다.
+- 사용자가 방금 입력한 슬래시 커맨드는 그 턴에 한해, 그 커맨드가 지칭하는 행위 하나에 대한 요청이며 그 이상은 아니다: `/commit`은 그 커밋을 승인하고, `/pull-request`·`/upstream-pr`은 `push`도 `gh pr create`도 승인하지 않으며 이 둘은 별도의 승인이 필요하다 — `pull-request` skill 참조.
 - **이모지 금지, 생성 마커 금지** (`Co-Authored-By`, "Generated with Claude Code" 등)
-- **사용자가 명시적으로 요청할 때만 커밋한다.** 작업이 끝났다고 자동 커밋하지 않는다.
 - 형식: `<type>: [<ticket>] <title>`, 브랜치와 이력에 티켓이 없으면 `<type>: <title>` — 전체 컨벤션은 `commit-rules` skill.
 
 ## Absolute comment rules (always apply — skill carries the rest)

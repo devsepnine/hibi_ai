@@ -149,8 +149,12 @@ the scarce resource; two reviewable PRs beat one that gets rubber-stamped.
 
 **Preparing a branch and drafting a description is not permission to open a PR.**
 Opening one is outward-facing: it notifies people and publishes the branch. Do it
-only on an explicit request, the same rule that governs commits. Cases that reach
-a public repository raise this bar further — see `references/upstream-config.md`.
+only on an explicit request for that push or PR, the same rule that governs commits —
+and that request never carries over: an earlier "just handle it", an approval that
+covered a previous push, an accepted plan, and a permission mode that would
+auto-approve the command are each not one. Without it, show the
+draft and stop. Cases that reach a public repository raise this bar further — see
+`references/upstream-config.md`.
 
 Show the rendered title and body first, then:
 

@@ -127,7 +127,7 @@ CLI는 동작하지만 프로젝트가 아직 연결되지 않았다. 사용자�
    사용자에게 프로젝트 선택 또는 생성을 프롬프트한다. `.vercel/project.json`을 만든다.
 
 4. **그 다음 사용 가능한 최선의 방법으로 배포한다:**
-   - git remote가 있으면 → commit + push (위 git push 방법 참조)
+   - git remote가 있으면 → 묻고 나서 commit + push (위 git push 방법의 승인 게이트가 적용된다. 2단계의 "별도 확인을 요청하지 않는다"는 linking에만 해당하며 commit·push에는 결코 해당하지 않는다)
    - git remote가 없으면 → `vercel deploy [path] -y --no-wait --scope <team-slug>`, 그 후 `vercel inspect <url>`로 상태 확인
 
 ---
@@ -155,7 +155,7 @@ Vercel CLI가 전혀 설정되지 않은 상태.
    vercel link --scope <team-slug>          # if no git remote
    ```
 
-5. **배포** 사용 가능한 최선의 방법으로 (remote가 있으면 git push, 그렇지 않으면 `vercel deploy -y --no-wait --scope <team-slug>` 후 `vercel inspect <url>`로 상태 확인).
+5. **배포** 사용 가능한 최선의 방법으로 — remote가 있으면 git push(**먼저 묻는다**: 위 git push 방법의 승인 게이트가 여기에도 적용된다), 그렇지 않으면 `vercel deploy -y --no-wait --scope <team-slug>` 후 `vercel inspect <url>`로 상태 확인.
 
 ---
 

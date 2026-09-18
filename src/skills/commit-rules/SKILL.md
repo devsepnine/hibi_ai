@@ -39,7 +39,7 @@ Extract it, do not invent it:
 
 ### Mandatory Rules
 
-**CRITICAL: Only create commits when explicitly requested by the user. Never automatically commit after completing work unless the user specifically asks for it.**
+**CRITICAL: Create a commit ONLY when the user explicitly asks for that commit — and the same bar governs `push`. Never commit or push because work finished, because a gate went green, or because it is the obvious next step. There is no standing authorization: an earlier "just handle it", an approval that covered a previous commit or push, an accepted plan, and a permission mode that would auto-approve the command are each not the request. Without one, leave the tree as it is, report what is ready, and ask.**
 
 **Pre-commit Checklist:**
 - Keep work, commits, and PRs small.
