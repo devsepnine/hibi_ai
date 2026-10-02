@@ -111,17 +111,38 @@ for PLATFORM in "macos" "linux" "windows"; do
     rm -rf "$PKG_DIR"
 done
 
+# Linux native packages (deb/rpm/apk). Optional locally — the release workflow
+# installs nfpm before this script runs; without it the archives above still
+# ship on their own.
+if command -v nfpm >/dev/null 2>&1; then
+    echo ""
+    echo "📦 Creating Linux packages (deb/rpm/apk)..."
+    for PACKAGER in deb rpm apk; do
+        VERSION="$VERSION" nfpm pkg --config nfpm.yaml --packager "$PACKAGER" --target "$RELEASE_DIR/"
+        echo "✅ Created: ${PACKAGER} package"
+    done
+else
+    echo ""
+    echo "⚠️  nfpm not found — skipping deb/rpm/apk packages"
+    echo "   To install: brew install nfpm"
+fi
+
 echo ""
 echo "📝 Generating checksums..."
 cd "$PROJECT_ROOT/$RELEASE_DIR"
-shasum -a 256 *.tar.gz *.zip > checksums.txt 2>/dev/null || true
-echo "✅ Created: checksums.txt"
+shopt -s nullglob
+ARTIFACTS=(*.tar.gz *.zip *.deb *.rpm *.apk)
+shopt -u nullglob
+if [ ${#ARTIFACTS[@]} -gt 0 ]; then
+    shasum -a 256 "${ARTIFACTS[@]}" > checksums.txt
+    echo "✅ Created: checksums.txt"
+fi
 cd "$PROJECT_ROOT"
 
 echo ""
 echo "🎉 Packaging complete!"
 echo ""
-ls -lh "$RELEASE_DIR"/*.{tar.gz,zip} 2>/dev/null || true
+ls -lh "$RELEASE_DIR"/*.{tar.gz,zip,deb,rpm,apk} 2>/dev/null || true
 echo ""
 echo "Checksums:"
 cat "$RELEASE_DIR/checksums.txt"

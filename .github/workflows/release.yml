@@ -69,9 +69,9 @@ jobs:
             x86_64-pc-windows-gnu \
             x86_64-unknown-linux-musl
 
-      - name: Install cross toolchains (mingw-w64, musl-cross)
+      - name: Install cross toolchains (mingw-w64, musl-cross) and nfpm
         run: |
-          brew install mingw-w64 filosottile/musl-cross/musl-cross
+          brew install mingw-w64 filosottile/musl-cross/musl-cross nfpm
 
       - name: Cache cargo registry and build artifacts
         uses: Swatinem/rust-cache@v2
@@ -95,6 +95,9 @@ jobs:
           gh release create "v${VERSION}" \
             "release/v${VERSION}"/*.tar.gz \
             "release/v${VERSION}"/*.zip \
+            "release/v${VERSION}"/*.deb \
+            "release/v${VERSION}"/*.rpm \
+            "release/v${VERSION}"/*.apk \
             "release/v${VERSION}/checksums.txt" \
             --title "v${VERSION}" \
             --generate-notes

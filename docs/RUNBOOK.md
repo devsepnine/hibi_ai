@@ -74,10 +74,10 @@ git push origin v1.17.1
 워크플로 단계:
 
 1. 버전 검증 (태그 == `package.sh` VERSION == `Cargo.toml` version)
-2. Rust 크로스 타겟 설치 + `mingw-w64`·`musl-cross` 설치
+2. Rust 크로스 타겟 설치 + `mingw-w64`·`musl-cross`·`nfpm` 설치
 3. cargo 레지스트리·빌드 캐시 복원 (`Swatinem/rust-cache@v2`, workspace `tools/installer`)
 4. `tools/installer/build.sh` (macOS 러너에서 전 플랫폼 크로스 컴파일)
-5. `package.sh` (아카이브 + `checksums.txt`)
+5. `package.sh` (아카이브 + nfpm으로 Linux `.deb`/`.rpm`/`.apk` + `checksums.txt`)
 6. `gh release create v{VERSION} --generate-notes`
 
 ```bash
@@ -93,7 +93,8 @@ gh release view v1.17.1
 
 - [ ] 워크플로 성공
 - [ ] macOS `.tar.gz`, Linux `.tar.gz`, Windows `.zip` 3개 업로드
-- [ ] `checksums.txt` 업로드 및 내용 확인
+- [ ] Linux `.deb`/`.rpm`/`.apk` 3개 업로드
+- [ ] `checksums.txt` 업로드 및 내용 확인 (아카이브 + 패키지 6종 모두 포함)
 
 ### 5. Homebrew Tap 갱신 (수동)
 

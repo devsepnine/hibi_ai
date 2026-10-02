@@ -86,7 +86,9 @@
 
 - `tools/installer/build.sh` — 전 플랫폼 크로스 컴파일 (macOS Universal + Linux musl + Windows mingw)
 - `tools/statusline/build.sh` — 상태 표시줄 바이너리
-- `package.sh` — 릴리즈 아카이브 + `checksums.txt`. `VERSION` 상수가 릴리즈 워크플로의 검증 기준
+- `package.sh` — 릴리즈 아카이브 + nfpm으로 Linux `.deb`/`.rpm`/`.apk` + `checksums.txt`. `VERSION` 상수가 릴리즈 워크플로의 검증 기준
+- `nfpm.yaml` — Linux 패키지 정의 (`/usr/bin/hibi` + `/usr/share/hibi` 레이아웃). `VERSION`은 환경 변수로 주입
+- `install.sh` — Linux curl|sh 인스톨러. 체크섬 검증 후 `~/.local` (또는 `HIBI_PREFIX`) 에 설치
 - `.github/workflows/release.yml` — 태그 `v*.*.*` 푸시로 트리거. 태그 == `package.sh` VERSION == `Cargo.toml` version 검증 후 빌드·패키징·GitHub Release 발행
 
 ### 설정 파일

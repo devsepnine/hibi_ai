@@ -1,0 +1,44 @@
+# Linux native packages (deb/rpm/apk) for hibi, built by package.sh via nfpm.
+# VERSION is expanded from the environment; package.sh exports it.
+#
+# Layout: /usr/bin/hibi plus bundled configs in /usr/share/hibi — the binary
+# discovers bundled sources via the exe-relative candidate ../share/hibi
+# (see find_package_source_dir in tools/installer/src/source/mod.rs).
+name: hibi-ai
+arch: amd64
+platform: linux
+version: ${VERSION}
+section: utils
+priority: optional
+maintainer: devsepnine
+description: |
+  TUI installer for Claude Code and Codex CLI configurations.
+  Installs agents, commands, skills, hooks, MCPs, plugins, output styles,
+  and a statusline into ~/.claude or ~/.codex.
+homepage: https://github.com/devsepnine/hibi_ai
+license: MIT
+contents:
+  - src: dist/hibi-linux
+    dst: /usr/bin/hibi
+  - src: dist/agents
+    dst: /usr/share/hibi/agents
+  - src: dist/commands
+    dst: /usr/share/hibi/commands
+  - src: dist/skills
+    dst: /usr/share/hibi/skills
+  - src: dist/hooks
+    dst: /usr/share/hibi/hooks
+  - src: dist/mcps
+    dst: /usr/share/hibi/mcps
+  - src: dist/plugins
+    dst: /usr/share/hibi/plugins
+  - src: dist/output-styles
+    dst: /usr/share/hibi/output-styles
+  - src: dist/statusline
+    dst: /usr/share/hibi/statusline
+  - src: dist/settings.json
+    dst: /usr/share/hibi/settings.json
+  - src: dist/CLAUDE.md
+    dst: /usr/share/hibi/CLAUDE.md
+  - src: dist/AGENTS.md
+    dst: /usr/share/hibi/AGENTS.md

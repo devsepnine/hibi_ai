@@ -13,12 +13,34 @@ TUI installer for Claude Code and Codex CLI configurations.
 
 ## Installation
 
+### Quick Install (Linux)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/devsepnine/hibi_ai/main/install.sh | sh
+```
+
+Installs to `~/.local` after verifying the release checksum. Set `HIBI_PREFIX=/usr/local` for a system-wide install, or `HIBI_VERSION=x.y.z` to pin a version.
+
 ### Homebrew (macOS/Linux)
 
 ```bash
 brew tap devsepnine/brew
 brew install hibi
 ```
+
+### Linux Packages (deb/rpm/apk)
+
+Download the package for your distro from [Releases](https://github.com/devsepnine/hibi_ai/releases/latest), then:
+
+```bash
+sudo apt install ./hibi-ai_*_amd64.deb       # Debian/Ubuntu
+sudo dnf install ./hibi-ai-*-1.x86_64.rpm    # Fedora/RHEL
+apk add --allow-untrusted hibi-ai_*.apk      # Alpine (unsigned package)
+```
+
+The apk is unsigned; verify any package against `checksums.txt` from the same release before installing.
+
+The packages install the binary to `/usr/bin/hibi` and bundled configs to `/usr/share/hibi`.
 
 ### Scoop (Windows)
 
