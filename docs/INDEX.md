@@ -28,8 +28,8 @@
 | 컴포넌트 | 경로 | 목록 |
 |---|---|---|
 | 에이전트 | `src/agents/<name>.md` | [README 에이전트 표](README.md#에이전트-8개) |
-| 슬래시 커맨드 | `src/commands/<name>.md` | [README 커맨드 표](README.md#슬래시-커맨드-21개) |
-| 스킬 | `src/skills/<name>/SKILL.md` | [README 스킬 표](README.md#스킬-24개) |
+| 슬래시 커맨드 | `src/commands/<name>.md` | [README 커맨드 표](README.md#슬래시-커맨드-22개) |
+| 스킬 | `src/skills/<name>/SKILL.md` | [README 스킬 표](README.md#스킬-25개) |
 | 훅 | `src/hooks/<name>/hook.yaml` | 전부 `deprecated: true` — 인스톨러가 자동 제거 |
 | MCP 서버 | `src/mcps/mcps.yaml` | 단일 파일 |
 | 플러그인 | `src/plugins/plugins.yaml` | 단일 파일 |
@@ -144,6 +144,7 @@ A: 개발자 가독용 미러다. 인스톨러 스캐너가 stem이 `-ko`로 끝
 
 ## 문서 업데이트 이력
 
+- **2026-10-04**: `feature-map` 스킬 및 `/feature-map` 커맨드 추가 반영 (커맨드 21 → 22, 스킬 24 → 25). README 커맨드·스킬 표 앵커(`#슬래시-커맨드-22개`, `#스킬-25개`)를 헤딩과 함께 갱신
 - **2026-09-18**: 커밋 권한 규칙이 `push`·`gh pr create`까지 덮도록 강화된 것을 반영 — `src/CLAUDE.md`의 절대 규칙 섹션 제목이 "Absolute commit and push rules"로 바뀌었다
 - **2026-09-11**: `pull-request`가 §2 본문-diff 도출, §5 필요성 검증 리뷰, §6 리뷰 코멘트 분류를 갖게 됨(§1–§7). 통합으로 생긴 댕글링 지시문(`"run /upstream-pr"` → 존재하지 않는 스킬 호출)을 `src/CLAUDE.md:36`·`commands/learn.md:98`·`commands/upstream-pr.md:25`에서 정리하고, 후자의 방법론 참조를 삭제된 `upstream-pr` 스킬에서 `pull-request` §1–§7로 재지정. `upstream-pr` 스킬이 `pull-request`로 통합됨을 반영 (스킬 25 → 24). 정책 라우팅 표에서 `pull-request`가 PR 가이드라인과 업스트림 설정 기여를 함께 소유하고 `/upstream-pr`이 두 번째 진입점이 됐다. README 스킬 표 앵커(`#스킬-24개`)를 헤딩과 함께 갱신 — 한쪽만 바꾸면 링크가 끊긴다
 - **2026-09-09**: `src/` 마크다운 재개편(v1.16.0 이후) 반영. 3개 문서 전면 현행화 — 컴포넌트 수·인스톨러 모듈·릴리즈 자동화 반영, 끊어진 링크(`../CLAUDE.md`, `../AGENTS.md`, `rules/pull-request-rules.md`) 정정, 중복 목록을 README로 단일화. `/pull-request`·`/security-review` 커맨드 신규 추가로 정책 라우팅 표 10행 전부가 실제 커맨드를 갖게 됐다 (커맨드 19 → 21)

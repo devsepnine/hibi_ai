@@ -1,0 +1,26 @@
+[
+  {
+    "query": "우리 웹앱 기능맵 좀 만들어줘. 운영팀에서 '사이드바에 뭐가 잘 안돼요' 이런 식으로 말하면 AI가 바로 어디 코드인지 찾을 수 있게.",
+    "should_trigger": true
+  },
+  {
+    "query": "docs/FEATURES.md 만든 지 좀 됐는데 그 사이에 결제 화면이 바뀌었어. 기능맵 최신화해줘.",
+    "should_trigger": true
+  },
+  {
+    "query": "사용자가 화면 문구나 메뉴 이름으로 말해도 해당 파일을 찾을 수 있게 기능 지도 문서를 정리해줘.",
+    "should_trigger": true
+  },
+  {
+    "query": "입금 문구 입력창에서 한글이 잘 안 쳐져. 고쳐줘.",
+    "should_trigger": false
+  },
+  {
+    "query": "아키텍처 코드맵 docs/CODEMAPS 갱신해줘.",
+    "should_trigger": false
+  },
+  {
+    "query": "README에 설치 방법이랑 기능 소개 업데이트해줘.",
+    "should_trigger": false
+  }
+]

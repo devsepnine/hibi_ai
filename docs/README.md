@@ -15,8 +15,8 @@ hibi-ai는 Claude Code와 Codex CLI를 위한 TUI(터미널 사용자 인터페�
 hibi_ai/
 ├── src/                    # 배포되는 설정 원본 (Git 관리)
 │   ├── agents/             # 에이전트 정의 8개 (+ -ko 미러)
-│   ├── commands/           # 슬래시 커맨드 21개 (+ -ko 미러)
-│   ├── skills/             # 스킬 24개 (+ 각 SKILL-ko.md)
+│   ├── commands/           # 슬래시 커맨드 22개 (+ -ko 미러)
+│   ├── skills/             # 스킬 25개 (+ 각 SKILL-ko.md)
 │   ├── hooks/              # 라이프사이클 훅 5개 — 전부 deprecated
 │   ├── mcps/mcps.yaml      # MCP 서버 정의 21개
 │   ├── plugins/plugins.yaml# 플러그인 마켓플레이스 4개 / 플러그인 28개
@@ -56,7 +56,7 @@ hibi_ai/
 
 라우팅 표는 `src/CLAUDE.md`의 "Agent routing" 섹션이 SSOT다.
 
-### 슬래시 커맨드 (21개)
+### 슬래시 커맨드 (22개)
 
 | 커맨드 | 용도 |
 |---|---|
@@ -75,6 +75,7 @@ hibi_ai/
 | `/deps` | 의존성 방향·결합도 감사 |
 | `/do-178c` | 보증 티어(A–E) 분류 및 rigor 적용 |
 | `/qa-handoff` | git 이력 → 비개발자용 QA 인수 문서 |
+| `/feature-map` | 증상→코드 기능맵(`docs/FEATURES.md`) 작성·갱신 |
 | `/eval` | eval 정의·pass@k 측정·회귀 리포트 |
 | `/learn` | 세션 패턴을 스킬로 추출 |
 | `/upstream-pr` | 세션에서 얻은 개선을 상류 PR로 승격 |
@@ -82,7 +83,7 @@ hibi_ai/
 | `/update-codemaps` | 아키텍처 코드맵 생성 |
 | `/checkpoint` | 워크플로 체크포인트 저장·검증 |
 
-### 스킬 (24개)
+### 스킬 (25개)
 
 트리거될 때만 로드된다. 설명은 스킬 목록 문자 예산(200K 윈도우 기준 8,000자)을 공유하므로 각 `description`을 220자 이하로 유지한다 — 예산을 넘으면 초과한 스킬의 설명이 **통째로** 사라져 자동 트리거가 불가능해진다. 예산에 계상되는 값은 `description` 합계가 아니라 목록 항목 합계(스킬명 + 4 + `description`, 항목 구분자 포함)다 — 현재값은 `python3 src/skills/eval-harness/scripts/skill_budget.py src/skills` 로 측정한다.
 
@@ -104,6 +105,7 @@ hibi_ai/
 | 스킬 | 용도 |
 |---|---|
 | `qa-handoff` | git 이력을 QA 인수 문서로 |
+| `feature-map` | 화면 위치·사용자 표현·UI 문구로 코드를 찾는 기능맵 |
 | `eval-harness` | eval 주도 개발, pass@k |
 | `obsidian-notes` | Obsidian 볼트 노트 (ADR, 릴리즈 노트, 회고) |
 
@@ -125,7 +127,7 @@ hibi_ai/
 | `superset` | Apache Superset (MCP 경유) |
 | `deploy-to-vercel` | Vercel 배포 |
 
-스킬별 부가 자산: 점진적 공개용 `references/` 11개(`backend-patterns`, `coding-standards`, `dependency-design`, `do-178c`, `iced_rs`, `obsidian-notes`, `pull-request`, `ratatui_rs`, `rust-best-practices`, `svelte-5`, `zustand`), 벤더링된 상류 규칙 `rules/` 4개(`composition-patterns`, `dependency-design`, `react-best-practices`, `react-native-skills`), 평가 세트 `evals/` 9개(`dependency-design`, `do-178c`, `iced_rs`, `obsidian-notes`, `pull-request`, `qa-handoff`, `ratatui_rs`, `svelte-5`, `zustand`). `evals/`에는 두 종류가 들어간다 — `evals.json`은 출력 품질 평가(`prompt` + `expected_output`), `trigger-eval.json`은 설명이 실제로 발화하는지 보는 트리거 회귀 세트(`query` + `should_trigger`)로 `trigger_eval.py --eval-set`이 소비한다.
+스킬별 부가 자산: 점진적 공개용 `references/` 11개(`backend-patterns`, `coding-standards`, `dependency-design`, `do-178c`, `iced_rs`, `obsidian-notes`, `pull-request`, `ratatui_rs`, `rust-best-practices`, `svelte-5`, `zustand`), 벤더링된 상류 규칙 `rules/` 4개(`composition-patterns`, `dependency-design`, `react-best-practices`, `react-native-skills`), 평가 세트 `evals/` 10개(`dependency-design`, `do-178c`, `feature-map`, `iced_rs`, `obsidian-notes`, `pull-request`, `qa-handoff`, `ratatui_rs`, `svelte-5`, `zustand`). `evals/`에는 두 종류가 들어간다 — `evals.json`은 출력 품질 평가(`prompt` + `expected_output`), `trigger-eval.json`은 설명이 실제로 발화하는지 보는 트리거 회귀 세트(`query` + `should_trigger`)로 `trigger_eval.py --eval-set`이 소비한다.
 
 ### 훅 (활성 없음)
 
