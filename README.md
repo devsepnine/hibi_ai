@@ -6,14 +6,14 @@ TUI installer for Claude Code and Codex CLI configurations.
 
 - Interactive TUI for easy configuration management
 - Support for both Claude Code and Codex CLI
-- Component-based installation (agents, commands, skills, hooks, MCPs, plugins)
-- Cross-platform support (macOS Universal Binary [Intel + Apple Silicon], Linux, Windows)
+- Component-based installation of agents, commands, skills, hooks, MCPs, and plugins
+- Cross-platform support: macOS Universal Binary for Intel and Apple Silicon, Linux, Windows
 - Automatic MCP server detection
 - Fast and lightweight
 
 ## Installation
 
-### Quick Install (Linux)
+### Quick Install, Linux
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/devsepnine/hibi_ai/main/install.sh | sh
@@ -21,14 +21,14 @@ curl -fsSL https://raw.githubusercontent.com/devsepnine/hibi_ai/main/install.sh 
 
 Installs to `~/.local` after verifying the release checksum. Set `HIBI_PREFIX=/usr/local` for a system-wide install, or `HIBI_VERSION=x.y.z` to pin a version.
 
-### Homebrew (macOS/Linux)
+### Homebrew, macOS/Linux
 
 ```bash
 brew tap devsepnine/brew
 brew install hibi
 ```
 
-### Linux Packages (deb/rpm/apk)
+### Linux Packages: deb, rpm, apk
 
 Download the package for your distro from [Releases](https://github.com/devsepnine/hibi_ai/releases/latest), then:
 
@@ -42,7 +42,7 @@ The apk is unsigned; verify any package against `checksums.txt` from the same re
 
 The packages install the binary to `/usr/bin/hibi` and bundled configs to `/usr/share/hibi`.
 
-### Scoop (Windows)
+### Scoop, Windows
 
 ```bash
 scoop bucket add hibi-ai https://github.com/devsepnine/scoop-bucket
@@ -73,14 +73,14 @@ hibi
 ```
 
 The TUI will guide you through:
-1. Selecting target CLI (Claude Code or Codex)
+1. Selecting the target CLI, either Claude Code or Codex
 2. Choosing components to install
 3. Reviewing changes before installation
 4. Installing configurations
 
 ### Multi-Source Support
 
-By default, hibi uses bundled configurations from the release package. You can add additional sources (git repos or local directories) via `~/.hibi/sources.yaml`:
+By default, hibi uses bundled configurations from the release package. You can add additional sources, meaning git repos or local directories, via `~/.hibi/sources.yaml`:
 
 ```yaml
 sources:
@@ -97,7 +97,7 @@ sources:
 auto_update: true
 ```
 
-**Priority**: Bundled (lowest) → first source → ... → last source (highest). When the same file exists in multiple sources, the last one wins.
+**Priority**: Bundled, the lowest → first source → ... → last source, the highest. When the same file exists in multiple sources, the last one wins.
 
 **Update git sources** without launching the TUI:
 
@@ -128,7 +128,7 @@ in `~/.hibi/install.json`:
 extra sources, their labels appear under `other_sources` so `source` is never
 read as the origin of a component that came from somewhere else.
 
-This exists so an installed config can name its own origin — the version maps to
+This exists so an installed config can name its own origin. The version maps to
 a release tag, so the exact source tree is recoverable, and the upstream is where
 improvements go back. The `pull-request` skill reads this file to find the
 repository without needing a clone. Only hibi's own directory is written; the
@@ -142,8 +142,8 @@ agent-owned `~/.claude` tree is left alone.
 - **MCPs**: Model Context Protocol servers
 - **Plugins**: Additional functionality plugins
 - **Output Styles**: Custom output formatting
-- **Hooks**: Lifecycle hooks — all bundled hooks are deprecated and removed from existing installs; the native Skill system replaces them
-- **Rules** / **Contexts**: still supported as component types for your own sources, but the bundled configuration no longer ships either — policies moved into skills
+- **Hooks**: Lifecycle hooks. All bundled hooks are deprecated and removed from existing installs; the native Skill system replaces them
+- **Rules** / **Contexts**: still supported as component types for your own sources, but the bundled configuration no longer ships either, because policies moved into skills
 
 ## Building from Source
 
@@ -156,13 +156,13 @@ cd tools/installer
 ```
 
 This will create binaries for all platforms:
-- `hibi` (macOS Universal Binary - supports both Intel and Apple Silicon Macs)
-- `hibi-linux` (Linux x86_64)
-- `hibi.exe` (Windows x86_64)
+- `hibi`: macOS Universal Binary that supports both Intel and Apple Silicon Macs
+- `hibi-linux`: Linux x86_64
+- `hibi.exe`: Windows x86_64
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details
+MIT License, see [LICENSE](LICENSE) for details
 
 ## Contributing
 

@@ -1,12 +1,12 @@
-# hibi-ai 운영 가이드 (RUNBOOK)
+# hibi-ai 운영 가이드 RUNBOOK
 
-> 마지막 업데이트: 2026-10-02 · 버전 v1.18.0
+> 마지막 업데이트: 2026-10-04 · 버전 v1.18.0
 
 릴리즈는 ~v1.13부터 GitHub Actions로 자동화됐다. 아래 절차는 태그 푸시 이전의 준비와, 워크플로가 끝난 뒤 남는 수동 작업을 다룬다.
 
 ## 릴리즈 절차
 
-### 1. 버전 동기화 (3곳)
+### 1. 버전 동기화 3곳
 
 릴리즈 워크플로가 세 값의 일치를 검증하고, 어긋나면 빌드 전에 실패한다.
 
@@ -24,13 +24,16 @@ vim package.sh
 cargo update -w --manifest-path tools/installer/Cargo.toml
 ```
 
-푸시할 태그(`v1.18.0`)의 `v` 접두어를 뗀 값이 위 두 버전과 같아야 한다.
+푸시할 태그 `v1.18.0`의 `v` 접두어를 뗀 값이 위 두 버전과 같아야 한다.
 
 ### 2. 로컬 검증
 
 ```bash
 # 테스트
 cargo test --manifest-path tools/installer/Cargo.toml   # 133 tests
+
+# 산문 구두점 린트: src, docs, README.md. 위반 시 exit 1
+python tools/lint-prose.py
 
 # 전 플랫폼 빌드 (dist/로 출력)
 cd tools/installer && ./build.sh && cd ../..
@@ -69,15 +72,15 @@ git push origin v1.18.0
 
 ### 4. GitHub Actions 확인
 
-태그 푸시로 `.github/workflows/release.yml`이 트리거된다. 수동 실행은 Actions 탭의 `workflow_dispatch`(version 입력)로도 가능하다.
+태그 푸시로 `.github/workflows/release.yml`이 트리거된다. 수동 실행은 Actions 탭의 `workflow_dispatch`에서 version을 입력해서도 가능하다.
 
 워크플로 단계:
 
-1. 버전 검증 (태그 == `package.sh` VERSION == `Cargo.toml` version)
+1. 버전 검증: 태그, `package.sh` VERSION, `Cargo.toml` version이 같은지 확인
 2. Rust 크로스 타겟 설치 + `mingw-w64`·`musl-cross`·`nfpm` 설치
-3. cargo 레지스트리·빌드 캐시 복원 (`Swatinem/rust-cache@v2`, workspace `tools/installer`)
-4. `tools/installer/build.sh` (macOS 러너에서 전 플랫폼 크로스 컴파일)
-5. `package.sh` (아카이브 + nfpm으로 Linux `.deb`/`.rpm`/`.apk` + `checksums.txt`)
+3. cargo 레지스트리·빌드 캐시 복원: `Swatinem/rust-cache@v2`, workspace `tools/installer`
+4. `tools/installer/build.sh`: macOS 러너에서 전 플랫폼 크로스 컴파일
+5. `package.sh`: 아카이브, nfpm으로 만드는 Linux `.deb`/`.rpm`/`.apk`, `checksums.txt`
 6. `gh release create v{VERSION} --generate-notes`
 
 ```bash
@@ -94,9 +97,9 @@ gh release view v1.18.0
 - [ ] 워크플로 성공
 - [ ] macOS `.tar.gz`, Linux `.tar.gz`, Windows `.zip` 3개 업로드
 - [ ] Linux `.deb`/`.rpm`/`.apk` 3개 업로드
-- [ ] `checksums.txt` 업로드 및 내용 확인 (아카이브 + 패키지 6종 모두 포함)
+- [ ] `checksums.txt` 업로드 및 내용 확인. 아카이브와 패키지 6종이 모두 포함돼야 한다
 
-### 5. Homebrew Tap 갱신 (수동)
+### 5. Homebrew Tap 갱신, 수동
 
 ```bash
 cd ../homebrew-brew
@@ -110,7 +113,7 @@ git commit -m "chore: update hibi to v1.18.0"
 git push origin main
 ```
 
-### 6. Scoop Bucket 갱신 (수동)
+### 6. Scoop Bucket 갱신, 수동
 
 ```bash
 cd ../scoop-bucket
@@ -215,7 +218,7 @@ error: linker `x86_64-linux-musl-gcc` not found
 brew install filosottile/musl-cross/musl-cross
 ```
 
-#### 문제: mingw 링커 에러 (Windows 타겟)
+#### 문제: mingw 링커 에러, Windows 타겟
 
 ```bash
 # 증상
@@ -346,7 +349,7 @@ git tag -d v1.18.0
 git push origin :refs/tags/v1.18.0
 ```
 
-`main` 커밋은 되돌리지 않는다 — 태그만 제거하면 배포가 멈춘다. 히스토리 리라이트는 사용자 캐시를 깨뜨린다.
+`main` 커밋은 되돌리지 않는다. 태그만 제거하면 배포가 멈춘다. 히스토리 리라이트는 사용자 캐시를 깨뜨린다.
 
 ### 2. Homebrew Formula 롤백
 
@@ -373,17 +376,17 @@ git push origin master
 
 ### 보안 취약점 발견
 
-1. **즉시 조치** — 문제 릴리즈를 Draft로 전환하거나 삭제, 루트 `README.md`에 경고
-2. **수정** — 취약점 수정 커밋 → 패치 버전 릴리즈 (예: v1.18.0 → v1.18.1)
-3. **알림** — GitHub Security Advisory 생성, Homebrew/Scoop 갱신
+1. **즉시 조치**: 문제 릴리즈를 Draft로 전환하거나 삭제하고, 루트 `README.md`에 경고
+2. **수정**: 취약점 수정 커밋 → 패치 버전 릴리즈. 예: v1.18.0 → v1.18.1
+3. **알림**: GitHub Security Advisory 생성, Homebrew/Scoop 갱신
 
-시크릿이 커밋에 들어간 경우는 릴리즈 롤백만으로 끝나지 않는다. 해당 크리덴셜을 먼저 폐기(rotate)하고, 그다음 이력 처리를 판단한다.
+시크릿이 커밋에 들어간 경우는 릴리즈 롤백만으로 끝나지 않는다. 해당 크리덴셜을 먼저 폐기하고 rotate한 뒤, 그다음 이력 처리를 판단한다.
 
 ### 심각한 버그 발견
 
-1. **영향 평가** — 사용자 영향 범위, 데이터 손실 여부. 인스톨러는 `~/.claude` 트리를 병합 방식으로 다루므로 설정 손상 가능성을 우선 확인한다
-2. **핫픽스 릴리즈** — 긴급 수정 후 패치 버전. 사용자 캐시 sync 경로가 깨졌다면 sync 복원 로직을 같은 릴리즈에 포함한다
-3. **사용자 안내** — Discussions 공지, 업그레이드 권장
+1. **영향 평가**: 사용자 영향 범위, 데이터 손실 여부. 인스톨러는 `~/.claude` 트리를 병합 방식으로 다루므로 설정 손상 가능성을 우선 확인한다
+2. **핫픽스 릴리즈**: 긴급 수정 후 패치 버전. 사용자 캐시 sync 경로가 깨졌다면 sync 복원 로직을 같은 릴리즈에 포함한다
+3. **사용자 안내**: Discussions 공지, 업그레이드 권장
 
 ## 유지보수 작업
 
@@ -395,20 +398,20 @@ git push origin master
 
 ### 월간
 
-- [ ] 의존성 업데이트 (`cargo update -w --manifest-path tools/installer/Cargo.toml`)
+- [ ] 의존성 업데이트: `cargo update -w --manifest-path tools/installer/Cargo.toml`
 - [ ] Rust 툴체인 업데이트
-- [ ] 보안 스캔 (`cargo audit`)
+- [ ] 보안 스캔: `cargo audit`
 - [ ] `src/mcps/mcps.yaml`·`src/plugins/plugins.yaml`의 상류 패키지명·URL 유효성 확인
-- [ ] 문서 현행화 (`/update-docs`)
+- [ ] 문서 현행화: `/update-docs`
 
 ### 분기별
 
 - [ ] 로드맵 검토
 - [ ] 사용자 피드백 분석
-- [ ] 아키텍처 리뷰 (`/deps`로 결합도 감사)
-- [ ] 스킬 목록 예산 재측정 — `python3 src/skills/eval-harness/scripts/skill_budget.py src/skills`
-  (초과면 exit 1. 스킬이 늘면 8,000자를 넘겨 설명이 절삭되고, 절삭된 스킬은
-  자동 트리거를 잃는다)
+- [ ] 아키텍처 리뷰: `/deps`로 결합도 감사
+- [ ] 스킬 목록 예산 재측정: `python3 src/skills/eval-harness/scripts/skill_budget.py src/skills`
+  초과면 exit 1이다. 스킬이 늘면 8,000자를 넘겨 설명이 절삭되고, 절삭된 스킬은
+  자동 트리거를 잃는다
 
 ## 연락처 및 리소스
 
