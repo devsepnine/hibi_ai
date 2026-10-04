@@ -1,0 +1,26 @@
+{
+  "skill_name": "how",
+  "evals": [
+    {
+      "id": 1,
+      "name": "fan-out-then-synthesize",
+      "prompt": "주문 생성 요청이 들어와서 결제까지 어떻게 동작하는지 전체 흐름 파악 좀 해줘. 다음 주에 이 부분 고쳐야 해.",
+      "expected_output": "The assistant restates the question, judges it complex, and collects the entry points such as the order route before fanning out. It launches 2 to 4 Explore agents in a single message, one per slice such as the request path, the billing call, and persistence, each given the explorer prompt. The answer uses Overview, Key Concepts, How It Works, Where Things Live, and Gotchas in that order, writes How It Works as the real call chain with file:line or path → symbol for each step, and cites a file for every claim.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "simple-path-no-fan-out",
+      "prompt": "How does the debounce helper in src/utils/debounce.ts work?",
+      "expected_output": "Because the question covers one small utility, the assistant reads the file itself and launches no explorers. The answer still uses the fixed sections, dropping Gotchas only if nothing is worth calling out, and every claim about timers, cancellation, or trailing calls cites a line in src/utils/debounce.ts.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "honest-gap-and-why-handoff",
+      "prompt": "알림 큐가 어떻게 동작해? 그리고 왜 Redis 대신 Postgres를 쓰는지도 궁금해.",
+      "expected_output": "The assistant explains the runtime flow of the notification queue with cited call chain steps, and states any link it could not trace as an open question instead of guessing it. For the why part it does not invent a rationale from the code; it says that question belongs to the why skill and offers to run it.",
+      "files": []
+    }
+  ]
+}
