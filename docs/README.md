@@ -15,8 +15,8 @@ hibi-ai는 Claude Code와 Codex CLI를 위한 TUI, 즉 터미널 사용자 인�
 hibi_ai/
 ├── src/                    # 배포되는 설정 원본 (Git 관리)
 │   ├── agents/             # 에이전트 정의 8개 (+ -ko 미러)
-│   ├── commands/           # 슬래시 커맨드 27개 (+ -ko 미러)
-│   ├── skills/             # 스킬 29개 (+ 각 SKILL-ko.md)
+│   ├── commands/           # 슬래시 커맨드 28개 (+ -ko 미러)
+│   ├── skills/             # 스킬 30개 (+ 각 SKILL-ko.md)
 │   ├── hooks/              # 라이프사이클 훅 5개 — 전부 deprecated
 │   ├── mcps/mcps.yaml      # MCP 서버 정의 21개
 │   ├── plugins/plugins.yaml# 플러그인 마켓플레이스 4개 / 플러그인 28개
@@ -28,10 +28,11 @@ hibi_ai/
 ├── tools/
 │   ├── installer/          # TUI 인스톨러 (Rust, 모듈 표는 INDEX.md)
 │   ├── statusline/         # 상태 표시줄 소스 (Rust)
-│   ├── lint-prose.py       # 산문 구두점 린트 (src, docs, README.md)
+│   ├── lint-prose.py       # 산문 구두점 린트 (src, docs, README.md, CLAUDE.md)
 │   └── lint-arch.py        # 아키텍처 규칙 린트 (docs/ARCHITECTURE.md)
 ├── docs/                   # 이 문서 디렉터리 (README / INDEX / RUNBOOK / FEATURES / ARCHITECTURE)
-├── .github/workflows/      # release.yml — 태그 푸시로 릴리즈 자동화
+├── .github/workflows/      # release.yml — 태그 푸시로 검사 후 릴리즈 자동화
+├── CLAUDE.md               # 이 저장소 개발용 지침 (배포되지 않음)
 ├── package.sh              # 릴리즈 패키징
 ├── nfpm.yaml               # Linux 패키지 정의 (deb/rpm/apk)
 ├── install.sh              # Linux curl|sh 인스톨러
@@ -60,7 +61,7 @@ hibi_ai/
 
 라우팅 표는 `src/CLAUDE.md`의 "Agent routing" 섹션이 SSOT다.
 
-### 슬래시 커맨드 27개
+### 슬래시 커맨드 28개
 
 | 커맨드 | 용도 |
 |---|---|
@@ -70,6 +71,7 @@ hibi_ai/
 | `/refactor` | 동작을 먼저 고정하고 구조만 변경. 추가 전 삭제, 작은 녹색 단계, 읽는 부담이 줄 때만 유지 |
 | `/perf` | 측정된 느림 개선. 기준선 먼저, 변경 하나에 측정 하나, 유지 또는 되돌림, 수치마다 한계 요인 설명 |
 | `/code-review` | 미커밋 변경의 보안·품질 리뷰 |
+| `/review-panel` | A/B 티어 diff를 관점 하나씩 맡은 `code-reviewer` 패널로 검토하고 Act on, Consider, Dismissed와 판정으로 합친다 |
 | `/blast-radius` | 머지 전 diff가 바깥에서 깨뜨릴 수 있는 것 탐색, 안전 근거를 실제 코드 실행으로 증명 |
 | `/security-review` | 10개 범주 보안 체크리스트 감사. OWASP·CWE 매핑 |
 | `/commit` | 프로젝트 규약에 맞춘 커밋 생성 |
@@ -90,9 +92,9 @@ hibi_ai/
 | `/upstream-pr` | 세션에서 얻은 개선을 상류 PR로 승격 |
 | `/update-docs` | 문서 현행화 |
 | `/update-codemaps` | 아키텍처 코드맵 생성 |
-| `/checkpoint` | 워크플로 체크포인트 저장·검증, 재개 노트를 남기는 일시정지와 재개, 장시간 무인 실행 규칙 |
+| `/checkpoint` | 워크플로 체크포인트 저장·검증, 재개 노트를 남기는 일시정지와 재개, 장시간 무인 실행 규칙, `/perf`와 같이 쓰는 결정 로그 형식 |
 
-### 스킬 29개
+### 스킬 30개
 
 트리거될 때만 로드된다. 설명은 스킬 목록 문자 예산인 200K 윈도우 기준 8,000자를 공유하므로 각 `description`을 220자 이하로 유지한다. 예산을 넘으면 초과한 스킬의 설명이 **통째로** 사라져 자동 트리거가 불가능해진다. 예산에 계상되는 값은 `description` 합계가 아니라 목록 항목 합계이고, 스킬명 + 4 + `description`에 항목 구분자를 포함한다. 현재값은 `python3 src/skills/eval-harness/scripts/skill_budget.py src/skills` 로 측정한다.
 
@@ -119,6 +121,7 @@ hibi_ai/
 | `feature-map` | 화면 위치·사용자 표현·UI 문구로 코드를 찾는 기능맵 |
 | `blast-radius` | 머지 전 파급 범위 검증, 안전 근거를 증거 사다리로 증명 |
 | `why` | 설계 의도 추적: 코드가 왜 이런 모양인지 git·PR·티켓·문서에서 찾고 주장마다 신뢰 등급 표시 |
+| `how` | 런타임 동작 설명: 서브시스템이나 흐름을 실제 호출 체인으로 따라가고 주장마다 파일 인용 |
 | `eval-harness` | eval 주도 개발, pass@k |
 | `obsidian-notes` | Obsidian 볼트 노트: ADR, 릴리즈 노트, 회고 |
 
@@ -140,7 +143,7 @@ hibi_ai/
 | `superset` | Apache Superset, MCP 경유 |
 | `deploy-to-vercel` | Vercel 배포 |
 
-스킬별 부가 자산은 다음과 같다. 점진적 공개용 `references/` 13개는 `backend-patterns`, `coding-standards`, `dependency-design`, `do-178c`, `iced_rs`, `obsidian-notes`, `pull-request`, `ratatui_rs`, `rust-best-practices`, `svelte-5`, `technical-writing`, `why`, `zustand`에 있다. 벤더링된 상류 규칙 `rules/` 4개는 `composition-patterns`, `dependency-design`, `react-best-practices`, `react-native-skills`에 있다. 평가 세트 `evals/` 14개는 `architecture-rules`, `blast-radius`, `dependency-design`, `do-178c`, `feature-map`, `iced_rs`, `obsidian-notes`, `pull-request`, `qa-handoff`, `ratatui_rs`, `svelte-5`, `technical-writing`, `why`, `zustand`에 있다. `evals/`에는 두 종류가 들어간다. `evals.json`은 출력 품질 평가로 `prompt` + `expected_output`을 담고, `trigger-eval.json`은 설명이 실제로 발화하는지 보는 트리거 회귀 세트로 `query` + `should_trigger`를 담으며 `trigger_eval.py --eval-set`이 소비한다.
+스킬 디렉터리에는 `SKILL.md`, `-ko.md` 미러, 하위 폴더 `references/`, `assets/`, `scripts/`, `rules/`, `evals/`만 둔다. 이 구조와 kebab-case 이름은 [ARCHITECTURE.md](ARCHITECTURE.md)의 `arch-skill-layout`, `arch-skill-name-kebab`이 정하고 `tools/lint-arch.py`가 검사한다. 스킬별 부가 자산은 다음과 같다. 점진적 공개용 `references/` 14개는 `backend-patterns`, `coding-standards`, `dependency-design`, `do-178c`, `how`, `iced-rs`, `obsidian-notes`, `pull-request`, `ratatui-rs`, `rust-best-practices`, `svelte-5`, `technical-writing`, `why`, `zustand`에 있다. 벤더링된 상류 규칙 `rules/` 4개는 `composition-patterns`, `dependency-design`, `react-best-practices`, `react-native-skills`에 있고, 규칙 세트의 유지보수 안내는 각 `rules/_README.md`에 있다. 실행 스크립트 `scripts/` 2개는 `deploy-to-vercel`, `eval-harness`에 있다. 평가 세트 `evals/` 15개는 `architecture-rules`, `blast-radius`, `dependency-design`, `do-178c`, `feature-map`, `how`, `iced-rs`, `obsidian-notes`, `pull-request`, `qa-handoff`, `ratatui-rs`, `svelte-5`, `technical-writing`, `why`, `zustand`에 있다. `evals/`에는 두 종류가 들어간다. `evals.json`은 출력 품질 평가로 `prompt` + `expected_output`을 담고, `trigger-eval.json`은 설명이 실제로 발화하는지 보는 트리거 회귀 세트로 `query` + `should_trigger`를 담으며 `trigger_eval.py --eval-set`이 소비한다.
 
 ### 훅: 활성 없음
 
@@ -190,14 +193,14 @@ cd tools/statusline && ./build.sh
 ### 테스트
 
 ```bash
-cargo test --manifest-path tools/installer/Cargo.toml   # 137 tests
+cargo test --manifest-path tools/installer/Cargo.toml   # 151 tests
 ```
 
 ### 릴리즈: GitHub Actions 자동화, v1.13부터
 
 1. `tools/installer/Cargo.toml`과 `package.sh`의 버전을 올린다. `cargo update -w`도 함께 실행한다
 2. 커밋 → `main` 푸시 → 태그 `v{VERSION}` 푸시
-3. `.github/workflows/release.yml`이 태그에서 트리거된다. 태그 == `package.sh` VERSION == `Cargo.toml` version을 검증한 뒤 nfpm 설치 → 전 플랫폼 빌드 → `package.sh` → 아카이브, Linux `.deb`·`.rpm`·`.apk`, `checksums.txt`를 담아 GitHub Release 발행
+3. `.github/workflows/release.yml`이 태그에서 트리거된다. 태그 == `package.sh` VERSION == `Cargo.toml` version을 검증하고, `lint-prose.py`, `lint-arch.py`, `cargo fmt --check`, `cargo test`를 통과한 뒤 nfpm 설치 → 전 플랫폼 빌드 → `package.sh` → 아카이브, Linux `.deb`·`.rpm`·`.apk`, `checksums.txt`를 담아 GitHub Release 발행
 4. 릴리즈 후 **수동**: `homebrew-brew/Formula/hibi.rb`와 `scoop-bucket/hibi-ai.json` 갱신
 
 상세 절차·트러블슈팅·롤백은 [RUNBOOK.md](RUNBOOK.md).
@@ -339,6 +342,21 @@ bundled (최저) → sources.yaml 첫 번째 → ... → sources.yaml 마지막 
 `components`는 번들 소스에서 온 것만 나열하고, 추가 소스는 `other_sources`에 분리된다. `pull-request` 스킬이 이 파일로 클론 없이 상류 저장소를 찾는다. hibi 자신의 디렉터리만 쓰고 `~/.claude` 트리는 건드리지 않는다.
 
 ## 최근 변경사항
+
+### 미출시
+
+- `how` 스킬을 추가했다. 스킬은 29 → 30. 서브시스템이나 흐름이 런타임에 어떻게 동작하는지 실제 호출 체인을 따라 설명하고 주장마다 파일을 인용한다. 코드가 왜 그런 모양인지는 계속 `why`가 다룬다
+- `/review-panel` 커맨드를 추가했다. 커맨드는 27 → 28. A/B 티어 diff를 관점 하나씩 맡은 `code-reviewer` 에이전트 패널로 검토하고 결과를 Act on, Consider, Dismissed와 판정으로 합친다. 수정, 커밋, 푸시는 하지 않는다. 기본 리뷰 게이트는 계속 `/code-review`다
+- 스킬 `iced_rs`, `ratatui_rs`의 이름을 `iced-rs`, `ratatui-rs`로 바꿨다. 인스톨러는 시작할 때 `fs/installer/renamed.rs`로 옛 디렉터리를 정리한다. 설치 기록에 있는 파일만 지우고, 사용자 파일과 그 파일이 든 디렉터리는 남기며, 링크는 따라가지 않는다. 소스에 새 이름이 있을 때만 정리한다
+- 스킬 하위 구조를 표준으로 고정했다. `deploy-to-vercel/resources/`는 `scripts/`로, 벤더링 규칙 세트 4개의 `README.md`는 `rules/_README.md`로 옮겼다
+- 인스톨러 모듈을 정리했다. `TargetCli`를 `app`에서 `target.rs`로 옮겨 `app`과 `fs`의 순환을 끊었다. 홈 디렉터리는 `paths.rs` 한 곳에서만 얻고, git을 포함한 짧은 외부 명령은 `exec.rs`의 공용 실행기 하나로 돌린다
+- 인스톨러 크레이트에 rustfmt를 적용했다. 포맷으로 줄이 늘어서 `arch-file-size`는 테스트를 뺀 프로덕션 코드만 잰다
+- 릴리즈 워크플로가 빌드 전에 `lint-prose.py`, `lint-arch.py`, `cargo fmt --check`, `cargo test`를 실행한다. `lint-arch.py`가 상태 표시줄 소스와 바이너리의 커밋 이력을 비교하므로 checkout은 전체 이력을 받는다. `lint-arch.py`의 검사 규칙은 9개에서 12개가 됐고, 늘어난 셋은 홈 디렉터리 접근 지점, 상태 표시줄 바이너리 갱신, 스킬 구조다
+- 이 저장소를 개발할 때 읽는 루트 `CLAUDE.md`를 추가했다. 배포되지 않는다. 기능맵과 아키텍처 규칙을 가리키는 줄, `-ko.md` 미러 규칙, 커밋 전에 돌릴 검사 네 개를 담는다. `lint-prose.py`의 기본 검사 대상에 이 파일을 더했다
+- `feature-map`과 `architecture-rules`가 포인터 줄을 제안하는 대신 프로젝트 루트 `CLAUDE.md`에 바로 쓴다. 파일이 없으면 만들고, `AGENTS.md`가 있으면 같은 줄을 넣는다. 기능맵 템플릿은 제목과 필드 라벨을 영어로 통일했다. 단계 6 검사가 그 라벨을 grep하기 때문이다. 산문은 프로젝트 문서의 언어로 쓴다
+- `/checkpoint`에 결정 로그 형식을 정했다. 장시간 실행, `/perf`, 변경을 시도하고 유지하거나 되돌리는 루프가 `.claude/resume/<name>-decisions.tsv`에 시도마다 한 줄씩 같은 열로 남긴다
+- `eval-harness`에 Claude Code 세션 안에서 중첩 `claude -p`가 시작하지 않아 모든 행이 INCONCLUSIVE가 되는 경우와 그 대처를 적었다
+- 인스톨러 테스트가 137개에서 151개가 됐다
 
 ### 2026-10-04, v1.20.0
 

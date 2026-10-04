@@ -28,15 +28,20 @@ cargo update -w --manifest-path tools/installer/Cargo.toml
 
 ### 2. 로컬 검증
 
-```bash
-# 테스트
-cargo test --manifest-path tools/installer/Cargo.toml   # 137 tests
+릴리즈 워크플로가 빌드 전에 돌리는 검사 네 개를 먼저 로컬에서 통과시킨다. 같은 목록이 루트 `CLAUDE.md`에 있다.
 
-# 산문 구두점 린트: src, docs, README.md. 위반 시 exit 1
+```bash
+# 산문 구두점 린트: src, docs, README.md, CLAUDE.md. 위반 시 exit 1
 python tools/lint-prose.py
 
 # 아키텍처 규칙 린트: docs/ARCHITECTURE.md의 기계적 MUST 규칙. 새 위반이나 stale 행이면 exit 1
 python tools/lint-arch.py
+
+# 포맷 검사: 차이가 있으면 실패. 고칠 때는 --check 없이 실행
+cargo fmt --manifest-path tools/installer/Cargo.toml --check
+
+# 테스트
+cargo test --manifest-path tools/installer/Cargo.toml   # 151 tests
 
 # 전 플랫폼 빌드 (dist/로 출력)
 cd tools/installer && ./build.sh && cd ../..
@@ -79,12 +84,14 @@ git push origin v1.20.0
 
 워크플로 단계:
 
-1. 버전 검증: 태그, `package.sh` VERSION, `Cargo.toml` version이 같은지 확인
-2. Rust 크로스 타겟 설치 + `mingw-w64`·`musl-cross`·`nfpm` 설치
-3. cargo 레지스트리·빌드 캐시 복원: `Swatinem/rust-cache@v2`, workspace `tools/installer`
-4. `tools/installer/build.sh`: macOS 러너에서 전 플랫폼 크로스 컴파일
-5. `package.sh`: 아카이브, nfpm으로 만드는 Linux `.deb`/`.rpm`/`.apk`, `checksums.txt`
-6. `gh release create v{VERSION} --generate-notes`
+1. 전체 이력 checkout: `lint-arch.py`가 상태 표시줄 소스와 바이너리의 커밋 이력을 비교하므로 `fetch-depth: 0`
+2. 버전 검증: 태그, `package.sh` VERSION, `Cargo.toml` version이 같은지 확인
+3. 검사: `lint-prose.py`, `lint-arch.py`, `cargo fmt --check`, `cargo test`. 하나라도 실패하면 빌드하지 않는다
+4. Rust 크로스 타겟 설치 + `mingw-w64`·`musl-cross`·`nfpm` 설치
+5. cargo 레지스트리·빌드 캐시 복원: `Swatinem/rust-cache@v2`, workspace `tools/installer`
+6. `tools/installer/build.sh`: macOS 러너에서 전 플랫폼 크로스 컴파일
+7. `package.sh`: 아카이브, nfpm으로 만드는 Linux `.deb`/`.rpm`/`.apk`, `checksums.txt`
+8. `gh release create v{VERSION} --generate-notes`
 
 ```bash
 # 진행 상황
@@ -183,6 +190,10 @@ git push origin :refs/tags/v1.20.0
 # 버전 수정 커밋 후
 git tag v1.20.0 && git push origin v1.20.0
 ```
+
+#### 문제: 검사 단계에서 실패
+
+"Check prose, architecture rules, formatting, and tests" 단계가 실패하면 빌드 전에 멈춘다. 로그에서 실패한 명령을 찾아 로컬에서 같은 명령으로 재현하고, 고친 커밋을 `main`에 푸시한 뒤 위 버전 불일치와 같은 방법으로 태그를 다시 만든다. `cargo fmt` 차이는 `--check` 없이 실행하면 고쳐진다.
 
 #### 문제: crates.io 네트워크 타임아웃
 
