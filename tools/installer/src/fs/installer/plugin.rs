@@ -3,9 +3,9 @@ use std::sync::mpsc::Receiver;
 
 use super::mcp::ensure_marketplace_added;
 use super::process::{ProcessConfig, run_cleanup_command, spawn_cancelable_process};
-use crate::app::TargetCli;
 use crate::fs::create_cli_command;
 use crate::plugin::Plugin;
+use crate::target::TargetCli;
 
 /// Cleanup helper: try to remove plugin without blocking
 /// Returns true if cleanup succeeded, false otherwise

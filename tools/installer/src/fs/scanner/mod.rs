@@ -9,11 +9,11 @@ use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::path::Path;
 
-use crate::app::TargetCli;
 use crate::component::{Component, ComponentType};
 use crate::mcp::McpServer;
 use crate::plugin::Plugin;
 use crate::source::ResolvedSource;
+use crate::target::TargetCli;
 
 /// Merge items from multiple sources using a last-wins strategy.
 ///

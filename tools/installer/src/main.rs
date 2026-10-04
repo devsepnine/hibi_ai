@@ -8,6 +8,7 @@ mod paths;
 mod plugin;
 mod process_exec;
 mod source;
+mod target;
 mod theme;
 mod tree;
 mod ui;

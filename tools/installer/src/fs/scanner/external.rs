@@ -3,8 +3,8 @@ use std::collections::HashSet;
 use std::path::Path;
 use walkdir::WalkDir;
 
-use crate::app::TargetCli;
 use crate::component::{Component, ComponentType, InstallStatus};
+use crate::target::TargetCli;
 
 /// Source label applied to externally-discovered files (those present in
 /// dest_dir but not produced by any configured source).

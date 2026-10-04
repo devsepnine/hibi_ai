@@ -7,9 +7,9 @@ mod settings;
 use anyhow::Result;
 use std::path::Path;
 
-use crate::app::TargetCli;
 use crate::component::{Component, ComponentType};
 use crate::fs::{create_cli_command, run_with_timeout};
+use crate::target::TargetCli;
 use merge::merge_settings_json;
 use settings::{
     register_hook_in_settings, register_output_style_in_settings, register_statusline_in_settings,

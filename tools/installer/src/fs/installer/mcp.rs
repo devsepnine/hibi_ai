@@ -5,9 +5,9 @@ use super::process::{
     ProcessConfig, QUICK_COMMAND_TIMEOUT_SECS, run_cleanup_command, run_with_timeout,
     spawn_cancelable_process,
 };
-use crate::app::TargetCli;
 use crate::fs::create_cli_command;
 use crate::mcp::{McpScope, McpServer};
+use crate::target::TargetCli;
 
 /// Split a command string into arguments.
 /// Uses shlex (POSIX rules) on Unix, Windows-aware splitting on Windows.

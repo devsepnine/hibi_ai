@@ -3,7 +3,7 @@ pub mod installer;
 pub mod manifest;
 pub mod scanner;
 
-use crate::app::TargetCli;
+use crate::target::TargetCli;
 use anyhow::Result;
 use std::process::{Command, Stdio};
 use std::time::Duration;

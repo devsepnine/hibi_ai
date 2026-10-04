@@ -9,7 +9,8 @@ pub mod sources;
 pub(crate) mod test_support;
 mod types;
 
-pub use types::{FocusArea, SyncStatus, Tab, TargetCli, View};
+pub use crate::target::TargetCli;
+pub use types::{FocusArea, SyncStatus, Tab, View};
 
 use anyhow::Result;
 use std::collections::HashMap;

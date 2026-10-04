@@ -2,9 +2,9 @@ use anyhow::Result;
 use std::path::Path;
 
 use super::validation::validate_mcp_server;
-use crate::app::TargetCli;
 use crate::fs::create_cli_command;
 use crate::mcp::{McpCatalog, McpServer, McpStatus};
+use crate::target::TargetCli;
 
 /// Timeout for MCP server scan (seconds).
 /// Health checks across multiple servers can be slow; 30s is a reasonable ceiling.

@@ -20,13 +20,14 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 | `app` | `tools/installer/src/app/` | TUI 상태 `App`, 입력, 이동, 소스 위저드 | `component`, `fs`, `mcp`, `plugin`, `source`, `theme`, `tree` |
 | `ui` | `tools/installer/src/ui/` | ratatui 렌더링 | `app`, `tree`, `component`, `source`, `mcp`, `plugin`, `theme`, `fs` 상수 |
 | `cli` | `tools/installer/src/cli/` | 키 입력 분기와 비대화형 `run_sync` | `app`, `fs`, `loading`, `source`, `ui` |
-| `fs` | `tools/installer/src/fs/` | 스캔, 설치·제거, manifest, diff, CLI 프로세스, settings.json 쓰기 | `component`, `mcp`, `plugin`, `source` |
+| `fs` | `tools/installer/src/fs/` | 스캔, 설치·제거, manifest, diff, CLI 프로세스, settings.json 쓰기 | `component`, `mcp`, `plugin`, `source`, `target`, `paths` |
 | `loading` | `tools/installer/src/loading/` | 백그라운드 스레드 채널과 대기 화면 상태 | `app`, `fs`, `component`, `mcp`, `plugin`, `process_exec` |
 | `process_exec` | `tools/installer/src/process_exec.rs` | 백그라운드 설치·제거의 `ProcessData` 조정 | `app`, `component`, `fs`, `mcp`, `plugin` |
 | `source` | `tools/installer/src/source/` | 소스 탐색, git clone과 캐시, `sources.yaml` | `paths` |
 | `tree` | `tools/installer/src/tree/` | 컴포넌트 목록을 접는 트리 모델 | `component` |
 | leaf 타입 | `tools/installer/src/component.rs`, `tools/installer/src/mcp.rs`, `tools/installer/src/plugin.rs`, `tools/installer/src/theme.rs` | 컴포넌트·MCP·플러그인 타입과 색 테마 | 없음 |
 | `paths` | `tools/installer/src/paths.rs` | 홈 디렉터리를 얻는 유일한 지점 | 없음 |
+| `target` | `tools/installer/src/target.rs` | 대상 CLI `TargetCli`와 그 설정 디렉터리 | `paths` |
 | `statusline` | `tools/statusline/` | stdin JSON을 상태줄로 렌더링하는 독립 바이너리 | 외부 크레이트만 |
 | 배포 설정 | `src/` | agents, commands, skills, hooks, mcps, plugins, output-styles, 상태줄 바이너리 | 해당 없음 |
 
@@ -36,9 +37,9 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 
 - **Level**: MUST
 - **Rule**: `fs`의 어떤 파일도 `crate::app`을 import하지 않는다.
-- **Why**: `fs`→`app` 참조가 `app`↔`fs` 순환을 만든다. 참조 대상은 `TargetCli` 하나뿐이라 그것을 leaf 모듈로 옮기면 해소된다. 2026-10-04 결정, 마이그레이션.
-- **Evidence**: 15개 중 7개 파일 준수, 위반 8개는 모두 `use crate::app::TargetCli` · `grep -rln "crate::app" tools/installer/src/fs`
-- **Exceptions**: none. 위반 8개는 Known violations에 있다
+- **Why**: `fs`→`app` 참조는 `app`↔`fs` 순환을 만든다. 유일한 참조 대상이던 `TargetCli`를 `target` 모듈로 옮겨 해소했다. 2026-10-04 결정.
+- **Evidence**: 위반 0건 · `grep -rln "crate::app" tools/installer/src/fs`
+- **Exceptions**: none
 - **Enforced by**: `tools/lint-arch.py`
 
 ### `arch-fs-no-ui-import`
@@ -207,14 +208,6 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 
 | Path | Rule | Decision |
 |---|---|---|
-| `tools/installer/src/fs/mod.rs` | `arch-fs-no-app-import` | fix, `TargetCli`를 leaf 모듈로 옮긴다 |
-| `tools/installer/src/fs/installer/mod.rs` | `arch-fs-no-app-import` | fix |
-| `tools/installer/src/fs/installer/mcp.rs` | `arch-fs-no-app-import` | fix |
-| `tools/installer/src/fs/installer/plugin.rs` | `arch-fs-no-app-import` | fix |
-| `tools/installer/src/fs/scanner/mod.rs` | `arch-fs-no-app-import` | fix |
-| `tools/installer/src/fs/scanner/components.rs` | `arch-fs-no-app-import` | fix |
-| `tools/installer/src/fs/scanner/external.rs` | `arch-fs-no-app-import` | fix |
-| `tools/installer/src/fs/scanner/mcp.rs` | `arch-fs-no-app-import` | fix |
 | `tools/installer/src/source/git.rs` | `arch-process-spawn-in-fs` | fix, `run_with_timeout`으로 옮긴다 |
 | `src/skills/composition-patterns/README.md` | `arch-skill-layout` | fix, 내용을 `SKILL.md`나 `src/skills/<name>/references/`로 옮긴다 |
 | `src/skills/dependency-design/README.md` | `arch-skill-layout` | fix |
@@ -228,7 +221,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 
 | Date | Question | Answer |
 |---|---|---|
-| `2026-10-04` | `fs` 8개 파일이 `TargetCli` 때문에 `app`을 import해 순환이 생긴다 | 마이그레이션: 규칙은 MUST, `TargetCli`를 leaf 모듈로 옮겨 해소 |
+| `2026-10-04` | `fs` 8개 파일이 `TargetCli` 때문에 `app`을 import해 순환이 생긴다 | 규칙은 MUST, `TargetCli`를 `target` 모듈로 옮겨 해소, 완료 |
 | `2026-10-04` | 커맨드 27개 중 7개가 절차를 직접 담는다 | 정책은 skill, 절차형 커맨드는 허용 |
 | `2026-10-04` | description 220자 초과 4개 | MUST로 두고 4개를 바로 수정, `tools/lint-prose.py`가 길이를 검사 |
 | `2026-10-04` | git만 프로세스를 `run_with_timeout` 밖에서 직접 실행한다 | 마이그레이션: `fs` 래퍼로 통일 |

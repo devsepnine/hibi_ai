@@ -2,8 +2,8 @@ use anyhow::Result;
 use std::path::Path;
 use walkdir::WalkDir;
 
-use crate::app::TargetCli;
 use crate::component::{Component, ComponentType, HookConfig, InstallStatus};
+use crate::target::TargetCli;
 
 /// Scan all files in a directory as a single component type (for `map_to` sources).
 pub(super) fn scan_flat(
