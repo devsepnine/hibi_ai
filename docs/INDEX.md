@@ -1,6 +1,6 @@
 # hibi-ai 문서 인덱스
 
-> 마지막 업데이트: 2026-10-04 · 버전 v1.20.0
+> 마지막 업데이트: 2026-10-04 · 버전 v1.21.0
 
 컴포넌트 목록은 중복하지 않는다. 이 문서는 "무엇이 어디에 있는가"만 다루고, 실제 목록은 [README.md](README.md)가 SSOT다.
 
@@ -154,7 +154,7 @@ A: 개발자 가독용 미러다. 인스톨러 스캐너가 stem이 `-ko`로 끝
 
 ## 문서 업데이트 이력
 
-- **2026-10-04**: 미출시 변경 반영. `how` 스킬과 `/review-panel` 커맨드 추가로 커맨드 27 → 28, 스킬 29 → 30. README 앵커 `#슬래시-커맨드-28개`, `#스킬-30개`를 헤딩과 함께 갱신. 저장소 루트 목록에 개발용 `CLAUDE.md`를 추가. 인스톨러 모듈 표에 `target.rs`, `paths.rs`, `exec.rs`, `fs/installer/renamed.rs`를 넣고 LOC과 테스트 수 137 → 151을 현행화. 파일 길이 판정을 `arch-file-size` 기준으로 맞췄다
+- **2026-10-04**: v1.21.0 반영. `how` 스킬과 `/review-panel` 커맨드 추가로 커맨드 27 → 28, 스킬 29 → 30. README 앵커 `#슬래시-커맨드-28개`, `#스킬-30개`를 헤딩과 함께 갱신. 저장소 루트 목록에 개발용 `CLAUDE.md`를 추가. 인스톨러 모듈 표에 `target.rs`, `paths.rs`, `exec.rs`, `fs/installer/renamed.rs`를 넣고 LOC과 테스트 수 137 → 151을 현행화. 파일 길이 판정을 `arch-file-size` 기준으로 맞췄다
 - **2026-10-04**: v1.20.0 반영. `architecture-rules` 스킬과 `/architecture-rules` 커맨드 추가로 커맨드 26 → 27, 스킬 28 → 29. README 앵커 `#슬래시-커맨드-27개`, `#스킬-29개`를 헤딩과 함께 갱신. 문서 목록에 `FEATURES.md`·`ARCHITECTURE.md`를, 정책 표에 `architecture-rules` 행을, 개발 스크립트에 `tools/lint-arch.py`를 추가. 인스톨러 LOC과 테스트 수 133 → 137을 현행화
 - **2026-10-04**: `blast-radius`·`technical-writing`·`why` 스킬과 `/blast-radius`·`/bugfix`·`/refactor`·`/perf` 커맨드 추가 반영. 커맨드 22 → 26, 스킬 25 → 28. README 앵커 `#슬래시-커맨드-26개`, `#스킬-28개`를 헤딩과 함께 갱신. 정책 표에 `technical-writing` 행을, 개발 스크립트에 `tools/lint-prose.py`를 추가
 - **2026-10-04**: `feature-map` 스킬 및 `/feature-map` 커맨드 추가 반영. 커맨드 21 → 22, 스킬 24 → 25. README 커맨드·스킬 표 앵커 `#슬래시-커맨드-22개`, `#스킬-25개`를 헤딩과 함께 갱신
