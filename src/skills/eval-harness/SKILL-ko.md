@@ -71,6 +71,13 @@ INCONCLUSIVE 행은 `--timeout` 을, subtype 이 그렇게 말하면 `--max-turn
 로드하는 위치가 아니다. 수정한 스킬을 먼저 설치·동기화하지 않으면 이전 설명을
 채점하게 된다.
 
+Claude Code 세션 안에서는 중첩 `claude -p`가 시작을 거부해서, 모든 행이
+stderr에 `Claude Code cannot be launched inside another Claude Code session`을 남기고
+INCONCLUSIVE로 끝난다. 하네스는 Claude Code 밖의 터미널에서 실행한다. 세션 안에서
+돌리려면 자식 프로세스의 환경에서 세션 식별 변수를 지워야 한다. 예:
+`env -u CLAUDECODE -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_SESSION_ID -u CLAUDE_PID -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN -u CLAUDE_CODE_SESSION_ATTENDED -u CLAUDE_CODE_EXECPATH python scripts/trigger_eval.py ...`.
+이는 안전장치를 일부러 끄는 것이므로 사용자가 동의할 때만 한다.
+
 `skill-creator` 플러그인의 `run_eval` 로 대체하지 말 것: 런타임이 절대 내보내지
 않는 `<name>-skill-<uuid>` 문자열을 매칭하고, 첫 tool call 이 Skill/Read 가
 아니면 즉시 포기하며, nested stderr 를 버린다. 그래서 안정적이고 그럴듯하며

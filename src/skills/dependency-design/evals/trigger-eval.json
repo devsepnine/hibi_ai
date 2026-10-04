@@ -5,6 +5,10 @@
   },
   {
     "query": "Can you change the pricing rule in `applyDiscounts()`? It's called from checkout, cart preview, invoice generation, and the nightly billing job, and a few of those read the result and feed it into downstream totals. I just need the rule changed.",
+    "should_trigger": false
+  },
+  {
+    "query": "Before I touch `applyDiscounts()`, which is called from checkout, cart preview, invoice generation, and the nightly billing job, how tightly are those callers coupled to its result, and should the rule move behind an interface first?",
     "should_trigger": true
   },
   {

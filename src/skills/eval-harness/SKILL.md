@@ -74,6 +74,14 @@ session reads `~/.claude/skills/`, and a repo path like `src/skills/` is not a
 location Claude Code loads from. Install or sync the edited skill first, or the
 run scores the previous description.
 
+Inside a Claude Code session the nested `claude -p` refuses to start, so
+every row ends INCONCLUSIVE with `Claude Code cannot be launched inside another
+Claude Code session` in stderr. Run the harness from a terminal outside Claude
+Code. From inside a session, the child only starts once the session-identity
+variables are removed from its environment, for example
+`env -u CLAUDECODE -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_SESSION_ID -u CLAUDE_PID -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN -u CLAUDE_CODE_SESSION_ATTENDED -u CLAUDE_CODE_EXECPATH python scripts/trigger_eval.py ...`.
+That switches off a guard on purpose, so do it only when the user agrees.
+
 Do not substitute the `skill-creator` plugin's `run_eval` for this: it matches
 a `<name>-skill-<uuid>` string the runtime never emits, gives up when the
 first tool call is not Skill/Read, and discards nested stderr, so it returns
