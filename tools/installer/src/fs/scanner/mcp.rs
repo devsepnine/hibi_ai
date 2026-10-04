@@ -1,17 +1,20 @@
-use std::path::Path;
 use anyhow::Result;
+use std::path::Path;
 
-use crate::app::TargetCli;
-use crate::mcp::{McpCatalog, McpServer, McpStatus};
-use crate::fs::create_cli_command;
 use super::validation::validate_mcp_server;
+use crate::app::TargetCli;
+use crate::fs::create_cli_command;
+use crate::mcp::{McpCatalog, McpServer, McpStatus};
 
 /// Timeout for MCP server scan (seconds).
 /// Health checks across multiple servers can be slow; 30s is a reasonable ceiling.
 const MCP_SCAN_TIMEOUT_SECS: u64 = 30;
 
 /// Scan MCP catalog and mark each server as installed or not.
-pub(super) fn scan_with_installed(source_dir: &Path, installed: &[String]) -> Result<Vec<McpServer>> {
+pub(super) fn scan_with_installed(
+    source_dir: &Path,
+    installed: &[String],
+) -> Result<Vec<McpServer>> {
     let catalog_path = source_dir.join("mcps/mcps.yaml");
     if !catalog_path.exists() {
         return Ok(Vec::new());
@@ -51,13 +54,13 @@ pub(super) fn get_installed_claude_servers() -> (Vec<String>, Option<String>) {
                 .lines()
                 .filter(|line| {
                     let trimmed = line.trim();
-                    !trimmed.is_empty()
-                        && !trimmed.starts_with("Checking")
-                        && trimmed.contains(':')
+                    !trimmed.is_empty() && !trimmed.starts_with("Checking") && trimmed.contains(':')
                 })
                 .filter_map(|line| {
                     let name = line.trim().split(':').next()?.trim();
-                    if name.is_empty() { return None; }
+                    if name.is_empty() {
+                        return None;
+                    }
                     Some(name.to_string())
                 })
                 .collect();
@@ -84,7 +87,9 @@ pub(super) fn get_installed_codex_servers() -> (Vec<String>, Option<String>) {
                         return None;
                     }
                     // Skip header lines (contain "Name" or "Command" or "Url" columns)
-                    if trimmed.starts_with("Name") && (trimmed.contains("Command") || trimmed.contains("Url")) {
+                    if trimmed.starts_with("Name")
+                        && (trimmed.contains("Command") || trimmed.contains("Url"))
+                    {
                         return None;
                     }
                     let name = trimmed.split_whitespace().next()?.trim();
@@ -104,8 +109,17 @@ pub(super) fn get_installed_codex_servers() -> (Vec<String>, Option<String>) {
 /// Format a warning when `mcp list` exits with a non-success status code.
 fn format_scan_error(cli_label: &str, result: &std::process::Output) -> Option<String> {
     let stderr = String::from_utf8_lossy(&result.stderr);
-    let code = result.status.code().map(|c| c.to_string()).unwrap_or_else(|| "unknown".to_string());
-    Some(format!("MCP scan: {} CLI exited with code {}: {}", cli_label, code, stderr.trim()))
+    let code = result
+        .status
+        .code()
+        .map(|c| c.to_string())
+        .unwrap_or_else(|| "unknown".to_string());
+    Some(format!(
+        "MCP scan: {} CLI exited with code {}: {}",
+        cli_label,
+        code,
+        stderr.trim()
+    ))
 }
 
 /// Format a warning when spawning/running the CLI command fails entirely.
@@ -113,7 +127,10 @@ fn format_spawn_error(e: anyhow::Error) -> Option<String> {
     let err_str = e.to_string();
     let hint = if err_str.contains("timed out") {
         " (health check timeout)"
-    } else if err_str.contains("os error 2") || err_str.contains("not found") || err_str.contains("The system cannot find") {
+    } else if err_str.contains("os error 2")
+        || err_str.contains("not found")
+        || err_str.contains("The system cannot find")
+    {
         " (CLI not found in PATH)"
     } else {
         ""

@@ -97,8 +97,7 @@ pub fn load_config() -> Result<(Vec<SourceEntry>, bool)> {
 
 /// Path to `~/.hibi/sources.yaml`.
 fn config_path() -> Result<PathBuf> {
-    let home = dirs::home_dir()
-        .ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
+    let home = dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
     Ok(home.join(".hibi").join("sources.yaml"))
 }
 
@@ -167,13 +166,11 @@ pub fn validate_local_path(path: &Path) -> Result<()> {
     }
 
     // Canonicalize to resolve symlinks, then re-check
-    let canonical = expanded.canonicalize()
-        .unwrap_or_else(|_| expanded.clone());
+    let canonical = expanded.canonicalize().unwrap_or_else(|_| expanded.clone());
 
     if let Some(home) = dirs::home_dir() {
         let claude_dir = home.join(".claude");
-        let canonical_claude = claude_dir.canonicalize()
-            .unwrap_or(claude_dir);
+        let canonical_claude = claude_dir.canonicalize().unwrap_or(claude_dir);
         if canonical.starts_with(&canonical_claude) {
             anyhow::bail!(
                 "Source path resolves to inside ~/.claude/: {}",
@@ -194,8 +191,10 @@ mod tests {
         let path = Path::new("~/foo/bar");
         let expanded = expand_tilde(path);
         assert!(!expanded.to_string_lossy().starts_with('~'));
-        assert!(expanded.to_string_lossy().ends_with("foo/bar")
-            || expanded.to_string_lossy().ends_with("foo\\bar"));
+        assert!(
+            expanded.to_string_lossy().ends_with("foo/bar")
+                || expanded.to_string_lossy().ends_with("foo\\bar")
+        );
     }
 
     #[test]
@@ -297,7 +296,7 @@ mod tests {
         assert!(yaml.contains("type: local"));
         assert!(yaml.contains("https://github.com/user/repo.git"));
         assert!(yaml.contains("root: config/claude")); // root field serialized
-        assert!(yaml.contains("map_to: rules"));       // map_to field serialized
+        assert!(yaml.contains("map_to: rules")); // map_to field serialized
         assert!(!yaml.contains("auto_update")); // Omitted when None
     }
 }

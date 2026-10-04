@@ -1,6 +1,6 @@
 use super::*;
-use crate::app::test_support::fresh_app;
 use crate::app::FocusArea;
+use crate::app::test_support::fresh_app;
 
 /// A view that takes typed text, and the buffer its keystrokes land in.
 type EntryCase = (app::View, fn(&App) -> &str);
@@ -19,7 +19,12 @@ fn digit_keys_address_panes_from_either_pane() {
         assert_eq!(app.focus, FocusArea::Tabs, "`1` pressed from {:?}", start);
 
         handle_list_input(&mut app, KeyCode::Char('2')).unwrap();
-        assert_eq!(app.focus, FocusArea::Content, "`2` pressed from {:?}", start);
+        assert_eq!(
+            app.focus,
+            FocusArea::Content,
+            "`2` pressed from {:?}",
+            start
+        );
     }
 }
 
@@ -34,7 +39,9 @@ fn digits_type_themselves_in_every_text_entry_view() {
     let cases: [EntryCase; 3] = [
         (app::View::EnvInput, |a| a.env_input_buffer.as_str()),
         (app::View::ProjectPath, |a| a.project_path_buffer.as_str()),
-        (app::View::SourceAddBranch, |a| a.source_input_buffer.as_str()),
+        (app::View::SourceAddBranch, |a| {
+            a.source_input_buffer.as_str()
+        }),
     ];
 
     for (view, buffer) in cases {
@@ -49,7 +56,11 @@ fn digits_type_themselves_in_every_text_entry_view() {
             dispatch_key(&mut app, KeyCode::Char(c), &tx).unwrap();
         }
 
-        assert_eq!(buffer(&app), "12", "digits must reach the buffer in {view:?}");
+        assert_eq!(
+            buffer(&app),
+            "12",
+            "digits must reach the buffer in {view:?}"
+        );
         assert_eq!(app.current_view, view, "{view:?} must not jump panes");
     }
 }
@@ -68,7 +79,12 @@ fn question_mark_opens_help_from_either_pane_and_every_exit_closes_it() {
             assert_eq!(app.current_view, app::View::Help, "`?` from {:?}", start);
 
             handle_help_input(&mut app, exit).unwrap();
-            assert_eq!(app.current_view, app::View::List, "{:?} must close help", exit);
+            assert_eq!(
+                app.current_view,
+                app::View::List,
+                "{:?} must close help",
+                exit
+            );
         }
     }
 }
@@ -139,7 +155,11 @@ fn esc_asks_before_it_discards_a_selection() {
 
         handle_list_input(&mut app, KeyCode::Esc).unwrap();
         assert_eq!(app.current_view, app::View::ConfirmExit, "{}", case.0);
-        assert!(app.has_selection(), "{}: asking must not already discard", case.0);
+        assert!(
+            app.has_selection(),
+            "{}: asking must not already discard",
+            case.0
+        );
     }
 }
 
@@ -155,7 +175,11 @@ fn esc_in_the_tab_bar_still_only_returns_to_the_list() {
 
     handle_list_input(&mut app, KeyCode::Esc).unwrap();
     assert_eq!(app.focus, FocusArea::Content);
-    assert_eq!(app.current_view, app::View::List, "the tab bar must not leave the screen");
+    assert_eq!(
+        app.current_view,
+        app::View::List,
+        "the tab bar must not leave the screen"
+    );
 }
 
 /// The prompt's own two answers, and the state each one owes the user: `y`
@@ -171,12 +195,20 @@ fn the_exit_prompt_commits_on_y_and_keeps_the_selection_on_cancel() {
         for cancel in [KeyCode::Esc, KeyCode::Char('n')] {
             handle_confirm_exit(&mut app, cancel);
             assert_eq!(app.current_view, app::View::List, "{}: {cancel:?}", case.0);
-            assert!(app.has_selection(), "{}: {cancel:?} must keep the tick", case.0);
+            assert!(
+                app.has_selection(),
+                "{}: {cancel:?} must keep the tick",
+                case.0
+            );
             app.current_view = app::View::ConfirmExit;
         }
 
         handle_confirm_exit(&mut app, KeyCode::Char('y'));
         assert_eq!(app.current_view, app::View::CliSelection, "{}", case.0);
-        assert!(!app.has_selection(), "{}: leaving must discard what it warned about", case.0);
+        assert!(
+            !app.has_selection(),
+            "{}: leaving must discard what it warned about",
+            case.0
+        );
     }
 }

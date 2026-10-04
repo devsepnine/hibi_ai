@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::Rect,
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph},
-    Frame,
 };
 
 use super::layout;
@@ -49,7 +49,11 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
     // dialog it is supposed to name.
     let block = Block::default()
         .title(" Confirm ")
-        .title_style(Style::default().fg(app.theme.text_primary()).add_modifier(Modifier::BOLD))
+        .title_style(
+            Style::default()
+                .fg(app.theme.text_primary())
+                .add_modifier(Modifier::BOLD),
+        )
         .borders(Borders::ALL)
         .border_style(Style::default().fg(app.theme.warning()))
         .style(Style::default().bg(app.theme.bg_secondary()));

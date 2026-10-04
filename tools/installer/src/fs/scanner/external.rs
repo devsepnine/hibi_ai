@@ -1,6 +1,6 @@
+use anyhow::Result;
 use std::collections::HashSet;
 use std::path::Path;
-use anyhow::Result;
 use walkdir::WalkDir;
 
 use crate::app::TargetCli;
@@ -81,12 +81,8 @@ fn scan_type_directory(
         .filter_map(|e| e.ok())
     {
         let path = entry.path();
-        let Some(name) = external_component_name(
-            path,
-            type_dir,
-            component_type,
-            existing_keys,
-        ) else {
+        let Some(name) = external_component_name(path, type_dir, component_type, existing_keys)
+        else {
             continue;
         };
 
@@ -139,7 +135,10 @@ fn external_component_name(
     let relative = path.strip_prefix(type_dir).ok()?;
 
     // Security: reject path traversal (mirrors scan_directory).
-    if relative.components().any(|c| matches!(c, std::path::Component::ParentDir)) {
+    if relative
+        .components()
+        .any(|c| matches!(c, std::path::Component::ParentDir))
+    {
         return None;
     }
 
@@ -160,7 +159,10 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     fn unique_test_dir(label: &str) -> std::path::PathBuf {
-        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
         let dir = std::env::temp_dir().join(format!("hibi_ext_{label}_{nanos}"));
         std::fs::create_dir_all(&dir).unwrap();
         dir

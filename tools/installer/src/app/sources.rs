@@ -4,12 +4,12 @@ use std::thread;
 use anyhow::Result;
 use crossterm::event::KeyCode;
 
-use super::{App, View, SyncStatus, build_tree_views};
+use super::{App, SyncStatus, View, build_tree_views};
 use crate::component::Component;
 use crate::fs::scanner;
 use crate::mcp::McpServer;
 use crate::plugin::Plugin;
-use crate::source::{self, SourceEntry, SourceKind, ResolvedSource};
+use crate::source::{self, ResolvedSource, SourceEntry, SourceKind};
 use crate::source::{config, git};
 
 /// Post-sync component rescan output; applied back into App state so the UI
@@ -73,7 +73,9 @@ impl App {
         match key {
             KeyCode::Esc => self.source_cancel(),
             KeyCode::Enter => self.source_input_submit()?,
-            KeyCode::Backspace => { self.source_input_buffer.pop(); }
+            KeyCode::Backspace => {
+                self.source_input_buffer.pop();
+            }
             KeyCode::Char(c) => self.source_input_buffer.push(c),
             _ => {}
         }
@@ -91,7 +93,10 @@ impl App {
             KeyCode::Char('6') => self.finish_with_map_to(Some("hooks")),
             KeyCode::Char('7') => self.finish_with_map_to(Some("output-styles")),
             KeyCode::Enter => self.finish_with_map_to(None),
-            KeyCode::Esc => { self.source_cancel(); Ok(()) }
+            KeyCode::Esc => {
+                self.source_cancel();
+                Ok(())
+            }
             _ => Ok(()),
         }
     }
@@ -105,9 +110,10 @@ impl App {
                     if let SourceEntry::Git { url, .. } = &self.source_entries[entry_idx]
                         && let Err(e) = git::remove_cache(url)
                     {
-                        self.source_sync_status = Some(SyncStatus::Error(
-                            format!("Source removed, but cache cleanup failed: {}", e)
-                        ));
+                        self.source_sync_status = Some(SyncStatus::Error(format!(
+                            "Source removed, but cache cleanup failed: {}",
+                            e
+                        )));
                     }
                     self.source_entries.remove(entry_idx);
                     config::save_config(&self.source_entries, self.source_auto_update)?;
@@ -194,12 +200,18 @@ impl App {
             // Rescan component inventory so freshly pulled files appear in the
             // UI. Skip when no CLI target is selected yet (nothing to scan for).
             let rescan = target_cli.and_then(|cli| {
-                let components = scanner::scan_all_sources(&report.resolved, &dest_dir, cli).ok()?;
+                let components =
+                    scanner::scan_all_sources(&report.resolved, &dest_dir, cli).ok()?;
                 let mcp_servers = scanner::scan_all_mcp_sources(&report.resolved, cli)
                     .map(|(servers, _)| servers)
                     .unwrap_or_default();
-                let plugins = scanner::scan_all_plugin_sources(&report.resolved).unwrap_or_default();
-                Some(RescanResult { components, mcp_servers, plugins })
+                let plugins =
+                    scanner::scan_all_plugin_sources(&report.resolved).unwrap_or_default();
+                Some(RescanResult {
+                    components,
+                    mcp_servers,
+                    plugins,
+                })
             });
 
             let _ = result_tx.send(SyncPayload {
@@ -221,7 +233,10 @@ impl App {
             let result = source::resolve_all_sources(&source_dir);
             let (resolved, warnings) = match result {
                 Ok(r) => (r.sources, r.warnings),
-                Err(_) => (vec![source::ResolvedSource::bundled(&source_dir)], Vec::new()),
+                Err(_) => (
+                    vec![source::ResolvedSource::bundled(&source_dir)],
+                    Vec::new(),
+                ),
             };
             let _ = tx.send(SyncPayload {
                 resolved,
@@ -284,7 +299,8 @@ impl App {
             }
             Err(std::sync::mpsc::TryRecvError::Disconnected) => {
                 self.source_sync_cancel_tx = None;
-                self.source_sync_status = Some(SyncStatus::Error("Sync thread crashed".to_string()));
+                self.source_sync_status =
+                    Some(SyncStatus::Error("Sync thread crashed".to_string()));
                 self.current_view = View::Sources;
             }
         }

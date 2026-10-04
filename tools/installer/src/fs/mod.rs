@@ -1,13 +1,13 @@
-pub mod scanner;
 pub mod diff;
 pub mod installer;
 pub mod manifest;
+pub mod scanner;
 
+use crate::app::TargetCli;
+use anyhow::Result;
 use std::process::{Command, Stdio};
 use std::time::Duration;
-use anyhow::Result;
 use wait_timeout::ChildExt;
-use crate::app::TargetCli;
 
 /// Application version string, derived from Cargo.toml at compile time.
 pub const VERSION: &str = concat!("v", env!("CARGO_PKG_VERSION"));
@@ -90,10 +90,12 @@ fn resolve_cli_program(cli_name: &str) -> std::ffi::OsString {
         //    only enters the probe if HOME is set / the path is valid.
         let home = std::env::var_os("HOME").map(std::path::PathBuf::from);
         let fallbacks: [Option<std::path::PathBuf>; 6] = [
-            home.as_ref().map(|h| h.join(".claude/local/bin").join(cli_name)),
+            home.as_ref()
+                .map(|h| h.join(".claude/local/bin").join(cli_name)),
             Some(std::path::PathBuf::from("/opt/homebrew/bin").join(cli_name)),
             Some(std::path::PathBuf::from("/usr/local/bin").join(cli_name)),
-            home.as_ref().map(|h| h.join(".npm-global/bin").join(cli_name)),
+            home.as_ref()
+                .map(|h| h.join(".npm-global/bin").join(cli_name)),
             home.as_ref().map(|h| h.join(".local/bin").join(cli_name)),
             home.as_ref().map(|h| h.join(".bun/bin").join(cli_name)),
         ];
@@ -140,7 +142,10 @@ pub(crate) fn enrich_spawn_error(command: &Command, err: std::io::Error) -> anyh
 /// Note: stdin is set to null as defense-in-depth. Callers typically use
 /// `create_cli_command()` which already sets null stdin, but direct callers
 /// or future code paths are also protected from interactive prompt hangs.
-pub(crate) fn run_with_timeout(command: &mut Command, timeout_secs: u64) -> Result<std::process::Output> {
+pub(crate) fn run_with_timeout(
+    command: &mut Command,
+    timeout_secs: u64,
+) -> Result<std::process::Output> {
     let mut child = command
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -205,11 +210,15 @@ mod tests {
         let mut paths: Vec<std::path::PathBuf> = std::env::split_paths(&prev_path).collect();
         paths.insert(0, dir.clone());
         let new_path = std::env::join_paths(paths).unwrap();
-        unsafe { std::env::set_var("PATH", &new_path); }
+        unsafe {
+            std::env::set_var("PATH", &new_path);
+        }
 
         let resolved = resolve_cli_program("hibitestbin");
 
-        unsafe { std::env::set_var("PATH", &prev_path); }
+        unsafe {
+            std::env::set_var("PATH", &prev_path);
+        }
         let _ = std::fs::remove_file(&bin);
 
         assert_eq!(resolved, bin.into_os_string());
@@ -246,7 +255,8 @@ mod tests {
         let err = std::io::Error::from(std::io::ErrorKind::NotFound);
         let enriched = enrich_spawn_error(&cmd, err);
 
-        let io_err = enriched.chain()
+        let io_err = enriched
+            .chain()
             .find_map(|e| e.downcast_ref::<std::io::Error>())
             .expect("io::Error should remain reachable in the error chain");
         assert_eq!(io_err.kind(), std::io::ErrorKind::NotFound);
@@ -277,11 +287,15 @@ mod tests {
         let new_path = std::env::join_paths(paths).unwrap();
         // Safety: tests are single-threaded inside this module by default;
         // restore PATH after the assertion.
-        unsafe { std::env::set_var("PATH", &new_path); }
+        unsafe {
+            std::env::set_var("PATH", &new_path);
+        }
 
         let resolved = resolve_cli_program("hibitestshim");
 
-        unsafe { std::env::set_var("PATH", &prev_path); }
+        unsafe {
+            std::env::set_var("PATH", &prev_path);
+        }
         let _ = std::fs::remove_file(&shim);
 
         assert_eq!(resolved, shim.into_os_string());

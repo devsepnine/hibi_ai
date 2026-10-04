@@ -123,7 +123,10 @@ impl App {
             let indices = self.processing_queue.clone();
             for &idx in &indices {
                 if let Some(server) = self.mcp_servers.get(idx) {
-                    let missing: Vec<String> = server.def.env.iter()
+                    let missing: Vec<String> = server
+                        .def
+                        .env
+                        .iter()
                         .filter(|e| std::env::var(e).is_err())
                         .cloned()
                         .collect();
@@ -139,7 +142,10 @@ impl App {
         self.processing_total = Some(self.processing_queue.len());
         self.processing_progress = Some(0);
         self.processing_log.clear();
-        self.processing_log.push(format!("Starting installation of {} items...", self.processing_queue.len()));
+        self.processing_log.push(format!(
+            "Starting installation of {} items...",
+            self.processing_queue.len()
+        ));
         self.is_removing = false;
         self.cancelling = false;
         self.current_view = View::Installing;
@@ -155,7 +161,10 @@ impl App {
         self.processing_total = Some(self.processing_queue.len());
         self.processing_progress = Some(0);
         self.processing_log.clear();
-        self.processing_log.push(format!("Starting removal of {} items...", self.processing_queue.len()));
+        self.processing_log.push(format!(
+            "Starting removal of {} items...",
+            self.processing_queue.len()
+        ));
         self.is_removing = true;
         self.cancelling = false;
         self.current_view = View::Installing;
@@ -175,16 +184,24 @@ impl App {
         self.processing_total = Some(self.processing_queue.len());
         self.processing_progress = Some(0);
         self.processing_log.clear();
-        self.processing_log.push(format!("Starting installation of {} items...", self.processing_queue.len()));
+        self.processing_log.push(format!(
+            "Starting installation of {} items...",
+            self.processing_queue.len()
+        ));
         self.is_removing = false;
         self.current_view = View::Installing;
         Ok(())
     }
 
     pub fn start_finish_processing(&mut self) {
-        let action = if self.is_removing { "Removal" } else { "Installation" };
-        self.processing_log.push(format!("[OK] {} complete!", action));
-        self.processing_log.push("".to_string());  // Empty line for spacing
+        let action = if self.is_removing {
+            "Removal"
+        } else {
+            "Installation"
+        };
+        self.processing_log
+            .push(format!("[OK] {} complete!", action));
+        self.processing_log.push("".to_string()); // Empty line for spacing
         self.processing_log.push("Refreshing status...".to_string());
         self.needs_refresh = true;
     }
@@ -216,9 +233,18 @@ impl App {
     /// apply method calls this last so the user-visible status line and
     /// internal flags stay consistent across scopes.
     fn finish_refresh_status(&mut self) {
-        let verb = if self.is_removing { "Removed" } else { "Installed" };
-        self.status_message = Some(format!("{} {} items", verb, self.processing_total.unwrap_or(0)));
-        self.processing_log.push("[OK] Status refresh complete!".to_string());
+        let verb = if self.is_removing {
+            "Removed"
+        } else {
+            "Installed"
+        };
+        self.status_message = Some(format!(
+            "{} {} items",
+            verb,
+            self.processing_total.unwrap_or(0)
+        ));
+        self.processing_log
+            .push("[OK] Status refresh complete!".to_string());
         self.needs_refresh = false;
         self.refreshing = false;
         self.processing_complete = true;

@@ -1,6 +1,6 @@
-use std::path::Path;
 use anyhow::Result;
 use serde_json::Value;
+use std::path::Path;
 
 use crate::component::HookConfig;
 
@@ -55,7 +55,8 @@ pub fn set_statusline(dest_dir: &Path, script_name: &str) -> Result<()> {
         let unix_path = to_msys_path(&abs_path);
         format!("cat | {}", unix_path)
     } else {
-        let dir_name = dest_dir.file_name()
+        let dir_name = dest_dir
+            .file_name()
             .map(|n| n.to_string_lossy().to_string())
             .unwrap_or_else(|| ".claude".to_string());
         format!("~/{}/statusline/{}", dir_name, script_name)
@@ -197,7 +198,8 @@ pub(crate) fn unregister_hook_from_settings(dest_dir: &Path, config: &HookConfig
 
     // Remove hook entries that match config.name
     event_hooks.retain(|item| {
-        !item.get("hooks")
+        !item
+            .get("hooks")
             .and_then(|h| h.as_array())
             .map(|hooks_arr| {
                 hooks_arr.iter().any(|hook| {
@@ -256,7 +258,10 @@ pub(super) fn register_output_style_in_settings(dest_dir: &Path, style_name: &st
 }
 
 /// Auto-register a statusline in settings.json if no statusline is currently set
-pub(super) fn register_statusline_in_settings(dest_dir: &Path, statusline_name: &str) -> Result<()> {
+pub(super) fn register_statusline_in_settings(
+    dest_dir: &Path,
+    statusline_name: &str,
+) -> Result<()> {
     let settings = read_settings(dest_dir)?;
 
     // Earlier installers wrote a bare string here, and `read_current_settings`
@@ -274,7 +279,10 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     fn unique_dest(label: &str) -> std::path::PathBuf {
-        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
         let dir = std::env::temp_dir().join(format!("hibi_settings_{label}_{nanos}"));
         std::fs::create_dir_all(&dir).unwrap();
         dir
@@ -284,18 +292,27 @@ mod tests {
         let path = dest.join("settings.json");
         let raw = std::fs::read_to_string(&path).ok()?;
         let v: Value = serde_json::from_str(&raw).ok()?;
-        v.get("outputStyle").and_then(|x| x.as_str()).map(String::from)
+        v.get("outputStyle")
+            .and_then(|x| x.as_str())
+            .map(String::from)
     }
 
     #[test]
     fn unregister_clears_when_current_matches() {
         let dest = unique_dest("clears");
-        std::fs::write(dest.join("settings.json"), r#"{"outputStyle":"hibi_default"}"#).unwrap();
+        std::fs::write(
+            dest.join("settings.json"),
+            r#"{"outputStyle":"hibi_default"}"#,
+        )
+        .unwrap();
 
         // Component name carries .md; settings value does not -- both forms match.
         unregister_output_style_if_matches(&dest, "hibi_default.md").unwrap();
 
-        assert!(read_output_style(&dest).is_none(), "matching style should be cleared");
+        assert!(
+            read_output_style(&dest).is_none(),
+            "matching style should be cleared"
+        );
 
         let _ = std::fs::remove_dir_all(&dest);
     }
@@ -318,7 +335,10 @@ mod tests {
         let dest = unique_dest("nofile");
         // No settings.json.
         unregister_output_style_if_matches(&dest, "anything.md").unwrap();
-        assert!(!dest.join("settings.json").exists(), "must not create settings.json");
+        assert!(
+            !dest.join("settings.json").exists(),
+            "must not create settings.json"
+        );
 
         let _ = std::fs::remove_dir_all(&dest);
     }
@@ -361,7 +381,11 @@ mod tests {
     #[test]
     fn auto_registration_replaces_a_bare_string_left_by_older_installs() {
         let dest = unique_dest("statusline_repair");
-        std::fs::write(dest.join("settings.json"), r#"{"statusLine":"statusline.exe"}"#).unwrap();
+        std::fs::write(
+            dest.join("settings.json"),
+            r#"{"statusLine":"statusline.exe"}"#,
+        )
+        .unwrap();
 
         register_statusline_in_settings(&dest, "statusline.exe").unwrap();
 

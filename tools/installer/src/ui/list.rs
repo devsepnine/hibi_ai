@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::Rect,
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, ListState},
-    Frame,
 };
 
 use super::{pane_border_style, pane_title};
@@ -22,7 +22,8 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
 }
 
 fn render_tree(f: &mut Frame, app: &App, tree: &crate::tree::TreeView, area: Rect) {
-    let items: Vec<ListItem> = tree.visible_indices
+    let items: Vec<ListItem> = tree
+        .visible_indices
         .iter()
         .map(|&node_idx| {
             let node = &tree.nodes[node_idx];
@@ -55,7 +56,11 @@ fn render_tree(f: &mut Frame, app: &App, tree: &crate::tree::TreeView, area: Rec
                 .title_style(Style::default().fg(app.theme.text_primary()))
                 .style(Style::default().bg(app.theme.bg_primary())),
         )
-        .style(Style::default().fg(app.theme.text_primary()).bg(app.theme.bg_primary()))
+        .style(
+            Style::default()
+                .fg(app.theme.text_primary())
+                .bg(app.theme.bg_primary()),
+        )
         .highlight_style(
             Style::default()
                 .bg(app.theme.selection_bg())
@@ -72,7 +77,12 @@ fn render_tree(f: &mut Frame, app: &App, tree: &crate::tree::TreeView, area: Rec
     f.render_stateful_widget(list, area, &mut state);
 }
 
-fn render_tree_node(app: &App, tree: &crate::tree::TreeView, node: &TreeNode, node_idx: usize) -> ListItem<'static> {
+fn render_tree_node(
+    app: &App,
+    tree: &crate::tree::TreeView,
+    node: &TreeNode,
+    node_idx: usize,
+) -> ListItem<'static> {
     let depth = node.depth();
     let indent = "  ".repeat(depth);
 
@@ -82,24 +92,24 @@ fn render_tree_node(app: &App, tree: &crate::tree::TreeView, node: &TreeNode, no
             let icon = if *expanded { "v " } else { "> " };
 
             // Check folder selection state
-            let (checkbox, checkbox_style) = if tree.is_folder_all_selected(node_idx, &app.components) {
-                ("[x]", Style::default().fg(app.theme.success()))
-            } else if tree.is_folder_any_selected(node_idx, &app.components) {
-                ("[-]", Style::default().fg(app.theme.warning()))
-            } else {
-                ("[ ]", Style::default().fg(app.theme.text_muted()))
-            };
+            let (checkbox, checkbox_style) =
+                if tree.is_folder_all_selected(node_idx, &app.components) {
+                    ("[x]", Style::default().fg(app.theme.success()))
+                } else if tree.is_folder_any_selected(node_idx, &app.components) {
+                    ("[-]", Style::default().fg(app.theme.warning()))
+                } else {
+                    ("[ ]", Style::default().fg(app.theme.text_muted()))
+                };
 
             let line = Line::from(vec![
                 Span::raw(format!("{}{}", indent, checkbox)),
                 Span::styled(" ", checkbox_style),
-                Span::styled(
-                    icon,
-                    Style::default().fg(app.theme.accent_primary()),
-                ),
+                Span::styled(icon, Style::default().fg(app.theme.accent_primary())),
                 Span::styled(
                     format!("{}/", name),
-                    Style::default().fg(app.theme.accent_primary()).add_modifier(Modifier::BOLD),
+                    Style::default()
+                        .fg(app.theme.accent_primary())
+                        .add_modifier(Modifier::BOLD),
                 ),
             ]);
 
@@ -124,9 +134,7 @@ fn render_tree_node(app: &App, tree: &crate::tree::TreeView, node: &TreeNode, no
                     let style_name = c.name.strip_suffix(".md").unwrap_or(&c.name);
                     app.current_output_style.as_deref() == Some(style_name)
                 }
-                Tab::Statusline => {
-                    app.current_statusline.as_deref() == Some(&c.name)
-                }
+                Tab::Statusline => app.current_statusline.as_deref() == Some(&c.name),
                 _ => false,
             };
 
@@ -154,7 +162,12 @@ fn render_tree_node(app: &App, tree: &crate::tree::TreeView, node: &TreeNode, no
                     Style::default().fg(app.theme.text_primary()),
                 ),
                 Span::styled(format!("({:^9})", c.status.display()), status_style),
-                Span::styled(default_marker, Style::default().fg(app.theme.peach()).add_modifier(Modifier::BOLD)),
+                Span::styled(
+                    default_marker,
+                    Style::default()
+                        .fg(app.theme.peach())
+                        .add_modifier(Modifier::BOLD),
+                ),
             ];
 
             if app.tab == Tab::Hooks {
@@ -163,7 +176,9 @@ fn render_tree_node(app: &App, tree: &crate::tree::TreeView, node: &TreeNode, no
                     if config.is_deprecated() {
                         spans.push(Span::styled(
                             " [DEPRECATED]",
-                            Style::default().fg(app.theme.warning()).add_modifier(Modifier::BOLD),
+                            Style::default()
+                                .fg(app.theme.warning())
+                                .add_modifier(Modifier::BOLD),
                         ));
                     }
                     // Add event info
@@ -214,9 +229,7 @@ fn render_flat(f: &mut Frame, app: &App, area: Rect) {
                     let style_name = c.name.strip_suffix(".md").unwrap_or(&c.name);
                     app.current_output_style.as_deref() == Some(style_name)
                 }
-                Tab::Statusline => {
-                    app.current_statusline.as_deref() == Some(&c.name)
-                }
+                Tab::Statusline => app.current_statusline.as_deref() == Some(&c.name),
                 _ => false,
             };
 
@@ -240,7 +253,12 @@ fn render_flat(f: &mut Frame, app: &App, area: Rect) {
                     Style::default().fg(app.theme.text_primary()),
                 ),
                 Span::styled(format!("({:^9})", c.status.display()), status_style),
-                Span::styled(default_marker, Style::default().fg(app.theme.peach()).add_modifier(Modifier::BOLD)),
+                Span::styled(
+                    default_marker,
+                    Style::default()
+                        .fg(app.theme.peach())
+                        .add_modifier(Modifier::BOLD),
+                ),
             ];
 
             if app.has_multiple_sources() {

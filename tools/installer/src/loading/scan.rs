@@ -81,20 +81,25 @@ pub(super) fn start_refresh_thread(app: &mut App, refresh_tx: &Sender<Result<Ref
 
     thread::spawn(move || {
         let result = match scope {
-            RefreshScope::Components => fs::scanner::scan_all_sources(&sources, &dest_dir, target_cli)
-                .map(|components| {
+            RefreshScope::Components => {
+                fs::scanner::scan_all_sources(&sources, &dest_dir, target_cli).map(|components| {
                     // Record provenance here rather than in the consumer: the
                     // consumer runs on the TUI tick, and a home directory can
                     // be network-mounted or virus-scanned, which would stall
                     // the very loop this thread exists to keep free.
                     let manifest_warning =
                         manifest_warning_from(fs::manifest::write(&dest_dir, &components));
-                    RefreshResult::Components { components, manifest_warning }
-                }),
+                    RefreshResult::Components {
+                        components,
+                        manifest_warning,
+                    }
+                })
+            }
             RefreshScope::Mcp => fs::scanner::scan_all_mcp_sources(&sources, target_cli)
                 .map(|(servers, _warning)| RefreshResult::Mcp(servers)),
-            RefreshScope::Plugins => fs::scanner::scan_all_plugin_sources(&sources)
-                .map(RefreshResult::Plugins),
+            RefreshScope::Plugins => {
+                fs::scanner::scan_all_plugin_sources(&sources).map(RefreshResult::Plugins)
+            }
         };
         let _ = tx_clone.send(result);
     });
@@ -156,11 +161,24 @@ mod tests {
         // Locks in the optimization: only MCP/Plugin tabs trigger the
         // matching scan. Every component tab routes to the cheap
         // filesystem-only Components scan, skipping `mcp list` entirely.
-        assert!(matches!(RefreshScope::for_tab(Tab::McpServers), RefreshScope::Mcp));
-        assert!(matches!(RefreshScope::for_tab(Tab::Plugins), RefreshScope::Plugins));
+        assert!(matches!(
+            RefreshScope::for_tab(Tab::McpServers),
+            RefreshScope::Mcp
+        ));
+        assert!(matches!(
+            RefreshScope::for_tab(Tab::Plugins),
+            RefreshScope::Plugins
+        ));
         for tab in [
-            Tab::Agents, Tab::Commands, Tab::Contexts, Tab::Rules, Tab::Skills,
-            Tab::Hooks, Tab::OutputStyles, Tab::Statusline, Tab::Config,
+            Tab::Agents,
+            Tab::Commands,
+            Tab::Contexts,
+            Tab::Rules,
+            Tab::Skills,
+            Tab::Hooks,
+            Tab::OutputStyles,
+            Tab::Statusline,
+            Tab::Config,
         ] {
             assert!(
                 matches!(RefreshScope::for_tab(tab), RefreshScope::Components),

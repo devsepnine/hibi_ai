@@ -1,5 +1,5 @@
-use std::path::{Path, PathBuf};
 use serde::Deserialize;
+use std::path::{Path, PathBuf};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ComponentType {
@@ -97,7 +97,8 @@ impl HookConfig {
                 .to_string()
         } else {
             // Derive from dest_dir to support both ~/.claude and ~/.codex
-            let dir_name = dest_dir.file_name()
+            let dir_name = dest_dir
+                .file_name()
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_else(|| ".claude".to_string());
             format!("~/{}/hooks/{}", dir_name, binary_name)
@@ -265,7 +266,8 @@ deprecated: true
             PathBuf::from("/src/old-hook"),
             PathBuf::from("/dest/old-hook"),
             InstallStatus::Unchanged,
-        ).with_hook_config(config);
+        )
+        .with_hook_config(config);
 
         assert!(!c.is_install_eligible(), "deprecated hooks must be blocked");
     }
@@ -302,7 +304,8 @@ type: command
             PathBuf::from("/src/active-hook"),
             PathBuf::from("/dest/active-hook"),
             InstallStatus::New,
-        ).with_hook_config(config);
+        )
+        .with_hook_config(config);
 
         assert!(c.is_install_eligible());
     }

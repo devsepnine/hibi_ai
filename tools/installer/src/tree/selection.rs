@@ -29,13 +29,17 @@ impl TreeView {
         if indices.is_empty() {
             return false;
         }
-        indices.iter().all(|&idx| components.get(idx).map(|c| c.selected).unwrap_or(false))
+        indices
+            .iter()
+            .all(|&idx| components.get(idx).map(|c| c.selected).unwrap_or(false))
     }
 
     /// Check if any component under a folder is selected
     pub fn is_folder_any_selected(&self, folder_idx: usize, components: &[Component]) -> bool {
         let indices = self.get_folder_component_indices(folder_idx);
-        indices.iter().any(|&idx| components.get(idx).map(|c| c.selected).unwrap_or(false))
+        indices
+            .iter()
+            .any(|&idx| components.get(idx).map(|c| c.selected).unwrap_or(false))
     }
 }
 
@@ -73,7 +77,11 @@ mod tests {
         let mut indices = tree.get_folder_component_indices(folder_idx);
         indices.sort_unstable();
 
-        assert_eq!(indices, vec![0, 1], "both the direct and the nested file must be collected");
+        assert_eq!(
+            indices,
+            vec![0, 1],
+            "both the direct and the nested file must be collected"
+        );
     }
 
     #[test]

@@ -1,5 +1,5 @@
-use std::path::Path;
 use anyhow::Result;
+use std::path::Path;
 use walkdir::WalkDir;
 
 use crate::app::TargetCli;
@@ -26,18 +26,53 @@ pub(super) fn scan_components(
 
     match target_cli {
         TargetCli::Claude => {
-            scan_directory(&source_dir.join("agents"), &dest_dir.join("agents"), ComponentType::Agents, &mut components)?;
-            scan_directory(&source_dir.join("commands"), &dest_dir.join("commands"), ComponentType::Commands, &mut components)?;
-            scan_directory(&source_dir.join("contexts"), &dest_dir.join("contexts"), ComponentType::Contexts, &mut components)?;
-            scan_directory(&source_dir.join("rules"), &dest_dir.join("rules"), ComponentType::Rules, &mut components)?;
-            scan_directory(&source_dir.join("skills"), &dest_dir.join("skills"), ComponentType::Skills, &mut components)?;
-            scan_directory(&source_dir.join("output-styles"), &dest_dir.join("output-styles"), ComponentType::OutputStyles, &mut components)?;
+            scan_directory(
+                &source_dir.join("agents"),
+                &dest_dir.join("agents"),
+                ComponentType::Agents,
+                &mut components,
+            )?;
+            scan_directory(
+                &source_dir.join("commands"),
+                &dest_dir.join("commands"),
+                ComponentType::Commands,
+                &mut components,
+            )?;
+            scan_directory(
+                &source_dir.join("contexts"),
+                &dest_dir.join("contexts"),
+                ComponentType::Contexts,
+                &mut components,
+            )?;
+            scan_directory(
+                &source_dir.join("rules"),
+                &dest_dir.join("rules"),
+                ComponentType::Rules,
+                &mut components,
+            )?;
+            scan_directory(
+                &source_dir.join("skills"),
+                &dest_dir.join("skills"),
+                ComponentType::Skills,
+                &mut components,
+            )?;
+            scan_directory(
+                &source_dir.join("output-styles"),
+                &dest_dir.join("output-styles"),
+                ComponentType::OutputStyles,
+                &mut components,
+            )?;
             scan_statusline(source_dir, dest_dir, &mut components)?;
             scan_hooks(source_dir, dest_dir, &mut components)?;
             add_config_files(source_dir, dest_dir, target_cli, &mut components)?;
         }
         TargetCli::Codex => {
-            scan_directory(&source_dir.join("skills"), &dest_dir.join("skills"), ComponentType::Skills, &mut components)?;
+            scan_directory(
+                &source_dir.join("skills"),
+                &dest_dir.join("skills"),
+                ComponentType::Skills,
+                &mut components,
+            )?;
             add_config_files(source_dir, dest_dir, target_cli, &mut components)?;
         }
     }
@@ -82,7 +117,10 @@ fn scan_directory(
         let relative = path.strip_prefix(source_dir)?;
 
         // Security: reject path traversal attempts
-        if relative.components().any(|c| matches!(c, std::path::Component::ParentDir)) {
+        if relative
+            .components()
+            .any(|c| matches!(c, std::path::Component::ParentDir))
+        {
             continue;
         }
 
@@ -139,11 +177,7 @@ fn scan_statusline(
     Ok(())
 }
 
-fn scan_hooks(
-    source_dir: &Path,
-    dest_dir: &Path,
-    components: &mut Vec<Component>,
-) -> Result<()> {
+fn scan_hooks(source_dir: &Path, dest_dir: &Path, components: &mut Vec<Component>) -> Result<()> {
     let hooks_dir = source_dir.join("hooks");
     if !hooks_dir.exists() {
         return Ok(());
@@ -165,7 +199,8 @@ fn scan_hooks(
         let config_content = std::fs::read_to_string(&hook_yaml)?;
         let config: HookConfig = serde_yaml_bw::from_str(&config_content)?;
 
-        let hook_name = path.file_name()
+        let hook_name = path
+            .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("unknown");
 
@@ -196,7 +231,8 @@ fn scan_hook_entry(
             dest_path.clone(), // source_path = dest_path (uninstall only)
             dest_path,
             InstallStatus::Unchanged,
-        ).with_hook_config(config);
+        )
+        .with_hook_config(config);
         components.push(component);
     } else {
         let binary_path = hook_dir.join(&binary_name);
@@ -213,7 +249,8 @@ fn scan_hook_entry(
             binary_path,
             dest_path,
             status,
-        ).with_hook_config(config);
+        )
+        .with_hook_config(config);
         components.push(component);
     }
 
@@ -283,7 +320,10 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     fn unique_test_dir(label: &str) -> std::path::PathBuf {
-        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
         let dir = std::env::temp_dir().join(format!("hibi_test_{label}_{nanos}"));
         std::fs::create_dir_all(&dir).unwrap();
         dir

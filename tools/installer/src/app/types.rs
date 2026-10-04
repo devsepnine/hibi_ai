@@ -26,8 +26,7 @@ impl TargetCli {
     }
 
     pub fn get_dest_dir(&self) -> Result<PathBuf> {
-        let home = dirs::home_dir()
-            .ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
+        let home = dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
         Ok(home.join(self.config_dir_name()))
     }
 }

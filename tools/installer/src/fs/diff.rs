@@ -1,6 +1,6 @@
-use std::path::Path;
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use similar::{ChangeTag, TextDiff};
+use std::path::Path;
 
 /// Normalize path display to remove Windows extended-length prefix
 fn normalize_path_display(path: &Path) -> String {
@@ -26,7 +26,8 @@ fn is_binary_file(path: &Path) -> Result<bool> {
 
     // Check for null bytes or high ratio of non-printable characters
     let null_count = buffer[..bytes_read].iter().filter(|&&b| b == 0).count();
-    let non_printable = buffer[..bytes_read].iter()
+    let non_printable = buffer[..bytes_read]
+        .iter()
         .filter(|&&b| b < 32 && b != 9 && b != 10 && b != 13)
         .count();
 
@@ -47,10 +48,18 @@ pub fn compare_files(source: &Path, dest: &Path) -> Result<String> {
             ));
         }
         let content = std::fs::read_to_string(source)
-            .with_context(|| format!("Failed to read external file as UTF-8: {}", source.display()))?
+            .with_context(|| {
+                format!(
+                    "Failed to read external file as UTF-8: {}",
+                    source.display()
+                )
+            })?
             .replace("\r\n", "\n");
         let mut output = String::new();
-        output.push_str(&format!("=== {} (external file -- no source) ===\n\n", normalize_path_display(source)));
+        output.push_str(&format!(
+            "=== {} (external file -- no source) ===\n\n",
+            normalize_path_display(source)
+        ));
         output.push_str(&content);
         return Ok(output);
     }
@@ -89,7 +98,12 @@ pub fn compare_files(source: &Path, dest: &Path) -> Result<String> {
     }
 
     let dest_content = std::fs::read_to_string(dest)
-        .with_context(|| format!("Failed to read destination file as UTF-8: {}", dest.display()))?
+        .with_context(|| {
+            format!(
+                "Failed to read destination file as UTF-8: {}",
+                dest.display()
+            )
+        })?
         .replace("\r\n", "\n");
 
     if source_content == dest_content {
@@ -125,7 +139,10 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     fn unique_test_file(label: &str, contents: &str) -> std::path::PathBuf {
-        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
         let dir = std::env::temp_dir().join(format!("hibi_diff_{label}_{nanos}"));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("file.md");
@@ -148,13 +165,19 @@ mod tests {
             out.contains("(external file -- no source)"),
             "expected external marker, got:\n{out}"
         );
-        assert!(out.contains("# external content"), "file body must appear:\n{out}");
+        assert!(
+            out.contains("# external content"),
+            "file body must appear:\n{out}"
+        );
         assert!(
             !out.contains("(identical)"),
             "must not use the source==dest identical marker for externals:\n{out}"
         );
         // No unified-diff prefixes on the body lines.
-        assert!(!out.lines().any(|l| l.starts_with("+++ ") || l.starts_with("--- ")));
+        assert!(
+            !out.lines()
+                .any(|l| l.starts_with("+++ ") || l.starts_with("--- "))
+        );
 
         let _ = std::fs::remove_dir_all(path.parent().unwrap());
     }

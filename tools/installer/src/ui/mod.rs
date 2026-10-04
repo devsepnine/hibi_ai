@@ -1,24 +1,24 @@
-mod tabs;
+mod cli_selection;
+mod confirm_exit;
+mod diff;
+mod env_input;
+pub mod help;
+mod installing;
+mod layout;
 pub mod list;
+pub mod loading_screen;
 mod mcp_list;
 mod plugin_list;
-mod diff;
-pub mod help;
-mod confirm_exit;
-mod layout;
-mod env_input;
 mod project_path;
-mod installing;
-mod cli_selection;
-pub mod loading_screen;
-mod sources;
 mod source_wizard;
+mod sources;
+mod tabs;
 #[cfg(test)]
 mod tests;
 
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
     Frame,
+    layout::{Constraint, Direction, Layout, Rect},
 };
 
 use ratatui::style::Style;
@@ -78,9 +78,12 @@ pub fn draw(f: &mut Frame, app: &App) {
     // Clear entire background with theme color
     // This ensures terminal background doesn't show through
     f.render_widget(
-        ratatui::widgets::Block::default()
-            .style(Style::default().bg(app.theme.bg_primary()).fg(app.theme.text_primary())),
-        f.area()
+        ratatui::widgets::Block::default().style(
+            Style::default()
+                .bg(app.theme.bg_primary())
+                .fg(app.theme.text_primary()),
+        ),
+        f.area(),
     );
 
     if render_full_screen(f, app) {
@@ -90,9 +93,9 @@ pub fn draw(f: &mut Frame, app: &App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),  // Tabs
-            Constraint::Min(0),     // Content
-            Constraint::Length(3),  // Status bar
+            Constraint::Length(3), // Tabs
+            Constraint::Min(0),    // Content
+            Constraint::Length(3), // Status bar
         ])
         .split(f.area());
 
@@ -250,9 +253,15 @@ fn status_help(app: &App) -> &'static str {
             }
         }
         // Sources views have their own footer
-        View::Sources | View::SourceAddType | View::SourceAddUrl
-        | View::SourceAddBranch | View::SourceAddPath | View::SourceAddRoot
-        | View::SourceAddMapTo | View::SourceConfirmRemove | View::SourceSyncing => "",
+        View::Sources
+        | View::SourceAddType
+        | View::SourceAddUrl
+        | View::SourceAddBranch
+        | View::SourceAddPath
+        | View::SourceAddRoot
+        | View::SourceAddMapTo
+        | View::SourceConfirmRemove
+        | View::SourceSyncing => "",
     }
 }
 
@@ -285,18 +294,23 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
 
     let mut all_spans = left_text.spans;
     all_spans.push(Span::raw(" ".repeat(padding)));
-    all_spans.push(Span::styled(version, Style::default().fg(app.theme.text_secondary())));
+    all_spans.push(Span::styled(
+        version,
+        Style::default().fg(app.theme.text_secondary()),
+    ));
 
-    let paragraph = Paragraph::new(Line::from(all_spans))
-        .block(Block::default()
+    let paragraph = Paragraph::new(Line::from(all_spans)).block(
+        Block::default()
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(app.theme.border())));
+            .border_style(Style::default().fg(app.theme.border())),
+    );
 
     f.render_widget(paragraph, area);
 }
 
 fn render_loading_screen(f: &mut Frame, app: &App) {
-    let cli_name = app.target_cli
+    let cli_name = app
+        .target_cli
         .map(|c| c.display_name().to_string())
         .unwrap_or_else(|| "Unknown".to_string());
     render_spinner_box(
@@ -308,7 +322,8 @@ fn render_loading_screen(f: &mut Frame, app: &App) {
 }
 
 fn render_preflighting_screen(f: &mut Frame, app: &App) {
-    let cli_name = app.target_cli
+    let cli_name = app
+        .target_cli
         .map(|c| c.display_name().to_string())
         .unwrap_or_else(|| "CLI".to_string());
     render_spinner_box(
@@ -379,7 +394,11 @@ fn render_spinner_box(f: &mut Frame, app: &App, title: &str, message: &str) {
     ];
 
     let widget = Paragraph::new(text)
-        .style(Style::default().fg(app.theme.accent_primary()).bg(app.theme.bg_secondary()))
+        .style(
+            Style::default()
+                .fg(app.theme.accent_primary())
+                .bg(app.theme.bg_secondary()),
+        )
         .alignment(Alignment::Center)
         .block(
             Block::default()

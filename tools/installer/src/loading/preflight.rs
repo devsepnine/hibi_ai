@@ -16,10 +16,7 @@ use super::channels::ProcessingChannels;
 /// and rendering stay responsive during the 8-second budget. The result
 /// is delivered to `preflight_tx`; `handle_preflighting_view` polls the
 /// matching receiver each tick.
-fn start_preflight_thread(
-    app: &App,
-    preflight_tx: &Sender<Result<()>>,
-) {
+fn start_preflight_thread(app: &App, preflight_tx: &Sender<Result<()>>) {
     let tx = preflight_tx.clone();
     let target_cli = app.target_cli.unwrap_or(TargetCli::Claude);
     thread::spawn(move || {
@@ -76,7 +73,11 @@ pub(crate) fn handle_preflighting_view(
         }
         Ok(Err(e)) => {
             channels.preflight_active = false;
-            let verb = if app.is_removing { "removal" } else { "install" };
+            let verb = if app.is_removing {
+                "removal"
+            } else {
+                "install"
+            };
             app.status_message = Some(format!("Cannot start {}: {}", verb, e));
             app.processing_queue.clear();
             app.is_removing = false;
@@ -95,11 +96,7 @@ pub(crate) fn handle_preflighting_view(
     Ok(())
 }
 
-fn handle_preflighting_input(
-    app: &mut App,
-    key: KeyCode,
-    channels: &mut ProcessingChannels,
-) {
+fn handle_preflighting_input(app: &mut App, key: KeyCode, channels: &mut ProcessingChannels) {
     match key {
         KeyCode::Esc => {
             // Drop the in-flight thread's result by resetting the channel.

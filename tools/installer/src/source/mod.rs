@@ -21,12 +21,12 @@ fn find_package_source_dir() -> Result<PathBuf> {
         .ok_or_else(|| anyhow::anyhow!("Cannot get executable directory"))?;
 
     let candidates = [
-        exe_dir.clone(),                          // Scoop: exe and config in same dir
-        exe_dir.join("../share/hibi"),            // Homebrew standard
-        exe_dir.join("../share/hibi-ai"),         // Homebrew alternative
-        exe_dir.join("../../.."),                  // From target/release
-        exe_dir.join("../.."),                     // From target
-        std::env::current_dir()?,                  // Current directory
+        exe_dir.clone(),                  // Scoop: exe and config in same dir
+        exe_dir.join("../share/hibi"),    // Homebrew standard
+        exe_dir.join("../share/hibi-ai"), // Homebrew alternative
+        exe_dir.join("../../.."),         // From target/release
+        exe_dir.join("../.."),            // From target
+        std::env::current_dir()?,         // Current directory
         std::env::current_dir()?.join("config/ai/claude"),
     ];
 
@@ -44,7 +44,9 @@ fn find_package_source_dir() -> Result<PathBuf> {
         return Ok(default);
     }
 
-    anyhow::bail!("Cannot find source directory. Run from dotfiles root or config/ai/claude/tools/installer")
+    anyhow::bail!(
+        "Cannot find source directory. Run from dotfiles root or config/ai/claude/tools/installer"
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -99,7 +101,11 @@ pub(crate) fn sync_all_sources(
                 }
             }
             summaries.extend(r.warnings);
-            SyncReport { resolved: r.sources, summaries, had_error: false }
+            SyncReport {
+                resolved: r.sources,
+                summaries,
+                had_error: false,
+            }
         }
         Err(e) => {
             summaries.push(format!("  re-resolve failed: {}", e));
@@ -154,12 +160,13 @@ fn resolve_entry(
     warnings: &mut Vec<String>,
 ) -> Result<ResolvedSource> {
     match entry {
-        SourceEntry::Git { url, branch, root, map_to } => {
-            resolve_git(url, branch, root.as_deref(), map_to, auto_update, warnings)
-        }
-        SourceEntry::Local { path, root, map_to } => {
-            resolve_local(path, root.as_deref(), map_to)
-        }
+        SourceEntry::Git {
+            url,
+            branch,
+            root,
+            map_to,
+        } => resolve_git(url, branch, root.as_deref(), map_to, auto_update, warnings),
+        SourceEntry::Local { path, root, map_to } => resolve_local(path, root.as_deref(), map_to),
     }
 }
 
@@ -249,10 +256,19 @@ fn validate_source_dir(path: &Path) -> bool {
 /// Permissive check: user sources just need at least one known marker.
 fn validate_user_source_dir(path: &Path) -> bool {
     let markers = [
-        "agents", "commands", "contexts", "rules", "skills",
-        "hooks", "output-styles", "statusline",
-        "mcps/mcps.yaml", "plugins/plugins.yaml",
-        "settings.json", "CLAUDE.md", "AGENTS.md",
+        "agents",
+        "commands",
+        "contexts",
+        "rules",
+        "skills",
+        "hooks",
+        "output-styles",
+        "statusline",
+        "mcps/mcps.yaml",
+        "plugins/plugins.yaml",
+        "settings.json",
+        "CLAUDE.md",
+        "AGENTS.md",
     ];
     markers.iter().any(|m| path.join(m).exists())
 }

@@ -17,7 +17,10 @@ impl TreeView {
     fn add_visible_recursive(&mut self, node_idx: usize) {
         self.visible_indices.push(node_idx);
 
-        if let TreeNode::Folder { expanded, children, .. } = &self.nodes[node_idx] {
+        if let TreeNode::Folder {
+            expanded, children, ..
+        } = &self.nodes[node_idx]
+        {
             if *expanded {
                 let child_indices = children.clone();
                 for child_idx in child_indices {
@@ -46,7 +49,9 @@ impl TreeView {
 
     /// Check if current folder is expanded
     pub fn is_current_folder_expanded(&self) -> bool {
-        self.current_node().map(|n| n.is_expanded()).unwrap_or(false)
+        self.current_node()
+            .map(|n| n.is_expanded())
+            .unwrap_or(false)
     }
 
     /// Get component index if cursor is on a file
@@ -107,7 +112,11 @@ impl TreeView {
                         *expanded = false;
                         self.rebuild_visible();
                         // Move cursor to the collapsed parent folder
-                        if let Some(new_pos) = self.visible_indices.iter().position(|&idx| idx == parent_idx) {
+                        if let Some(new_pos) = self
+                            .visible_indices
+                            .iter()
+                            .position(|&idx| idx == parent_idx)
+                        {
                             self.cursor = new_pos;
                         }
                     }
@@ -171,12 +180,22 @@ mod tests {
         // different row than the user sees highlighted.
         let (_components, mut tree) = tree_of(&["folder/file1.md", "folder/file2.md"]);
         tree.next();
-        assert!(tree.current_component_idx().is_some(), "expected to be on a file");
+        assert!(
+            tree.current_component_idx().is_some(),
+            "expected to be on a file"
+        );
 
         tree.collapse_parent();
 
-        assert_eq!(tree.visible_indices.len(), 1, "only the folder should remain visible");
-        assert!(tree.is_on_folder(), "cursor must follow the collapsed parent");
+        assert_eq!(
+            tree.visible_indices.len(),
+            1,
+            "only the folder should remain visible"
+        );
+        assert!(
+            tree.is_on_folder(),
+            "cursor must follow the collapsed parent"
+        );
         assert!(!tree.is_current_folder_expanded());
     }
 

@@ -1,8 +1,8 @@
-use std::path::Path;
 use anyhow::Result;
+use std::path::Path;
 
-use crate::plugin::{parse_plugins_yaml, Plugin, PluginDef, PluginStatus};
 use super::validation::validate_plugin;
+use crate::plugin::{Plugin, PluginDef, PluginStatus, parse_plugins_yaml};
 
 /// Scan plugin catalog and mark each as installed or not.
 pub(super) fn scan_plugins(source_dir: &Path) -> Result<Vec<Plugin>> {

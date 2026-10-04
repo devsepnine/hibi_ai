@@ -31,11 +31,20 @@ pub(crate) enum ProcessData {
 /// Extract the display name for the item being processed.
 pub(crate) fn get_item_name(app: &App, idx: usize) -> String {
     if app.tab == Tab::McpServers {
-        app.mcp_servers.get(idx).map(|s| s.def.name.clone()).unwrap_or_default()
+        app.mcp_servers
+            .get(idx)
+            .map(|s| s.def.name.clone())
+            .unwrap_or_default()
     } else if app.tab == Tab::Plugins {
-        app.plugins.get(idx).map(|p| p.def.name.clone()).unwrap_or_default()
+        app.plugins
+            .get(idx)
+            .map(|p| p.def.name.clone())
+            .unwrap_or_default()
     } else {
-        app.components.get(idx).map(|c| c.name.clone()).unwrap_or_default()
+        app.components
+            .get(idx)
+            .map(|c| c.name.clone())
+            .unwrap_or_default()
     }
 }
 
@@ -54,7 +63,12 @@ pub(crate) fn prepare(app: &App, idx: usize) -> Option<ProcessData> {
         } else {
             None
         };
-        Some(ProcessData::McpServer { server, scope: app.mcp_scope, project_path, env_values })
+        Some(ProcessData::McpServer {
+            server,
+            scope: app.mcp_scope,
+            project_path,
+            env_values,
+        })
     } else if app.tab == Tab::Plugins {
         let plugin = app.plugins.get(idx)?.clone();
         Some(ProcessData::Plugin { plugin })
@@ -76,7 +90,12 @@ pub(crate) fn execute(
     cancel_rx: Receiver<()>,
 ) -> Result<String> {
     match data {
-        ProcessData::McpServer { server, scope, project_path, env_values } => {
+        ProcessData::McpServer {
+            server,
+            scope,
+            project_path,
+            env_values,
+        } => {
             let name = server.def.name.clone();
             let timeout = if is_removing { 30 } else { 120 };
 
@@ -110,7 +129,11 @@ pub(crate) fn execute(
 
             format_result(&name, is_removing, result)
         }
-        ProcessData::Component { component, source_dir, dest_dir } => {
+        ProcessData::Component {
+            component,
+            source_dir,
+            dest_dir,
+        } => {
             let name = component.name.clone();
 
             let result = if is_removing {

@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph},
-    Frame,
 };
 
 use crate::app::App;
@@ -25,12 +25,19 @@ pub fn render_type_select(f: &mut Frame, app: &App, area: Rect) {
             Span::raw("Local directory"),
         ]),
         Line::from(""),
-        Line::from(Span::styled("  [Esc] Cancel", Style::default().fg(app.theme.text_muted()))),
+        Line::from(Span::styled(
+            "  [Esc] Cancel",
+            Style::default().fg(app.theme.text_muted()),
+        )),
     ];
 
     let block = Block::default()
         .title(" Add Source ")
-        .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
+        .title_style(
+            Style::default()
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD),
+        )
         .borders(Borders::ALL)
         .border_style(Style::default().fg(app.theme.accent_primary()));
 
@@ -43,14 +50,20 @@ pub fn render_text_input(f: &mut Frame, app: &App, area: Rect, title: &str, labe
     let dialog = centered_rect(60, 9, area);
     f.render_widget(Clear, dialog);
 
-    let cursor = Span::styled("_", Style::default()
-        .fg(app.theme.accent_secondary())
-        .add_modifier(Modifier::SLOW_BLINK));
+    let cursor = Span::styled(
+        "_",
+        Style::default()
+            .fg(app.theme.accent_secondary())
+            .add_modifier(Modifier::SLOW_BLINK),
+    );
 
     let mut lines = vec![
         Line::from(""),
         Line::from(vec![
-            Span::styled(format!("  {}: ", label), Style::default().fg(app.theme.text_muted())),
+            Span::styled(
+                format!("  {}: ", label),
+                Style::default().fg(app.theme.text_muted()),
+            ),
             Span::raw(&app.source_input_buffer),
             cursor,
         ]),
@@ -73,7 +86,11 @@ pub fn render_text_input(f: &mut Frame, app: &App, area: Rect, title: &str, labe
 
     let block = Block::default()
         .title(format!(" {} ", title))
-        .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
+        .title_style(
+            Style::default()
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD),
+        )
         .borders(Borders::ALL)
         .border_style(Style::default().fg(app.theme.accent_primary()));
 
@@ -87,7 +104,9 @@ pub fn render_confirm_remove(f: &mut Frame, app: &App, area: Rect) {
     f.render_widget(Clear, dialog);
 
     let entry_idx = app.source_list_index.saturating_sub(1);
-    let source_label = app.source_entries.get(entry_idx)
+    let source_label = app
+        .source_entries
+        .get(entry_idx)
         .map(|e| match e {
             SourceEntry::Git { url, .. } => url.as_str(),
             SourceEntry::Local { path, .. } => path.to_str().unwrap_or("?"),
@@ -96,8 +115,14 @@ pub fn render_confirm_remove(f: &mut Frame, app: &App, area: Rect) {
 
     let text = vec![
         Line::from(""),
-        Line::from(Span::styled("  Remove this source?", Style::default().fg(app.theme.warning()))),
-        Line::from(Span::styled(format!("  {}", source_label), Style::default().fg(app.theme.text_primary()))),
+        Line::from(Span::styled(
+            "  Remove this source?",
+            Style::default().fg(app.theme.warning()),
+        )),
+        Line::from(Span::styled(
+            format!("  {}", source_label),
+            Style::default().fg(app.theme.text_primary()),
+        )),
         Line::from(""),
         Line::from(vec![
             Span::styled("  [y] ", Style::default().fg(app.theme.error())),
@@ -109,7 +134,11 @@ pub fn render_confirm_remove(f: &mut Frame, app: &App, area: Rect) {
 
     let block = Block::default()
         .title(" Confirm ")
-        .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
+        .title_style(
+            Style::default()
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD),
+        )
         .borders(Borders::ALL)
         .border_style(Style::default().fg(app.theme.warning()));
 
@@ -125,22 +154,53 @@ pub fn render_map_to_select(f: &mut Frame, app: &App, area: Rect) {
     let accent = app.theme.accent_primary();
     let text = vec![
         Line::from(""),
-        Line::from(Span::styled("  Map all files to (optional):", Style::default().fg(app.theme.text_primary()))),
+        Line::from(Span::styled(
+            "  Map all files to (optional):",
+            Style::default().fg(app.theme.text_primary()),
+        )),
         Line::from(""),
-        Line::from(vec![Span::styled("  [1] ", Style::default().fg(accent)), Span::raw("agents")]),
-        Line::from(vec![Span::styled("  [2] ", Style::default().fg(accent)), Span::raw("commands")]),
-        Line::from(vec![Span::styled("  [3] ", Style::default().fg(accent)), Span::raw("contexts")]),
-        Line::from(vec![Span::styled("  [4] ", Style::default().fg(accent)), Span::raw("rules")]),
-        Line::from(vec![Span::styled("  [5] ", Style::default().fg(accent)), Span::raw("skills")]),
-        Line::from(vec![Span::styled("  [6] ", Style::default().fg(accent)), Span::raw("hooks")]),
-        Line::from(vec![Span::styled("  [7] ", Style::default().fg(accent)), Span::raw("output-styles")]),
+        Line::from(vec![
+            Span::styled("  [1] ", Style::default().fg(accent)),
+            Span::raw("agents"),
+        ]),
+        Line::from(vec![
+            Span::styled("  [2] ", Style::default().fg(accent)),
+            Span::raw("commands"),
+        ]),
+        Line::from(vec![
+            Span::styled("  [3] ", Style::default().fg(accent)),
+            Span::raw("contexts"),
+        ]),
+        Line::from(vec![
+            Span::styled("  [4] ", Style::default().fg(accent)),
+            Span::raw("rules"),
+        ]),
+        Line::from(vec![
+            Span::styled("  [5] ", Style::default().fg(accent)),
+            Span::raw("skills"),
+        ]),
+        Line::from(vec![
+            Span::styled("  [6] ", Style::default().fg(accent)),
+            Span::raw("hooks"),
+        ]),
+        Line::from(vec![
+            Span::styled("  [7] ", Style::default().fg(accent)),
+            Span::raw("output-styles"),
+        ]),
         Line::from(""),
-        Line::from(Span::styled("  [Enter] Skip  [Esc] Cancel", Style::default().fg(app.theme.text_muted()))),
+        Line::from(Span::styled(
+            "  [Enter] Skip  [Esc] Cancel",
+            Style::default().fg(app.theme.text_muted()),
+        )),
     ];
 
     let block = Block::default()
         .title(" Map To ")
-        .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
+        .title_style(
+            Style::default()
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD),
+        )
         .borders(Borders::ALL)
         .border_style(Style::default().fg(app.theme.accent_primary()));
 
@@ -166,7 +226,9 @@ pub fn render_syncing(f: &mut Frame, app: &App, area: Rect) {
         .borders(Borders::ALL)
         .border_style(Style::default().fg(app.theme.accent_primary()));
 
-    let paragraph = Paragraph::new(text).alignment(Alignment::Center).block(block);
+    let paragraph = Paragraph::new(text)
+        .alignment(Alignment::Center)
+        .block(block);
     f.render_widget(paragraph, dialog);
 }
 

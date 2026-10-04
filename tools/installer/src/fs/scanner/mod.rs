@@ -1,13 +1,13 @@
-mod validation;
 mod components;
 mod external;
 mod mcp;
 mod plugin;
+mod validation;
 
+use anyhow::Result;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::path::Path;
-use anyhow::Result;
 
 use crate::app::TargetCli;
 use crate::component::{Component, ComponentType};
@@ -92,7 +92,13 @@ pub fn scan_all_sources(
                 components::scan_components(&source.path, dest_dir, target_cli)
             }
         },
-        |c| format!("{}/{}", c.component_type.display_name(), c.name.replace('\\', "/")),
+        |c| {
+            format!(
+                "{}/{}",
+                c.component_type.display_name(),
+                c.name.replace('\\', "/")
+            )
+        },
         |c, label| c.source_name = label.to_string(),
     )?;
 
@@ -147,7 +153,10 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     fn unique_dir(label: &str) -> std::path::PathBuf {
-        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
         let dir = std::env::temp_dir().join(format!("hibi_scan_all_{label}_{nanos}"));
         std::fs::create_dir_all(&dir).unwrap();
         dir
@@ -183,7 +192,9 @@ mod tests {
 
         // Index by (type, name) for assertion.
         let by_key = |t: ComponentType, n: &str| -> Option<&Component> {
-            components.iter().find(|c| c.component_type == t && c.name.replace('\\', "/") == n)
+            components
+                .iter()
+                .find(|c| c.component_type == t && c.name.replace('\\', "/") == n)
         };
 
         // Source-backed components keep their existing statuses.
@@ -211,8 +222,14 @@ mod tests {
 
         // Source-backed components must precede externals (UI ordering
         // contract: known-managed first, user-discoverable last).
-        let first_external_idx = components.iter().position(|c| c.status == InstallStatus::External).unwrap();
-        let last_source_idx = components.iter().rposition(|c| c.source_name == "bundled").unwrap();
+        let first_external_idx = components
+            .iter()
+            .position(|c| c.status == InstallStatus::External)
+            .unwrap();
+        let last_source_idx = components
+            .iter()
+            .rposition(|c| c.source_name == "bundled")
+            .unwrap();
         assert!(
             last_source_idx < first_external_idx,
             "source-backed components must precede externals"

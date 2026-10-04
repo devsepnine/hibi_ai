@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Gauge, List, ListItem, ListState, Paragraph},
-    Frame,
 };
 
 use crate::app::App;
@@ -13,9 +13,9 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
         .direction(Direction::Vertical)
         .margin(2)
         .constraints([
-            Constraint::Length(3),  // Title
-            Constraint::Length(3),  // Progress bar
-            Constraint::Min(0),     // Log
+            Constraint::Length(3), // Title
+            Constraint::Length(3), // Progress bar
+            Constraint::Min(0),    // Log
         ])
         .split(area);
 
@@ -29,7 +29,10 @@ fn render_title(f: &mut Frame, app: &App, area: Rect) {
         ("✓ Complete".to_string(), app.theme.success())
     } else if app.needs_refresh {
         let spinner = super::get_spinner(app.animation_frame);
-        (format!("{} Refreshing status...", spinner), app.theme.warning())
+        (
+            format!("{} Refreshing status...", spinner),
+            app.theme.warning(),
+        )
     } else {
         let spinner = super::get_spinner(app.animation_frame);
         let text = if app.is_removing {
@@ -37,12 +40,20 @@ fn render_title(f: &mut Frame, app: &App, area: Rect) {
         } else {
             format!("{} Installing...", spinner)
         };
-        let color = if app.is_removing { app.theme.error() } else { app.theme.accent_secondary() };
+        let color = if app.is_removing {
+            app.theme.error()
+        } else {
+            app.theme.accent_secondary()
+        };
         (text, color)
     };
 
     let title = Paragraph::new(title_text)
-        .style(Style::default().fg(title_color).add_modifier(Modifier::BOLD))
+        .style(
+            Style::default()
+                .fg(title_color)
+                .add_modifier(Modifier::BOLD),
+        )
         .alignment(Alignment::Center)
         .block(Block::default().borders(Borders::NONE));
     f.render_widget(title, area);
@@ -53,7 +64,11 @@ fn render_progress(f: &mut Frame, app: &App, area: Rect) {
     let total = app.processing_total.unwrap_or(1).max(1);
     let percent = ((progress as f64 / total as f64) * 100.0).min(100.0) as u16;
 
-    let gauge_color = if app.is_removing { app.theme.error() } else { app.theme.success() };
+    let gauge_color = if app.is_removing {
+        app.theme.error()
+    } else {
+        app.theme.success()
+    };
     let gauge = Gauge::default()
         .block(
             Block::default()
@@ -87,14 +102,13 @@ fn render_log(f: &mut Frame, app: &App, area: Rect) {
         .collect();
 
     let log_len = log_items.len();
-    let log_list = List::new(log_items)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(app.theme.border()))
-                .title(" Log ")
-                .title_style(Style::default().fg(app.theme.text_primary())),
-        );
+    let log_list = List::new(log_items).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(app.theme.border()))
+            .title(" Log ")
+            .title_style(Style::default().fg(app.theme.text_primary())),
+    );
 
     // Auto-scroll to the last log entry
     let mut log_state = ListState::default();

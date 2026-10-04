@@ -1,5 +1,5 @@
-use super::types::{FocusArea, Tab, View};
 use super::App;
+use super::types::{FocusArea, Tab, View};
 use crate::mcp::{McpServer, McpServerDef, McpStatus};
 use crate::plugin::{Plugin, PluginDef, PluginStatus};
 

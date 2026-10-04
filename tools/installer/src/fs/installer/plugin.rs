@@ -1,11 +1,11 @@
-use std::sync::mpsc::Receiver;
 use anyhow::Result;
+use std::sync::mpsc::Receiver;
 
-use crate::plugin::Plugin;
-use super::process::{spawn_cancelable_process, run_cleanup_command, ProcessConfig};
 use super::mcp::ensure_marketplace_added;
+use super::process::{ProcessConfig, run_cleanup_command, spawn_cancelable_process};
 use crate::app::TargetCli;
 use crate::fs::create_cli_command;
+use crate::plugin::Plugin;
 
 /// Cleanup helper: try to remove plugin without blocking
 /// Returns true if cleanup succeeded, false otherwise
@@ -15,11 +15,7 @@ fn cleanup_plugin_installation(plugin: &Plugin) -> bool {
     run_cleanup_command(&mut command)
 }
 
-pub fn install_plugin(
-    plugin: &Plugin,
-    timeout_secs: u64,
-    cancel_rx: &Receiver<()>,
-) -> Result<()> {
+pub fn install_plugin(plugin: &Plugin, timeout_secs: u64, cancel_rx: &Receiver<()>) -> Result<()> {
     ensure_marketplace_added(
         &plugin.def.marketplace,
         &plugin.def.source,
@@ -44,11 +40,7 @@ pub fn install_plugin(
     )
 }
 
-pub fn remove_plugin(
-    plugin: &Plugin,
-    timeout_secs: u64,
-    cancel_rx: &Receiver<()>,
-) -> Result<()> {
+pub fn remove_plugin(plugin: &Plugin, timeout_secs: u64, cancel_rx: &Receiver<()>) -> Result<()> {
     let mut command = create_cli_command(TargetCli::Claude);
     command.args(["plugin", "uninstall", &plugin.def.name]);
 

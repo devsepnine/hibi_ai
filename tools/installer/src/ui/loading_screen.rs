@@ -1,8 +1,8 @@
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Style},
     widgets::{Block, Borders, Paragraph},
-    Frame,
 };
 
 /// Render the startup loading screen with a centered spinner animation.

@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph},
-    Frame,
 };
 
 use crate::app::{App, SyncStatus};
@@ -12,7 +12,9 @@ use crate::source::SourceEntry;
 /// Render the full-screen Sources management view.
 pub fn render(f: &mut Frame, app: &App, area: Rect) {
     // Dynamic footer height: base 3 + extra lines for sync status
-    let status_lines = app.source_sync_status.as_ref()
+    let status_lines = app
+        .source_sync_status
+        .as_ref()
         .map(|s| match s {
             SyncStatus::Success(msg) | SyncStatus::Error(msg) => msg.split("; ").count(),
         })
@@ -21,10 +23,7 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Min(0),
-            Constraint::Length(footer_height),
-        ])
+        .constraints([Constraint::Min(0), Constraint::Length(footer_height)])
         .split(area);
 
     render_list(f, app, chunks[0]);
@@ -36,7 +35,9 @@ fn render_list(f: &mut Frame, app: &App, area: Rect) {
 
     // Index 0: bundled source (always present, read-only)
     let bundled_style = if app.source_list_index == 0 {
-        Style::default().fg(app.theme.selection_fg()).bg(app.theme.selection_bg())
+        Style::default()
+            .fg(app.theme.selection_fg())
+            .bg(app.theme.selection_bg())
     } else {
         Style::default().fg(app.theme.text_muted())
     };
@@ -66,7 +67,9 @@ fn render_list(f: &mut Frame, app: &App, area: Rect) {
         };
 
         let base_style = if is_selected {
-            Style::default().fg(app.theme.selection_fg()).bg(app.theme.selection_bg())
+            Style::default()
+                .fg(app.theme.selection_fg())
+                .bg(app.theme.selection_bg())
         } else {
             Style::default().fg(app.theme.text_primary())
         };
@@ -78,8 +81,9 @@ fn render_list(f: &mut Frame, app: &App, area: Rect) {
 
         // Check if this source is stale (match by label, not positional index)
         let stale = match entry {
-            SourceEntry::Git { url, .. } => app.sources.iter()
-                .any(|s| s.label == *url && s.is_stale),
+            SourceEntry::Git { url, .. } => {
+                app.sources.iter().any(|s| s.label == *url && s.is_stale)
+            }
             _ => false,
         };
 
@@ -88,23 +92,32 @@ fn render_list(f: &mut Frame, app: &App, area: Rect) {
             Span::styled(format!("  {}", kind_tag), Style::default().fg(kind_color)),
         ];
         if !extra.is_empty() {
-            spans.push(Span::styled(extra, Style::default().fg(app.theme.text_muted())));
+            spans.push(Span::styled(
+                extra,
+                Style::default().fg(app.theme.text_muted()),
+            ));
         }
         if stale {
-            spans.push(Span::styled(" (stale)", Style::default().fg(app.theme.warning())));
+            spans.push(Span::styled(
+                " (stale)",
+                Style::default().fg(app.theme.warning()),
+            ));
         }
 
         items.push(ListItem::new(Line::from(spans)));
     }
 
-    let list = List::new(items)
-        .block(
-            Block::default()
-                .title(" Sources ")
-                .title_style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(app.theme.border())),
-        );
+    let list = List::new(items).block(
+        Block::default()
+            .title(" Sources ")
+            .title_style(
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD),
+            )
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(app.theme.border())),
+    );
 
     f.render_widget(list, area);
 }
@@ -121,9 +134,10 @@ fn render_footer(f: &mut Frame, app: &App, area: Rect) {
 
     let help_line = help_parts.join("  ");
 
-    let mut lines = vec![
-        Line::from(Span::styled(help_line, Style::default().fg(app.theme.text_muted()))),
-    ];
+    let mut lines = vec![Line::from(Span::styled(
+        help_line,
+        Style::default().fg(app.theme.text_muted()),
+    ))];
 
     if let Some(status) = &app.source_sync_status {
         let (color, text) = match status {

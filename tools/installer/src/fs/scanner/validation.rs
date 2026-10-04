@@ -5,7 +5,8 @@ pub(super) fn is_safe_identifier(s: &str) -> bool {
     !s.is_empty()
         && s.len() <= 100
         && !s.starts_with('-')
-        && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+        && s.chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
 }
 
 /// Validate that a URL uses HTTPS scheme only.
@@ -120,7 +121,9 @@ mod tests {
     fn test_is_safe_command_valid() {
         assert!(is_safe_command("npx -y @upstash/context7-mcp"));
         assert!(is_safe_command("uvx mcp-atlassian"));
-        assert!(is_safe_command("npx -y @supabase/mcp-server-supabase@latest --project-ref=YOUR_PROJECT_REF"));
+        assert!(is_safe_command(
+            "npx -y @supabase/mcp-server-supabase@latest --project-ref=YOUR_PROJECT_REF"
+        ));
     }
 
     #[test]
@@ -197,7 +200,14 @@ mod tests {
 
     #[test]
     fn test_validate_plugin_valid() {
-        assert!(validate_plugin("rust-analyzer-lsp", "claude-plugins-official", "https://github.com/repo.git").is_none());
+        assert!(
+            validate_plugin(
+                "rust-analyzer-lsp",
+                "claude-plugins-official",
+                "https://github.com/repo.git"
+            )
+            .is_none()
+        );
     }
 
     #[test]

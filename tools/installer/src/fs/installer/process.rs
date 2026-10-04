@@ -1,9 +1,9 @@
-use std::process::{Command, Stdio};
-use std::time::{Duration, Instant};
-use std::thread;
-use std::io::{BufRead, BufReader};
-use std::sync::mpsc::Receiver;
 use anyhow::Result;
+use std::io::{BufRead, BufReader};
+use std::process::{Command, Stdio};
+use std::sync::mpsc::Receiver;
+use std::thread;
+use std::time::{Duration, Instant};
 use wait_timeout::ChildExt;
 
 /// Maximum stderr capture size (1 MB) to prevent memory exhaustion.
@@ -30,7 +30,8 @@ pub(super) fn run_cleanup_command(command: &mut Command) -> bool {
         .stderr(Stdio::null())
         .spawn()
         .and_then(|mut child| {
-            child.wait_timeout(Duration::from_secs(CLEANUP_TIMEOUT_SECS))
+            child
+                .wait_timeout(Duration::from_secs(CLEANUP_TIMEOUT_SECS))
                 .map(|status| match status {
                     Some(s) => s.success(),
                     None => {
@@ -45,10 +46,7 @@ pub(super) fn run_cleanup_command(command: &mut Command) -> bool {
 }
 
 /// Kill a child process and wait briefly for it to terminate.
-fn kill_and_cleanup(
-    child: &mut std::process::Child,
-    cleanup: Option<Box<dyn FnOnce() -> bool>>,
-) {
+fn kill_and_cleanup(child: &mut std::process::Child, cleanup: Option<Box<dyn FnOnce() -> bool>>) {
     let _ = child.kill();
     let _ = child.wait_timeout(Duration::from_millis(KILL_WAIT_MS));
     if let Some(do_cleanup) = cleanup {
@@ -63,13 +61,18 @@ fn format_process_error(action: &str, item_name: &str, stderr_output: &str) -> S
     if stderr_output.trim().is_empty() {
         format!("Failed to {} {}", action, item_name)
     } else {
-        format!("Failed to {} {}: {}", action, item_name, stderr_output.trim())
+        format!(
+            "Failed to {} {}: {}",
+            action,
+            item_name,
+            stderr_output.trim()
+        )
     }
 }
 
+use crate::fs::enrich_spawn_error;
 /// Re-export the shared `run_with_timeout` for use within the installer module.
 pub(super) use crate::fs::run_with_timeout;
-use crate::fs::enrich_spawn_error;
 
 /// Configuration for a cancelable process operation.
 pub(super) struct ProcessConfig<'a> {
@@ -85,10 +88,7 @@ pub(super) struct ProcessConfig<'a> {
 /// Captures stdout/stderr in background threads to prevent pipe blocking.
 /// Stderr is capped at `MAX_STDERR_BYTES` to prevent memory exhaustion.
 /// If `cleanup` is provided, it will be called on timeout or cancellation.
-pub(super) fn spawn_cancelable_process(
-    command: &mut Command,
-    config: ProcessConfig,
-) -> Result<()> {
+pub(super) fn spawn_cancelable_process(command: &mut Command, config: ProcessConfig) -> Result<()> {
     let has_cleanup = config.cleanup.is_some();
     let mut cleanup_slot = config.cleanup;
 
@@ -133,7 +133,10 @@ pub(super) fn spawn_cancelable_process(
             kill_and_cleanup(&mut child, cleanup_slot.take());
             // Threads exit naturally when pipes close after kill; no join needed on abort paths.
             if has_cleanup {
-                anyhow::bail!("Installation timed out after {}s (cleanup may be incomplete)", config.timeout_secs);
+                anyhow::bail!(
+                    "Installation timed out after {}s (cleanup may be incomplete)",
+                    config.timeout_secs
+                );
             } else {
                 anyhow::bail!("Removal timed out after {}s", config.timeout_secs);
             }
@@ -148,7 +151,11 @@ pub(super) fn spawn_cancelable_process(
                 let stderr_output = stderr_thread.join().unwrap_or_default();
 
                 if !status.success() {
-                    anyhow::bail!(format_process_error(config.action, config.item_name, &stderr_output));
+                    anyhow::bail!(format_process_error(
+                        config.action,
+                        config.item_name,
+                        &stderr_output
+                    ));
                 }
                 return Ok(());
             }

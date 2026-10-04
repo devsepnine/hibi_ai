@@ -44,8 +44,7 @@ pub fn cache_exists(cache_dir: &Path) -> bool {
 /// Compute cache directory path for a git source.
 /// `~/.hibi/cache/<sanitized_label>/`
 pub fn cache_path_for(url: &str) -> Result<PathBuf> {
-    let home = dirs::home_dir()
-        .ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
+    let home = dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
     let label = sanitize_label(url);
     Ok(home.join(".hibi").join("cache").join(label))
 }
@@ -56,11 +55,13 @@ pub fn remove_cache(url: &str) -> Result<bool> {
     let cache_dir = cache_path_for(url)?;
 
     // Defense-in-depth: ensure we only delete within ~/.hibi/cache/
-    let home = dirs::home_dir()
-        .ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
+    let home = dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
     let cache_base = home.join(".hibi").join("cache");
     if !cache_dir.starts_with(&cache_base) {
-        anyhow::bail!("Refusing to remove path outside cache dir: {}", cache_dir.display());
+        anyhow::bail!(
+            "Refusing to remove path outside cache dir: {}",
+            cache_dir.display()
+        );
     }
 
     if cache_dir.exists() {
@@ -79,15 +80,15 @@ pub fn remove_cache(url: &str) -> Result<bool> {
 /// is dead data; this performs a one-time cleanup.
 /// Returns `Ok(true)` if the cache was removed, `Ok(false)` if none existed.
 pub fn cleanup_bundled_cache() -> Result<bool> {
-    let home = dirs::home_dir()
-        .ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
+    let home = dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
     // Fixed path (~/.hibi/cache/bundled), built from home_dir — safe by construction
     // (no external input, unlike remove_cache which sanitizes a user-supplied URL).
     let bundled_dir = home.join(".hibi").join("cache").join("bundled");
 
     if bundled_dir.exists() {
-        std::fs::remove_dir_all(&bundled_dir)
-            .with_context(|| format!("Failed to remove bundled cache: {}", bundled_dir.display()))?;
+        std::fs::remove_dir_all(&bundled_dir).with_context(|| {
+            format!("Failed to remove bundled cache: {}", bundled_dir.display())
+        })?;
         Ok(true)
     } else {
         Ok(false)
@@ -104,8 +105,9 @@ fn sanitize_label(url: &str) -> String {
 fn clone_repo(url: &str, branch: &Option<String>, dest: &Path) -> Result<()> {
     // Remove stale cache directory (exists but no .git) before cloning
     if dest.exists() && !dest.join(".git").exists() {
-        std::fs::remove_dir_all(dest)
-            .with_context(|| format!("Failed to remove stale cache (no .git): {}", dest.display()))?;
+        std::fs::remove_dir_all(dest).with_context(|| {
+            format!("Failed to remove stale cache (no .git): {}", dest.display())
+        })?;
     }
 
     if let Some(parent) = dest.parent() {
@@ -118,8 +120,12 @@ fn clone_repo(url: &str, branch: &Option<String>, dest: &Path) -> Result<()> {
         args.push(b);
     }
     args.push(url);
-    let dest_str = dest.to_str()
-        .ok_or_else(|| anyhow::anyhow!("Cache path contains non-UTF-8 characters: {}", dest.display()))?;
+    let dest_str = dest.to_str().ok_or_else(|| {
+        anyhow::anyhow!(
+            "Cache path contains non-UTF-8 characters: {}",
+            dest.display()
+        )
+    })?;
     args.push(dest_str);
 
     run_git_command(&args, None, CLONE_TIMEOUT_SECS)
@@ -172,7 +178,11 @@ fn run_git_command(args: &[&str], working_dir: Option<&Path>, timeout_secs: u64)
         None => {
             let _ = child.kill();
             let _ = child.wait();
-            anyhow::bail!("git {} timed out after {}s", args.first().unwrap_or(&""), timeout_secs)
+            anyhow::bail!(
+                "git {} timed out after {}s",
+                args.first().unwrap_or(&""),
+                timeout_secs
+            )
         }
     }
 }

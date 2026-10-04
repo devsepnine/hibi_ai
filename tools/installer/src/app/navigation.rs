@@ -1,5 +1,5 @@
-use super::types::{FocusArea, Tab, View};
 use super::App;
+use super::types::{FocusArea, Tab, View};
 use crate::tree::TreeView;
 
 impl App {
@@ -133,12 +133,20 @@ impl App {
         if self.tab == Tab::McpServers {
             let len = self.mcp_servers.len();
             if len > 0 {
-                self.mcp_index = if self.mcp_index == 0 { len - 1 } else { self.mcp_index - 1 };
+                self.mcp_index = if self.mcp_index == 0 {
+                    len - 1
+                } else {
+                    self.mcp_index - 1
+                };
             }
         } else if self.tab == Tab::Plugins {
             let len = self.plugins.len();
             if len > 0 {
-                self.plugin_index = if self.plugin_index == 0 { len - 1 } else { self.plugin_index - 1 };
+                self.plugin_index = if self.plugin_index == 0 {
+                    len - 1
+                } else {
+                    self.plugin_index - 1
+                };
             }
         } else if let Some(tree) = self.tree_views.get_mut(&self.tab) {
             tree.prev();
@@ -158,14 +166,16 @@ impl App {
 
     /// Check if cursor is on a folder
     pub fn is_cursor_on_folder(&self) -> bool {
-        self.tree_views.get(&self.tab)
+        self.tree_views
+            .get(&self.tab)
             .map(|t| t.is_on_folder())
             .unwrap_or(false)
     }
 
     /// Check if current folder is expanded
     pub fn is_current_folder_expanded(&self) -> bool {
-        self.tree_views.get(&self.tab)
+        self.tree_views
+            .get(&self.tab)
             .map(|t| t.is_current_folder_expanded())
             .unwrap_or(false)
     }

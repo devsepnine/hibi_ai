@@ -1,5 +1,5 @@
-use super::types::Tab;
 use super::App;
+use super::types::Tab;
 
 impl App {
     pub fn toggle_selected(&mut self) {
@@ -31,8 +31,12 @@ impl App {
                 }
 
                 // Check if all are currently selected
-                let all_selected = indices.iter()
-                    .all(|&idx| self.components.get(idx).map(|c| c.selected).unwrap_or(false));
+                let all_selected = indices.iter().all(|&idx| {
+                    self.components
+                        .get(idx)
+                        .map(|c| c.selected)
+                        .unwrap_or(false)
+                });
 
                 // Toggle: if all selected -> deselect all, otherwise select all
                 let new_state = !all_selected;

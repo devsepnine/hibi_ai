@@ -11,7 +11,10 @@ impl TreeView {
     /// upstream sorts components, and the caller only filters. That scan
     /// order is what the UI has always displayed — sorting here would be
     /// a visible change, not a cleanup.
-    pub fn build_from_components(_components: &[Component], filtered_indices: &[(usize, &Component)]) -> Self {
+    pub fn build_from_components(
+        _components: &[Component],
+        filtered_indices: &[(usize, &Component)],
+    ) -> Self {
         let mut tree = TreeView::default();
 
         if filtered_indices.is_empty() {
@@ -164,20 +167,26 @@ mod tests {
         // Two components under the same folder must share one folder node,
         // and that node must hold both files. This is the `folder_map` hit
         // path -- the only branch that reuses an existing folder.
-        let components = vec![
-            make_component("folder/a.md"),
-            make_component("folder/b.md"),
-        ];
+        let components = vec![make_component("folder/a.md"), make_component("folder/b.md")];
 
         let filtered: Vec<(usize, &Component)> = components.iter().enumerate().collect();
         let tree = TreeView::build_from_components(&components, &filtered);
 
         let folders: Vec<&TreeNode> = tree.nodes.iter().filter(|n| n.is_folder()).collect();
-        assert_eq!(folders.len(), 1, "one folder node expected, got {}", folders.len());
+        assert_eq!(
+            folders.len(),
+            1,
+            "one folder node expected, got {}",
+            folders.len()
+        );
 
         let TreeNode::Folder { children, .. } = folders[0] else {
             unreachable!("filtered to folders above");
         };
-        assert_eq!(children.len(), 2, "both files must attach to the shared folder");
+        assert_eq!(
+            children.len(),
+            2,
+            "both files must attach to the shared folder"
+        );
     }
 }

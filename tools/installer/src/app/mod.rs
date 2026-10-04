@@ -1,26 +1,26 @@
-mod types;
-mod navigation;
-mod selection;
-mod processing;
 mod input;
+mod navigation;
+mod processing;
+mod selection;
 mod settings;
-pub mod sources;
 mod source_wizard;
+pub mod sources;
 #[cfg(test)]
 pub(crate) mod test_support;
+mod types;
 
-pub use types::{TargetCli, Tab, View, SyncStatus, FocusArea};
+pub use types::{FocusArea, SyncStatus, Tab, TargetCli, View};
 
+use anyhow::Result;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use anyhow::Result;
 
 use crate::component::{Component, ComponentType};
-use crate::mcp::{McpServer, McpScope};
+use crate::mcp::{McpScope, McpServer};
 use crate::plugin::Plugin;
 use crate::source::{ResolvedSource, SourceEntry, SourceKind};
-use crate::tree::TreeView;
 use crate::theme::Theme;
+use crate::tree::TreeView;
 
 pub struct App {
     pub target_cli: Option<TargetCli>,
@@ -75,28 +75,28 @@ pub struct App {
     pub cancelling: bool,             // True when cancel signal sent, waiting for process to stop
 
     // Env input state (for MCP servers requiring env vars)
-    pub env_input_server_idx: Option<usize>,   // Index of MCP server being configured
-    pub env_input_vars: Vec<String>,           // List of env var names to collect
-    pub env_input_current: usize,              // Current env var index
-    pub env_input_buffer: String,              // Current input text
+    pub env_input_server_idx: Option<usize>, // Index of MCP server being configured
+    pub env_input_vars: Vec<String>,         // List of env var names to collect
+    pub env_input_current: usize,            // Current env var index
+    pub env_input_buffer: String,            // Current input text
     pub env_input_values: Vec<(String, String)>, // Collected (name, value) pairs
 
     // Project path input state (for local scope MCP)
-    pub project_path_buffer: String,           // Current project path input
+    pub project_path_buffer: String, // Current project path input
 
     // Sources management state
-    pub source_entries: Vec<SourceEntry>,       // Raw config entries (from YAML)
-    pub source_auto_update: bool,              // auto_update flag
-    pub source_list_index: usize,              // Cursor in sources list (0 = bundled)
-    pub source_add_kind: Option<SourceKind>,   // Git or Local (wizard selection)
-    pub source_input_buffer: String,           // Text input buffer (URL/path/branch)
-    pub source_edit_index: Option<usize>,      // Some(idx) when editing existing source
+    pub source_entries: Vec<SourceEntry>, // Raw config entries (from YAML)
+    pub source_auto_update: bool,         // auto_update flag
+    pub source_list_index: usize,         // Cursor in sources list (0 = bundled)
+    pub source_add_kind: Option<SourceKind>, // Git or Local (wizard selection)
+    pub source_input_buffer: String,      // Text input buffer (URL/path/branch)
+    pub source_edit_index: Option<usize>, // Some(idx) when editing existing source
     pub source_sync_status: Option<SyncStatus>, // Typed status after sync
     pub source_sync_cancel_tx: Option<std::sync::mpsc::Sender<()>>,
-    pub source_input_error: Option<String>,    // Validation error for current input
-    pub source_pending_url: String,            // URL saved between wizard steps (Git flow)
+    pub source_input_error: Option<String>, // Validation error for current input
+    pub source_pending_url: String,         // URL saved between wizard steps (Git flow)
     pub source_pending_branch: Option<String>, // Branch saved between wizard steps
-    pub source_pending_root: Option<String>,   // Root saved between wizard steps
+    pub source_pending_root: Option<String>, // Root saved between wizard steps
     pub source_sync_rx: Option<std::sync::mpsc::Receiver<sources::SyncPayload>>,
 }
 
@@ -125,8 +125,8 @@ fn load_init_data() -> Result<InitData> {
     } else {
         Some(warnings.join("; "))
     };
-    let (source_entries, source_auto_update) = crate::source::config::load_config()
-        .unwrap_or((Vec::new(), true));
+    let (source_entries, source_auto_update) =
+        crate::source::config::load_config().unwrap_or((Vec::new(), true));
     let dest_dir = dirs::home_dir()
         .ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?
         .join(".claude");
@@ -135,8 +135,13 @@ fn load_init_data() -> Result<InitData> {
         .unwrap_or_default();
 
     Ok(InitData {
-        source_dir, sources, init_warnings,
-        source_entries, source_auto_update, dest_dir, default_project,
+        source_dir,
+        sources,
+        init_warnings,
+        source_entries,
+        source_auto_update,
+        dest_dir,
+        default_project,
     })
 }
 
@@ -145,7 +150,9 @@ fn load_init_data() -> Result<InitData> {
 fn collect_startup_warnings() -> Vec<String> {
     let mut warnings = Vec::new();
     match crate::source::git::cleanup_bundled_cache() {
-        Ok(true) => warnings.push("Removed orphaned bundled cache (~/.hibi/cache/bundled)".to_string()),
+        Ok(true) => {
+            warnings.push("Removed orphaned bundled cache (~/.hibi/cache/bundled)".to_string())
+        }
         Ok(false) => {}
         Err(e) => warnings.push(format!("Failed to clean bundled cache: {}", e)),
     }
@@ -251,7 +258,8 @@ impl App {
         self.plugins = plugins;
 
         // Read current settings
-        let (current_output_style, current_statusline) = settings::read_current_settings(&self.dest_dir);
+        let (current_output_style, current_statusline) =
+            settings::read_current_settings(&self.dest_dir);
         self.current_output_style = current_output_style;
         self.current_statusline = current_statusline;
 

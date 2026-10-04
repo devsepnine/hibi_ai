@@ -4,9 +4,9 @@ use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 
 use crate::app::{self, App};
+use crate::fs;
 use crate::loading::{self, RefreshResult};
 use crate::source;
-use crate::fs;
 
 /// Read a single key press, filtering out release events.
 ///
@@ -31,17 +31,25 @@ pub(crate) fn dispatch_key(
     match app.current_view {
         app::View::CliSelection => handle_cli_selection(app, code, refresh_tx),
         app::View::EnvInput => handle_env_input(app, code),
-        app::View::ProjectPath => { handle_project_path_input(app, code); Ok(()) }
+        app::View::ProjectPath => {
+            handle_project_path_input(app, code);
+            Ok(())
+        }
         app::View::List => handle_list_input(app, code),
         app::View::Diff => handle_diff_input(app, code),
         app::View::Help => handle_help_input(app, code),
-        app::View::ConfirmExit => { handle_confirm_exit(app, code); Ok(()) }
+        app::View::ConfirmExit => {
+            handle_confirm_exit(app, code);
+            Ok(())
+        }
         app::View::Sources => app.handle_sources_key(code),
         app::View::SourceAddType => app.handle_source_type_key(code),
         app::View::SourceAddMapTo => app.handle_source_map_to_key(code),
         app::View::SourceConfirmRemove => app.handle_source_confirm_key(code),
-        app::View::SourceAddUrl | app::View::SourceAddBranch
-        | app::View::SourceAddPath | app::View::SourceAddRoot => app.handle_source_input_key(code),
+        app::View::SourceAddUrl
+        | app::View::SourceAddBranch
+        | app::View::SourceAddPath
+        | app::View::SourceAddRoot => app.handle_source_input_key(code),
         _ => Ok(()),
     }
 }
@@ -69,7 +77,10 @@ pub(crate) fn handle_source_syncing(app: &mut App) -> Result<()> {
 fn handle_list_input(app: &mut App, key: KeyCode) -> Result<()> {
     // Global keys (always active regardless of which pane has focus).
     match key {
-        KeyCode::Char('q') => { app.should_quit = true; return Ok(()); }
+        KeyCode::Char('q') => {
+            app.should_quit = true;
+            return Ok(());
+        }
         KeyCode::Char('t') => {
             app.theme.toggle();
             app.status_message = Some(format!("Theme: {}", app.theme.mode().name()));
@@ -77,7 +88,10 @@ fn handle_list_input(app: &mut App, key: KeyCode) -> Result<()> {
         }
         // The status bar lists only these three keys; `?` is where the rest of
         // them are documented, so it has to work from either pane.
-        KeyCode::Char('?') => { app.open_help(); return Ok(()); }
+        KeyCode::Char('?') => {
+            app.open_help();
+            return Ok(());
+        }
         // Panes are addressable by number (lazygit convention). The digits come
         // from `FocusArea::shortcut` because each pane's border title prints the
         // same value — a literal here could drift out from under the label.
@@ -90,7 +104,10 @@ fn handle_list_input(app: &mut App, key: KeyCode) -> Result<()> {
             app.focus_content();
             return Ok(());
         }
-        KeyCode::Tab | KeyCode::BackTab => { app.toggle_focus(); return Ok(()); }
+        KeyCode::Tab | KeyCode::BackTab => {
+            app.toggle_focus();
+            return Ok(());
+        }
         _ => {}
     }
 
@@ -113,8 +130,7 @@ fn handle_tab_focus_keys(app: &mut App, key: KeyCode) {
     match key {
         KeyCode::Char('h') | KeyCode::Left => app.prev_tab(),
         KeyCode::Char('l') | KeyCode::Right => app.next_tab(),
-        KeyCode::Enter | KeyCode::Esc
-        | KeyCode::Char('j') | KeyCode::Down => app.focus_content(),
+        KeyCode::Enter | KeyCode::Esc | KeyCode::Char('j') | KeyCode::Down => app.focus_content(),
         _ => {}
     }
 }
@@ -125,7 +141,9 @@ fn handle_content_focus_keys(app: &mut App, key: KeyCode) -> Result<()> {
     match key {
         KeyCode::Char('h') | KeyCode::Left => handle_folder_collapse(app),
         KeyCode::Char('l') | KeyCode::Right => {
-            if app.is_cursor_on_folder() { app.expand_folder(); }
+            if app.is_cursor_on_folder() {
+                app.expand_folder();
+            }
         }
         KeyCode::Down | KeyCode::Char('j') => app.next_item(),
         KeyCode::Up | KeyCode::Char('k') => app.prev_item(),
@@ -137,7 +155,11 @@ fn handle_content_focus_keys(app: &mut App, key: KeyCode) -> Result<()> {
         KeyCode::Char('i') => app.install_selected()?,
         KeyCode::Char('r') => app.remove_selected()?,
         KeyCode::Char('s') | KeyCode::Char('u') => handle_default_toggle(app, key)?,
-        KeyCode::Char('o') => { if app.tab == app::Tab::McpServers { app.toggle_mcp_scope(); } }
+        KeyCode::Char('o') => {
+            if app.tab == app::Tab::McpServers {
+                app.toggle_mcp_scope();
+            }
+        }
         // Scoped to this pane rather than to the global block above: in the tab
         // bar `Esc` already means "back to the list", and that inner step has to
         // survive or the outer one would swallow it. Nested `Esc` is also what
@@ -158,7 +180,11 @@ fn handle_folder_collapse(app: &mut App) {
 }
 
 fn handle_enter(app: &mut App) -> Result<()> {
-    if app.is_cursor_on_folder() { app.toggle_folder_expand(); } else { app.show_diff()?; }
+    if app.is_cursor_on_folder() {
+        app.toggle_folder_expand();
+    } else {
+        app.show_diff()?;
+    }
     Ok(())
 }
 

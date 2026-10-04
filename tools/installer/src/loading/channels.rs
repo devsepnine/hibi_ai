@@ -86,7 +86,10 @@ mod tests {
 
         match channels.preflight_rx.try_recv() {
             Err(TryRecvError::Empty) => {}
-            other => panic!("expected Empty after reset, got {:?}", other.map(|_| "Ok(...)")),
+            other => panic!(
+                "expected Empty after reset, got {:?}",
+                other.map(|_| "Ok(...)")
+            ),
         }
     }
 

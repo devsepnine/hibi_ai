@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::Rect,
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, ListState},
-    Frame,
 };
 
 use super::{pane_border_style, pane_title};
@@ -51,10 +51,7 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
                     format!("{:<24}", p.def.name),
                     Style::default().fg(app.theme.text_primary()),
                 ),
-                Span::styled(
-                    format!("({:^13})", p.status.display()),
-                    status_style,
-                ),
+                Span::styled(format!("({:^13})", p.status.display()), status_style),
             ];
 
             if app.has_multiple_sources() {

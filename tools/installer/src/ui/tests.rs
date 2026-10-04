@@ -1,11 +1,11 @@
+use ratatui::Frame;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
-use ratatui::Frame;
 
 use super::{
-    confirm_exit, env_input, help, layout, list, mcp_list, pane_border_style, pane_title,
-    plugin_list, render_status_bar, tabs, LIST_HELP,
+    LIST_HELP, confirm_exit, env_input, help, layout, list, mcp_list, pane_border_style,
+    pane_title, plugin_list, render_status_bar, tabs,
 };
 use crate::app::test_support::fresh_app;
 use crate::app::{App, FocusArea, View};
@@ -43,7 +43,7 @@ fn only_the_focused_pane_gets_the_accent_border() {
 /// sees. An unpainted cell reads as `Color::Reset` and a blank symbol, so a
 /// renderer that draws nothing fails rather than passing.
 fn paint_at(app: &App, render: PaneRenderer, width: u16, height: u16) -> Buffer {
-    use ratatui::{backend::TestBackend, Terminal};
+    use ratatui::{Terminal, backend::TestBackend};
 
     let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
     terminal.draw(|f| render(f, app, f.area())).unwrap();
@@ -66,7 +66,9 @@ fn row(buf: &Buffer, y: u16) -> String {
 
 /// One painted row without its left and right border cells.
 fn inner_row(buf: &Buffer, y: u16) -> String {
-    (1..buf.area.width - 1).map(|x| buf[(x, y)].symbol()).collect()
+    (1..buf.area.width - 1)
+        .map(|x| buf[(x, y)].symbol())
+        .collect()
 }
 
 /// The border row carrying the block title.
@@ -190,12 +192,24 @@ fn every_pane_title_carries_its_own_shortcut() {
         setup(&mut app);
 
         let content = title_row(&app, render);
-        assert!(content.contains("[2]-"), "{name} title must show [2]-: {content}");
-        assert!(!content.contains("[1]-"), "{name} title must not show [1]-: {content}");
+        assert!(
+            content.contains("[2]-"),
+            "{name} title must show [2]-: {content}"
+        );
+        assert!(
+            !content.contains("[1]-"),
+            "{name} title must not show [1]-: {content}"
+        );
 
         let tabs = title_row(&app, tabs::render);
-        assert!(tabs.contains("[1]-"), "tab bar title must show [1]-: {tabs}");
-        assert!(!tabs.contains("[2]-"), "tab bar title must not show [2]-: {tabs}");
+        assert!(
+            tabs.contains("[1]-"),
+            "tab bar title must show [1]-: {tabs}"
+        );
+        assert!(
+            !tabs.contains("[2]-"),
+            "tab bar title must not show [2]-: {tabs}"
+        );
     }
 }
 
@@ -203,7 +217,10 @@ fn every_pane_title_carries_its_own_shortcut() {
 /// or the number would cost the user the label it was meant to annotate.
 #[test]
 fn pane_title_keeps_the_original_text() {
-    assert_eq!(pane_title(FocusArea::Tabs, " Config Installer "), " [1]-Config Installer ");
+    assert_eq!(
+        pane_title(FocusArea::Tabs, " Config Installer "),
+        " [1]-Config Installer "
+    );
     assert_eq!(pane_title(FocusArea::Content, "Plugins"), " [2]-Plugins ");
 }
 
@@ -338,7 +355,10 @@ fn the_overlay_reaches_its_last_row_in_a_short_terminal() {
     assert!(!hidden(&app), "the last row should start below the fold");
 
     app.help_scroll = max;
-    assert!(hidden(&app), "scrolling to {max} must bring the last row into view");
+    assert!(
+        hidden(&app),
+        "scrolling to {max} must bring the last row into view"
+    );
 }
 
 /// Height of the box the overlay actually painted, borders included.
@@ -379,7 +399,10 @@ fn the_overlay_caps_its_height_at_80_percent_and_pads_no_taller_terminal() {
             u32::from(painted) * 100 <= u32::from(height) * 80,
             "{height} rows: a box of {painted} breaks the 80% ceiling",
         );
-        assert!(painted < height, "{height} rows: no margin left around the box");
+        assert!(
+            painted < height,
+            "{height} rows: no margin left around the box"
+        );
     }
 
     // Past the height where 80% clears the table, the box stops growing.
@@ -398,7 +421,10 @@ fn the_exit_prompt_names_both_of_its_answers() {
         .join("\n");
 
     for expected in ["Confirm", "Leave for the CLI picker?", "[y] ", "[Esc] "] {
-        assert!(painted.contains(expected), "prompt is missing {expected:?}:\n{painted}");
+        assert!(
+            painted.contains(expected),
+            "prompt is missing {expected:?}:\n{painted}"
+        );
     }
 }
 

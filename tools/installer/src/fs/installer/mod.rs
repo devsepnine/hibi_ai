@@ -1,29 +1,27 @@
+mod mcp;
 mod merge;
+mod plugin;
 mod process;
 mod settings;
-mod mcp;
-mod plugin;
 
-use std::path::Path;
 use anyhow::Result;
+use std::path::Path;
 
 use crate::app::TargetCli;
 use crate::component::{Component, ComponentType};
 use crate::fs::{create_cli_command, run_with_timeout};
 use merge::merge_settings_json;
 use settings::{
-    register_hook_in_settings, unregister_hook_from_settings,
-    register_output_style_in_settings, register_statusline_in_settings,
-    unregister_output_style_if_matches,
+    register_hook_in_settings, register_output_style_in_settings, register_statusline_in_settings,
+    unregister_hook_from_settings, unregister_output_style_if_matches,
 };
 
 // Re-export public API
-pub use mcp::{install_mcp_server, remove_mcp_server, McpInstallConfig};
+pub use mcp::{McpInstallConfig, install_mcp_server, remove_mcp_server};
 pub use plugin::{install_plugin, remove_plugin};
 pub use settings::{
-    set_output_style, unset_output_style,
-    set_statusline, unset_statusline,
-    remove_managed_settings_sections,
+    remove_managed_settings_sections, set_output_style, set_statusline, unset_output_style,
+    unset_statusline,
 };
 
 /// Timeout for the pre-flight `--version` probe. Long enough to absorb
@@ -133,7 +131,10 @@ pub fn install_component(component: &Component, _source_dir: &Path, dest_dir: &P
         ComponentType::Hooks => {
             if let Some(config) = &component.hook_config {
                 if config.is_deprecated() {
-                    anyhow::bail!("Hook '{}' is deprecated and cannot be installed", component.name);
+                    anyhow::bail!(
+                        "Hook '{}' is deprecated and cannot be installed",
+                        component.name
+                    );
                 }
                 // Copy hook binary and register in settings.json
                 copy_file(component)?;
@@ -202,8 +203,15 @@ pub fn remove_component(component: &Component, dest_dir: &Path) -> Result<()> {
 
 fn copy_file(component: &Component) -> Result<()> {
     // Security: reject paths containing '..' to prevent path traversal
-    if component.dest_path.components().any(|c| matches!(c, std::path::Component::ParentDir)) {
-        anyhow::bail!("Security: destination path contains '..' component: {:?}", component.dest_path);
+    if component
+        .dest_path
+        .components()
+        .any(|c| matches!(c, std::path::Component::ParentDir))
+    {
+        anyhow::bail!(
+            "Security: destination path contains '..' component: {:?}",
+            component.dest_path
+        );
     }
 
     // Create parent directory if needed
@@ -218,7 +226,10 @@ fn copy_file(component: &Component) -> Result<()> {
     // On Windows, .sh scripts are executed via Git Bash; .exe hooks are already executable.
     #[cfg(unix)]
     if component.component_type == ComponentType::Statusline
-        || component.source_path.extension().map_or(false, |e| e == "sh")
+        || component
+            .source_path
+            .extension()
+            .map_or(false, |e| e == "sh")
     {
         use std::os::unix::fs::PermissionsExt;
         let mut perms = std::fs::metadata(&component.dest_path)?.permissions();

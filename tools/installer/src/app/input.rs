@@ -1,7 +1,7 @@
 use anyhow::Result;
 
-use super::types::View;
 use super::App;
+use super::types::View;
 use crate::mcp::McpScope;
 
 impl App {
@@ -44,7 +44,9 @@ impl App {
     }
 
     pub fn current_env_var(&self) -> Option<&str> {
-        self.env_input_vars.get(self.env_input_current).map(|s| s.as_str())
+        self.env_input_vars
+            .get(self.env_input_current)
+            .map(|s| s.as_str())
     }
 
     pub fn current_env_server_name(&self) -> Option<&str> {

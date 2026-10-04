@@ -1,6 +1,6 @@
-use std::path::Path;
 use anyhow::Result;
 use serde_json::Value;
+use std::path::Path;
 
 /// Merge source settings.json into dest, with deep merge and hook append logic.
 pub(super) fn merge_settings_json(source: &Path, dest: &Path) -> Result<()> {

@@ -92,7 +92,8 @@ pub fn parse_plugins_yaml(content: &str) -> PluginCatalog {
                     // slot, so lookup keeps working even if the parser ever
                     // attaches an anchor to a key. Value's derived PartialEq
                     // would compare the anchor and silently miss.
-                    let source = data_map.get("source")
+                    let source = data_map
+                        .get("source")
                         .and_then(|s| s.as_str())
                         .unwrap_or("")
                         .to_string();
@@ -102,7 +103,12 @@ pub fn parse_plugins_yaml(content: &str) -> PluginCatalog {
                             for plugin_entry in plugins_seq {
                                 let (name, comment) = parse_plugin_entry(plugin_entry);
                                 if !name.is_empty() {
-                                    catalog.push((marketplace_name.clone(), source.clone(), name, comment));
+                                    catalog.push((
+                                        marketplace_name.clone(),
+                                        source.clone(),
+                                        name,
+                                        comment,
+                                    ));
                                 }
                             }
                         }
@@ -126,7 +132,12 @@ pub fn parse_plugins_yaml(content: &str) -> PluginCatalog {
                         for plugin_entry in plugins_seq {
                             let (name, comment) = parse_plugin_entry(plugin_entry);
                             if !name.is_empty() {
-                                catalog.push((marketplace_name.clone(), repo_url.clone(), name, comment));
+                                catalog.push((
+                                    marketplace_name.clone(),
+                                    repo_url.clone(),
+                                    name,
+                                    comment,
+                                ));
                             }
                         }
                     }
@@ -143,12 +154,14 @@ fn parse_plugin_entry(entry: &serde_yaml_bw::Value) -> (String, Option<String>) 
     if let Some(obj) = entry.as_mapping() {
         // &str indexing is the anchor-safe path; see comment in
         // parse_plugins_yaml for why we don't build Value::String keys.
-        let name = obj.get("name")
+        let name = obj
+            .get("name")
             .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string();
 
-        let description = obj.get("description")
+        let description = obj
+            .get("description")
             .and_then(|v| v.as_str())
             .map(|s| s.to_string());
 
@@ -200,15 +213,33 @@ marketplaces:
         assert_eq!(catalog.len(), 3);
 
         // Find entries
-        let rust_entry = catalog.iter().find(|(_, _, name, _)| name == "rust-analyzer-lsp").unwrap();
+        let rust_entry = catalog
+            .iter()
+            .find(|(_, _, name, _)| name == "rust-analyzer-lsp")
+            .unwrap();
         assert_eq!(rust_entry.0, "claude-plugins-official");
-        assert_eq!(rust_entry.1, "https://github.com/anthropics/claude-plugins-official.git");
-        assert_eq!(rust_entry.3, Some("Rust 언어 서버 (코드 분석, 자동완성)".to_string()));
+        assert_eq!(
+            rust_entry.1,
+            "https://github.com/anthropics/claude-plugins-official.git"
+        );
+        assert_eq!(
+            rust_entry.3,
+            Some("Rust 언어 서버 (코드 분석, 자동완성)".to_string())
+        );
 
-        let ts_entry = catalog.iter().find(|(_, _, name, _)| name == "typescript-lsp").unwrap();
-        assert_eq!(ts_entry.3, Some("TypeScript/JavaScript 언어 서버".to_string()));
+        let ts_entry = catalog
+            .iter()
+            .find(|(_, _, name, _)| name == "typescript-lsp")
+            .unwrap();
+        assert_eq!(
+            ts_entry.3,
+            Some("TypeScript/JavaScript 언어 서버".to_string())
+        );
 
-        let doc_entry = catalog.iter().find(|(_, _, name, _)| name == "document-skills").unwrap();
+        let doc_entry = catalog
+            .iter()
+            .find(|(_, _, name, _)| name == "document-skills")
+            .unwrap();
         assert_eq!(doc_entry.0, "anthropic-agent-skills");
         assert_eq!(doc_entry.3, Some("문서 생성/편집".to_string()));
     }
@@ -224,7 +255,10 @@ https://github.com/anthropics/claude-plugins-official.git:
         let catalog = parse_plugins_yaml(yaml);
         assert_eq!(catalog.len(), 2);
 
-        let rust_entry = catalog.iter().find(|(_, _, name, _)| name == "rust-analyzer-lsp").unwrap();
+        let rust_entry = catalog
+            .iter()
+            .find(|(_, _, name, _)| name == "rust-analyzer-lsp")
+            .unwrap();
         assert_eq!(rust_entry.0, "claude-plugins-official"); // extracted from URL
         assert_eq!(rust_entry.3, None); // No description in old format
     }
@@ -245,10 +279,16 @@ marketplaces:
         let catalog = parse_plugins_yaml(yaml);
         assert_eq!(catalog.len(), 2);
 
-        let rust_entry = catalog.iter().find(|(_, _, name, _)| name == "rust-analyzer-lsp").unwrap();
+        let rust_entry = catalog
+            .iter()
+            .find(|(_, _, name, _)| name == "rust-analyzer-lsp")
+            .unwrap();
         assert_eq!(rust_entry.3, Some("Rust 언어 서버".to_string()));
 
-        let ts_entry = catalog.iter().find(|(_, _, name, _)| name == "typescript-lsp").unwrap();
+        let ts_entry = catalog
+            .iter()
+            .find(|(_, _, name, _)| name == "typescript-lsp")
+            .unwrap();
         assert_eq!(ts_entry.3, None); // No description for string format
     }
 

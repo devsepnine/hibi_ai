@@ -174,21 +174,18 @@ fn write_to(path: &Path, dest_dir: &Path, components: &[Component]) -> Result<()
     let parent = path
         .parent()
         .context("Manifest path has no parent directory")?;
-    fs::create_dir_all(parent)
-        .with_context(|| format!("Failed to create {}", parent.display()))?;
+    fs::create_dir_all(parent).with_context(|| format!("Failed to create {}", parent.display()))?;
 
     let json = serde_json::to_string_pretty(&manifest)?;
     // Per-process temp name: two hibi instances installing at once would
     // otherwise share one temp path, and the second rename would fail with
     // NotFound after the first moved the file out from under it.
     let tmp = path.with_extension(format!("json.{}.tmp", std::process::id()));
-    fs::write(&tmp, &json)
-        .with_context(|| format!("Failed to write {}", tmp.display()))?;
+    fs::write(&tmp, &json).with_context(|| format!("Failed to write {}", tmp.display()))?;
     if let Err(e) = fs::rename(&tmp, path) {
         // Leave no stray temp file behind on a failed publish.
         let _ = fs::remove_file(&tmp);
-        return Err(anyhow::Error::new(e)
-            .context(format!("Failed to replace {}", path.display())));
+        return Err(anyhow::Error::new(e).context(format!("Failed to replace {}", path.display())));
     }
 
     Ok(())
@@ -242,10 +239,22 @@ mod tests {
     #[test]
     fn installed_ids_skip_new_and_external() {
         let components = vec![
-            component("qa-handoff", ComponentType::Skills, InstallStatus::Unchanged),
+            component(
+                "qa-handoff",
+                ComponentType::Skills,
+                InstallStatus::Unchanged,
+            ),
             component("commit", ComponentType::Commands, InstallStatus::Modified),
-            component("statusline", ComponentType::Statusline, InstallStatus::Managed),
-            component("settings.json", ComponentType::ConfigFile, InstallStatus::Managed),
+            component(
+                "statusline",
+                ComponentType::Statusline,
+                InstallStatus::Managed,
+            ),
+            component(
+                "settings.json",
+                ComponentType::ConfigFile,
+                InstallStatus::Managed,
+            ),
             component("not-yet", ComponentType::Skills, InstallStatus::New),
             component("mine", ComponentType::Skills, InstallStatus::External),
         ];
@@ -356,13 +365,21 @@ mod tests {
         write_to(
             &path,
             &dest,
-            &[component("a", ComponentType::Skills, InstallStatus::Unchanged)],
+            &[component(
+                "a",
+                ComponentType::Skills,
+                InstallStatus::Unchanged,
+            )],
         )
         .unwrap();
         write_to(
             &path,
             &dest,
-            &[component("b", ComponentType::Skills, InstallStatus::Unchanged)],
+            &[component(
+                "b",
+                ComponentType::Skills,
+                InstallStatus::Unchanged,
+            )],
         )
         .unwrap();
 

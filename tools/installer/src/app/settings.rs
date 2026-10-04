@@ -2,8 +2,8 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use super::types::{Tab, View};
 use super::App;
+use super::types::{Tab, View};
 use crate::fs;
 
 pub(super) fn read_current_settings(dest_dir: &Path) -> (Option<String>, Option<String>) {
@@ -24,16 +24,16 @@ pub(super) fn read_current_settings(dest_dir: &Path) -> (Option<String>, Option<
         Err(_) => return (None, None),
     };
 
-    let output_style = settings.get("outputStyle")
+    let output_style = settings
+        .get("outputStyle")
         .and_then(|v| v.as_str())
         .map(|s| s.to_string());
 
-    let statusline = settings.get("statusLine")
+    let statusline = settings
+        .get("statusLine")
         .and_then(|v| v.get("command"))
         .and_then(|v| v.as_str())
-        .map(|s| {
-            s.rsplit(['/', '\\']).next().unwrap_or(s).to_string()
-        });
+        .map(|s| s.rsplit(['/', '\\']).next().unwrap_or(s).to_string());
 
     (output_style, statusline)
 }
@@ -49,7 +49,8 @@ impl App {
         if let Some(idx) = self.selected_component_index() {
             if let Some(component) = self.components.get(idx) {
                 // Get style name without extension
-                let style_name = component.name
+                let style_name = component
+                    .name
                     .strip_suffix(".md")
                     .unwrap_or(&component.name)
                     .to_string();

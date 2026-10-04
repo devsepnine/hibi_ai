@@ -1,13 +1,13 @@
-use std::sync::mpsc::Receiver;
 use anyhow::Result;
+use std::sync::mpsc::Receiver;
 
-use crate::app::TargetCli;
-use crate::mcp::{McpServer, McpScope};
 use super::process::{
-    spawn_cancelable_process, run_with_timeout, run_cleanup_command,
-    ProcessConfig, QUICK_COMMAND_TIMEOUT_SECS,
+    ProcessConfig, QUICK_COMMAND_TIMEOUT_SECS, run_cleanup_command, run_with_timeout,
+    spawn_cancelable_process,
 };
+use crate::app::TargetCli;
 use crate::fs::create_cli_command;
+use crate::mcp::{McpScope, McpServer};
 
 /// Split a command string into arguments.
 /// Uses shlex (POSIX rules) on Unix, Windows-aware splitting on Windows.
@@ -21,8 +21,12 @@ fn split_command(cmd: &str) -> Option<Vec<String>> {
         let mut quote_char: Option<char> = None;
         for ch in cmd.chars() {
             match ch {
-                '"' | '\'' if quote_char == Some(ch) => { quote_char = None; }
-                '"' | '\'' if quote_char.is_none() => { quote_char = Some(ch); }
+                '"' | '\'' if quote_char == Some(ch) => {
+                    quote_char = None;
+                }
+                '"' | '\'' if quote_char.is_none() => {
+                    quote_char = Some(ch);
+                }
                 ' ' | '\t' if quote_char.is_none() => {
                     if !current.is_empty() {
                         args.push(std::mem::take(&mut current));
@@ -34,7 +38,11 @@ fn split_command(cmd: &str) -> Option<Vec<String>> {
         if !current.is_empty() {
             args.push(current);
         }
-        if quote_char.is_some() { None } else { Some(args) }
+        if quote_char.is_some() {
+            None
+        } else {
+            Some(args)
+        }
     }
     #[cfg(not(windows))]
     {
@@ -60,10 +68,7 @@ pub struct McpInstallConfig<'a> {
     pub cancel_rx: &'a Receiver<()>,
 }
 
-pub fn install_mcp_server(
-    server: &McpServer,
-    config: McpInstallConfig,
-) -> Result<()> {
+pub fn install_mcp_server(server: &McpServer, config: McpInstallConfig) -> Result<()> {
     let mut command = create_cli_command(config.target_cli);
     command.arg("mcp").arg("add");
 
@@ -128,7 +133,9 @@ pub fn install_mcp_server(
             cancel_rx: config.cancel_rx,
             item_name: &server.def.name,
             action: "install MCP server",
-            cleanup: Some(Box::new(move || cleanup_mcp_installation(&server_clone, config.target_cli))),
+            cleanup: Some(Box::new(move || {
+                cleanup_mcp_installation(&server_clone, config.target_cli)
+            })),
         },
     )
 }
@@ -175,7 +182,7 @@ pub(super) fn ensure_marketplace_added(
                 return Ok(()); // Already added
             }
         }
-        Ok(_) => {} // Non-success status: fall through to add
+        Ok(_) => {}  // Non-success status: fall through to add
         Err(_) => {} // Timeout or spawn error: fall through to add
     }
 

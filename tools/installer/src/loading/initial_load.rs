@@ -11,10 +11,7 @@ use crate::fs;
 use super::scan::RefreshResult;
 
 /// Start a background thread to scan all sources for initial loading.
-pub(crate) fn start_loading_thread(
-    app: &App,
-    refresh_tx: &Sender<Result<RefreshResult>>,
-) {
+pub(crate) fn start_loading_thread(app: &App, refresh_tx: &Sender<Result<RefreshResult>>) {
     let tx_clone = refresh_tx.clone();
     let source_dir = app.source_dir.clone();
     let sources = app.sources.clone();
@@ -42,7 +39,10 @@ pub(crate) fn start_loading_thread(
 }
 
 /// Handle a single tick of the Loading view.
-pub(crate) fn handle_loading_view(app: &mut App, refresh_rx: &Receiver<Result<RefreshResult>>) -> Result<()> {
+pub(crate) fn handle_loading_view(
+    app: &mut App,
+    refresh_rx: &Receiver<Result<RefreshResult>>,
+) -> Result<()> {
     if poll(Duration::from_millis(100))? {
         if let Event::Key(key) = event::read()? {
             if key.kind != KeyEventKind::Release && key.code == KeyCode::Char('q') {
@@ -54,7 +54,12 @@ pub(crate) fn handle_loading_view(app: &mut App, refresh_rx: &Receiver<Result<Re
     app.tick();
 
     match refresh_rx.try_recv() {
-        Ok(Ok(RefreshResult::InitialLoad { components, mcp_servers, plugins, cleaned_hooks })) => {
+        Ok(Ok(RefreshResult::InitialLoad {
+            components,
+            mcp_servers,
+            plugins,
+            cleaned_hooks,
+        })) => {
             app.finish_loading(components, mcp_servers, plugins, cleaned_hooks);
         }
         // The refresh channel is shared with start_refresh_thread, but

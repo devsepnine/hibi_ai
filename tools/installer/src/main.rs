@@ -1,26 +1,29 @@
 mod app;
 mod cli;
 mod component;
+mod fs;
+mod loading;
 mod mcp;
 mod plugin;
-mod fs;
+mod process_exec;
 mod source;
+mod theme;
 mod tree;
 mod ui;
-mod theme;
-mod loading;
-mod process_exec;
 
+use anyhow::Result;
+use crossterm::{
+    cursor::MoveTo,
+    execute,
+    terminal::{
+        Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode,
+        enable_raw_mode,
+    },
+};
+use ratatui::{Terminal, backend::CrosstermBackend};
 use std::io;
 use std::thread;
-use anyhow::Result;
 use std::time::Duration;
-use crossterm::{
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen, Clear, ClearType},
-    cursor::MoveTo,
-};
-use ratatui::{backend::CrosstermBackend, Terminal};
 
 use app::App;
 use loading::ProcessingChannels;
@@ -44,7 +47,12 @@ fn main() -> Result<()> {
     // Setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, Clear(ClearType::All), MoveTo(0, 0))?;
+    execute!(
+        stdout,
+        EnterAlternateScreen,
+        Clear(ClearType::All),
+        MoveTo(0, 0)
+    )?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 

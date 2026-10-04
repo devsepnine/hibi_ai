@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
-    Frame,
 };
 
 use crate::app::App;
@@ -117,10 +117,7 @@ fn render_options(f: &mut Frame, app: &App, area: Rect) {
         };
 
         lines.push(Line::from(vec![
-            Span::styled(
-                marker,
-                Style::default().fg(app.theme.accent_primary()),
-            ),
+            Span::styled(marker, Style::default().fg(app.theme.accent_primary())),
             Span::styled(
                 opt.label,
                 Style::default().fg(label_color).add_modifier(label_mod),
@@ -133,15 +130,13 @@ fn render_options(f: &mut Frame, app: &App, area: Rect) {
         lines.push(Line::from(""));
     }
 
-    let paragraph = Paragraph::new(lines)
-        .alignment(Alignment::Left)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(app.theme.border()))
-                .title(" Select target ")
-                .title_style(Style::default().fg(app.theme.text_primary())),
-        );
+    let paragraph = Paragraph::new(lines).alignment(Alignment::Left).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(app.theme.border()))
+            .title(" Select target ")
+            .title_style(Style::default().fg(app.theme.text_primary())),
+    );
 
     f.render_widget(paragraph, area);
 }

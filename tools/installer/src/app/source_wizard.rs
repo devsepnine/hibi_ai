@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use anyhow::Result;
 
 use super::{App, View};
-use crate::source::{SourceEntry, SourceKind};
 use crate::source::config;
+use crate::source::{SourceEntry, SourceKind};
 
 impl App {
     pub(super) fn source_input_submit(&mut self) -> Result<()> {
@@ -26,10 +26,12 @@ impl App {
         self.source_input_error = None;
         self.source_pending_url = url;
 
-        self.source_input_buffer = self.editing_field(|e| match e {
-            SourceEntry::Git { branch, .. } => branch.clone(),
-            _ => None,
-        }).unwrap_or_default();
+        self.source_input_buffer = self
+            .editing_field(|e| match e {
+                SourceEntry::Git { branch, .. } => branch.clone(),
+                _ => None,
+            })
+            .unwrap_or_default();
         self.current_view = View::SourceAddBranch;
         Ok(())
     }
@@ -74,7 +76,11 @@ impl App {
             self.source_input_error = Some("Path traversal (..) not allowed in root".to_string());
             return Ok(());
         }
-        self.source_pending_root = if root_str.is_empty() { None } else { Some(root_str) };
+        self.source_pending_root = if root_str.is_empty() {
+            None
+        } else {
+            Some(root_str)
+        };
         self.source_input_buffer.clear();
         self.source_input_error = None;
         self.current_view = View::SourceAddMapTo;
@@ -128,9 +134,13 @@ impl App {
     }
 
     /// Advance to the Root input step, pre-filling from existing entry if editing.
-    fn advance_to_root_step(&mut self, extract_root: impl Fn(&SourceEntry) -> Option<String>) -> Result<()> {
+    fn advance_to_root_step(
+        &mut self,
+        extract_root: impl Fn(&SourceEntry) -> Option<String>,
+    ) -> Result<()> {
         self.source_input_error = None;
-        self.source_input_buffer = self.source_edit_index
+        self.source_input_buffer = self
+            .source_edit_index
             .and_then(|idx| self.source_entries.get(idx))
             .and_then(|e| extract_root(e))
             .unwrap_or_default();
