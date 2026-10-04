@@ -1,0 +1,26 @@
+[
+  {
+    "query": "이 README 너무 AI가 쓴 티가 나. 문체 좀 다듬어서 사람이 쓴 것처럼 고쳐줘.",
+    "should_trigger": true
+  },
+  {
+    "query": "Write a how-to guide in docs/ for rotating the API signing key. Keep it tight, no fluff.",
+    "should_trigger": true
+  },
+  {
+    "query": "새로 만든 skill 문서 리뷰해줘. 문장이 너무 길고 괄호랑 대시가 많아.",
+    "should_trigger": true
+  },
+  {
+    "query": "이 PR에 달린 리뷰 코멘트들 triage해서 반영할 것만 골라줘.",
+    "should_trigger": false
+  },
+  {
+    "query": "parseDate()에 왜 UTC로 강제 변환하는지 설명하는 주석 하나 달아줘.",
+    "should_trigger": false
+  },
+  {
+    "query": "빌드가 tsc 타입 에러로 깨졌어. 고쳐줘.",
+    "should_trigger": false
+  }
+]

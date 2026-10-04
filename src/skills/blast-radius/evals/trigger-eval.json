@@ -1,0 +1,34 @@
+[
+  {
+    "query": "이 PR에서 캐시 무효화 호출 하나 추가한 건데, 이거 머지해도 다른 데 뭐 깨지는 거 없을까? 블라스트 레디어스 좀 봐줘.",
+    "should_trigger": true
+  },
+  {
+    "query": "What could this break? I changed `serializeOrder()` to drop the legacy `discount_code` field — it's a three-line diff but I don't trust it.",
+    "should_trigger": true
+  },
+  {
+    "query": "useEffect cleanup 순서를 바꿨는데 언마운트 타이밍 때문에 사이드 이펙트가 생길지 검증해줘.",
+    "should_trigger": true
+  },
+  {
+    "query": "이 diff 머지 전에 영향 범위 좀 봐줘. 세션 토큰 TTL만 바꿨는데 다른 데서 깨질 데 있을까?",
+    "should_trigger": true
+  },
+  {
+    "query": "결제 모듈이랑 정산 모듈이 서로 import 하고 있어서 순환 참조가 났어. 어느 방향으로 끊어야 해?",
+    "should_trigger": false
+  },
+  {
+    "query": "이번 배포 영향 범위를 QA팀이 볼 수 있는 체크리스트 문서로 정리해줘.",
+    "should_trigger": false
+  },
+  {
+    "query": "Review this diff for naming, error handling, and security issues before I commit.",
+    "should_trigger": false
+  },
+  {
+    "query": "영향 범위를 작게 가져가려면 결제 모듈 경계를 어떻게 나눠야 해?",
+    "should_trigger": false
+  }
+]

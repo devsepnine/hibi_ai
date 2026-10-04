@@ -1,0 +1,26 @@
+{
+  "skill_name": "technical-writing",
+  "evals": [
+    {
+      "id": 1,
+      "name": "unslop-a-readme-section",
+      "prompt": "이 README 섹션 AI가 쓴 티가 너무 나. 다듬어줘: \"Our tool serves as a robust, seamless solution — it leverages a powerful engine (built on Rust) to deliver blazing-fast performance, ensuring a delightful developer experience.\"",
+      "expected_output": "The rewrite removes the AI vocabulary (serves as, robust, seamless, leverages, delightful), the em dash, and the parenthesis, and replaces the feeling words with a mechanism or a number, or asks for the missing fact instead of inventing one (no made-up benchmark). The result is plain sentences with no dash or parenthesis, and the assistant runs or recommends `python tools/lint-prose.py` on the changed file.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "one-diataxis-mode",
+      "prompt": "Write docs/how-to/rotate-signing-key.md: how to rotate our API signing key. Background on why we sign requests is in docs/explanation/request-signing.md.",
+      "expected_output": "The document is a how-to only: a task-named title, numbered imperative steps with the condition before each instruction, forks written as 'If you want x, do y', and no background or theory beyond one sentence linking to the explanation doc. Prose contains no em dash, en dash, hyphen-as-dash, or parentheses; code and commands sit in code fences or inline code.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "korean-prose-no-gloss-dash",
+      "prompt": "아래 문단을 규칙에 맞게 고쳐줘: \"결합도(coupling)는 변경이 퍼지는 범위 — 즉 blast radius — 를 결정하는 것이 중요하다.\"",
+      "expected_output": "The Korean rewrite drops the dashes and the parenthetical gloss, keeps one term per concept (결합도 or coupling, not both), removes the translationese '~하는 것이 중요하다', and states the fact directly, e.g. '결합도는 변경이 얼마나 멀리 퍼지는지를 정한다.'",
+      "files": []
+    }
+  ]
+}

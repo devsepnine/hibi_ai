@@ -1,0 +1,30 @@
+[
+  {
+    "query": "결제 모듈에서 재시도 횟수가 왜 3으로 박혀 있는지 히스토리 좀 추적해줘.",
+    "should_trigger": true
+  },
+  {
+    "query": "Why does sessionStore write to both Redis and Postgres? I want to drop the Postgres write but need to know what it was for.",
+    "should_trigger": true
+  },
+  {
+    "query": "이 null 체크 왜 들어갔는지 설계 의도 찾아줘. 지워도 되는지 판단하고 싶어.",
+    "should_trigger": true
+  },
+  {
+    "query": "이 함수가 런타임에 어떤 순서로 호출되는지 흐름만 설명해줘.",
+    "should_trigger": false
+  },
+  {
+    "query": "TTL을 30분에서 5분으로 바꾸면 다른 데 깨질 데 있는지 봐줘.",
+    "should_trigger": false
+  },
+  {
+    "query": "왜 테스트가 실패하는지 고쳐줘. CI에서 auth.test.ts가 빨간불이야.",
+    "should_trigger": false
+  },
+  {
+    "query": "사이드바 토글 버튼 코드가 어느 파일에 있는지 찾아줘.",
+    "should_trigger": false
+  }
+]

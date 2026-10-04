@@ -1,0 +1,26 @@
+{
+  "skill_name": "why",
+  "evals": [
+    {
+      "id": 1,
+      "name": "anchor-then-fan-out",
+      "prompt": "결제 모듈에서 재시도 횟수가 왜 3으로 박혀 있는지 히스토리 좀 추적해줘.",
+      "expected_output": "The assistant first builds the code anchor with git blame on the constant's lines, git log --follow and git log -S for the value, and gh pr view for any PR numbers found. It then fans out one Agent per available evidence source in a single message, at least source control, and for Jira or Sentry either an investigator or a stated skip reason. The answer uses the output sections, keeps Direct, Supported, Inferred, Speculative, and Unknown claims apart with sources cited, and says exactly what was searched when nothing was found. It does not present 'the team convention is 3 retries' as fact unless a source states it.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "precursor-to-change",
+      "prompt": "Why does sessionStore write to both Redis and Postgres? I want to drop the Postgres write but need to know what it was for.",
+      "expected_output": "Because the question leads to a change, the answer ends with a Preserve / Change / Avoid / Risk constraint set derived from the findings, for example preserving durability across Redis eviction if a commit or incident says so. Claims about the original reason carry their confidence tier, and the assistant traces past the most recent commit rather than treating it as the explanation.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "honest-unknown",
+      "prompt": "이 null 체크 왜 들어갔는지 설계 의도 찾아줘. 지워도 되는지 판단하고 싶어.",
+      "expected_output": "When git, PRs, and any connected trackers give no reason, the answer says so under What we don't know, listing the commits read and the search terms used, and offers competing readings as Speculative rather than inventing a rationale. It checks error tracking when available because the target is a defensive guard, and it does not recommend deleting the check without the Risk line spelling out what breaks if the forgotten reason still holds.",
+      "files": []
+    }
+  ]
+}

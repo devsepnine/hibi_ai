@@ -1,0 +1,26 @@
+{
+  "skill_name": "blast-radius",
+  "evals": [
+    {
+      "id": 1,
+      "name": "prove-the-safety-fact",
+      "prompt": "serializeOrder()에서 legacy discount_code 필드를 뺐어. 3줄짜리 diff인데 이거 머지해도 안전한지 블라스트 레디어스 봐줘.",
+      "expected_output": "The assistant reads the diff and git history for the file, then looks beyond callers: who consumes the serialized JSON (API responses, persisted rows, queue messages, another service or language reading the same bytes, feature flags). It names the single fact the change is safe because of (e.g. no reader of discount_code remains), takes it to ladder step 4 by writing and running a script or test against the real serializer and pasting the output, or marks it UNPROVEN. The reply uses the What it does / Safe because / Risks / Cleared / Before you merge format, cites real file:line for every risk and clearance, invents no callers, and does not commit the proof script.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "timing-and-library-source",
+      "prompt": "What could this break? I moved the unsubscribe call from the component's cleanup into an onBeforeUnmount hook from our UI library.",
+      "expected_output": "The assistant checks the library's own source at the version pinned in the lockfile (and any local patch) to establish when onBeforeUnmount runs relative to cleanup, microtasks, and teardown, rather than asserting it. It identifies the safety fact (e.g. the hook always fires before the subscription can emit again) and proves it by running real code, or reports UNPROVEN with the cheapest repro to settle it. Risks and cleared items are listed separately with file:line, and a Before you merge test is proposed.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "wide-change-fanout",
+      "prompt": "이번에 주문 상태 enum에 'partially_refunded'를 추가했어. DB, API, 대시보드, 정산 배치까지 다 걸려 있는데 뭐가 깨질지 봐줘.",
+      "expected_output": "Because the change is wide, the assistant fans out one Agent per surface (persistence/DB column and migrations, wire/API consumers, concurrency or batch timing, UI) in a single message, each applying the evidence ladder, then merges: risks found by two lenses are kept, single-lens findings are re-verified before reporting. Exhaustive switches, DB enum/check constraints, serialized consumers, and analytics queries are checked beyond grep. The order-state change is treated as tier B (persistent state), so the safety fact must reach ladder step 4 or the verdict is UNPROVEN.",
+      "files": []
+    }
+  ]
+}
