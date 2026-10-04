@@ -82,6 +82,23 @@ For work driven by `/loop` or left running overnight:
 - A plateau is not a stop: change approach and keep going. Stop on the predicate, on a real dead end with its reason written down, or on a step that is irreversible or a product decision. Never relax the predicate to declare victory.
 - Commits still need an explicit request, as in `CLAUDE.md`. Unattended does not change that.
 
+## Decision log
+
+Long runs, `/perf`, and any loop that tries and keeps or reverts changes share one log, so a
+resumed session reads every trail the same way.
+
+- **Where**: `.claude/resume/<name>-decisions.tsv`, beside the resume note and outside the
+  commit; suggest adding `.claude/resume/` to `.gitignore` when the project does not ignore it.
+- **Columns**, tab-separated, one row per attempt, header first:
+
+  ```
+  id	time	change	evidence	verdict	note
+  ```
+
+  `evidence` holds what was measured, such as `p50 412ms -> 371ms` or `tests 151/151`. `verdict`
+  is `kept`, `reverted`, or `stopped`.
+- Append a row for every attempt, kept or not; a log with only the wins cannot explain the result.
+
 ## Workflow
 
 Typical checkpoint flow:

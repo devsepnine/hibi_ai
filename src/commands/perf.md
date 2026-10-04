@@ -26,7 +26,7 @@ Tie every change to a measurement. Do not read source instead of measuring, and 
 5. **Loop, one hypothesis per attempt.** If it crosses a function boundary, run `architect` first.
    - Measure before and after with the frozen harness, and run the regression tests.
    - Keep the change only when the metric moves past the noise and the tests stay green. Otherwise revert it in full.
-   - Log every attempt, kept or reverted, in `${TMPDIR:-/tmp}/perf-<slug>/decisions.tsv`, outside the tree: id, hypothesis, change, before, after, delta, verdict.
+   - Log every attempt, kept or reverted, in the decision log that `/checkpoint` defines, `.claude/resume/perf-<slug>-decisions.tsv`, with the hypothesis in `change` and the before and after numbers in `evidence`.
    - Never stack untested changes. Independent hypotheses can run in parallel subagents, each with `isolation: "worktree"`.
 6. **Push past the first plateau.** After several rejects in a row, change strategy family, combine near-misses, or re-read the profile. Correctness and simplicity outrank the number: revert a win that breaks behavior, and keep a simplification that holds the number. Never relax the stop condition to meet it.
 7. **Explain the number before reporting it.**
