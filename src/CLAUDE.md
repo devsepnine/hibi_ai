@@ -176,6 +176,7 @@ Each policy has ONE source of truth, following DRY. Detailed policies are **Skil
 | Security rules / OWASP | `security-review` skill | `/security-review` or trigger on auth/input/secrets |
 | Testing & TDD | `tdd-workflow` skill | `/tdd` or trigger on new feature/bugfix |
 | Coding style / clean code | `coding-standards` skill | trigger on code review/writing |
+| Project architecture rules: layers, import direction, placement | `architecture-rules` skill | `/architecture-rules` or trigger on documenting a codebase's rules; whether a coupling is healthy stays in `dependency-design` |
 | Pre-merge blast radius of a diff | `blast-radius` skill | `/blast-radius` or trigger on what a change could break; design-time coupling stays in `dependency-design` |
 | Prose style: docs, no dashes or parentheses | `technical-writing` skill | trigger on writing or reviewing docs; `python tools/lint-prose.py` enforces the punctuation |
 | Dependency / coupling design | `dependency-design` skill | `/deps` or trigger on module/coupling/dependency/monorepo design |

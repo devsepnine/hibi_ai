@@ -1,0 +1,26 @@
+{
+  "skill_name": "architecture-rules",
+  "evals": [
+    {
+      "id": 1,
+      "name": "mine-then-ask-gray-areas",
+      "prompt": "이미 2년 된 프로젝트인데 아키텍처 규칙이 문서로 없어. 코드 보고 레이어 규칙이랑 의존 방향 정리해서 문서로 만들어줘.",
+      "expected_output": "The assistant identifies units from manifests and the import graph, measures each candidate rule with a rerunnable command and records counts such as 'N of M files' with counter-example paths. It drafts proven rules without asking, and asks only about gray areas in batches of up to four AskUserQuestion questions, each carrying the count, the counter-example paths, and a recommended answer first. docs/ARCHITECTURE.md follows the template: Units table, rules with arch- IDs, MUST or SHOULD, Rule, Why from the answer or evidence, Evidence with command, Exceptions, Enforced by; Known violations and dated Decisions. It does not invent a rationale.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "lint-draft-not-applied",
+      "prompt": "Write down the architecture rules for this repo: which packages may import which, where new files go. Ask me about anything the code can't settle.",
+      "expected_output": "For each mechanically checkable MUST rule the reply shows a draft config in the tool the project already uses, or the stack's usual one such as dependency-cruiser, import-linter, or go-arch-lint, and marks the rule 'Enforced by: draft: <tool>'. It does not install packages, add config files, or change the build without agreement. If the tool is installed it runs the draft in check mode and the flagged files equal the Known violations list. It proposes, but does not silently add, a one-line pointer in CLAUDE.md or AGENTS.md.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "update-from-sha",
+      "prompt": "docs/ARCHITECTURE.md 작성한 지 좀 됐는데 그 사이 모듈이 늘었어. 규칙 최신화해줘.",
+      "expected_output": "The assistant reads the recorded SHA, diffs from it, and reruns each rule's evidence command. Rules whose counts did not move are left unchanged. Each new counter-example becomes a question about fixing it, allowing an exception, or relaxing the rule, never a silent edit. New units go through the mining and Q&A steps for their rules only. The report lists rules added, changed, and removed, and the header SHA moves to HEAD. If the SHA is unreachable it says so and remeasures every rule.",
+      "files": []
+    }
+  ]
+}

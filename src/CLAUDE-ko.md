@@ -176,6 +176,7 @@ Next:
 | 보안 규칙 / OWASP | `security-review` skill | `/security-review` 또는 인증·입력·시크릿 시 트리거 |
 | 테스트 & TDD | `tdd-workflow` skill | `/tdd` 또는 신규 기능·버그 수정 시 트리거 |
 | 코딩 스타일 / 클린 코드 | `coding-standards` skill | 코드 리뷰·작성 시 트리거 |
+| 프로젝트 아키텍처 규칙: 레이어, import 방향, 배치 | `architecture-rules` skill | `/architecture-rules` 또는 코드베이스 규칙을 문서화할 때 트리거. 결합이 건강한지는 `dependency-design` |
 | 머지 전 diff의 blast radius | `blast-radius` skill | `/blast-radius` 또는 변경이 무엇을 깨뜨릴지 물을 때 트리거. 설계 시점의 결합도는 `dependency-design` |
 | 문체: 문서, dash·괄호 금지 | `technical-writing` skill | 문서 작성·리뷰 시 트리거. 문장부호는 `python tools/lint-prose.py`가 강제 |
 | 의존성 / 결합 설계 | `dependency-design` skill | `/deps` 또는 모듈·결합도·의존성·모노레포 설계 시 트리거 |
