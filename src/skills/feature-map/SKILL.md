@@ -198,8 +198,10 @@ grep -hE '^- \*\*(Pitfalls|함정)\*\*:' $MAP | grep -vE ': none$|: [^→]+ → 
 Then make sure an AI finds the map when a report comes in. Add a one-line
 pointer to the project's root `CLAUDE.md`, under whichever section covers
 debugging, and create the file with that line when it does not exist. When
-`AGENTS.md` exists, add the same line there. On update, keep the line and fix it
-only if the map moved. Report the change in the reply:
+`AGENTS.md` exists, add the same line there. Insert only that line and leave the
+rest of each file as it was; this write is part of the skill's output. When the
+line is already there, change it only if the map moved. Report the change in the
+reply:
 
 ```markdown
 - Vague bug report, such as "X on the sidebar doesn't work"? Look it up in `docs/FEATURES.md` before searching the code.

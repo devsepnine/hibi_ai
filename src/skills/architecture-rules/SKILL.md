@@ -90,7 +90,7 @@ For every `MUST` that a tool can check, such as import direction, a forbidden im
 
 Show the draft in the reply. Do not install a package, add a config file, or change the build without the user's agreement. If the tool is already installed, run the draft once in check mode and report what it flags; the known violations from step 6 should be exactly that list.
 
-Then make sure an agent reads the rules before it writes code. Add a one-line pointer to the project's root `CLAUDE.md`, creating the file with that line when it does not exist, and add the same line to `AGENTS.md` when it exists. On update, keep the line and fix it only if the document moved. Report the change in the reply:
+Then make sure an agent reads the rules before it writes code. Add a one-line pointer to the project's root `CLAUDE.md`, creating the file with that line when it does not exist, and add the same line to `AGENTS.md` when it exists. Insert only that line and leave the rest of each file as it was; this write is part of the skill's output. When the line is already there, change it only if the document moved. Report the change in the reply:
 
 ```markdown
 - Before adding a module, a file in a new place, or an import across units, check `docs/ARCHITECTURE.md`.
