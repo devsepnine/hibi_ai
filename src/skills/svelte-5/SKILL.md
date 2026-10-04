@@ -1,39 +1,39 @@
 ---
 name: svelte-5
-description: Svelte 5 + SvelteKit 2 — runes ($state/$derived/$effect), snippets over slots, callback events, load functions, form actions. Use when writing Svelte components. 스벨트 5, SvelteKit 라우팅, 컴포넌트, runes 마이그레이션.
+description: Svelte 5 + SvelteKit 2 with runes `$state`/`$derived`/`$effect`, snippets over slots, callback events, load functions, form actions. Use when writing Svelte components. 스벨트 5, SvelteKit 라우팅, 컴포넌트, runes 마이그레이션.
 ---
 
 # Svelte 5
 
 Produce idiomatic Svelte 5 components and SvelteKit 2 routes. Defaults
-to **runes mode** (the current Svelte 5 default), the `{@render
-children()}` / snippet pattern, and callback-prop events. Never
+to **runes mode**, the current Svelte 5 default, the
+`{@render children()}` / snippet pattern, and callback-prop events. Never
 revert to legacy `export let` / `on:event` / `createEventDispatcher`
 unless the user is explicitly maintaining a pre-5 codebase.
 
 Read the matching reference file when working:
 
-- [references/runes.md](references/runes.md) — `$state`, `$derived`,
+- [references/runes.md](references/runes.md): `$state`, `$derived`,
   `$effect`, `$props`, `$bindable`, `$inspect` with worked examples
   and when each one is the wrong tool
-- [references/sveltekit.md](references/sveltekit.md) — routing, `load`
-  functions (universal vs server), form actions + `use:enhance`,
+- [references/sveltekit.md](references/sveltekit.md): routing, `load`
+  functions split into universal and server, form actions + `use:enhance`,
   hooks, `$env`, `$app/state`
-- [references/migrating-from-svelte-4.md](references/migrating-from-svelte-4.md)
-  — mechanical translation of `export let`, `$:`, slots,
+- [references/migrating-from-svelte-4.md](references/migrating-from-svelte-4.md):
+  mechanical translation of `export let`, `$:`, slots,
   `createEventDispatcher`, `on:event`, `<svelte:component>` into v5
 
 ## Defaults
 
 Assume the user is on:
 
-- **Svelte 5** (runes mode, released 2024) — the default since
+- **Svelte 5** in runes mode, released 2024. It is the default since
   `svelte@5`.
-- **SvelteKit 2** — `+page.svelte`, `+layout.ts`, `+page.server.ts`
-  file-system routing; form actions; `$app/state` (not `$app/stores`).
+- **SvelteKit 2**: `+page.svelte`, `+layout.ts`, `+page.server.ts`
+  file-system routing; form actions; `$app/state`, not `$app/stores`.
 - **TypeScript** unless the user's file explicitly uses plain JS.
 
-When in doubt, pick the modern path — runes over stores, snippets
+When in doubt, pick the modern path: runes over stores, snippets
 over slots, callback props over dispatchers.
 
 ## Runes at a glance
@@ -41,10 +41,10 @@ over slots, callback props over dispatchers.
 | Rune | Role | When to use |
 |------|------|-------------|
 | `$state(x)` | Reactive value with deep proxying | Any value that drives UI and changes over time |
-| `$state.raw(x)` | Shallow — proxy not applied | Large immutable structures where deep proxying is wasteful |
+| `$state.raw(x)` | Shallow, proxy not applied | Large immutable structures where deep proxying is wasteful |
 | `$derived(expr)` | Pure computed value, re-runs on dep change | Expressions from other reactive state |
 | `$derived.by(() => ...)` | `$derived` that takes a function | Derived values needing a multi-statement body |
-| `$effect(() => ...)` | Side effect that re-runs on dep change | DOM, subscriptions, analytics, canvas — **not** state updates |
+| `$effect(() => ...)` | Side effect that re-runs on dep change | DOM, subscriptions, analytics, canvas, but **not** state updates |
 | `$effect.pre(() => ...)` | Effect before DOM commit | Measurements, layout reads before paint |
 | `$props()` | Component props | Every component that receives inputs |
 | `$bindable(default?)` | Opt-in two-way binding slot | Form wrappers where parent wants `bind:value` |
@@ -100,22 +100,22 @@ A Svelte 5 component is a `.svelte` file with three ordered slots:
 Key choices baked in:
 
 - **Props are `$props()`**, not `export let`. Destructured, typed.
-- **Children are `Snippet`**, rendered with `{@render children?.()}` —
+- **Children are `Snippet`**, rendered with `{@render children?.()}`,
   not `<slot>`.
-- **Events are attributes** (`onclick`, `oninput`) — not
+- **Events are attributes** such as `onclick` and `oninput`, not
   `on:click`. No `createEventDispatcher`; emit via callback props
-  (`onclose`, `onsubmit`, etc.).
-- **Transitions unchanged** — `svelte/transition` and `svelte/motion`
+  such as `onclose` and `onsubmit`.
+- **Transitions unchanged**: `svelte/transition` and `svelte/motion`
   still the right imports.
 
 Full copy-ready template: [assets/component.svelte](assets/component.svelte).
 
-## Sharing reactive state (`.svelte.ts`)
+## Sharing reactive state in `.svelte.ts`
 
 Runes work inside `.svelte`, `.svelte.js`, and `.svelte.ts` files.
 Use a `.svelte.ts` module when multiple components need the same
 reactive source. **Don't use legacy `writable`/`readable` stores for
-new code** — they still work for backwards compatibility only.
+new code**. They still work for backwards compatibility only.
 
 ```ts
 // cart.svelte.ts
@@ -137,23 +137,23 @@ Then in any component: `import { cart } from './cart.svelte.ts'`.
 `cart.items` and `cart.total` stay reactive across component
 boundaries. Full pattern: [assets/store.svelte.ts](assets/store.svelte.ts).
 
-## SvelteKit 2 — file roles
+## SvelteKit 2: file roles
 
 | File | Runs on | Purpose |
 |------|---------|---------|
-| `+page.svelte` | Client (hydrated from SSR) | The page UI |
-| `+page.ts` | Universal (server + client) | `load`; safe to use in either env |
+| `+page.svelte` | Client, hydrated from SSR | The page UI |
+| `+page.ts` | Universal, server and client | `load`; safe to use in either env |
 | `+page.server.ts` | **Server only** | `load`, `actions`, access to secrets / DB |
-| `+layout.svelte` | Client | Shared wrapping UI (nav, sidebar) |
+| `+layout.svelte` | Client | Shared wrapping UI such as nav and sidebar |
 | `+layout.ts` / `+layout.server.ts` | ibid | Shared data for child routes |
 | `+error.svelte` | Client | Fallback UI when `load` throws |
-| `+server.ts` | Server | REST-style API endpoint (`GET`, `POST`, ...) |
+| `+server.ts` | Server | REST-style API endpoint for `GET`, `POST`, ... |
 | `hooks.server.ts` | Server | `handle`, `handleFetch`, `handleError` |
 | `hooks.client.ts` | Client | `handleError` client-side |
 
 Full routing + load + actions flow: [sveltekit.md](references/sveltekit.md).
 
-## Load functions — universal vs server
+## Load functions: universal vs server
 
 ```ts
 // +page.ts  (universal — runs on server first, then client on nav)
@@ -179,12 +179,12 @@ Guidelines:
 
 - Use `+page.ts` if the endpoint is public and you want client-side
   nav to skip a server round-trip.
-- Use `+page.server.ts` when the data source is server-only (DB,
-  secrets, filesystem).
+- Use `+page.server.ts` when the data source is server-only, such as a DB,
+  secrets, or the filesystem.
 - Never import `$env/static/private` or `$env/dynamic/private` from a
-  universal file — the compiler blocks it, for good reason.
+  universal file. The compiler blocks it, for good reason.
 
-## Form actions — the first tool for mutations
+## Form actions: the first tool for mutations
 
 ```ts
 // +page.server.ts
@@ -217,12 +217,12 @@ export const actions: Actions = {
 </form>
 ```
 
-`use:enhance` gives progressive enhancement (the form works with JS
-disabled) plus fine-grained control over the response. Prefer form
+`use:enhance` gives progressive enhancement, meaning the form works with JS
+disabled, plus fine-grained control over the response. Prefer form
 actions over `fetch('/api/...', { method: 'POST' })` for mutations
 that belong to a page.
 
-## Events — callback props, not dispatchers
+## Events: callback props, not dispatchers
 
 ```svelte
 <!-- Modal.svelte -->
@@ -238,9 +238,9 @@ that belong to a page.
 
 No `createEventDispatcher`. The parent passes a function; the child
 calls it. This is cheaper at runtime, fully typed, and works with any
-callback shape (single arg, multi arg, returning promises).
+callback shape: single arg, multi arg, or returning promises.
 
-## Snippets — the slot replacement
+## Snippets: the slot replacement
 
 ```svelte
 <!-- List.svelte -->
@@ -267,7 +267,7 @@ callback shape (single arg, multi arg, returning promises).
 </List>
 ```
 
-Snippets accept positional arguments (unlike slots), are typed via
+Unlike slots, snippets accept positional arguments, are typed via
 `Snippet<[Args]>`, and can be passed as props anywhere. Use them for
 anything that used to be a slot with props.
 
@@ -284,35 +284,35 @@ If the user has v4 code, mechanical translations:
 | `<slot />` | `{@render children?.()}` + `children?: Snippet` in props |
 | `<slot name="foo" />` | named-prop snippet: `foo?: Snippet` + `{@render foo?.()}` |
 | `createEventDispatcher()` + `dispatch('save')` | `onsave` callback prop |
-| `<svelte:component this={Comp} />` | `<Comp />` (components are values in v5) |
+| `<svelte:component this={Comp} />` | `<Comp />`, since components are values in v5 |
 | `writable(x)` in `.ts` | `let v = $state(x)` in `.svelte.ts` |
 
-Detailed transition pitfalls (reactive loops, effect timing, legacy
-mode): [migrating-from-svelte-4.md](references/migrating-from-svelte-4.md).
+Detailed transition pitfalls, covering reactive loops, effect timing, and legacy
+mode: [migrating-from-svelte-4.md](references/migrating-from-svelte-4.md).
 
 ## Anti-patterns
 
-- **Don't write to reactive state inside `$effect`** — causes
+- **Don't write to reactive state inside `$effect`**. It causes
   re-run loops. Put the update in the event handler that triggered it.
-  If genuine cascading is needed, use `$derived` (which is pure).
-- **Don't reach for `svelte/store` in new code** — `.svelte.ts` +
+  If genuine cascading is needed, use `$derived`, which is pure.
+- **Don't reach for `svelte/store` in new code**. `.svelte.ts` +
   `$state` covers cross-component sharing without the
   subscribe/unsubscribe dance.
-- **Don't use `$app/stores`** in SvelteKit 2 code — it's deprecated in
+- **Don't use `$app/stores`** in SvelteKit 2 code. It's deprecated in
   favor of `$app/state`. `page.url`, `page.params`, `page.status` are
   now plain reactive properties, no `$page` prefix.
-- **Don't mix `export let` with `$props()`** — the compiler will
+- **Don't mix `export let` with `$props()`**. The compiler will
   warn, and the component is locked out of runes features for that
   variable.
 - **Don't set DOM properties imperatively when a reactive attribute
-  would do** — `$effect` that calls `element.classList.add(...)` is
+  would do**. A `$effect` that calls `element.classList.add(...)` is
   usually a `class={{ ... }}` shorthand waiting to happen.
 
 ## Integration notes
 
-- Tests — use `vitest` with `@testing-library/svelte` v5+ (snippets
-  support). For SvelteKit, `playwright` covers e2e.
-- Styling — scoped `<style>` by default; `:global(...)` for escape.
+- Tests: use `vitest` with `@testing-library/svelte` v5+, which has snippets
+  support. For SvelteKit, `playwright` covers e2e.
+- Styling: scoped `<style>` by default; `:global(...)` for escape.
   Tailwind / UnoCSS integrate via `sv add tailwindcss`.
-- Type generation — SvelteKit auto-generates `./$types` per route
-  (`PageLoad`, `PageServerLoad`, `Actions`, `PageData`).
+- Type generation: SvelteKit auto-generates `./$types` per route, such as
+  `PageLoad`, `PageServerLoad`, `Actions`, and `PageData`.

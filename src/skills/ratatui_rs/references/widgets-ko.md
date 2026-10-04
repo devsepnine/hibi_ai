@@ -1,4 +1,4 @@
-# Ratatui Widgets (0.30 API)
+# Ratatui Widgets, 0.30 API
 
 빌트인 위젯과 그 관용적 0.30 사용법. 모든 예제는 `Block::bordered()`, `Layout::*::areas()` 디스트럭처링, `f.area()`를 사용한다.
 
@@ -14,9 +14,9 @@ let p = Paragraph::new("Hello, world!")
 f.render_widget(p, area);
 ```
 
-리치 텍스트 (span당 mixed 스타일)의 경우, `Text::from(vec![Line::from(vec![Span::raw, Span::styled])])`를 사용한다.
+span당 스타일이 섞인 리치 텍스트의 경우, `Text::from(vec![Line::from(vec![Span::raw, Span::styled])])`를 사용한다.
 
-## List (Stateful — supports selection)
+## List, Stateful: supports selection
 
 ```rust
 use ratatui::widgets::{Block, List, ListItem, ListState};
@@ -70,7 +70,7 @@ let table = Table::new(rows, [
 f.render_widget(table, area);
 ```
 
-선택 가능한 Table의 경우, `TableState`와 `render_stateful_widget`을 사용한다 (`List`와 평행).
+선택 가능한 Table의 경우, `TableState`와 `render_stateful_widget`을 사용한다, `List`와 평행.
 
 ## Gauge
 
@@ -108,7 +108,7 @@ let tabs = Tabs::new(vec!["Logs", "Config", "Help"])
 f.render_widget(tabs, area);
 ```
 
-## Block (containers, titles, borders)
+## Block, containers, titles, borders
 
 ```rust
 use ratatui::widgets::{Block, Borders, BorderType, Padding};
@@ -175,7 +175,7 @@ let chart = BarChart::default()
 f.render_widget(chart, area);
 ```
 
-## Chart (line / scatter)
+## Chart, line / scatter
 
 ```rust
 use ratatui::widgets::{Axis, Block, Chart, Dataset, GraphType};
@@ -197,7 +197,7 @@ let chart = Chart::new(vec![dataset])
 f.render_widget(chart, area);
 ```
 
-## Custom Widget (impl Widget)
+## Custom Widget, impl Widget
 
 빌트인이 맞지 않을 때, struct에 `Widget`을 구현한다. render fn은 buffer에 직접 쓴다:
 
@@ -227,8 +227,8 @@ draw 간에 변경 가능한 state가 필요한 위젯의 경우, 대신 `Statef
 |---|---|
 | 정적 텍스트 / 다중 라인 | Paragraph |
 | 선택 가능한 리스트 | List + ListState |
-| 표 형태 데이터 | Table (+선택 가능하면 TableState) |
-| 진행 0–100% | Gauge |
+| 표 형태 데이터 | Table, +선택 가능하면 TableState |
+| 진행, 0에서 100% | Gauge |
 | 최상위 모드 탭 | Tabs |
 | 제목 + 테두리가 있는 컨테이너 | Block |
 | 긴 콘텐츠의 위치 표시 | Scrollbar |

@@ -11,7 +11,7 @@ JS로 만든 커스텀 menu 대신 native 플랫폼 menu를 사용한다. native
 접근성을 기본 제공하고, 플랫폼 일관 UX와 더 좋은 성능을 보장한다.
 cross-platform native menu에는 [zeego](https://zeego.dev)를 사용한다.
 
-**Incorrect (custom JS menu):**
+**Incorrect, custom JS menu:**
 
 ```tsx
 import { useState } from 'react'
@@ -40,7 +40,7 @@ function MyMenu() {
 }
 ```
 
-**Correct (native menu with zeego):**
+**Correct, native menu with zeego:**
 
 ```tsx
 import * as DropdownMenu from 'zeego/dropdown-menu'
@@ -72,7 +72,7 @@ function MyMenu() {
 }
 ```
 
-**Context menu (long-press):**
+**Context menu, long-press:**
 
 ```tsx
 import * as ContextMenu from 'zeego/context-menu'

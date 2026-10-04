@@ -7,11 +7,11 @@ tags: javascript, arrays, flatMap, filter, performance
 
 ## Use flatMap to Map and Filter in One Pass
 
-**Impact: LOW-MEDIUM (eliminates intermediate array)**
+**Impact: LOW-MEDIUM, eliminates intermediate array**
 
 `.map().filter(Boolean)` 체인은 중간 배열을 만들고 두 번 순회한다. `.flatMap()`을 사용해 한 번의 순회로 변환과 필터링을 동시에 한다.
 
-**Incorrect (2 iterations, intermediate array):**
+**Incorrect, 2 iterations, intermediate array:**
 
 ```typescript
 const userNames = users
@@ -19,7 +19,7 @@ const userNames = users
   .filter(Boolean)
 ```
 
-**Correct (1 iteration, no intermediate array):**
+**Correct, 1 iteration, no intermediate array:**
 
 ```typescript
 const userNames = users.flatMap(user =>

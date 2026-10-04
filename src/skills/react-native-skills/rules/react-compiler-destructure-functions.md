@@ -13,7 +13,7 @@ Destructure functions from hooks at the top of render scope. Never dot into
 objects to call functions. Destructured functions are stable references; dotting
 creates new references and breaks memoization.
 
-**Incorrect (dotting into object):**
+**Incorrect, dotting into object:**
 
 ```tsx
 import { useRouter } from 'expo-router'
@@ -31,7 +31,7 @@ function SaveButton(props) {
 }
 ```
 
-**Correct (destructure early):**
+**Correct, destructure early:**
 
 ```tsx
 import { useRouter } from 'expo-router'

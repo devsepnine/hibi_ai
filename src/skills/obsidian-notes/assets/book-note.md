@@ -14,7 +14,7 @@ related: []
 aliases: ["<Short title>"]
 ---
 
-# <Title> — <Author>
+# <Title>: <Author>
 
 > [!info] Why I'm reading it
 > The hook: what question you hoped this book would answer. Keeps
@@ -35,13 +35,13 @@ contents. If you can't compress it, you haven't finished thinking.
 Atomic takeaways. Each one is a candidate to graduate into its own
 evergreen note later.
 
-1. **<Idea>** — one-sentence explanation.
-2. **<Idea>** — …
-3. **<Idea>** — …
+1. **<Idea>**: one-sentence explanation.
+2. **<Idea>**: …
+3. **<Idea>**: …
 
 Promotions:
 
-- [[<Evergreen note>]] — extracted from idea #1 above
+- [[<Evergreen note>]]: extracted from idea #1 above
 
 ## Highlights
 
@@ -49,17 +49,17 @@ Direct quotes or closely-paraphrased passages, with block references
 so other notes can cite them.
 
 > <quote 1>   ^q1
-> — <Chapter / page>
+> Source: <Chapter / page>
 
 > <quote 2>   ^q2
-> — <Chapter / page>
+> Source: <Chapter / page>
 
 Other notes can then cite `[[<This Note>#^q1]]`.
 
 ## My commentary
 
 Where you push back, extend, or connect to other works. Keep distinct
-from the book's argument — this is how future-you will separate
+from the book's argument, this is how future-you will separate
 "what the book said" from "what I think about it".
 
 ## Connections
@@ -77,9 +77,9 @@ Things the book opened more than it closed. These often become
 ## Revisit log
 
 Add entries when you re-read or apply the book later. Don't overwrite
-previous thoughts — add new ones below.
+previous thoughts, add new ones below.
 
-### YYYY-MM-DD — Revisit
+### YYYY-MM-DD: Revisit
 
 - What held up
 - What I now disagree with

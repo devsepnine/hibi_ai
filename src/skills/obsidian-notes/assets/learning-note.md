@@ -11,7 +11,7 @@ related: []
 aliases: []
 ---
 
-# <Library> — <Specific topic or feature>
+# <Library>: <Specific topic or feature>
 
 > [!info] Why this note exists
 > One sentence on the problem that sent you to the docs. Future-you will
@@ -21,9 +21,9 @@ aliases: []
 
 Three-bullet distillation for the 30-second skim:
 
-- **What it is** — one sentence defining the concept.
-- **When to use it** — concrete triggers / problem shapes.
-- **When not to** — common misuses or adjacent tools that fit better.
+- **What it is**: one sentence defining the concept.
+- **When to use it**: concrete triggers / problem shapes.
+- **When not to**: common misuses or adjacent tools that fit better.
 
 ## Core API / pattern
 
@@ -36,11 +36,11 @@ Minimal, runnable example. No placeholders unless you explain them.
 
 ## Gotchas
 
-Numbered list. Each gotcha is a paragraph with (a) the trap, (b) how it
-bit you, (c) how to avoid it.
+Numbered list. Each gotcha is a paragraph with the trap, how it
+bit you, and how to avoid it.
 
-1. **<Trap name>** — <paragraph>.
-2. **<Another>** — <paragraph>.
+1. **<Trap name>**: <paragraph>.
+2. **<Another>**: <paragraph>.
 
 ## Comparison with alternatives
 
@@ -53,9 +53,9 @@ have otherwise reached for. Skip if there's no meaningful alternative.
 | Performance | ... | ... |
 | Ecosystem | ... | ... |
 
-## Visualization (optional)
+## Visualization, optional
 
-Add a diagram when it clarifies more than prose — a state machine,
+Add a diagram when it clarifies more than prose, a state machine,
 dataflow, or timeline. Skip for pure-text concepts.
 
 ```mermaid
@@ -65,8 +65,8 @@ flowchart LR
   Eq -- false --> Render[re-render] --> Call
 ```
 
-Diagram-type selector (sequence / state / ER / gantt / timeline /
-mindmap / quadrant / MathJax / Excalidraw / JSON Canvas):
+Pick a diagram type from sequence, state, ER, gantt, timeline,
+mindmap, quadrant, MathJax, Excalidraw, or JSON Canvas:
 [../references/diagrams.md](../references/diagrams.md).
 
 ## How it connects to this project

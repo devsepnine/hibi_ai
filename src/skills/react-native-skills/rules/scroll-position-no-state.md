@@ -7,11 +7,11 @@ tags: scroll, performance, reanimated, useRef
 
 ## Never Track Scroll Position in useState
 
-Never store scroll position in `useState`. Scroll events fire rapidly—state
+Never store scroll position in `useState`. Scroll events fire rapidly, and state
 updates cause render thrashing and dropped frames. Use a Reanimated shared value
 for animations or a ref for non-reactive tracking.
 
-**Incorrect (useState causes jank):**
+**Incorrect, useState causes jank:**
 
 ```tsx
 import { useState } from 'react'
@@ -32,7 +32,7 @@ function Feed() {
 }
 ```
 
-**Correct (Reanimated for animations):**
+**Correct, Reanimated for animations:**
 
 ```tsx
 import Animated, {
@@ -60,7 +60,7 @@ function Feed() {
 }
 ```
 
-**Correct (ref for non-reactive tracking):**
+**Correct, ref for non-reactive tracking:**
 
 ```tsx
 import { useRef } from 'react'

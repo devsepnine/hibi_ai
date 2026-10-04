@@ -14,7 +14,7 @@ tags: lists, performance, flatlist, virtualization
 
 필요하다면 리스트 아이템 안에서 context selector를 사용한다.
 
-**Incorrect (creates new object references on every keystroke):**
+**Incorrect, creates new object references on every keystroke:**
 
 ```tsx
 function DomainSearch() {
@@ -40,7 +40,7 @@ function DomainSearch() {
 }
 ```
 
-**Correct (stable references, transform inside items):**
+**Correct, stable references, transform inside items:**
 
 ```tsx
 const renderItem = ({ item }) => <DomainItem tld={item} />
@@ -80,7 +80,7 @@ return <LegendList data={sortedTlds} renderItem={renderItem} />
 
 새 array 인스턴스 `sortedTlds`가 만들어져도 내부 객체 참조는 안정적이다.
 
-**With zustand for dynamic data (avoids parent re-renders):**
+**With zustand for dynamic data, which avoids parent re-renders:**
 
 ```tsx
 const useSearchStore = create<{ keyword: string }>(() => ({ keyword: '' }))
@@ -109,10 +109,10 @@ function DomainItem({ tld }: { tld: Tld }) {
 ```
 
 이제 가상화는 입력 시 바뀌지 않은 아이템을 건너뛸 수 있다. 키 입력마다 부모가
-아니라 visible 아이템(~20개)만 다시 렌더된다.
+아니라 visible 아이템 약 20개만 다시 렌더된다.
 
-**Deriving state within list items based on parent data (avoids parent
-re-renders):**
+**Deriving state within list items based on parent data, which avoids parent
+re-renders:**
 
 데이터가 부모 state에 따라 조건적으로 결정되는 컴포넌트라면 이 패턴이 더
 중요해진다. 예를 들어 어떤 아이템이 즐겨찾기 되어 있는지 확인할 때, 아이템

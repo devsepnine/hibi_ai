@@ -1,6 +1,6 @@
-# iced Tasks — Async the Right Way
+# iced Tasks: Async the Right Way
 
-`Task<Message>`는 iced의 Elm 스타일 "command"이다: 런타임이 수행하고 그 결과가 다른 `Message`로 반환되는 것. 규칙: **`update` 내부에서 절대 block하거나 `tokio::spawn`하지 마라**. 대신 Task를 발행하라 — iced는 런타임을 통해 메시지를 clone하고 순서를 sane하게 유지한다.
+`Task<Message>`는 iced의 Elm 스타일 "command"이다: 런타임이 수행하고 그 결과가 다른 `Message`로 반환되는 것. 규칙: **`update` 내부에서 절대 block하거나 `tokio::spawn`하지 마라**. 대신 Task를 발행하라. iced는 런타임을 통해 메시지를 clone하고 순서를 sane하게 유지한다.
 
 ## Basic `Task::perform`
 
@@ -29,9 +29,9 @@ fn update(app: &mut App, msg: Message) -> Task<Message> {
 async fn fetch_data() -> Result<Data, String> { /* ... */ }
 ```
 
-작업을 발행하지 않는 분기에서 **`Task::none()`을 반환**한다 — iced는 모든 arm이 `Task`를 반환하도록 요구한다, 비어있더라도.
+작업을 발행하지 않는 분기에서 **`Task::none()`을 반환**한다. iced는 모든 arm이 `Task`를 반환하도록 요구한다, 비어있더라도.
 
-## Parallel Tasks — `Task::batch`
+## Parallel Tasks: `Task::batch`
 
 여러 독립적인 task를 한 번에 발사한다. 그들의 완료는 future가 끝나는 순서대로 별도 메시지로 도착한다:
 
@@ -43,9 +43,9 @@ Message::Initialize => Task::batch([
 ])
 ```
 
-`tokio::join!`을 직접 만들지 마라 — `Task::batch`는 런타임에 그들을 멀티플렉싱하는 데 필요한 것을 제공한다.
+`tokio::join!`을 직접 만들지 마라. `Task::batch`는 런타임에 그들을 멀티플렉싱하는 데 필요한 것을 제공한다.
 
-## Sequencing — `.then(...)`
+## Sequencing: `.then(...)`
 
 step B가 step A의 결과에 의존할 때, chain한다:
 
@@ -56,11 +56,11 @@ Message::SaveAndExit => {
 }
 ```
 
-`.then`은 future의 출력을 받고 새 `Task`를 반환한다. 이를 신중히 사용하라 — 결과가 state에 닿아야 한다면 Message round-trip을 선호한다.
+`.then`은 future의 출력을 받고 새 `Task`를 반환한다. 이를 신중히 사용하라. 결과가 state에 닿아야 한다면 Message round-trip을 선호한다.
 
-## Stream Progress — `Task::sip`
+## Stream Progress: `Task::sip`
 
-장시간 실행 task가 실행 중에 진행을 보고해야 할 때 (다운로드, 인덱싱), `Task::sip`을 사용한다. stream을 생성하는 future, 진행 매퍼, 완료 매퍼를 받는다:
+장시간 실행 task가 실행 중에 진행을 보고해야 할 때, 예를 들어 다운로드나 인덱싱일 때 `Task::sip`을 사용한다. stream을 생성하는 future, 진행 매퍼, 완료 매퍼를 받는다:
 
 ```rust
 use iced::{Task, task};
@@ -100,9 +100,9 @@ fn update(app: &mut App, msg: Message) -> Task<Message> {
 }
 ```
 
-**`abort_on_drop`인 이유**: state가 `Downloading`에서 전환될 때 (예: 사용자 취소), `Handle`이 drop되고 in-flight task가 abort된다. 수동 cancel 플래그가 필요 없다.
+**`abort_on_drop`인 이유**: state가 `Downloading`에서 전환될 때, 예를 들어 사용자 취소 시 `Handle`이 drop되고 in-flight task가 abort된다. 수동 cancel 플래그가 필요 없다.
 
-## Cancellation — `abortable`
+## Cancellation: `abortable`
 
 어떤 task든 abortable로 만들 수 있다:
 
@@ -123,9 +123,9 @@ Message::Cancel => {
 }
 ```
 
-`abort()` 없이 handle을 drop하는 것은 **취소가 아니다** — task는 백그라운드에서 끝나고 그 완료 Message는 여전히 전달된다. drop = cancel을 원한다면 handle에서 `.abort_on_drop()`을 호출한다.
+`abort()` 없이 handle을 drop하는 것은 **취소가 아니다**. task는 백그라운드에서 끝나고 그 완료 Message는 여전히 전달된다. drop = cancel을 원한다면 handle에서 `.abort_on_drop()`을 호출한다.
 
-## Sending Side Effects — `iced::exit`, `window::close`
+## Sending Side Effects: `iced::exit`, `window::close`
 
 ```rust
 // Close the whole app
@@ -212,4 +212,4 @@ enum Message {
 }
 ```
 
-에러에 `String`을 사용하면 `Clone`이 사소해진다 (`Message: Clone`이므로 필수). 더 풍부한 에러는 자체 `Clone + Debug` 에러 타입을 정의하거나 `Arc<anyhow::Error>`로 wrap한다.
+에러에 `String`을 사용하면 `Clone`이 사소해진다. `Message: Clone`이므로 필수이다. 더 풍부한 에러는 자체 `Clone + Debug` 에러 타입을 정의하거나 `Arc<anyhow::Error>`로 wrap한다.

@@ -7,15 +7,15 @@ tags: react19, actions, forms, useActionState, useFormStatus, composition
 
 ## Compose Forms Around Actions, Not Local Loading State
 
-React 19 promotes **Actions** — async functions passed to `<form action={fn}>`
-or `<button formAction={fn}>` — as the primary composition boundary for
+React 19 promotes **Actions**, meaning async functions passed to `<form action={fn}>`
+or `<button formAction={fn}>`, as the primary composition boundary for
 mutations. Combined with `useActionState`, `useFormStatus`, and
 `useOptimistic`, they replace hand-rolled `isLoading` / `error` /
 `startTransition` plumbing that used to be threaded through every descendant.
 
-Use Actions when the mutation is **form-shaped** (user submits, server
-updates, UI reflects). Stick with classic `onClick` handlers only for
-side-effects that aren't really mutations (opening a modal, logging).
+Use Actions when the mutation is **form-shaped**: the user submits, the server
+updates, and the UI reflects. Stick with classic `onClick` handlers only for
+side-effects that aren't really mutations, such as opening a modal or logging.
 
 ### Benefits over manual state
 
@@ -25,7 +25,7 @@ side-effects that aren't really mutations (opening a modal, logging).
 - **Composable**: children read pending/error via `useFormStatus` or
   `useActionState` without prop drilling.
 
-### Incorrect — manual pending + error state across props
+### Incorrect, manual pending + error state across props
 
 ```tsx
 function EditNameForm({ user }: { user: User }) {
@@ -57,7 +57,7 @@ function SubmitButton({ isSaving }: { isSaving: boolean }) {
 }
 ```
 
-### Correct — Action + useActionState + useFormStatus
+### Correct, Action + useActionState + useFormStatus
 
 ```tsx
 function EditNameForm({ user }: { user: User }) {
@@ -104,7 +104,7 @@ async function action(formData: FormData) {
 }
 ```
 
-Keep optimistic updates **pure and reversible** — if the action rejects,
+Keep optimistic updates **pure and reversible**. If the action rejects,
 React discards the optimistic value automatically.
 
 ### Composition rules of thumb
@@ -116,6 +116,6 @@ React discards the optimistic value automatically.
   on `<button>` to route to different Actions from the same form.
 
 Reference:
-- [React 19 — Actions & useActionState](https://react.dev/blog/2024/12/05/react-19)
+- [React 19: Actions & useActionState](https://react.dev/blog/2024/12/05/react-19)
 - [`useFormStatus`](https://react.dev/reference/react-dom/hooks/useFormStatus)
 - [`useOptimistic`](https://react.dev/reference/react/useOptimistic)

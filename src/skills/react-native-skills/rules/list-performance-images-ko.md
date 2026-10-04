@@ -11,7 +11,7 @@ tags: lists, images, performance, optimization
 이미지는 메모리를 과도하게 잡아먹고 스크롤 jank를 일으킨다. 서버에서 thumbnail을
 요청하거나 resize 파라미터를 지원하는 이미지 CDN을 쓴다.
 
-**Incorrect (full-resolution images):**
+**Incorrect, full-resolution images:**
 
 ```tsx
 function ProductItem({ product }: { product: Product }) {
@@ -28,7 +28,7 @@ function ProductItem({ product }: { product: Product }) {
 }
 ```
 
-**Correct (request appropriately-sized image):**
+**Correct, request appropriately-sized image:**
 
 ```tsx
 function ProductItem({ product }: { product: Product }) {

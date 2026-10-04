@@ -14,7 +14,7 @@ description: ClickHouse query optimization, analytics schema, and data-engineeri
 | Engine | Use Case | Key Trait |
 |---|---|---|
 | `MergeTree` | 기본 분석 테이블 | Partition + ORDER BY 인덱스 |
-| `ReplacingMergeTree` | 키별 중복 제거 (다중 소스 인입) | version/insert order 기준 최신 유지 |
+| `ReplacingMergeTree` | 키별 중복 제거, 다중 소스 인입에 사용 | version/insert order 기준 최신 유지 |
 | `AggregatingMergeTree` | 사전 집계 메트릭 | `*State` 집계 함수 저장 |
 | `SummingMergeTree` | 키별 숫자 합계 | merge 시 자동 합산 |
 
@@ -29,13 +29,13 @@ ORDER BY (date, key)
 SETTINGS index_granularity = 8192;
 ```
 
-`AggregatingMergeTree` 읽기는 finalize를 위해 `*Merge`를 사용한다: `sumMerge(volume)`, `uniqMerge(users)`, `countMerge(trades)`. 쓰기 (보통 materialized view를 통해) 는 `*State`를 발행한다: `sumState(amount)`, `uniqState(user_id)`.
+`AggregatingMergeTree` 읽기는 finalize를 위해 `*Merge`를 사용한다: `sumMerge(volume)`, `uniqMerge(users)`, `countMerge(trades)`. 쓰기는 보통 materialized view를 통해 `*State`를 발행한다: `sumState(amount)`, `uniqState(user_id)`.
 
 문서: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family
 
 ## 쿼리 최적화
 
-**필터 순서가 중요하다.** 인덱스된 컬럼 (PARTITION BY + ORDER BY 접두사) 을 먼저 두고, 비인덱스 컬럼에 선행 `LIKE '%...%'`는 피한다.
+**필터 순서가 중요하다.** 인덱스된 컬럼, 즉 PARTITION BY와 ORDER BY 접두사를 먼저 두고, 비인덱스 컬럼에 선행 `LIKE '%...%'`는 피한다.
 
 ```sql
 -- Good: hits partition + sort key
@@ -48,16 +48,16 @@ ORDER BY date DESC LIMIT 100;
 
 | Goal | Function |
 |---|---|
-| Distinct count | `uniq(col)` (HLL 근사) / `uniqExact` |
+| Distinct count | `uniq(col)` HLL 근사 / `uniqExact` |
 | Percentile | `quantile(0.95)(col)` |
 | Conditional count | `countIf(cond)` / `sumIf(col, cond)` |
 | Time bucket | `toStartOfHour/Day/Month(ts)` |
 
-**윈도우 함수**는 표준 SQL 문법과 동작한다 (`OVER (PARTITION BY ... ORDER BY ...)`).
+**윈도우 함수**는 표준 SQL 문법과 동작한다. 예: `OVER (PARTITION BY ... ORDER BY ...)`.
 
 문서: https://clickhouse.com/docs/en/sql-reference/aggregate-functions
 
-## Materialized Views (실시간 집계)
+## Materialized Views: 실시간 집계
 
 ```sql
 CREATE MATERIALIZED VIEW stats_hourly_mv TO stats_hourly AS
@@ -67,7 +67,7 @@ SELECT toStartOfHour(timestamp) AS hour, market_id,
 FROM trades GROUP BY hour, market_id;
 ```
 
-타깃 테이블에 대해 `*Merge`로 읽는다. MV는 소스로의 INSERT에서 트리거된다 — 소스 스키마는 쓰기 처리량 위주, MV 타깃은 읽기 패턴 위주로 설계한다.
+타깃 테이블에 대해 `*Merge`로 읽는다. MV는 소스로의 INSERT에서 트리거되므로 소스 스키마는 쓰기 처리량 위주, MV 타깃은 읽기 패턴 위주로 설계한다.
 
 문서: https://clickhouse.com/docs/en/sql-reference/statements/create/view#materialized-view
 
@@ -87,7 +87,7 @@ await clickhouse.insert({
 // or the async_insert engine setting for high-frequency producers.
 ```
 
-문자열 보간 인젝션 방지를 위해 매개변수화된 쿼리 (`{var:Type}`) 를 사용한다. 매우 고빈도 쓰기에는 클라이언트 배칭 대신 서버 측에서 `async_insert=1`을 활성화한다.
+문자열 보간 인젝션 방지를 위해 매개변수화된 쿼리인 `{var:Type}` 를 사용한다. 매우 고빈도 쓰기에는 클라이언트 배칭 대신 서버 측에서 `async_insert=1`을 활성화한다.
 
 문서: https://clickhouse.com/docs/en/optimize/asynchronous-inserts
 
@@ -130,9 +130,9 @@ FROM user_activity GROUP BY cohort, months ORDER BY cohort, months;
 
 ## 파이프라인 패턴
 
-- **ETL**: 스케줄에 맞춰 OLTP (Postgres/MySQL) 에서 추출, 분석 스키마로 변환, 일괄 INSERT.
+- **ETL**: 스케줄에 맞춰 Postgres/MySQL 같은 OLTP에서 추출, 분석 스키마로 변환, 일괄 INSERT.
 - **CDC**: Postgres `LISTEN/NOTIFY` 또는 Debezium 스타일 스트림 → ClickHouse의 append-only 이벤트 테이블; 현재 상태 뷰가 필요하면 `ReplacingMergeTree` 사용.
-- 분석에는 비정규화된 테이블을 선호한다; 대용량 테이블 간의 무거운 JOIN은 피한다. 저카디널리티 룩업에는 dictionary (`dictGet`) 를 사용한다.
+- 분석에는 비정규화된 테이블을 선호한다; 대용량 테이블 간의 무거운 JOIN은 피한다. 저카디널리티 룩업에는 dictionary인 `dictGet`을 사용한다.
 
 문서: https://clickhouse.com/docs/en/sql-reference/dictionaries
 
@@ -142,7 +142,7 @@ FROM user_activity GROUP BY cohort, months ORDER BY cohort, months;
 |---|---|---|
 | Partition | 월별/일별, 적은 개수 | 시간별 또는 사용자별 파티션 |
 | ORDER BY | 자주 필터링되는 컬럼 우선, 카디널리티 고려 | 임의의 컬럼 순서 |
-| Types | 가장 작은 타입 (`UInt32`), `LowCardinality(String)`, `Enum` | 무조건 `String`, 회피 가능한 `Nullable` |
+| Types | `UInt32` 같은 가장 작은 타입, `LowCardinality(String)`, `Enum` | 무조건 `String`, 회피 가능한 `Nullable` |
 | Reads | 컬럼 명시 | `SELECT *`, `FINAL`, 다수의 JOIN |
 | Writes | 일괄 / async_insert | 행 단위 INSERT 루프 |
 | Ops | 느린 쿼리, 머지, 디스크 사용량 추적 | `system.query_log` 무시 |

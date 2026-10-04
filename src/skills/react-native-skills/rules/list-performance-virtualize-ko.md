@@ -12,7 +12,7 @@ FlashList 같은 list virtualizer를 사용한다. virtualizer는 visible 아이
 렌더하므로 메모리 사용량과 mount 시간이 줄어든다. ScrollView는 모든 children을
 한 번에 마운트하기 때문에 금방 비싸진다.
 
-**Incorrect (ScrollView renders all items at once):**
+**Incorrect, ScrollView renders all items at once:**
 
 ```tsx
 function Feed({ items }: { items: Item[] }) {
@@ -27,7 +27,7 @@ function Feed({ items }: { items: Item[] }) {
 // 50 items = 50 components mounted, even if only 10 visible
 ```
 
-**Correct (virtualizer renders only visible items):**
+**Correct, virtualizer renders only visible items:**
 
 ```tsx
 import { LegendList } from '@legendapp/list'
@@ -46,7 +46,7 @@ function Feed({ items }: { items: Item[] }) {
 // Only ~10-15 visible items mounted at a time
 ```
 
-**Alternative (FlashList):**
+**Alternative, FlashList:**
 
 ```tsx
 import { FlashList } from '@shopify/flash-list'
@@ -63,5 +63,5 @@ function Feed({ items }: { items: Item[] }) {
 }
 ```
 
-이 이점은 스크롤 가능한 콘텐츠가 있는 모든 화면(profile, settings, feed, 검색
-결과)에 적용된다. virtualization을 기본값으로 삼는다.
+이 이점은 스크롤 가능한 콘텐츠가 있는 모든 화면에 적용된다. 예를 들어 profile, settings, feed, 검색
+결과가 있다. virtualization을 기본값으로 삼는다.

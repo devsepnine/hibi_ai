@@ -12,7 +12,7 @@ native `<Modal>`이나 React Navigation v7의 native form sheet를 사용한다.
 native modal은 제스처와 접근성, 더 나은 성능을 기본 제공한다. 저수준
 프리미티브에는 native UI에 의존한다.
 
-**Incorrect (JS-based bottom sheet):**
+**Incorrect, JS-based bottom sheet:**
 
 ```tsx
 import BottomSheet from 'custom-js-bottom-sheet'
@@ -33,7 +33,7 @@ function MyScreen() {
 }
 ```
 
-**Correct (native Modal with formSheet):**
+**Correct, native Modal with formSheet:**
 
 ```tsx
 import { Modal, View, Text, Button } from 'react-native'
@@ -59,7 +59,7 @@ function MyScreen() {
 }
 ```
 
-**Correct (React Navigation v7 native form sheet):**
+**Correct, React Navigation v7 native form sheet:**
 
 ```tsx
 // In your navigator

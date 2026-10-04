@@ -13,7 +13,7 @@ memoized 컴포넌트가 배열, 함수, 객체 같은 non-primitive 옵셔널 �
 
 이 문제를 해결하려면 기본값을 상수로 추출한다.
 
-**잘못된 예 (`onClick`이 매 재렌더마다 다른 값을 가짐):**
+**잘못된 예, `onClick`이 매 재렌더마다 다른 값을 가짐:**
 
 ```tsx
 const UserAvatar = memo(function UserAvatar({ onClick = () => {} }: { onClick?: () => void }) {
@@ -24,7 +24,7 @@ const UserAvatar = memo(function UserAvatar({ onClick = () => {} }: { onClick?: 
 <UserAvatar />
 ```
 
-**올바른 예 (안정적인 기본값):**
+**올바른 예, 안정적인 기본값:**
 
 ```tsx
 const NOOP = () => {};

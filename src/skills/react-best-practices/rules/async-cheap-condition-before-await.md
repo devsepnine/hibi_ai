@@ -7,7 +7,7 @@ tags: async, await, feature-flags, short-circuit, conditional
 
 ## Check Cheap Conditions Before Async Flags
 
-When a branch uses `await` for a flag or remote value and also requires a **cheap synchronous** condition (local props, request metadata, already-loaded state), evaluate the cheap condition **first**. Otherwise you pay for the async call even when the compound condition can never be true.
+When a branch uses `await` for a flag or remote value and also requires a **cheap synchronous** condition such as local props, request metadata, or already-loaded state, evaluate the cheap condition **first**. Otherwise you pay for the async call even when the compound condition can never be true.
 
 This is a specialization of [Defer Await Until Needed](./async-defer-await.md) for `flag && cheapCondition` style checks.
 

@@ -7,12 +7,12 @@ tags: animation, gestures, press, reanimated
 
 ## Use GestureDetector for Animated Press States
 
-press 상태 애니메이션(누르면 scale, opacity 변화)에는 Pressable의
+press 상태 애니메이션, 즉 누르면 scale과 opacity가 변하는 경우에는 Pressable의
 `onPressIn`/`onPressOut` 대신 `GestureDetector`와 `Gesture.Tap()`, shared
 value를 함께 사용한다. gesture 콜백은 UI thread에서 worklet으로 실행되므로
 press 애니메이션에 JS thread 왕복이 필요 없다.
 
-**Incorrect (Pressable with JS thread callbacks):**
+**Incorrect, Pressable with JS thread callbacks:**
 
 ```tsx
 import { Pressable } from 'react-native'
@@ -43,7 +43,7 @@ function AnimatedButton({ onPress }: { onPress: () => void }) {
 }
 ```
 
-**Correct (GestureDetector with UI thread worklets):**
+**Correct, GestureDetector with UI thread worklets:**
 
 ```tsx
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
@@ -87,7 +87,7 @@ function AnimatedButton({ onPress }: { onPress: () => void }) {
 }
 ```
 
-press **상태**(0 또는 1)를 저장한 뒤 `interpolate`로 scale을 derive한다.
+press **상태**인 0 또는 1을 저장한 뒤 `interpolate`로 scale을 derive한다.
 이렇게 하면 shared value를 ground truth로 유지할 수 있다. worklet에서 JS
 함수를 호출할 때는 `runOnJS`를 사용한다. React Compiler 호환성을 위해
 `.set()`과 `.get()`을 쓴다.

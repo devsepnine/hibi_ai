@@ -120,7 +120,7 @@ pub mod prelude {
 }
 ```
 
-### File-Based Modules (Rust 2018+)
+### File-Based Modules, Rust 2018+
 
 ```
 src/
@@ -145,7 +145,7 @@ pub use routes::Router;
 pub use handlers::{handle_get, handle_post};
 ```
 
-### Alternative: Directory Name as Module (Rust 2018+)
+### Alternative: Directory Name as Module, Rust 2018+
 
 ```
 src/

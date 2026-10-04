@@ -28,7 +28,7 @@
     "should_trigger": true
   },
   {
-    "query": "이번 세션에서 배운 규칙을 배포 설정에 반영해줘",
+    "query": "이번 세션에서 배운 규칙, 배포 설정 저장소에 올릴 PR 본문이랑 근거 정리해줘",
     "should_trigger": true
   },
   {

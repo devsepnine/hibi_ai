@@ -9,9 +9,9 @@ tags: react19, refs, context, hooks
 
 > **⚠️ React 19+ only.** React 18 이하라면 이 절은 건너뛴다.
 
-React 19에서는 `ref`가 일반 prop이 되었으며 (`forwardRef` 래퍼 불필요), `use()`가 `useContext()`를 대체한다.
+React 19에서는 `ref`가 일반 prop이 되었으므로 `forwardRef` 래퍼가 필요 없으며, `use()`가 `useContext()`를 대체한다.
 
-**Incorrect (forwardRef in React 19):**
+**Incorrect, forwardRef in React 19:**
 
 ```tsx
 const ComposerInput = forwardRef<TextInput, Props>((props, ref) => {
@@ -19,7 +19,7 @@ const ComposerInput = forwardRef<TextInput, Props>((props, ref) => {
 })
 ```
 
-**Correct (ref as a regular prop):**
+**Correct, ref as a regular prop:**
 
 ```tsx
 function ComposerInput({ ref, ...props }: Props & { ref?: React.Ref<TextInput> }) {
@@ -27,13 +27,13 @@ function ComposerInput({ ref, ...props }: Props & { ref?: React.Ref<TextInput> }
 }
 ```
 
-**Incorrect (useContext in React 19):**
+**Incorrect, useContext in React 19:**
 
 ```tsx
 const value = useContext(MyContext)
 ```
 
-**Correct (use instead of useContext):**
+**Correct, use instead of useContext:**
 
 ```tsx
 const value = use(MyContext)

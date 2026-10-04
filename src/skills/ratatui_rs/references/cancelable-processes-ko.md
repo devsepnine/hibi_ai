@@ -1,8 +1,8 @@
 # Cancelable Background Processes in TUI
 
-TUI에서 자식 프로세스를 spawn하면서 UI를 응답성 있게 유지하고 동시에 사용자가 (앱을 종료하지 않고 Esc / Ctrl+C로) 취소할 수 있게 하는 프로덕션 패턴이다.
+TUI에서 자식 프로세스를 spawn하면서 UI를 응답성 있게 유지하고 동시에 사용자가, 앱을 종료하지 않고 Esc / Ctrl+C로, 취소할 수 있게 하는 프로덕션 패턴이다.
 
-이는 프로덕션 TUI에서 가장 중요한 자명하지 않은 단일 패턴이다. 순진한 `Command::output()`은 이벤트 루프를 block한다 — 사용자가 'q'조차 누를 수 없다.
+이는 프로덕션 TUI에서 가장 중요한 자명하지 않은 단일 패턴이다. 순진한 `Command::output()`은 이벤트 루프를 block한다, 사용자가 'q'조차 누를 수 없다.
 
 ## The Race Condition That Bites Everyone
 
@@ -129,7 +129,7 @@ match key.code {
 
 ## Cooperative Cancellation in Pure-Rust Tasks
 
-모든 긴 task가 자식 프로세스인 것은 아니다. in-process task (예: 재귀 스캔)의 경우, 작업 단위 사이에 cancel receiver를 확인한다:
+모든 긴 task가 자식 프로세스인 것은 아니다. in-process task, 예를 들어 재귀 스캔의 경우, 작업 단위 사이에 cancel receiver를 확인한다:
 
 ```rust
 fn scan_dir(root: &Path, cancel_rx: &Receiver<()>) -> anyhow::Result<Vec<PathBuf>> {
@@ -151,8 +151,8 @@ fn scan_dir(root: &Path, cancel_rx: &Receiver<()>) -> anyhow::Result<Vec<PathBuf
 
 많은 튜토리얼이 async + `tokio::select!`에 손을 댄다. 작동하지만, 모든 TUI가 tokio에 의존하고 모든 sync 코드를 다시 쓰도록 강제한다. 위의 mpsc-channel 패턴은:
 
-- std blocking `Command` API와 함께 작동 (async wrapper 불필요),
+- std blocking `Command` API와 함께 작동, async wrapper 불필요,
 - TUI 루프의 `event::poll(timeout)`과 조합,
 - 단위 테스트의 일반 `mpsc::channel`로 테스트 가능.
 
-프로젝트가 이미 async-first라면 `tokio::process::Command` + `tokio::select!`가 괜찮다 — 원칙 (completion 먼저 확인)은 여전히 적용된다.
+프로젝트가 이미 async-first라면 `tokio::process::Command` + `tokio::select!`가 괜찮다. completion을 먼저 확인한다는 원칙은 여전히 적용된다.

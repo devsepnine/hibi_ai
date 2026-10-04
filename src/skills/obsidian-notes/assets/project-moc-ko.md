@@ -10,17 +10,17 @@ project: <slug>
 related: []
 ---
 
-# <Project name> — Project Map
+# <Project name>: Project Map
 
 > [!info] What this project is
-> 두 문장. 첫째: 어떤 문제를 푸는가. 둘째: 현재 상태 — 활발한지,
+> 두 문장. 첫째: 어떤 문제를 푸는가. 둘째: 현재 상태, 활발한지,
 > 일시 정지인지, 정리 중인지.
 
 ## Quick links
 
 - **Repository**: [<org/repo>](https://github.com/org/repo)
 - **Release notes**: [[Release Notes]] 폴더, 최신 [[v<latest>]]
-- **Active sprint**: [[YYYY-Wnn Retrospective]] (또는 [[YYYY-Wnn Review]])
+- **Active sprint**: [[YYYY-Wnn Retrospective]] 또는 [[YYYY-Wnn Review]]
 - **Onboarding**: 존재한다면 [[<Project> — Onboarding]]
 
 ## Current focus
@@ -28,7 +28,7 @@ related: []
 - 최우선: [[note or task]]
 - 보조: …
 
-여기에 2~3개 항목만 둔다. 포커스가 바뀌면 이 섹션을 다시 쓴다 —
+여기에 2~3개 항목만 둔다. 포커스가 바뀌면 이 섹션을 다시 쓴다.
 버전 히스토리는 git에 있다.
 
 ## Architecture Decisions
@@ -39,7 +39,7 @@ FROM #type/adr AND #project/<slug>
 SORT number ASC
 ```
 
-오픈 / 제안 상태의 ADR은 도드라진다 — 몇 주씩 `proposed`로 두지 말 것.
+오픈 / 제안 상태의 ADR은 도드라진다, 몇 주씩 `proposed`로 두지 말 것.
 승인하거나, 거절하거나, 대체한다.
 
 ## Releases
@@ -77,18 +77,18 @@ SORT severity DESC, created DESC
 아직 버그는 아니지만 지켜볼 가치가 있는 것들. 각 불릿은 우려를 추적하는
 노트로 링크한다.
 
-- <Risk> — [[…]] 참고
+- <Risk>: [[…]] 참고
 - <Risk>
 
 ## Team / stakeholders
 
-- <handle> — 역할
-- <handle> — 역할
+- <handle>: 역할
+- <handle>: 역할
 
 ## Related MOCs
 
-- [[MOC — <sibling project>]] — 공유 의존성 / 사용자
-- [[MOC — <area>]] — 이 프로젝트가 속한 더 큰 영역
+- [[MOC — <sibling project>]]: 공유 의존성 / 사용자
+- [[MOC — <area>]]: 이 프로젝트가 속한 더 큰 영역
 
 ## Notes
 

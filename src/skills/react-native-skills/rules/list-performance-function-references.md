@@ -8,13 +8,13 @@ tags: lists, performance, flatlist, virtualization
 ## Optimize List Performance with Stable Object References
 
 Don't map or filter data before passing to virtualized lists. Virtualization
-relies on object reference stability to know what changed—new references cause
+relies on object reference stability to know what changed, and new references cause
 full re-renders of all visible items. Attempt to prevent frequent renders at the
 list-parent level.
 
 Where needed, use context selectors within list items.
 
-**Incorrect (creates new object references on every keystroke):**
+**Incorrect, creates new object references on every keystroke:**
 
 ```tsx
 function DomainSearch() {
@@ -40,7 +40,7 @@ function DomainSearch() {
 }
 ```
 
-**Correct (stable references, transform inside items):**
+**Correct, stable references, transform inside items:**
 
 ```tsx
 const renderItem = ({ item }) => <DomainItem tld={item} />
@@ -81,7 +81,7 @@ return <LegendList data={sortedTlds} renderItem={renderItem} />
 Even though this creates a new array instance `sortedTlds`, the inner object
 references are stable.
 
-**With zustand for dynamic data (avoids parent re-renders):**
+**With zustand for dynamic data, which avoids parent re-renders:**
 
 ```tsx
 const useSearchStore = create<{ keyword: string }>(() => ({ keyword: '' }))
@@ -110,10 +110,10 @@ function DomainItem({ tld }: { tld: Tld }) {
 ```
 
 Virtualization can now skip items that haven't changed when typing. Only visible
-items (~20) re-render on keystroke, rather than the parent.
+items, about 20, re-render on keystroke, rather than the parent.
 
-**Deriving state within list items based on parent data (avoids parent
-re-renders):**
+**Deriving state within list items based on parent data, which avoids parent
+re-renders:**
 
 For components where the data is conditional based on the parent state, this
 pattern is even more important. For example, if you are checking if an item is

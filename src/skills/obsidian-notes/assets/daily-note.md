@@ -18,7 +18,7 @@ related: []
 
 ## Plan
 
-- [ ] <task 1> — link to ticket / note if applicable
+- [ ] <task 1>: link to ticket / note if applicable
 - [ ] <task 2>
 - [ ] <task 3>
 
@@ -27,18 +27,18 @@ day's.
 
 ## Notes during the day
 
-Timestamped running log. Add entries as things happen — thinking
+Timestamped running log. Add entries as things happen, thinking
 out-loud notes, observations, small decisions.
 
-- `HH:MM` — <note>
-- `HH:MM` — <note>
+- `HH:MM`: <note>
+- `HH:MM`: <note>
 
 For longer thoughts, link to a separate note:
-- `HH:MM` — spiked approach X (see [[Spike — approach X]])
+- `HH:MM`: spiked approach X, see [[Spike — approach X]]
 
 ## Meetings
 
-List of today's meeting notes as wikilinks — cheap to scan later:
+List of today's meeting notes as wikilinks, cheap to scan later:
 
 - [[YYYY-MM-DD <meeting slug>]]
 
@@ -48,15 +48,15 @@ Bullets at end of day. Past tense. Concrete.
 
 - Shipped …
 - Reviewed …
-- Debugged … (see [[Debug YYYY-MM-DD <slug>]])
+- Debugged …, see [[Debug YYYY-MM-DD <slug>]]
 
 ## What I learned
 
 Captures the day's aha moments. If any is big enough to stand alone,
 link to a learning / fleeting note:
 
-- [[Fleeting YYYY-MM-DD-HHmm idea]] — caching boundary at edge
-- Noted that Zustand v5 uses `Object.is` by default (→ [[Zustand — useShallow and v5 selector equality]])
+- [[Fleeting YYYY-MM-DD-HHmm idea]]: caching boundary at edge
+- Noted that Zustand v5 uses `Object.is` by default, see [[Zustand — useShallow and v5 selector equality]]
 
 ## Tomorrow
 
@@ -67,5 +67,5 @@ Seed the next daily so future-you doesn't start cold:
 
 ## Related
 
-- [[YYYY-Wnn]] — this week's review (gets populated on Friday)
+- [[YYYY-Wnn]]: this week's review, populated on Friday
 - [[{{previous daily}}]]

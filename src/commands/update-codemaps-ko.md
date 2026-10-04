@@ -11,4 +11,4 @@ effort: medium
 
 중요한 아키텍처 변경 후 `/update-codemaps`로 호출하거나 `doc-updater` 에이전트에 위임한다.
 
-전체 워크플로우, codemap 형식, drift 승인 규칙은 `doc-updater` 에이전트에 있다 — 이를 단일 진실 원천으로 따른다.
+전체 워크플로우, codemap 형식, drift 승인 규칙은 `doc-updater` 에이전트에 있다. 이를 단일 진실 원천으로 따른다.

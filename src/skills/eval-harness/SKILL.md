@@ -1,11 +1,11 @@
 ---
 name: eval-harness
-description: Eval-driven development — capability and regression suites, pass@k metrics. Use when evaluating AI output or running eval suites. 평가 프레임워크, 회귀 테스트, AI 평가, 성능 측정.
+description: Eval-driven development with capability and regression suites and pass@k metrics. Use when evaluating AI output or running eval suites. 평가 프레임워크, 회귀 테스트, AI 평가, 성능 측정.
 ---
 
 # Eval Harness Skill
 
-A formal evaluation framework for Claude Code sessions, implementing eval-driven development (EDD) principles.
+A formal evaluation framework for Claude Code sessions, implementing the principles of EDD, short for eval-driven development.
 
 ## Philosophy
 
@@ -19,8 +19,8 @@ Eval-Driven Development treats evals as the "unit tests of AI development":
 
 Two measurements here are executable rather than templates. Both need only
 Python 3.9+ and the `claude` CLI. Paths below are relative to this skill's own
-directory — prefix them with wherever it lives (`~/.claude/skills/eval-harness/`
-when installed, `src/skills/eval-harness/` in the hibi-ai repo).
+directory. Prefix them with wherever it lives: `~/.claude/skills/eval-harness/`
+when installed, `src/skills/eval-harness/` in the hibi-ai repo.
 
 ### Does a skill's description actually trigger?
 
@@ -31,10 +31,10 @@ python3 scripts/trigger_eval.py --skill do-178c \
 
 The eval set is a JSON list of `{"query": ..., "should_trigger": true|false}`,
 kept beside the skill it measures as `<skill>/evals/trigger-eval.json`. It is a
-tracked input, not a run artifact, so `workspace/` — gitignored — cannot hold it:
+tracked input, not a run artifact, so the gitignored `workspace/` cannot hold it:
 a set nobody else can clone makes the regression gate unrepeatable.
 Each query runs in a nested `claude -p` and the stream is searched for a
-`Skill` tool_use whose `input.skill` equals the skill's **directory** name —
+`Skill` tool_use whose `input.skill` equals the skill's **directory** name;
 that is what the runtime emits, not the frontmatter `name:`.
 
 Two gates it gives you, and why a harness without them yields numbers that
@@ -44,29 +44,29 @@ look like measurements but are not:
   positive fires and a known negative does not. Either failing exits 2 and
   reports no score at all. A detector that cannot report "dirty" proves
   nothing by reporting "clean".
-- **Completion tracking.** Only a run that reached its own answer — a `result`
-  event with subtype `success` — can testify that the skill was *not* chosen. A
+- **Completion tracking.** Only a run that reached its own answer, meaning a `result`
+  event with subtype `success`, can testify that the skill was *not* chosen. A
   timeout emits no `result` at all, and `error_max_turns` means the turn budget
   ran out first. An **unfired** row that ended either way is INCONCLUSIVE, never
   PASS and never FAIL. A row that **fired** still scores by expectation even if
-  the run died afterwards — firing is evidence no later failure retracts, so a
+  the run died afterwards. Firing is evidence no later failure retracts, so a
   slow positive is a PASS, not a re-run. Without this, every should-NOT query
   passes vacuously.
 
-`--max-turns` (default 6) is the setting most likely to fabricate failures.
+`--max-turns`, default 6, is the setting most likely to fabricate failures.
 The nested session inherits your `CLAUDE.md`, so it spends early turns on the
-pre-work checks that file mandates — `git status` and the like — before it ever
+pre-work checks that file mandates, such as `git status`, before it ever
 weighs a skill. Before the subtype rule existed, `--max-turns 2` made whole
 eval sets read as FAIL with `tools=["Bash","Bash"], skills=[]`; under the
-current rule those rows return INCONCLUSIVE (exit 3), or exit 2 if the gate
+current rule those rows return INCONCLUSIVE with exit 3, or exit 2 if the gate
 probe dies the same way. Either code is a turn-budget artifact, not a verdict on
-the description — treat any `error_max_turns` row as a measurement that did not
+the description. Treat any `error_max_turns` row as a measurement that did not
 happen and re-run it with a larger budget.
 
 Exit status: 0 clear, 1 some FAIL, 2 self-test gate failed, 3 some
-INCONCLUSIVE, 4 the harness could not run (no `claude` on PATH, unusable eval
-set). Re-run INCONCLUSIVE rows serially with a longer `--timeout`, or a larger
-`--max-turns` when the subtype says so, before quoting a figure — a partial
+INCONCLUSIVE, 4 the harness could not run, as when there is no `claude` on PATH or the eval
+set is unusable. Re-run INCONCLUSIVE rows serially with a longer `--timeout`, or a larger
+`--max-turns` when the subtype says so, before quoting a figure, since a partial
 batch is not a score.
 
 It measures the *installed* description, never the working copy: the nested
@@ -76,11 +76,11 @@ run scores the previous description.
 
 Do not substitute the `skill-creator` plugin's `run_eval` for this: it matches
 a `<name>-skill-<uuid>` string the runtime never emits, gives up when the
-first tool call is not Skill/Read, and discards nested stderr — so it returns
+first tool call is not Skill/Read, and discards nested stderr, so it returns
 a stable, plausible, meaningless number. All three are already open upstream
-with patches, filed independently: `anthropics/skills` #1419 (uuid match),
-#1559 (first tool call, cites `run_eval.py:137-141` and `150-154`), #1478
-(discarded failure scored as a verdict). Nothing here is worth re-filing.
+with patches, filed independently: `anthropics/skills` #1419 for the uuid match,
+#1559 for the first tool call, which cites `run_eval.py:137-141` and `150-154`, and #1478
+for a discarded failure scored as a verdict. Nothing here is worth re-filing.
 
 ### Skill-listing budget
 
@@ -93,8 +93,8 @@ The model-facing skill listing has a hard character budget,
 `floor(context_window * 4 * 0.01)` = 8,000 at a 200K window. Over budget the
 truncation is **all-or-nothing per skill**: whichever skills do not fit keep
 only `- name` and lose their description, so they stop auto-triggering
-entirely. Exits 1 when over (2 on a usage error, so a bad path never reads as
-over budget), and flags descriptions past the 200-char authoring target plus any
+entirely. Exits 1 when over and 2 on a usage error, so a bad path never reads as
+over budget, and flags descriptions past the 200-char authoring target plus any
 `name:` that disagrees with its directory.
 
 Two facts it encodes, both of which change how descriptions get written:
@@ -102,7 +102,7 @@ Two facts it encodes, both of which change how descriptions get written:
 - `when_to_use` is concatenated onto `description` and measured as one string,
   so moving trigger vocabulary there saves nothing.
 - Lengths count UTF-16 units, so a Hangul syllable costs the same as an ASCII
-  letter — Korean trigger vocabulary is budget-efficient.
+  letter, so Korean trigger vocabulary is budget-efficient.
 
 ## Eval Types
 
@@ -184,7 +184,7 @@ Risk Level: LOW/MEDIUM/HIGH
 
 ## Eval Workflow
 
-### 1. Define (Before Coding)
+### 1. Define Before Coding
 ```markdown
 ## EVAL DEFINITION: feature-xyz
 
@@ -274,13 +274,13 @@ Store evals in project:
 
 ## Best Practices
 
-1. **Define evals BEFORE coding** - Forces clear thinking about success criteria
-2. **Run evals frequently** - Catch regressions early
-3. **Track pass@k over time** - Monitor reliability trends
-4. **Use code graders when possible** - Deterministic > probabilistic
-5. **Human review for security** - Never fully automate security checks
-6. **Keep evals fast** - Slow evals don't get run
-7. **Version evals with code** - Evals are first-class artifacts
+1. **Define evals BEFORE coding**: Forces clear thinking about success criteria
+2. **Run evals frequently**: Catch regressions early
+3. **Track pass@k over time**: Monitor reliability trends
+4. **Use code graders when possible**: Deterministic > probabilistic
+5. **Human review for security**: Never fully automate security checks
+6. **Keep evals fast**: Slow evals don't get run
+7. **Version evals with code**: Evals are first-class artifacts
 
 ## Example: Adding Authentication
 

@@ -7,9 +7,9 @@ tags: rerender, searchParams, localStorage, optimization
 
 ## State 읽기는 사용 시점으로 미룬다
 
-콜백 내부에서만 읽는 값이라면 동적 state(searchParams, localStorage)를 구독하지 않는다.
+콜백 내부에서만 읽는 값이라면 searchParams, localStorage 같은 동적 state를 구독하지 않는다.
 
-**잘못된 예 (모든 searchParams 변경에 구독):**
+**잘못된 예, 모든 searchParams 변경에 구독:**
 
 ```tsx
 function ShareButton({ chatId }: { chatId: string }) {
@@ -24,7 +24,7 @@ function ShareButton({ chatId }: { chatId: string }) {
 }
 ```
 
-**올바른 예 (필요할 때만 읽음, 구독 없음):**
+**올바른 예, 필요할 때만 읽음, 구독 없음:**
 
 ```tsx
 function ShareButton({ chatId }: { chatId: string }) {

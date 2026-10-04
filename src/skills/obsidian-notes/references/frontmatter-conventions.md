@@ -21,7 +21,7 @@ aliases: ["Alt Title"]   # optional
 
 ## Field reference
 
-### `type` (required)
+### `type`: required
 Controls which template applies and which `status` values are legal.
 
 | Value | Template |
@@ -38,15 +38,15 @@ Controls which template applies and which `status` values are legal.
 | `book`     | Book / article capture |
 | `fleeting` | Quick idea, captured fast, reviewed later |
 
-Don't invent new types here — add a new template first.
+Don't invent new types here. Add a new template first.
 
-### `status` (required)
+### `status`: required
 Allowed values depend on `type`.
 
 | type | status values | Transitions |
 |------|---------------|-------------|
 | `release`  | `draft` → `published` | `draft` until version is cut |
-| `adr`      | `proposed` → `accepted` → `superseded` \| `deprecated` | Never delete a superseded ADR — mark it and link `supersededBy` in frontmatter |
+| `adr`      | `proposed` → `accepted` → `superseded` \| `deprecated` | Never delete a superseded ADR. Mark it and link `supersededBy` in frontmatter |
 | `retro`    | `active` → `closed` | `active` while action items are open |
 | `debug`    | `open` → `resolved` → `archived` | Flip to `resolved` once fix lands; add `archived` months later to quiet search |
 | `learning` | `draft` → `stable` → `stale` | `stale` when API changes enough to invalidate content |
@@ -57,25 +57,25 @@ Allowed values depend on `type`.
 | `book`     | `reading` → `completed` → `revisited` | `revisited` after re-read; add a new revisit log beneath |
 | `fleeting` | `new` → `processed` \| `discarded` | `processed` once content is promoted into a learning/ADR/MOC; `discarded` if it didn't pan out |
 
-### `created` (required), `updated` (optional)
+### `created`: required, `updated`: optional
 ISO `YYYY-MM-DD`. Use creation date, not "today" if back-dating from notes.
 
-### `tags` (required)
+### `tags`: required
 Three axes are required; more are fine. Stick to the taxonomy in the next
 section.
 
-### `project` (required)
+### `project`: required
 Lowercase slug, kebab-case if multi-word. Match the `project/<slug>` tag.
 Example: `project: hibi-ai` with tag `project/hibi-ai`.
 
-### `related` (optional)
+### `related`: optional
 Array of wikilinks to notes that share context. Bidirectional linking is
-Obsidian's superpower — prefer two light `related` entries to one big
+Obsidian's superpower. Prefer two light `related` entries to one big
 embedded block.
 
-### `aliases` (optional)
-Alternate titles for search. Useful for ADRs (e.g., aliases include the
-underlying topic: `"Switch DB to Postgres"`).
+### `aliases`: optional
+Alternate titles for search. Useful for ADRs for example aliases that include the
+underlying topic: `"Switch DB to Postgres"`.
 
 ### Type-specific extras
 Some types carry extra frontmatter. Keep these in the same block.
@@ -175,7 +175,7 @@ Same slug as `project` field. Examples:
 - `project/hibi-ai`, `project/installer`, `project/dashboard-frontend`
 
 ### `topic/<area>`
-Domain area — pick existing vault conventions where possible. Common:
+Domain area: pick existing vault conventions where possible. Common:
 - `topic/auth`, `topic/perf`, `topic/build`, `topic/ci`, `topic/db`
 - `topic/ui`, `topic/api`, `topic/devx`, `topic/ops`, `topic/security`
 - `topic/testing`, `topic/docs`
@@ -185,11 +185,11 @@ a one-note-only tag.
 
 ### Optional axes
 
-- `stage/<phase>` — `stage/rfc`, `stage/implementation`, `stage/rollout`
-- `tech/<stack>` — `tech/rust`, `tech/typescript`, `tech/react`
-- `owner/<person>` — if your vault tracks ownership via tag
+- `stage/<phase>`: `stage/rfc`, `stage/implementation`, `stage/rollout`
+- `tech/<stack>`: `tech/rust`, `tech/typescript`, `tech/react`
+- `owner/<person>`: if your vault tracks ownership via tag
 
-Avoid `status/...` tags — `status` has its own frontmatter field.
+Avoid `status/...` tags, since `status` has its own frontmatter field.
 
 ## Worked example
 

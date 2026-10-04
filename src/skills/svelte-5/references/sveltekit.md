@@ -32,19 +32,19 @@ src/routes/
 
 ### Dynamic and optional segments
 
-- `[slug]` — required: `/blog/hello`
-- `[[optional]]` — optional: `/blog` or `/blog/hello`
-- `[...rest]` — catch-all: `/docs/a/b/c`
-- `[param=matcher]` — validated: see `params.*.ts` matchers
+- `[slug]`: required, `/blog/hello`
+- `[[optional]]`: optional, `/blog` or `/blog/hello`
+- `[...rest]`: catch-all, `/docs/a/b/c`
+- `[param=matcher]`: validated, see `params.*.ts` matchers
 
 ### Route groups `(name)`
 
 Folders wrapped in parentheses don't become URL segments. Use them to
 give a subset of routes their own layout without changing the URL.
 
-## Load functions — universal vs server
+## Load functions: universal vs server
 
-### Universal — `+page.ts`, `+layout.ts`
+### Universal: `+page.ts`, `+layout.ts`
 
 Runs on the server for the initial render, then in the browser for
 client-side nav. Use when the data source is a public endpoint.
@@ -63,12 +63,12 @@ export const load: PageLoad = async ({ fetch, params }) => {
 
 Key points:
 
-- Use the `fetch` argument, **not** the global — it preserves cookies,
+- Use the `fetch` argument, **not** the global. It preserves cookies,
   resolves relative URLs, and on the server avoids the network hop for
   internal routes.
 - Throwing `error(...)` triggers the nearest `+error.svelte`.
 
-### Server — `+page.server.ts`, `+layout.server.ts`
+### Server: `+page.server.ts`, `+layout.server.ts`
 
 Runs only on the server. Required for DB access, private env vars,
 filesystem reads, auth checks.
@@ -87,10 +87,10 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 Rules:
 
 - Never import `$env/static/private` or `$env/dynamic/private` in a
-  universal (`.ts` not `.server.ts`) file — the compiler blocks it.
+  universal file, meaning `.ts` and not `.server.ts`. The compiler blocks it.
 - The returned object is serialized. Functions, class instances, and
   proxies are stripped. Return plain data.
-- Use `locals` (populated in `handle` hook) for request-scoped
+- Use `locals`, populated in the `handle` hook, for request-scoped
   services like DB connections.
 
 ### Consuming load data
@@ -107,8 +107,8 @@ output as `data`:
 <h1>{data.post.title}</h1>
 ```
 
-`PageData` is generated from your `load` return types — no manual
-typing.
+`PageData` is generated from your `load` return types, so no manual
+typing is needed.
 
 ### Invalidation
 
@@ -129,9 +129,9 @@ export const load: PageLoad = async ({ depends, fetch }) => {
 }
 ```
 
-## Form actions — the default mutation path
+## Form actions: the default mutation path
 
-For any user-driven change (create/update/delete), start with form
+For any user-driven change such as create, update, or delete, start with form
 actions. They work without JS, integrate with `use:enhance` for
 progressive enhancement, and keep the typing tight.
 
@@ -193,11 +193,11 @@ export const actions: Actions = {
 
 ### `fail` vs `error` vs `redirect`
 
-- `fail(status, data)` — validation failed; return data back to the
+- `fail(status, data)`: validation failed; return data back to the
   form so the UI can re-render with errors. Stays on the same page.
-- `error(status, message)` — unrecoverable; renders `+error.svelte`.
-- `redirect(303, path)` — successful mutation; send to a new URL
-  (often the created/updated resource).
+- `error(status, message)`: unrecoverable; renders `+error.svelte`.
+- `redirect(303, path)`: successful mutation; send to a new URL,
+  often the created/updated resource.
 
 ### Custom enhance behavior
 
@@ -209,11 +209,11 @@ export const actions: Actions = {
 }}>
 ```
 
-Use custom enhance when you need side effects on success/failure
-(toast, confetti, optimistic UI). Default enhance is fine for most
+Use custom enhance when you need side effects on success/failure,
+such as toast, confetti, or optimistic UI. Default enhance is fine for most
 forms.
 
-## Hooks — request middleware
+## Hooks: request middleware
 
 ### `hooks.server.ts`
 
@@ -249,7 +249,7 @@ export const handleError: HandleServerError = ({ error, event }) => {
 
 ### `hooks.client.ts`
 
-Smaller surface — mostly `handleError` for client-side errors.
+Smaller surface, mostly `handleError` for client-side errors.
 
 ```ts
 import type { HandleClientError } from '@sveltejs/kit'
@@ -266,7 +266,7 @@ Four flavors, picked based on static/dynamic × public/private:
 
 | Module | Safe in client? | Reads change at runtime? |
 |--------|:---:|:---:|
-| `$env/static/public`  | ✅ | ❌ (baked at build time) |
+| `$env/static/public`  | ✅ | ❌, baked at build time |
 | `$env/static/private` | ❌ | ❌ |
 | `$env/dynamic/public`  | ✅ | ✅ |
 | `$env/dynamic/private` | ❌ | ✅ |
@@ -281,11 +281,11 @@ Rules:
 - `PUBLIC_*` prefix is required for anything in `*/public`.
 - Importing from `*/private` in a file that ships to the browser is
   a compile error.
-- Prefer `static/*` — better tree-shaking and no runtime lookup cost.
+- Prefer `static/*` for better tree-shaking and no runtime lookup cost.
   Use `dynamic/*` only when the value actually changes per deploy /
   per request.
 
-## `$app/state` — replaced `$app/stores` in v2
+## `$app/state`: replaced `$app/stores` in v2
 
 ```ts
 import { page, navigating, updated } from '$app/state'
@@ -299,13 +299,13 @@ if (navigating) {
 ```
 
 If you see `$app/stores` or `$page` in code, it's a v1/v2-early
-pattern — migrate. The v2 `$app/state` API is already tracked by
+pattern, so migrate. The v2 `$app/state` API is already tracked by
 runes, so just read the fields.
 
-## API endpoints — `+server.ts`
+## API endpoints: `+server.ts`
 
-For JSON-ish REST endpoints (mobile clients, webhooks, things that
-aren't rendering a page):
+For JSON-ish REST endpoints such as mobile clients, webhooks, and things that
+aren't rendering a page:
 
 ```ts
 // src/routes/api/posts/+server.ts
@@ -338,36 +338,36 @@ export const csr = true              // keep client hydration (default)
 export const trailingSlash = 'never' // url normalization
 ```
 
-Use `prerender = true` for genuinely static pages (marketing, docs)
-— cuts deploy size and cold-start cost. Combine with `adapter-static`
+Use `prerender = true` for genuinely static pages such as marketing and docs.
+It cuts deploy size and cold-start cost. Combine with `adapter-static`
 for full SSG sites.
 
-## Adapters (quick map)
+## Adapters: quick map
 
 Set per-target via `svelte.config.js`:
 
-- `@sveltejs/adapter-auto` — picks Vercel/Netlify/etc automatically
+- `@sveltejs/adapter-auto`: picks Vercel/Netlify/etc automatically
   during deploys
-- `@sveltejs/adapter-node` — Node server; reverse proxy / Docker
-- `@sveltejs/adapter-static` — pure static site (SSG)
-- `@sveltejs/adapter-vercel` — Vercel-specific features (ISR, edge)
-- `@sveltejs/adapter-cloudflare` — Cloudflare Pages / Workers
-- `@sveltejs/adapter-netlify` — Netlify Functions / Edge
+- `@sveltejs/adapter-node`: Node server; reverse proxy / Docker
+- `@sveltejs/adapter-static`: pure static site, SSG
+- `@sveltejs/adapter-vercel`: Vercel-specific features such as ISR and edge
+- `@sveltejs/adapter-cloudflare`: Cloudflare Pages / Workers
+- `@sveltejs/adapter-netlify`: Netlify Functions / Edge
 
 Most apps start with `auto`. Switch to an explicit adapter only when
-the target's features (edge runtime, ISR, image opt) matter.
+the target's features, such as edge runtime, ISR, and image opt, matter.
 
 ## Common mistakes
 
-- **Fetch without destructuring `fetch`** in a load — breaks SSR
+- **Fetch without destructuring `fetch`** in a load: breaks SSR
   because the global `fetch` doesn't carry cookies and can't resolve
   relative URLs.
-- **Long-running work in `load`** — `load` runs on every navigation.
+- **Long-running work in `load`**: `load` runs on every navigation.
   Cache, use `depends` + `invalidate`, or move to a background job.
-- **Mutating `locals` inside `load`** — `locals` is set once per
+- **Mutating `locals` inside `load`**: `locals` is set once per
   request in `handle`; treat it as read-only from `load`/`action`.
-- **Using `$app/stores`** in new code — v2 prefers `$app/state`.
-- **Using `+server.ts` for form submissions** — loses progressive
+- **Using `$app/stores`** in new code: v2 prefers `$app/state`.
+- **Using `+server.ts` for form submissions**: loses progressive
   enhancement. Use form actions.
-- **Returning non-serializable data** from a server `load` — classes,
+- **Returning non-serializable data** from a server `load`: classes,
   functions, and proxies silently drop. Return plain objects.

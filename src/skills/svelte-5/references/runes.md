@@ -1,16 +1,16 @@
 # Runes
 
 Runes are the primitives that power reactivity in Svelte 5. They look
-like functions prefixed with `$` (`$state`, `$derived`, `$effect`,
-`$props`, `$bindable`, `$inspect`) but they're compile-time keywords —
-the compiler rewrites them into the underlying reactivity machinery.
+like functions prefixed with `$`, such as `$state`, `$derived`, `$effect`,
+`$props`, `$bindable`, and `$inspect`, but they're compile-time keywords.
+The compiler rewrites them into the underlying reactivity machinery.
 
 The mental model: **runes declare reactive shapes; ordinary JavaScript
 drives them**. You never "subscribe" to a rune. Read a rune's value,
 and the compiler tracks that you depend on it. Write to it, and
 anything that read it re-runs.
 
-## `$state` — the default reactive source
+## `$state`: the default reactive source
 
 Use `$state` for any value that changes and whose change should update
 the UI.
@@ -23,7 +23,7 @@ the UI.
 ```
 
 `$state` returns a **deep proxy**. Reads of any property are tracked;
-writes to any property (including nested ones) trigger updates.
+writes to any property, including nested ones, trigger updates.
 
 ```ts
 let user = $state({ name: 'Ada', address: { city: 'London' } })
@@ -32,7 +32,7 @@ user.address.city = 'NYC'        // triggers (nested works)
 user.address = { city: 'Paris' } // triggers
 ```
 
-### `$state.raw` — shallow, no proxy
+### `$state.raw`: shallow, no proxy
 
 Apply `$state.raw` to large data you mutate by replacement, not by
 nested update. The proxy overhead is wasted if you only ever reassign
@@ -43,7 +43,7 @@ let rows = $state.raw<Row[]>([])   // no per-cell tracking
 function setRows(next: Row[]) { rows = next }
 ```
 
-**Don't** mix raw and non-raw access — `rows.push(...)` on a raw
+**Don't** mix raw and non-raw access. `rows.push(...)` on a raw
 array won't trigger. Use `rows = [...rows, item]` instead, or drop
 the `raw`.
 
@@ -58,20 +58,20 @@ class Counter {
 ```
 
 Each `$state` field is reactive per-instance. The class still behaves
-like a class (`new Counter()`, `extends`, etc.).
+like a class, including `new Counter()` and `extends`.
 
 ### Gotchas
 
 - **Iterating a state proxy** produces reactive reads; if you iterate
   in a `$derived`, the derived re-runs when the array changes.
-  Usually what you want — but be aware.
+  Usually what you want, but be aware.
 - **`JSON.stringify(state)`** reads every property and so makes the
   caller depend on the whole tree. Fine for logging; avoid in hot
   `$derived`s.
 - **`structuredClone(state)`** gives you a non-reactive copy. Useful
   when you want a snapshot for optimistic UI patterns.
 
-## `$derived` — computed values
+## `$derived`: computed values
 
 `$derived(expr)` is a pure expression that re-evaluates when its
 dependencies change.
@@ -84,13 +84,13 @@ const label  = $derived(`Count: ${count}`)
 
 Rules:
 
-- The expression must be **pure** — no I/O, no state writes, no
+- The expression must be **pure**. No I/O, no state writes, no
   `console.log`. The compiler re-runs it at will.
 - Any reactive state read inside the expression becomes a dependency.
 - Dependencies are discovered per run; conditional reads work
   correctly.
 
-### `$derived.by(() => ...)` — function form
+### `$derived.by(() => ...)`: function form
 
 When the expression needs multiple statements or early returns:
 
@@ -102,14 +102,14 @@ const tax = $derived.by(() => {
 })
 ```
 
-Same rules as `$derived` — purity is non-negotiable.
+Same rules as `$derived`, and purity is non-negotiable.
 
 ### Don't put effects in a derived
 
 A `$derived` that logs, fetches, or mutates is a bug. Move that to
 `$effect` or the triggering event handler.
 
-## `$effect` — side effects
+## `$effect`: side effects
 
 `$effect(fn)` runs `fn` after the component mounts, and again whenever
 any reactive value it read changes.
@@ -129,9 +129,9 @@ $effect(() => {
 Cleanup is the return value. Return `undefined` if there's nothing to
 clean up.
 
-### `$effect.pre` — before DOM commit
+### `$effect.pre`: before DOM commit
 
-Rare, but needed for layout reads (measuring before paint):
+Rare, but needed for layout reads, meaning measuring before paint:
 
 ```ts
 $effect.pre(() => {
@@ -142,10 +142,10 @@ $effect.pre(() => {
 
 Most effects should be plain `$effect`.
 
-### `$effect.root` — imperative lifetimes
+### `$effect.root`: imperative lifetimes
 
-For effects owned outside a component (e.g. in a `.svelte.ts` module
-that's initialized once):
+For effects owned outside a component, e.g. in a `.svelte.ts` module
+that's initialized once:
 
 ```ts
 const destroy = $effect.root(() => {
@@ -155,7 +155,7 @@ const destroy = $effect.root(() => {
 ```
 
 Call `destroy()` when done. Required when runes run outside a
-component boundary — the compiler otherwise can't tell when the
+component boundary. The compiler otherwise can't tell when the
 effect should stop.
 
 ### Golden rule
@@ -176,7 +176,7 @@ function increment() {
 }
 ```
 
-## `$props` — component inputs
+## `$props`: component inputs
 
 ```svelte
 <script lang="ts">
@@ -191,7 +191,7 @@ function increment() {
 
 - Always destructure. There's no "props object" to pass around.
 - Defaults go on the destructure, not in the type.
-- Typing is a regular TS destructure annotation — no special syntax.
+- Typing is a regular TS destructure annotation, with no special syntax.
 
 ### Renaming, rest, forwarding
 
@@ -215,7 +215,7 @@ console.log(all.title, all.count)
 
 Rarely useful. Prefer destructuring so props are visible at a glance.
 
-## `$bindable` — opt-in two-way binding
+## `$bindable`: opt-in two-way binding
 
 A plain prop is read-only. To let the parent two-way bind with
 `bind:value`, opt in with `$bindable`:
@@ -231,12 +231,12 @@ A plain prop is read-only. To let the parent two-way bind with
 <TextField bind:value={formState.name} />
 ```
 
-The default (first arg to `$bindable`) is used when the parent didn't
+The default, the first arg to `$bindable`, is used when the parent didn't
 bind. Without `$bindable`, parent `bind:value={...}` on this
-component is a compile error — which is good, because most props
+component is a compile error, which is good, because most props
 shouldn't be two-way.
 
-## `$inspect` — dev-only logging
+## `$inspect`: dev-only logging
 
 ```ts
 $inspect(count, doubled)             // logs every time they change
@@ -246,12 +246,12 @@ $inspect('search:', query).with((type, value) => {
 ```
 
 - Stripped from production builds.
-- `.with` gives a custom handler (initial vs update events).
-- Great for debugging reactivity — when you expect a re-run and it
+- `.with` gives a custom handler for initial vs update events.
+- Great for debugging reactivity. When you expect a re-run and it
   doesn't fire, `$inspect` tells you whether the value actually
   changed.
 
-## `$host` — custom elements only
+## `$host`: custom elements only
 
 Inside `<svelte:options customElement="...">` components, `$host()`
 returns the hosting custom element. Dispatch DOM events, read
@@ -261,10 +261,10 @@ apps.
 ## Decision tree
 
 - "I have a value that changes" → `$state`
-- "I have a value computed from others" → `$derived` (or
-  `$derived.by`)
-- "I need to do something when a value changes (outside Svelte)" →
+- "I have a value computed from others" → `$derived`, or
+  `$derived.by`
+- "I need to do something outside Svelte when a value changes" →
   `$effect`
-- "I'm writing a component" → `$props` (every time)
+- "I'm writing a component" → `$props`, every time
 - "I want `bind:value` on my component" → `$bindable`
 - "Why did / didn't this re-run?" → `$inspect`

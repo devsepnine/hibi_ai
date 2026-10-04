@@ -7,12 +7,12 @@ tags: state, hooks, derived-state, props, initialState
 
 ## Use fallback state instead of initialState
 
-Use `undefined` as initial state and nullish coalescing (`??`) to fall back to
-parent or server values. State represents user intent only—`undefined` means
+Use `undefined` as initial state and nullish coalescing, `??`, to fall back to
+parent or server values. State represents user intent only, so `undefined` means
 "user hasn't chosen yet." This enables reactive fallbacks that update when the
 source changes, not just on initial render.
 
-**Incorrect (syncs state, loses reactivity):**
+**Incorrect, syncs state, loses reactivity:**
 
 ```tsx
 type Props = { fallbackEnabled: boolean }
@@ -26,7 +26,7 @@ function Toggle({ fallbackEnabled }: Props) {
 }
 ```
 
-**Correct (state is user intent, reactive fallback):**
+**Correct, state is user intent, reactive fallback:**
 
 ```tsx
 type Props = { fallbackEnabled: boolean }

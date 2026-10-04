@@ -1,7 +1,7 @@
-# Zustand Store Acceptance Criteria (TypeScript, v5)
+# Zustand Store Acceptance Criteria, TypeScript, v5
 
 **Library**: Zustand v5+
-**Purpose**: Validate generated Zustand code against current (v5) best
+**Purpose**: Validate generated Zustand code against current v5 best
 practices. Includes a Migration section for changes from v4.
 
 ---
@@ -41,7 +41,7 @@ import { shallow } from 'zustand/shallow';
 
 ## 2. Store Creation
 
-### 2.1 ✅ CORRECT: Plain store (no middleware needed)
+### 2.1 ✅ CORRECT: Plain store, no middleware needed
 
 ```typescript
 import { create } from 'zustand';
@@ -58,7 +58,7 @@ export const useMyStore = create<MyStore>()((set) => ({
 ```
 
 `subscribeWithSelector` is **not required**. Add it only when the store is
-subscribed to from outside React (see §5).
+subscribed to from outside React, see §5.
 
 ### 2.2 ✅ CORRECT: With `get()`
 
@@ -72,7 +72,7 @@ export const useMyStore = create<MyStore>()((set, get) => ({
 
 ### 2.3 ✅ CORRECT: Generic syntax with middleware
 
-Note the **double parentheses** — `create<T>()(middleware(...))`. The empty
+Note the **double parentheses** in `create<T>()(middleware(...))`. The empty
 pair enables type inference through middleware.
 
 ```typescript
@@ -142,7 +142,7 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
 
 ### 4.1 ✅ CORRECT: Single-field selectors
 
-Individual selectors are the safest form — no wrapper needed.
+Individual selectors are the safest form, so no wrapper is needed.
 
 ```typescript
 const count = useMyStore((s) => s.count);
@@ -205,10 +205,10 @@ New code should prefer `useShallow`.
 
 ---
 
-## 5. Subscribe Outside React (`subscribeWithSelector`)
+## 5. Subscribe Outside React, `subscribeWithSelector`
 
 Include `subscribeWithSelector` only when subscribing outside React
-(event bridges, logging, URL sync, analytics). Skip it otherwise.
+for event bridges, logging, URL sync, or analytics. Skip it otherwise.
 
 ### 5.1 ✅ CORRECT
 
@@ -292,9 +292,9 @@ export const useMyStore = create<MyStore>()(
 );
 ```
 
-Name every `set()` call — the third argument shows up in Redux DevTools.
+Name every `set()` call. The third argument shows up in Redux DevTools.
 
-### 7.2 Compose order (common chain)
+### 7.2 Compose order, common chain
 
 ```typescript
 // devtools wraps persist wraps the state creator
@@ -422,7 +422,7 @@ test('increment advances count', () => {
 });
 ```
 
-### 11.2 ✅ CORRECT: Global reset registry (e.g., on logout)
+### 11.2 ✅ CORRECT: Global reset registry, e.g., on logout
 
 ```typescript
 import { create as actualCreate, type StateCreator } from 'zustand';

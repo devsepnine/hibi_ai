@@ -7,7 +7,7 @@ tags: rerender, useMemo, optimization
 
 ## Do not wrap a simple expression with a primitive result type in useMemo
 
-When an expression is simple (few logical or arithmetical operators) and has a primitive result type (boolean, number, string), do not wrap it in `useMemo`.
+When an expression is simple, with few logical or arithmetical operators, and has a primitive result type such as boolean, number, or string, do not wrap it in `useMemo`.
 Calling `useMemo` and comparing hook dependencies may consume more resources than the expression itself.
 
 **Incorrect:**

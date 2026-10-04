@@ -7,7 +7,7 @@
 - 여러 팀/feature가 같은 글로벌 store에 기여
 - tree-shakeable, 독립적으로 testable한 slice 모듈을 원함
 
-store가 작을 때 (action 3-4개) 건너뛴다 — 추가 generic이 가독성에 도움보다 해가 된다.
+store가 작을 때, 즉 action이 3-4개일 때 건너뛴다. 추가 generic이 가독성에 도움보다 해가 된다.
 
 ## Minimal Example
 
@@ -47,7 +47,7 @@ export const useJungleStore = create<JungleStore>()((...a) => ({
 }));
 ```
 
-`StateCreator<Full, Mutators, UnusedMutators, Slice>` generic 패턴은 각 slice가 `set`/`get`을 통해 전체 store 형태를 볼 수 있게 하면서 자체 slice만 반환하게 한다. 두 번째/세 번째 generic은 middleware mutator 메타데이터이다 — slice 레벨에 middleware가 적용되지 않을 때 `[]`을 사용한다.
+`StateCreator<Full, Mutators, UnusedMutators, Slice>` generic 패턴은 각 slice가 `set`/`get`을 통해 전체 store 형태를 볼 수 있게 하면서 자체 slice만 반환하게 한다. 두 번째/세 번째 generic은 middleware mutator 메타데이터이다. slice 레벨에 middleware가 적용되지 않을 때 `[]`을 사용한다.
 
 ## Cross-slice dependencies
 
@@ -73,7 +73,7 @@ const createSharedSlice: StateCreator<
 });
 ```
 
-## Composing with middleware (devtools)
+## Composing with middleware, `devtools`
 
 최종 store가 middleware를 입을 때, 각 slice의 `StateCreator`는 타입이 일치하도록 mutator를 advertise해야 한다. `devtools`의 경우:
 
@@ -134,7 +134,7 @@ store/
     └── jungle-store.test.ts
 ```
 
-각 slice 파일은 자체 타입과 creator만 export한다 — `create()` 호출 없음. 이는 tree-shaking을 깨끗하게 유지하고 테스트가 slice를 격리해서 운동시킬 수 있게 한다.
+각 slice 파일은 자체 타입과 creator만 export하며 `create()`는 호출하지 않는다. 이는 tree-shaking을 깨끗하게 유지하고 테스트가 slice를 격리해서 운동시킬 수 있게 한다.
 
 ## Testing a sliced store
 
@@ -153,11 +153,11 @@ test('addBoth increments both counters', () => {
 });
 ```
 
-애플리케이션 전체 reset (예: 로그아웃)은 v5 문서의 global-reset wrapper를 사용한다 — 각 store의 `setState(initial, true)`를 공유 reset registry에 등록한다.
+로그아웃 같은 애플리케이션 전체 reset에는 v5 문서의 global-reset wrapper를 사용하고, 각 store의 `setState(initial, true)`를 공유 reset registry에 등록한다.
 
 ## Common mistakes
 
-- **slice 형태만으로 slice creator 타입 부여** — `get()`이 cross-slice 가시성을 잃는다. 항상 *전체* store 타입으로 매개변수화한다.
-- **`devtools`/`persist` 하에 조합할 때 mutator tuple 잊기** — mutator가 선언되어야만 세 번째 매개변수가 존재하므로 TypeScript가 `set(partial, false, 'name')`에서 에러를 낸다.
-- **너무 일찍 분할** — store에 action이 3개라면 inline한다. slice는 5개 이상의 action 또는 도메인 경계 전반에서 비용을 정당화한다.
-- **cross-slice state 중복** — 다른 slice의 field를 mirror하지 마라; 그것을 필요로 하는 action에서 `get()`으로 read한다.
+- **slice 형태만으로 slice creator 타입 부여**: `get()`이 cross-slice 가시성을 잃는다. 항상 *전체* store 타입으로 매개변수화한다.
+- **`devtools`/`persist` 하에 조합할 때 mutator tuple 잊기**: mutator가 선언되어야만 세 번째 매개변수가 존재하므로 TypeScript가 `set(partial, false, 'name')`에서 에러를 낸다.
+- **너무 일찍 분할**: store에 action이 3개라면 inline한다. slice는 5개 이상의 action 또는 도메인 경계 전반에서 비용을 정당화한다.
+- **cross-slice state 중복**: 다른 slice의 field를 mirror하지 마라; 그것을 필요로 하는 action에서 `get()`으로 read한다.

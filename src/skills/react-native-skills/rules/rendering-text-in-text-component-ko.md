@@ -10,7 +10,7 @@ tags: rendering, text, core
 문자열은 반드시 `<Text>` 안에서 렌더해야 한다. `<View>`의 직접 자식으로
 문자열이 들어가면 React Native는 크래시한다.
 
-**Incorrect (crashes):**
+**Incorrect, crashes:**
 
 ```tsx
 import { View } from 'react-native'

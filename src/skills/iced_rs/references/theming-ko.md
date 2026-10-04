@@ -19,7 +19,7 @@ Theme::KanagawaWave / KanagawaDragon / KanagawaLotus
 Theme::Moonfly / Nightfly / Oxocarbon / Ferra
 ```
 
-`Theme::ALL`은 모든 빌트인이 있는 `&'static [Theme]`이다 — `pick_list`에 그대로 전달한다:
+`Theme::ALL`은 모든 빌트인이 있는 `&'static [Theme]`이다. `pick_list`에 그대로 전달한다:
 
 ```rust
 pick_list(Theme::ALL, Some(&app.theme), Message::ThemeChanged)
@@ -124,7 +124,7 @@ container(content)
     })
 ```
 
-## Custom Theme (Custom Palette)
+## Custom Theme: Custom Palette
 
 빌트인 테마가 브랜드와 맞지 않을 때, palette를 정의하고 `Theme::custom`을 빌드한다:
 
@@ -193,7 +193,7 @@ Message::WindowEvent(window::Event::ThemeChanged(t)) => {
 }
 ```
 
-(API 이름은 0.13/0.14 사이에 진화한다 — 버전의 `window::Event` enum을 확인한다.)
+API 이름은 0.13/0.14 사이에 진화하므로 버전의 `window::Event` enum을 확인한다.
 
 ## When to customize vs use built-in
 
@@ -225,4 +225,4 @@ button("Save").style(style::primary_button);
 container(content).style(style::card);
 ```
 
-이는 `view`를 narrative ("save라고 하는 button")로 유지하고 style 변경을 한 파일에 국한시킨다.
+이는 `view`를 narrative, 즉 "save라고 하는 button"으로 유지하고 style 변경을 한 파일에 국한시킨다.

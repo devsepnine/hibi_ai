@@ -9,7 +9,7 @@ tags: bundle, third-party, analytics, defer
 
 Analytics, logging, error tracking는 사용자 상호작용을 막지 않는다. hydration 이후에 로드한다.
 
-**Incorrect (blocks initial bundle):**
+**Incorrect, blocks initial bundle:**
 
 ```tsx
 import { Analytics } from '@vercel/analytics/react'
@@ -26,7 +26,7 @@ export default function RootLayout({ children }) {
 }
 ```
 
-**Correct (loads after hydration):**
+**Correct, loads after hydration:**
 
 ```tsx
 import dynamic from 'next/dynamic'

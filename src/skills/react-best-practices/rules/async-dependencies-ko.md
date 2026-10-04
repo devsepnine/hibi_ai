@@ -9,7 +9,7 @@ tags: async, parallelization, dependencies, better-all
 
 부분 의존성이 있는 작업들에 대해서는 `better-all`을 사용해 병렬성을 극대화한다. 각 작업을 가능한 가장 이른 시점에 자동으로 시작한다.
 
-**Incorrect (profile waits for config unnecessarily):**
+**Incorrect, profile waits for config unnecessarily:**
 
 ```typescript
 const [user, config] = await Promise.all([
@@ -19,7 +19,7 @@ const [user, config] = await Promise.all([
 const profile = await fetchProfile(user.id)
 ```
 
-**Correct (config and profile run in parallel):**
+**Correct, config and profile run in parallel:**
 
 ```typescript
 import { all } from 'better-all'

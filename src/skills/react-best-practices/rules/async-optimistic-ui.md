@@ -9,14 +9,14 @@ tags: react19, actions, useOptimistic, mutations, perceived-performance
 
 React 19's `useOptimistic` lets a component show a provisional value
 during an async action and automatically reverts if the action rejects.
-Prefer it over manual "optimistic" patterns (`setState` before `await`,
-rollback in `catch`) for any mutation that has a predictable end state.
+Prefer it over manual "optimistic" patterns, such as `setState` before `await`
+with rollback in `catch`, for any mutation that has a predictable end state.
 
-Pair with Actions (`<form action={...}>` / `startTransition`) so the
+Pair with Actions, meaning `<form action={...}>` or `startTransition`, so the
 hook can track pending boundaries and reconcile with the committed
 server state.
 
-### Incorrect — manual optimistic-then-rollback
+### Incorrect: manual optimistic-then-rollback
 
 ```tsx
 const [items, setItems] = useState(initial)
@@ -37,7 +37,7 @@ async function addItem(name: string) {
 Problems: custom rollback logic, easy to leave orphaned "pending" items
 on double-submit, state diverges from server if an error is missed.
 
-### Correct — useOptimistic inside an Action
+### Correct: useOptimistic inside an Action
 
 ```tsx
 function ItemList({ items }: { items: Item[] }) {
@@ -69,19 +69,19 @@ function ItemList({ items }: { items: Item[] }) {
 ```
 
 If `createItem` throws, React discards the optimistic state and re-renders
-with the real `items`. On success, the parent (Server Component or a
-mutating reducer) provides the new list, and `optimisticItems` naturally
+with the real `items`. On success, the parent, either a Server Component or a
+mutating reducer, provides the new list, and `optimisticItems` naturally
 converges back to it.
 
 ### Guidelines
 
-- Optimistic updaters must be **pure** — no I/O, no side effects. They
+- Optimistic updaters must be **pure**, with no I/O and no side effects. They
   re-run on every reconciliation.
-- Represent the optimistic distinction visibly (dim, spinner, disabled)
+- Represent the optimistic distinction visibly, for example dim, spinner, or disabled,
   so users understand the state isn't final.
 - For delete/update, stash the prior entry so the optimistic reducer can
   compute the new list; don't rely on hidden local state.
 - Don't combine `useOptimistic` with a sibling `useState` that mirrors
-  the same data — pick one source of truth.
+  the same data. Pick one source of truth.
 
 Reference: [`useOptimistic`](https://react.dev/reference/react/useOptimistic)

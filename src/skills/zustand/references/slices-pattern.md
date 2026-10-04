@@ -9,7 +9,7 @@ Use this pattern when:
 - Multiple teams/features contribute to the same global store
 - You want tree-shakeable, independently testable slice modules
 
-Skip it when the store is small (3-4 actions) — the extra generics hurt
+Skip it when the store is small, with 3-4 actions. The extra generics hurt
 readability more than they help.
 
 ## Minimal Example
@@ -53,7 +53,7 @@ export const useJungleStore = create<JungleStore>()((...a) => ({
 The `StateCreator<Full, Mutators, UnusedMutators, Slice>` generic pattern
 lets each slice see the full store shape via `set`/`get`, while only
 returning its own slice. The second/third generics are middleware mutator
-metadata — use `[]` when no middleware applies at the slice level.
+metadata. Use `[]` when no middleware applies at the slice level.
 
 ## Cross-slice dependencies
 
@@ -80,7 +80,7 @@ const createSharedSlice: StateCreator<
 });
 ```
 
-## Composing with middleware (devtools)
+## Composing with middleware, `devtools`
 
 When the final store wears middleware, each slice's `StateCreator` must
 advertise the mutator so types line up. For `devtools`:
@@ -143,7 +143,7 @@ store/
     └── jungle-store.test.ts
 ```
 
-Each slice file exports its type and creator only — no `create()` call.
+Each slice file exports its type and creator only, with no `create()` call.
 This keeps tree-shaking clean and lets tests exercise slices in isolation.
 
 ## Testing a sliced store
@@ -163,18 +163,18 @@ test('addBoth increments both counters', () => {
 });
 ```
 
-For application-wide reset (e.g., logout), use the global-reset wrapper
-from the v5 docs — register each store's `setState(initial, true)` with a
+For application-wide reset, such as on logout, use the global-reset wrapper
+from the v5 docs and register each store's `setState(initial, true)` with a
 shared reset registry.
 
 ## Common mistakes
 
-- **Typing slice creators with only the slice shape** — `get()` loses cross-slice
+- **Typing slice creators with only the slice shape**: `get()` loses cross-slice
   visibility. Always parameterize with the *full* store type.
-- **Forgetting the mutator tuple** when composing under `devtools`/`persist` —
+- **Forgetting the mutator tuple** when composing under `devtools`/`persist`:
   TypeScript errors on `set(partial, false, 'name')` because the third
   parameter only exists with the mutator declared.
-- **Splitting too early** — if the store has 3 actions, inline it. Slices earn
+- **Splitting too early**: if the store has 3 actions, inline it. Slices earn
   their cost around 5+ actions or across domain boundaries.
-- **Cross-slice state duplication** — don't mirror another slice's field;
+- **Cross-slice state duplication**: don't mirror another slice's field;
   read it via `get()` in the action that needs it.

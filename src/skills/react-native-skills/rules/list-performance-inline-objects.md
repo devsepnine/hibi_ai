@@ -11,7 +11,7 @@ Don't create new objects inside `renderItem` to pass as props. Inline objects
 create new references on every render, breaking memoization. Pass primitive
 values directly from `item` instead.
 
-**Incorrect (inline object breaks memoization):**
+**Incorrect, inline object breaks memoization:**
 
 ```tsx
 function UserList({ users }: { users: User[] }) {
@@ -29,7 +29,7 @@ function UserList({ users }: { users: User[] }) {
 }
 ```
 
-**Incorrect (inline style object):**
+**Incorrect, inline style object:**
 
 ```tsx
 renderItem={({ item }) => (
@@ -41,7 +41,7 @@ renderItem={({ item }) => (
 )}
 ```
 
-**Correct (pass item directly or primitives):**
+**Correct, pass item directly or primitives:**
 
 ```tsx
 function UserList({ users }: { users: User[] }) {
@@ -57,7 +57,7 @@ function UserList({ users }: { users: User[] }) {
 }
 ```
 
-**Correct (pass primitives, derive inside child):**
+**Correct, pass primitives, derive inside child:**
 
 ```tsx
 renderItem={({ item }) => (
@@ -75,7 +75,7 @@ const UserRow = memo(function UserRow({ id, name, isActive }: Props) {
 })
 ```
 
-**Correct (hoist static styles in module scope):**
+**Correct, hoist static styles in module scope:**
 
 ```tsx
 const activeStyle = { backgroundColor: 'green' }

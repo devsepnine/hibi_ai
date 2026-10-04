@@ -11,7 +11,7 @@ Don't create `Intl.DateTimeFormat`, `Intl.NumberFormat`, or
 `Intl.RelativeTimeFormat` inside render or loops. These are expensive to
 instantiate. Hoist to module scope when the locale/options are static.
 
-**Incorrect (new formatter every render):**
+**Incorrect, new formatter every render:**
 
 ```tsx
 function Price({ amount }: { amount: number }) {
@@ -23,7 +23,7 @@ function Price({ amount }: { amount: number }) {
 }
 ```
 
-**Correct (hoisted to module scope):**
+**Correct, hoisted to module scope:**
 
 ```tsx
 const currencyFormatter = new Intl.NumberFormat('en-US', {
@@ -58,4 +58,4 @@ const relativeFormatter = new Intl.RelativeTimeFormat('en-US', {
 ```
 
 Creating `Intl` objects is significantly more expensive than `RegExp` or plain
-objects—each instantiation parses locale data and builds internal lookup tables.
+objects, because each instantiation parses locale data and builds internal lookup tables.

@@ -11,6 +11,6 @@ effort: xhigh
 
 ## Invoke
 
-실행을 위해 **tdd-guide** 에이전트를 디스패치한다. 에이전트는 시나리오마다 Red-Green-Refactor 루프(scaffold → failing test → minimal impl → refactor → coverage check)를 실행하고, 추가된 테스트 / 커버리지 % / 변경된 파일을 보고한다.
+실행을 위해 **tdd-guide** 에이전트를 디스패치한다. 에이전트는 시나리오마다 Red-Green-Refactor 루프를 scaffold → failing test → minimal impl → refactor → coverage check 순으로 실행하고, 추가된 테스트 / 커버리지 % / 변경된 파일을 보고한다.
 
-전체 TDD 표준(cycle 정의, test-type matrix, 커버리지 계층(80% 최소 / 금융·인증·보안·핵심 로직 100%), pattern snippet, mocking checklist, common mistakes, author checklist)은 `tdd-workflow` skill(`src/skills/tdd-workflow/SKILL.md`)에 있다. 이를 source of truth로 따른다.
+전체 TDD 표준은 cycle 정의, test-type matrix, 최소 80%와 금융·인증·보안·핵심 로직 100%의 커버리지 계층, pattern snippet, mocking checklist, common mistakes, author checklist를 포함하며 `tdd-workflow` skill의 `src/skills/tdd-workflow/SKILL.md`에 있다. 이를 source of truth로 따른다.

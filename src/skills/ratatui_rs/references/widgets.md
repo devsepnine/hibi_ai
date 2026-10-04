@@ -1,4 +1,4 @@
-# Ratatui Widgets (0.30 API)
+# Ratatui Widgets, 0.30 API
 
 Built-in widgets and their idiomatic 0.30 usage. All examples use `Block::bordered()`, `Layout::*::areas()` destructuring, and `f.area()`.
 
@@ -14,9 +14,9 @@ let p = Paragraph::new("Hello, world!")
 f.render_widget(p, area);
 ```
 
-For rich text (mixed styles per span), use `Text::from(vec![Line::from(vec![Span::raw, Span::styled])])`.
+For rich text with mixed styles per span, use `Text::from(vec![Line::from(vec![Span::raw, Span::styled])])`.
 
-## List (Stateful — supports selection)
+## List, Stateful: supports selection
 
 ```rust
 use ratatui::widgets::{Block, List, ListItem, ListState};
@@ -70,7 +70,7 @@ let table = Table::new(rows, [
 f.render_widget(table, area);
 ```
 
-For a selectable Table, use `TableState` and `render_stateful_widget` (parallel to `List`).
+For a selectable Table, use `TableState` and `render_stateful_widget`, parallel to `List`.
 
 ## Gauge
 
@@ -108,7 +108,7 @@ let tabs = Tabs::new(vec!["Logs", "Config", "Help"])
 f.render_widget(tabs, area);
 ```
 
-## Block (containers, titles, borders)
+## Block, containers, titles, borders
 
 ```rust
 use ratatui::widgets::{Block, Borders, BorderType, Padding};
@@ -175,7 +175,7 @@ let chart = BarChart::default()
 f.render_widget(chart, area);
 ```
 
-## Chart (line / scatter)
+## Chart, line / scatter
 
 ```rust
 use ratatui::widgets::{Axis, Block, Chart, Dataset, GraphType};
@@ -197,7 +197,7 @@ let chart = Chart::new(vec![dataset])
 f.render_widget(chart, area);
 ```
 
-## Custom Widget (impl Widget)
+## Custom Widget, impl Widget
 
 When built-ins don't fit, implement `Widget` for a struct. The render fn writes directly to the buffer:
 
@@ -227,8 +227,8 @@ For widgets that need mutable state across draws, implement `StatefulWidget` ins
 |---|---|
 | Static text / multi-line | Paragraph |
 | Selectable list | List + ListState |
-| Tabular data | Table (+TableState if selectable) |
-| Progress 0–100% | Gauge |
+| Tabular data | Table, +TableState if selectable |
+| Progress, 0 to 100% | Gauge |
 | Top-level mode tabs | Tabs |
 | Container with title + border | Block |
 | Show position in long content | Scrollbar |

@@ -9,7 +9,7 @@ tags: composition, compound-components, architecture
 
 복잡한 컴포넌트를 공유 context를 가진 compound component로 구조화한다. 각 하위 컴포넌트는 prop이 아닌 context를 통해 공유 상태에 접근한다. 소비자는 필요한 부분만 조합한다.
 
-**Incorrect (monolithic component with render props):**
+**Incorrect, monolithic component with render props:**
 
 ```tsx
 function Composer({
@@ -39,7 +39,7 @@ function Composer({
 }
 ```
 
-**Correct (compound components with shared context):**
+**Correct, compound components with shared context:**
 
 ```tsx
 const ComposerContext = createContext<ComposerContextValue | null>(null)

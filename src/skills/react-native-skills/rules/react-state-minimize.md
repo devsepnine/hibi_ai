@@ -9,7 +9,7 @@ tags: state, derived-state, hooks, optimization
 
 Use the fewest state variables possible. If a value can be computed from existing state or props, derive it during render instead of storing it in state. Redundant state causes unnecessary re-renders and can drift out of sync.
 
-**Incorrect (redundant state):**
+**Incorrect, redundant state:**
 
 ```tsx
 function Cart({ items }: { items: Item[] }) {
@@ -30,7 +30,7 @@ function Cart({ items }: { items: Item[] }) {
 }
 ```
 
-**Correct (derived values):**
+**Correct, derived values:**
 
 ```tsx
 function Cart({ items }: { items: Item[] }) {

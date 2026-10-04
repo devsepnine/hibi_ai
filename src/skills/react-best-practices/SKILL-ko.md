@@ -1,6 +1,6 @@
 ---
 name: react-best-practices
-description: React/Next.js performance (Vercel Engineering) — fetch waterfalls, bundle size, server/client fetching, re-render patterns. Use when tuning React/Next.js performance. 리액트 성능, Next.js 최적화, 번들 최적화.
+description: "React/Next.js performance from Vercel Engineering: fetch waterfalls, bundle size, server/client fetching, re-render patterns. Use when tuning React/Next.js performance. 리액트 성능, Next.js 최적화, 번들 최적화."
 license: MIT
 metadata:
   author: vercel
@@ -15,24 +15,24 @@ Vercel이 유지 관리하는 React 및 Next.js 애플리케이션 성능 최적
 
 다음 상황에서 이 가이드를 참조한다:
 - 새 React 컴포넌트나 Next.js 페이지를 작성할 때
-- 데이터 페칭 구현 (클라이언트 또는 서버 사이드)
+- 데이터 페칭 구현, 클라이언트 또는 서버 사이드
 - 성능 이슈를 위한 코드 리뷰
 - 기존 React/Next.js 코드 리팩토링
 - 번들 크기 또는 로드 타임 최적화
 
 ## Quick Reference
 
-### 1. Eliminating Waterfalls (CRITICAL)
+### 1. Eliminating Waterfalls, CRITICAL
 
 - `async-cheap-condition-before-await` - 플래그나 원격 값을 await 하기 전에 저렴한 동기 조건을 먼저 검사한다
 - `async-defer-await` - 실제로 사용되는 분기 안으로 await를 옮긴다
-- `async-parallel` - 독립적 연산에는 Promise.all()을 사용한다
+- `async-parallel` - 독립적 연산에는 `Promise.all()`을 사용한다
 - `async-dependencies` - 부분 의존성에는 better-all을 사용한다
 - `async-api-routes` - API 라우트에서 promise를 일찍 시작하고 늦게 await 한다
 - `async-suspense-boundaries` - Suspense로 콘텐츠를 스트리밍한다
 - `async-optimistic-ui` - Action 내부에서 `useOptimistic`을 써서 자동 롤백 가능한 무지연 mutation을 만든다
 
-### 2. Bundle Size Optimization (CRITICAL)
+### 2. Bundle Size Optimization, CRITICAL
 
 - `bundle-barrel-imports` - 직접 import하고 barrel 파일은 피한다
 - `bundle-dynamic-imports` - 무거운 컴포넌트는 next/dynamic을 사용한다
@@ -40,26 +40,26 @@ Vercel이 유지 관리하는 React 및 Next.js 애플리케이션 성능 최적
 - `bundle-conditional` - 기능이 활성화될 때만 모듈을 로드한다
 - `bundle-preload` - 체감 속도를 위해 hover/focus 시점에 preload 한다
 
-### 3. Server-Side Performance (HIGH)
+### 3. Server-Side Performance, HIGH
 
 - `server-auth-actions` - 서버 액션을 API 라우트처럼 인증한다
-- `server-cache-react` - 요청 단위 dedup을 위해 React.cache()를 사용한다
+- `server-cache-react` - 요청 단위 dedup을 위해 `React.cache()`를 사용한다
 - `server-cache-lru` - 요청 간 캐싱에는 LRU 캐시를 사용한다
 - `server-dedup-props` - RSC props에서 직렬화 중복을 피한다
-- `server-hoist-static-io` - 정적 I/O(폰트, 로고)는 모듈 레벨로 끌어올린다
+- `server-hoist-static-io` - 정적 I/O인 폰트와 로고는 모듈 레벨로 끌어올린다
 - `server-serialization` - 클라이언트 컴포넌트로 전달하는 데이터를 최소화한다
 - `server-parallel-fetching` - fetch 병렬화를 위해 컴포넌트를 재구성한다
 - `server-parallel-nested-fetching` - 중첩 fetch는 항목별로 Promise.all로 묶는다
-- `server-after-nonblocking` - 논블로킹 작업에 after()를 사용한다
+- `server-after-nonblocking` - 논블로킹 작업에 `after()`를 사용한다
 
-### 4. Client-Side Data Fetching (MEDIUM-HIGH)
+### 4. Client-Side Data Fetching, MEDIUM-HIGH
 
 - `client-swr-dedup` - SWR로 자동 요청 dedup을 적용한다
 - `client-event-listeners` - 전역 이벤트 리스너를 dedup 한다
 - `client-passive-event-listeners` - 스크롤에는 passive 리스너를 쓴다
 - `client-localstorage-schema` - localStorage 데이터를 버저닝하고 최소화한다
 
-### 5. Re-render Optimization (MEDIUM)
+### 5. Re-render Optimization, MEDIUM
 
 - `rerender-defer-reads` - 콜백에서만 쓰는 state는 구독하지 않는다
 - `rerender-memo` - 비싼 작업은 메모이즈된 컴포넌트로 추출한다
@@ -77,7 +77,7 @@ Vercel이 유지 관리하는 React 및 Next.js 애플리케이션 성능 최적
 - `rerender-use-ref-transient-values` - 자주 바뀌는 transient 값에는 ref를 쓴다
 - `rerender-no-inline-components` - 컴포넌트 안에 컴포넌트를 정의하지 않는다
 
-### 6. Rendering Performance (MEDIUM)
+### 6. Rendering Performance, MEDIUM
 
 - `rendering-animate-svg-wrapper` - SVG 요소가 아니라 div 래퍼를 애니메이션한다
 - `rendering-content-visibility` - 긴 리스트에는 content-visibility를 쓴다
@@ -92,7 +92,7 @@ Vercel이 유지 관리하는 React 및 Next.js 애플리케이션 성능 최적
 - `rendering-resource-hints` - preload에는 React DOM resource hints를 쓴다
 - `rendering-script-defer-async` - script 태그에는 defer 또는 async를 사용한다
 
-### 7. JavaScript Performance (LOW-MEDIUM)
+### 7. JavaScript Performance, LOW-MEDIUM
 
 - `js-batch-dom-css` - CSS 변경은 클래스나 cssText로 묶는다
 - `js-index-maps` - 반복 조회에는 Map을 만든다
@@ -104,12 +104,12 @@ Vercel이 유지 관리하는 React 및 Next.js 애플리케이션 성능 최적
 - `js-early-exit` - 함수에서 일찍 return 한다
 - `js-hoist-regexp` - RegExp 생성을 루프 밖으로 hoist 한다
 - `js-min-max-loop` - min/max는 sort 대신 루프로 처리한다
-- `js-set-map-lookups` - O(1) 조회에는 Set/Map을 쓴다
-- `js-tosorted-immutable` - 불변성을 위해 toSorted()를 쓴다
+- `js-set-map-lookups` - `O(1)` 조회에는 Set/Map을 쓴다
+- `js-tosorted-immutable` - 불변성을 위해 `toSorted()`를 쓴다
 - `js-flatmap-filter` - 한 번에 map+filter 하려면 flatMap을 쓴다
 - `js-request-idle-callback` - 비핵심 작업은 브라우저 idle 시간으로 미룬다
 
-### 8. Advanced Patterns (LOW)
+### 8. Advanced Patterns, LOW
 
 - `advanced-event-handler-refs` - 이벤트 핸들러는 ref에 저장한다
 - `advanced-init-once` - 앱 로드당 한 번만 초기화한다

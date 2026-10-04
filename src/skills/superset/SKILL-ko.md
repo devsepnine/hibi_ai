@@ -1,11 +1,11 @@
 ---
 name: superset
-description: Apache Superset via MCP — dashboards, charts, datasets, metrics, calculated columns, filters, SQL Lab. Use when working in Superset. 슈퍼셋, 대시보드 생성, 차트 수정, 데이터셋 메트릭, BI 분석.
+description: "Apache Superset via MCP: dashboards, charts, datasets, metrics, calculated columns, filters, SQL Lab. Use when working in Superset. 슈퍼셋, 대시보드 생성, 차트 수정, 데이터셋 메트릭, BI 분석."
 ---
 
 # Apache Superset via MCP
 
-Apache Superset의 대시보드, 차트, 데이터셋, SQL Lab을 MCP 도구(`mcp__superset__*`)로 관리하는 실전 패턴.
+Apache Superset의 대시보드, 차트, 데이터셋, SQL Lab을 MCP 도구인 `mcp__superset__*`로 관리하는 실전 패턴.
 
 ## When to Use
 
@@ -18,13 +18,13 @@ MCP 도구가 연결된 환경에서 다음 작업을 할 때 바로 사용:
 
 **반드시 MCP로:** 정확한 ID·스키마가 필요한 작업. Superset 웹 UI 재현 또는 스크린샷 추측 금지.
 
-## 필수 호출 순서 (Discovery → Read → Write)
+## 필수 호출 순서: Discovery → Read → Write
 
 Superset은 ID 기반 API이므로, 모든 변경 작업은 다음 3단계를 지켜야 안전합니다:
 
-1. **Discovery** — `list_*` 로 대상 후보를 찾는다.
-2. **Read** — `get_*` 로 현재 상태를 읽고 스키마를 검증한다.
-3. **Write** — `create_*` / `update_*` / `set_*` 호출.
+1. **Discovery**: `list_*` 로 대상 후보를 찾는다.
+2. **Read**: `get_*` 로 현재 상태를 읽고 스키마를 검증한다.
+3. **Write**: `create_*` / `update_*` / `set_*` 호출.
 
 ```
 ex) 차트 필터 변경
@@ -57,7 +57,7 @@ get_dashboard_chart_query_context(...)   # 각 차트의 실제 쿼리 컨텍스
 
 ### 2. 차트 생성 / 수정
 
-**신규 차트 만들기 (표준 흐름):**
+**신규 차트 만들기, 표준 흐름:**
 
 ```
 1) list_datasets(search="...")            # 대상 데이터셋 찾기
@@ -157,7 +157,7 @@ find_and_replace_in_sql(find, replace)    # 저장된 쿼리 일괄 치환
 7. get_dashboard_charts(dashboard_id) → 포함됐는지 확인
 ```
 
-### Template B: 차트 필터 업데이트 (안전판)
+### Template B: 차트 필터 업데이트, 안전판
 
 ```
 1. get_current_chart_config(chart_id)      # 현재 전체 config 스냅샷
@@ -202,7 +202,7 @@ get_dashboard_config(dashboard_id)
 → 필요한 필드만 덮어써서 update_dashboard_config
 ```
 
-`position_json` 은 트리 구조이므로 손으로 만들지 말고 **기존 구조 위에서 최소 수정**한다. 새 차트 추가가 목적이라면 `add_chart_to_dashboard` 로 충분한 경우가 많다 — config 직접 편집은 레이아웃/탭 재구성 같은 고급 작업에만.
+`position_json` 은 트리 구조이므로 손으로 만들지 말고 **기존 구조 위에서 최소 수정**한다. 새 차트 추가가 목적이라면 `add_chart_to_dashboard` 로 충분한 경우가 많다. config 직접 편집은 레이아웃/탭 재구성 같은 고급 작업에만.
 
 ## 실수하기 쉬운 것들
 
@@ -217,7 +217,7 @@ get_dashboard_config(dashboard_id)
    - 원천 테이블에 컬럼이 추가됐는데 `refresh_dataset_schema`를 안 하면 Superset은 그 컬럼을 모른다.
 
 4. **필터 타입 혼동**
-   - adhoc_filters (차트 내부) vs 네이티브 대시보드 필터 vs `time_range` 는 서로 다른 필드. get으로 모양 확인 후 수정.
+   - adhoc_filters, 즉 차트 내부 필터 vs 네이티브 대시보드 필터 vs `time_range` 는 서로 다른 필드. get으로 모양 확인 후 수정.
 
 5. **execute_sql 남용**
    - 분석용 쿼리만. 메타데이터 수정이나 DDL은 금지. 메트릭/컬럼 변경은 전용 MCP 도구로 한다.
@@ -234,9 +234,9 @@ get_dashboard_config(dashboard_id)
 - [ ] 변경 전 상태를 `get_*` 로 스냅샷 잡았는가
 - [ ] 변경 후 `get_*` 재호출로 반영 결과를 확인했는가
 - [ ] 삭제성 작업이면 참조 차트/대시보드 영향도를 점검했는가
-- [ ] 신규 차트라면 대시보드 연결(add_chart_to_dashboard)까지 끝냈는가
+- [ ] 신규 차트라면 대시보드 연결까지 `add_chart_to_dashboard`로 끝냈는가
 
-## Quick Reference (주요 MCP 도구)
+## Quick Reference: 주요 MCP 도구
 
 | 영역        | 도구                                                                                     |
 |-------------|------------------------------------------------------------------------------------------|

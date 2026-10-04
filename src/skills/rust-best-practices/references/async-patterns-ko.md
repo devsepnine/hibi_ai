@@ -77,7 +77,7 @@ async fn main() {
 
 ## Choosing an Async Runtime
 
-### Tokio - Most Popular
+### Tokio: Most Popular
 
 ```toml
 [dependencies]
@@ -108,7 +108,7 @@ fn main() {
 }
 ```
 
-### async-std - Similar to std API
+### async-std: Similar to std API
 
 ```toml
 [dependencies]
@@ -122,7 +122,7 @@ async fn main() {
 }
 ```
 
-### smol - Lightweight
+### smol: Lightweight
 
 ```toml
 [dependencies]
@@ -397,7 +397,7 @@ async fn worker_pool(tasks: Vec<Task>, num_workers: usize) {
 
 ## Channels and Communication
 
-### mpsc - Multiple Producer, Single Consumer
+### mpsc: Multiple Producer, Single Consumer
 
 ```rust
 use tokio::sync::mpsc;
@@ -437,7 +437,7 @@ async fn multi_producer() {
 }
 ```
 
-### broadcast - Multiple Consumers
+### broadcast: Multiple Consumers
 
 ```rust
 use tokio::sync::broadcast;
@@ -467,7 +467,7 @@ async fn broadcast_example() {
 }
 ```
 
-### oneshot - Single Value
+### oneshot: Single Value
 
 ```rust
 use tokio::sync::oneshot;
@@ -487,7 +487,7 @@ async fn oneshot_example() {
 }
 ```
 
-### watch - Single Producer, Multiple Subscribers
+### watch: Single Producer, Multiple Subscribers
 
 ```rust
 use tokio::sync::watch;
@@ -554,7 +554,7 @@ async fn fetch_with_fallback(primary_url: &str, fallback_url: &str) -> Result<St
 
 ## Cancellation and Timeouts
 
-### Timeout with timeout()
+### Timeout with `timeout()`
 
 ```rust
 use tokio::time::{timeout, Duration};

@@ -14,7 +14,7 @@ monorepo 안의 모든 패키지에서 각 의존성의 버전을 단일하게 �
 이를 강제하려면 syncpack 같은 도구를 사용한다. 최후의 수단으로는 yarn
 resolutions 또는 npm overrides를 쓴다.
 
-**Incorrect (version ranges, multiple versions):**
+**Incorrect, version ranges, multiple versions:**
 
 ```json
 // packages/app/package.json
@@ -32,7 +32,7 @@ resolutions 또는 npm overrides를 쓴다.
 }
 ```
 
-**Correct (exact versions, single source of truth):**
+**Correct, exact versions, single source of truth:**
 
 ```json
 // package.json (root)

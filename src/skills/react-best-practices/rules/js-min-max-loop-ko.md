@@ -9,7 +9,7 @@ tags: javascript, arrays, performance, sorting, algorithms
 
 최소·최대 원소를 찾는 데는 한 번의 순회만 필요하다. 정렬은 낭비이고 더 느리다.
 
-**Incorrect (O(n log n) - sort to find latest):**
+**Incorrect, `O(n log n)` sort to find latest:**
 
 ```typescript
 interface Project {
@@ -26,7 +26,7 @@ function getLatestProject(projects: Project[]) {
 
 최댓값 하나를 구하기 위해 배열 전체를 정렬한다.
 
-**Incorrect (O(n log n) - sort for oldest and newest):**
+**Incorrect, `O(n log n)` sort for oldest and newest:**
 
 ```typescript
 function getOldestAndNewest(projects: Project[]) {
@@ -37,7 +37,7 @@ function getOldestAndNewest(projects: Project[]) {
 
 min/max만 필요한데도 여전히 불필요하게 정렬한다.
 
-**Correct (O(n) - single loop):**
+**Correct, `O(n)` single loop:**
 
 ```typescript
 function getLatestProject(projects: Project[]) {
@@ -71,7 +71,7 @@ function getOldestAndNewest(projects: Project[]) {
 
 배열을 한 번만 순회하고, 복사도 정렬도 없다.
 
-**Alternative (Math.min/Math.max for small arrays):**
+**Alternative, Math.min/Math.max for small arrays:**
 
 ```typescript
 const numbers = [5, 2, 8, 1, 9]
@@ -79,4 +79,4 @@ const min = Math.min(...numbers)
 const max = Math.max(...numbers)
 ```
 
-작은 배열에는 잘 동작하지만, spread operator의 한계 때문에 매우 큰 배열에서는 느려지거나 에러가 던져질 수 있다. 대략 Chrome 143에서 124,000개, Safari 18에서 638,000개가 한계이며 정확한 값은 환경마다 다르다 — [the fiddle](https://jsfiddle.net/qw1jabsx/4/) 참고. 안정성을 위해 loop 방식을 사용한다.
+작은 배열에는 잘 동작하지만, spread operator의 한계 때문에 매우 큰 배열에서는 느려지거나 에러가 던져질 수 있다. 대략 Chrome 143에서 124,000개, Safari 18에서 638,000개가 한계이며 정확한 값은 환경마다 다르니 [the fiddle](https://jsfiddle.net/qw1jabsx/4/)을 참고한다. 안정성을 위해 loop 방식을 사용한다.

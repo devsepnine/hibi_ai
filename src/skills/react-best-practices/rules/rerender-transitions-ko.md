@@ -9,7 +9,7 @@ tags: rerender, transitions, startTransition, performance
 
 자주 발생하면서 긴급하지 않은 state 업데이트는 transition으로 표시해 UI 반응성을 유지한다.
 
-**잘못된 예 (스크롤마다 UI를 차단):**
+**잘못된 예, 스크롤마다 UI를 차단:**
 
 ```tsx
 function ScrollTracker() {
@@ -22,7 +22,7 @@ function ScrollTracker() {
 }
 ```
 
-**올바른 예 (논블로킹 업데이트):**
+**올바른 예, 논블로킹 업데이트:**
 
 ```tsx
 import { startTransition } from 'react'

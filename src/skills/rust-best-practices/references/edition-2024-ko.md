@@ -48,7 +48,7 @@ rust-version.workspace = true
 
 ### 1. Improved Pattern Matching
 
-**`if let` chains (stabilized)**:
+**`if let` chains, stabilized**:
 ```rust
 // ✅ Edition 2024: Cleaner conditional logic
 fn process_user(user: Option<User>) {
@@ -83,7 +83,7 @@ match value {
 
 ### 2. Async/Await Improvements
 
-**Async fn in traits (stabilized)**:
+**Async fn in traits, stabilized**:
 ```rust
 // ✅ Edition 2024: Native async in traits
 trait Repository {
@@ -116,7 +116,7 @@ impl Repository for DatabaseRepo {
 }
 ```
 
-**Return position impl Trait in traits (RPITIT)**:
+**Return position impl Trait in traits, RPITIT**:
 ```rust
 // ✅ Edition 2024: Cleaner trait definitions
 trait Processor {
@@ -132,9 +132,9 @@ impl Processor for TextProcessor {
 }
 ```
 
-**Async closures (stable in 1.85+)**:
+**Async closures, stable in 1.85+**:
 
-1.85 이전에는 async closure를 `|x| async move { ... }`로 작성해야 했고, 이는 `Future`를 반환하는 중첩 closure를 생성한다. 1.85는 `async |x| { ... }` 형태를 안정화하여 호출자가 직접 `AsyncFn` / `AsyncFnMut` / `AsyncFnOnce` trait를 사용할 수 있게 한다 — 간접 참조 감소, 더 나은 borrow tracking, 캡처된 state 주변에서 desugaring 놀라움 없음.
+1.85 이전에는 async closure를 `|x| async move { ... }`로 작성해야 했고, 이는 `Future`를 반환하는 중첩 closure를 생성한다. 1.85는 `async |x| { ... }` 형태를 안정화하여 호출자가 직접 `AsyncFn` / `AsyncFnMut` / `AsyncFnOnce` trait를 사용할 수 있게 한다, 간접 참조 감소, 더 나은 borrow tracking, 캡처된 state 주변에서 desugaring 놀라움 없음.
 
 ```rust
 // ✅ Edition 2024 + 1.85: Native async closure
@@ -170,10 +170,10 @@ fn legacy() -> impl Future {
 }
 ```
 
-callback이 비동기적으로 **소비될 때** (예: 그것을 await하는 `async fn`에 전달) `async |x| { ... }`을 사용한다. 실제로 future를 요구에 따라 생산하는 factory를 원할 때만 더 오래된 `|x| async move { ... }`을 사용한다.
+callback이 비동기적으로 **소비될 때**, 예: 그것을 await하는 `async fn`에 전달, `async |x| { ... }`을 사용한다. 실제로 future를 요구에 따라 생산하는 factory를 원할 때만 더 오래된 `|x| async move { ... }`을 사용한다.
 
-**async fn + `async {}` block capture (clarified in 2024)**:
-Edition 2024는 `async {}` 블록의 capture가 둘러싸는 함수의 lifetime 계약을 놀라운 promotion 없이 상속하도록 규칙을 강화한다 — `'static`이 필요할 때만 `async move`를 선호한다.
+**async fn + `async {}` block capture, clarified in 2024**:
+Edition 2024는 `async {}` 블록의 capture가 둘러싸는 함수의 lifetime 계약을 놀라운 promotion 없이 상속하도록 규칙을 강화한다, `'static`이 필요할 때만 `async move`를 선호한다.
 
 ### 3. Enhanced Error Messages
 

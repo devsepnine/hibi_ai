@@ -9,7 +9,7 @@ tags: javascript, map, indexing, optimization, performance
 
 Multiple `.find()` calls by the same key should use a Map.
 
-**Incorrect (O(n) per lookup):**
+**Incorrect, `O(n)` per lookup:**
 
 ```typescript
 function processOrders(orders: Order[], users: User[]) {
@@ -20,7 +20,7 @@ function processOrders(orders: Order[], users: User[]) {
 }
 ```
 
-**Correct (O(1) per lookup):**
+**Correct, `O(1)` per lookup:**
 
 ```typescript
 function processOrders(orders: Order[], users: User[]) {
@@ -33,5 +33,5 @@ function processOrders(orders: Order[], users: User[]) {
 }
 ```
 
-Build map once (O(n)), then all lookups are O(1).
+Build the map once in `O(n)`, then all lookups are `O(1)`.
 For 1000 orders × 1000 users: 1M ops → 2K ops.

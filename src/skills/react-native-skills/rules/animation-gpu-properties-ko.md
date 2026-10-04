@@ -8,11 +8,11 @@ tags: animation, performance, reanimated, transform, opacity
 ## Animate Transform and Opacity Instead of Layout Properties
 
 `width`, `height`, `top`, `left`, `margin`, `padding` 애니메이션은 피한다.
-이런 속성들은 매 프레임 레이아웃을 다시 계산하게 만든다. 대신 `transform`
-(scale, translate)과 `opacity`를 사용한다. 이들은 레이아웃을 트리거하지 않고
+이런 속성들은 매 프레임 레이아웃을 다시 계산하게 만든다. 대신 `transform`의
+scale, translate와 `opacity`를 사용한다. 이들은 레이아웃을 트리거하지 않고
 GPU 위에서 실행된다.
 
-**Incorrect (animates height, triggers layout every frame):**
+**Incorrect, animates height, triggers layout every frame:**
 
 ```tsx
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
@@ -27,7 +27,7 @@ function CollapsiblePanel({ expanded }: { expanded: boolean }) {
 }
 ```
 
-**Correct (animates scaleY, GPU-accelerated):**
+**Correct, animates scaleY, GPU-accelerated:**
 
 ```tsx
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
@@ -48,7 +48,7 @@ function CollapsiblePanel({ expanded }: { expanded: boolean }) {
 }
 ```
 
-**Correct (animates translateY for slide animations):**
+**Correct, animates translateY for slide animations:**
 
 ```tsx
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
@@ -65,5 +65,5 @@ function SlideIn({ visible }: { visible: boolean }) {
 }
 ```
 
-GPU 가속 속성: `transform` (translate, scale, rotate), `opacity`. 그 외 모든
+GPU 가속 속성: `transform`의 translate, scale, rotate와 `opacity`. 그 외 모든
 속성은 레이아웃을 트리거한다.

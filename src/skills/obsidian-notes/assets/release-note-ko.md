@@ -14,12 +14,12 @@ related: []
 
 > [!info] Release summary
 > 한 단락 피치: 무엇이 달라졌는지, 누가 신경 써야 하는지, 업그레이드가
-> 필수인지. 2~3문장 — 사용자는 훑어 읽는다.
+> 필수인지. 2~3문장, 사용자는 훑어 읽는다.
 
 ## Highlights
 
-- 불릿 1 — 줄당 사용자에게 보이는 변경 하나, 커밋 덤프가 아님.
-- 불릿 2 — 상세 섹션이나 ADR로 링크.
+- 불릿 1: 줄당 사용자에게 보이는 변경 하나, 커밋 덤프가 아님.
+- 불릿 2: 상세 섹션이나 ADR로 링크.
 
 ## Breaking changes
 
@@ -31,7 +31,7 @@ related: []
 
 ## Bug fixes
 
-- 짧은 설명 — [GitHub PR](https://github.com/org/repo/pull/123).
+- 짧은 설명: [GitHub PR](https://github.com/org/repo/pull/123).
   맥락: 있다면 [[<ADR or debug note>]].
 
 ## Improvements

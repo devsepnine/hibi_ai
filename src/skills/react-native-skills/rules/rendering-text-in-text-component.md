@@ -10,7 +10,7 @@ tags: rendering, text, core
 Strings must be rendered inside `<Text>`. React Native crashes if a string is a
 direct child of `<View>`.
 
-**Incorrect (crashes):**
+**Incorrect, crashes:**
 
 ```tsx
 import { View } from 'react-native'

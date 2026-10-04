@@ -35,4 +35,4 @@ function MessageList({ messages }: { messages: Message[] }) {
 }
 ```
 
-메시지가 1000개라면, 브라우저는 화면 밖에 있는 약 990개 항목의 layout/paint를 건너뛴다 (초기 렌더링이 약 10배 빨라진다).
+메시지가 1000개라면, 브라우저는 화면 밖에 있는 약 990개 항목의 layout/paint를 건너뛰어 초기 렌더링이 약 10배 빨라진다.

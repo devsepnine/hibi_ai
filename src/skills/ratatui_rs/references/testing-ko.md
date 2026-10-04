@@ -31,7 +31,7 @@ fn renders_paragraph_with_title() {
 }
 ```
 
-`assert_buffer`는 셀 단위로 비교하고 불일치 시 시각적 diff를 출력한다 — raw 문자열의 `assert_eq!`보다 명확하다.
+`assert_buffer`는 셀 단위로 비교하고 불일치 시 시각적 diff를 출력한다, raw 문자열의 `assert_eq!`보다 명확하다.
 
 ## Test the App Logic Separately From the UI
 
@@ -76,7 +76,7 @@ mod tests {
 }
 ```
 
-TUI의 대부분 버그는 state-machine 버그이다 (선택의 off-by-one, 놓친 모드 전환). 저렴한 단위 테스트로 이를 다룬다; 실제로 보는 렌더링 회귀를 위해 `TestBackend`를 예약한다.
+TUI의 대부분 버그는 state-machine 버그이다, 선택의 off-by-one, 놓친 모드 전환. 저렴한 단위 테스트로 이를 다룬다; 실제로 보는 렌더링 회귀를 위해 `TestBackend`를 예약한다.
 
 ## Snapshot-Style Rendering Tests
 
@@ -95,7 +95,7 @@ terminal.backend().assert_buffer(&expected);
 
 ## Testing Stateful Widgets
 
-`StatefulWidget` (List, Table)은 렌더링 중 state가 필요하다. 테스트에서 명시적으로 state를 구성한다:
+List, Table 같은 `StatefulWidget`은 렌더링 중 state가 필요하다. 테스트에서 명시적으로 state를 구성한다:
 
 ```rust
 use ratatui::widgets::{List, ListItem, ListState};
@@ -165,10 +165,10 @@ fn key_table_smoke() {
 
 | Test | Don't test |
 |---|---|
-| State 전환 (App 메서드) | 장식적 테두리의 정확한 픽셀 위치 |
+| State 전환, App 메서드 | 장식적 테두리의 정확한 픽셀 위치 |
 | Key → action 디스패치 | crossterm 자체의 이벤트 파싱 |
 | 커스터마이즈한 위젯 렌더링 | upstream에서 변경되지 않은 표준 위젯 |
-| spawn 헬퍼의 cancel/timeout 로직 | 실제 자식 프로세스 종료 코드 (fake 사용) |
+| spawn 헬퍼의 cancel/timeout 로직 | 실제 자식 프로세스 종료 코드, fake 사용 |
 
 TUI의 테스트 목표는 state-machine 회귀와 *자신의* 위젯 렌더링을 잡는 것이지, 프레임워크를 다시 테스트하는 것이 아니다.
 
@@ -181,4 +181,4 @@ cargo test renders_                 # filter by name
 cargo test -- --nocapture           # see println! output
 ```
 
-자식 프로세스 spawn도 테스트하는 TUI 앱의 경우, in-process fake를 선호한다 (실제 `Command` 대신 쓸 `&mut Vec<u8>`을 받는 fn) — 이는 테스트를 빠르고 OS-독립적으로 유지한다.
+자식 프로세스 spawn도 테스트하는 TUI 앱의 경우, in-process fake를 선호한다, 실제 `Command` 대신 쓸 `&mut Vec<u8>`을 받는 fn, 이는 테스트를 빠르고 OS-독립적으로 유지한다.

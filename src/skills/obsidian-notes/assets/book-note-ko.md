@@ -14,10 +14,10 @@ related: []
 aliases: ["<Short title>"]
 ---
 
-# <Title> — <Author>
+# <Title>: <Author>
 
 > [!info] Why I'm reading it
-> 이 책을 집어 든 동기 — 이 책이 어떤 질문에 답해주길 바랐는지를 적는다.
+> 이 책을 집어 든 동기, 이 책이 어떤 질문에 답해주길 바랐는지를 적는다.
 > 이후 리뷰가 "실제로 그 답을 줬는가"에 단단히 묶이게 한다.
 
 ## One-line verdict
@@ -34,13 +34,13 @@ aliases: ["<Short title>"]
 
 원자적 핵심들. 각각이 나중에 별도의 evergreen 노트로 승격될 수 있다.
 
-1. **<Idea>** — 한 문장 설명.
-2. **<Idea>** — …
-3. **<Idea>** — …
+1. **<Idea>**: 한 문장 설명.
+2. **<Idea>**: …
+3. **<Idea>**: …
 
 승격 기록:
 
-- [[<Evergreen note>]] — 위의 아이디어 #1에서 추출
+- [[<Evergreen note>]]: 위의 아이디어 #1에서 추출
 
 ## Highlights
 
@@ -48,17 +48,17 @@ aliases: ["<Short title>"]
 함께 단다.
 
 > <quote 1>   ^q1
-> — <Chapter / page>
+> 출처: <Chapter / page>
 
 > <quote 2>   ^q2
-> — <Chapter / page>
+> 출처: <Chapter / page>
 
 다른 노트는 `[[<This Note>#^q1]]` 형식으로 인용할 수 있다.
 
 ## My commentary
 
 저자에게 반박하거나 확장하거나 다른 작업과 연결하는 공간. 책의 주장과
-명확히 분리한다 — 이 분리가 미래의 자신이 "책이 말한 것"과 "내가 그것에
+명확히 분리한다, 이 분리가 미래의 자신이 "책이 말한 것"과 "내가 그것에
 대해 생각한 것"을 구분하게 해준다.
 
 ## Connections
@@ -78,7 +78,7 @@ aliases: ["<Short title>"]
 다시 읽거나 책을 적용했을 때 항목을 추가한다. 이전 생각을 덮어쓰지 말고
 아래에 새 내용을 추가한다.
 
-### YYYY-MM-DD — Revisit
+### YYYY-MM-DD: Revisit
 
 - 여전히 유효한 것
 - 지금은 동의하지 않는 것

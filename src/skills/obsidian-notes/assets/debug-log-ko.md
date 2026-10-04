@@ -11,11 +11,11 @@ related: []
 aliases: []
 ---
 
-# Debug — <one-line symptom> (YYYY-MM-DD)
+# Debug: <one-line symptom>, YYYY-MM-DD
 
 > [!bug] Symptom
-> 사용자(또는 모니터링)가 보는 것. 정확한 에러 메시지, 스택 트레이스
-> 일부, 또는 동작 설명을 포함한다. 의역하지 말 것 — 나중에 검색할 때
+> 사용자나 모니터링이 보는 것. 정확한 에러 메시지, 스택 트레이스
+> 일부, 또는 동작 설명을 포함한다. 의역하지 말 것, 나중에 검색할 때
 > 문자 그대로의 신호가 중요하다.
 
 ## Environment
@@ -37,13 +37,13 @@ aliases: []
 
 ## Hypotheses explored
 
-### ✗ Hypothesis 1 — <name>
+### ✗ Hypothesis 1: <name>
 
 - 의심한 이유: …
 - 검증 방법: …
-- 결과: 배제 — 이유 … [evidence](<link>)
+- 결과: 배제: 이유 … [evidence](<link>)
 
-### ✓ Hypothesis 2 — <name>
+### ✓ Hypothesis 2: <name>
 
 - 의심한 이유: …
 - 증거: `<log snippet / repro command>`
@@ -57,16 +57,16 @@ aliases: []
 
 ## Fix
 
-- 변경 내용: `<file:line>` — before / after 설명.
-- PR: <url> — <date>에 머지됨.
-- 추가된 테스트: [[<test file or description>]] — 이 특정 경로에 대한
+- 변경 내용: `<file:line>`: before / after 설명.
+- PR: <url>: <date>에 머지됨.
+- 추가된 테스트: [[<test file or description>]]: 이 특정 경로에 대한
   회귀 커버리지.
 
 ## Prevention
 
-- 더 일찍 잡았더라면 무엇이 잡았을까? (린트 규칙, 테스트, 알림, 리뷰
-  체크리스트). 실행 가능한 [ ] 작업으로 변환하고 후속 항목을 링크한다.
-  - [ ] <preventive action> — [[<tracking note>]]
+- 더 일찍 잡았더라면 무엇이 잡았을까? 린트 규칙, 테스트, 알림, 리뷰
+  체크리스트 등. 실행 가능한 [ ] 작업으로 변환하고 후속 항목을 링크한다.
+  - [ ] <preventive action>: [[<tracking note>]]
 
 ## Related
 

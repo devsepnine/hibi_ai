@@ -9,7 +9,7 @@ tags: react, hooks, useState, performance, initialization
 
 비싼 초기값에는 함수를 `useState`에 전달한다. 함수 형태가 아니면 값이 단 한 번만 사용됨에도 매 렌더마다 initializer가 실행된다.
 
-**잘못된 예 (매 렌더마다 실행):**
+**잘못된 예, 매 렌더마다 실행:**
 
 ```tsx
 function FilteredList({ items }: { items: Item[] }) {
@@ -31,7 +31,7 @@ function UserProfile() {
 }
 ```
 
-**올바른 예 (한 번만 실행):**
+**올바른 예, 한 번만 실행:**
 
 ```tsx
 function FilteredList({ items }: { items: Item[] }) {
@@ -53,6 +53,6 @@ function UserProfile() {
 }
 ```
 
-localStorage/sessionStorage에서 초기값 계산, 자료구조 빌드(인덱스, 맵), DOM 읽기, 무거운 변환 시에는 lazy 초기화를 사용한다.
+localStorage/sessionStorage에서 초기값 계산, 인덱스나 맵 같은 자료구조 빌드, DOM 읽기, 무거운 변환 시에는 lazy 초기화를 사용한다.
 
-단순 primitive (`useState(0)`), 직접 참조 (`useState(props.value)`), 가벼운 리터럴 (`useState({})`)에는 함수 형태가 불필요하다.
+`useState(0)` 같은 단순 primitive, `useState(props.value)` 같은 직접 참조, `useState({})` 같은 가벼운 리터럴에는 함수 형태가 불필요하다.

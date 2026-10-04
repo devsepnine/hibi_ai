@@ -11,7 +11,7 @@ Always load compressed, appropriately-sized images in lists. Full-resolution
 images consume excessive memory and cause scroll jank. Request thumbnails from
 your server or use an image CDN with resize parameters.
 
-**Incorrect (full-resolution images):**
+**Incorrect, full-resolution images:**
 
 ```tsx
 function ProductItem({ product }: { product: Product }) {
@@ -28,7 +28,7 @@ function ProductItem({ product }: { product: Product }) {
 }
 ```
 
-**Correct (request appropriately-sized image):**
+**Correct, request appropriately-sized image:**
 
 ```tsx
 function ProductItem({ product }: { product: Product }) {
@@ -49,5 +49,5 @@ function ProductItem({ product }: { product: Product }) {
 ```
 
 Use an optimized image component with built-in caching and placeholder support,
-such as `expo-image` or `SolitoImage` (which uses `expo-image` under the hood).
+such as `expo-image` or `SolitoImage`, which uses `expo-image` under the hood.
 Request images at 2x the display size for retina screens.

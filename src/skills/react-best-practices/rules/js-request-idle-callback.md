@@ -7,11 +7,11 @@ tags: javascript, performance, idle, scheduling, analytics
 
 ## Defer Non-Critical Work with requestIdleCallback
 
-**Impact: MEDIUM (keeps UI responsive during background tasks)**
+**Impact: MEDIUM, keeps UI responsive during background tasks**
 
 Use `requestIdleCallback()` to schedule non-critical work during browser idle periods. This keeps the main thread free for user interactions and animations, reducing jank and improving perceived performance.
 
-**Incorrect (blocks main thread during user interaction):**
+**Incorrect, blocks main thread during user interaction:**
 
 ```typescript
 function handleSearch(query: string) {
@@ -25,7 +25,7 @@ function handleSearch(query: string) {
 }
 ```
 
-**Correct (defers non-critical work to idle time):**
+**Correct, defers non-critical work to idle time:**
 
 ```typescript
 function handleSearch(query: string) {

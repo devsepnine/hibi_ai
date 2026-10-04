@@ -31,7 +31,7 @@ fn renders_paragraph_with_title() {
 }
 ```
 
-`assert_buffer` compares cell-by-cell and prints a visual diff on mismatch — clearer than `assert_eq!` on raw strings.
+`assert_buffer` compares cell-by-cell and prints a visual diff on mismatch, clearer than `assert_eq!` on raw strings.
 
 ## Test the App Logic Separately From the UI
 
@@ -76,7 +76,7 @@ mod tests {
 }
 ```
 
-Most bugs in TUIs are state-machine bugs (off-by-one in selection, missed mode transition). Cover those with cheap unit tests; reserve `TestBackend` for rendering regressions you actually see.
+Most bugs in TUIs are state-machine bugs, off-by-one in selection, missed mode transition. Cover those with cheap unit tests; reserve `TestBackend` for rendering regressions you actually see.
 
 ## Snapshot-Style Rendering Tests
 
@@ -95,7 +95,7 @@ terminal.backend().assert_buffer(&expected);
 
 ## Testing Stateful Widgets
 
-`StatefulWidget` (List, Table) requires its state during render. In tests, construct the state explicitly:
+A `StatefulWidget` such as List or Table requires its state during render. In tests, construct the state explicitly:
 
 ```rust
 use ratatui::widgets::{List, ListItem, ListState};
@@ -165,10 +165,10 @@ fn key_table_smoke() {
 
 | Test | Don't test |
 |---|---|
-| State transitions (App methods) | Exact pixel positions of decorative borders |
+| State transitions, App methods | Exact pixel positions of decorative borders |
 | Key → action dispatch | crossterm's own event parsing |
 | Widget rendering you've customized | Standard widgets unchanged from upstream |
-| Cancel/timeout logic in spawn helpers | Real child-process exit codes (use a fake) |
+| Cancel/timeout logic in spawn helpers | Real child-process exit codes, use a fake |
 
 The goal of tests in a TUI is to catch state-machine regressions and rendering of *your* widgets, not to re-test the framework.
 
@@ -181,4 +181,4 @@ cargo test renders_                 # filter by name
 cargo test -- --nocapture           # see println! output
 ```
 
-For TUI apps that also test child-process spawning, prefer in-process fakes (a fn that takes `&mut Vec<u8>` to write to, instead of a real `Command`) — this keeps tests fast and OS-independent.
+For TUI apps that also test child-process spawning, prefer in-process fakes, a fn that takes `&mut Vec<u8>` to write to, instead of a real `Command`, this keeps tests fast and OS-independent.

@@ -69,7 +69,7 @@ Follow these styling patterns for cleaner, more consistent React Native code.
 { boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)' }
 ```
 
-**Avoid multiple font sizes – use weight and color for emphasis:**
+**Avoid multiple font sizes. Use weight and color for emphasis:**
 
 ```tsx
 // Incorrect – varying font sizes for hierarchy
@@ -83,5 +83,5 @@ Follow these styling patterns for cleaner, more consistent React Native code.
 <Text style={{ color: '#999' }}>Caption</Text>
 ```
 
-Limiting font sizes creates visual consistency. Use `fontWeight` (bold/semibold)
+Limiting font sizes creates visual consistency. Use `fontWeight` with bold or semibold
 and grayscale colors for hierarchy instead.

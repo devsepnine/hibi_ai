@@ -9,7 +9,7 @@ tags: rendering, transitions, useTransition, loading, state
 
 loading 상태에 대해 수동 `useState` 대신 `useTransition`을 사용한다. 이는 빌트인 `isPending` 상태를 제공하고 transition을 자동으로 관리한다.
 
-**잘못된 예 (수동 loading state):**
+**잘못된 예, 수동 loading state:**
 
 ```tsx
 function SearchResults() {
@@ -35,7 +35,7 @@ function SearchResults() {
 }
 ```
 
-**올바른 예 (빌트인 pending 상태가 있는 useTransition):**
+**올바른 예, 빌트인 pending 상태가 있는 useTransition:**
 
 ```tsx
 import { useTransition, useState } from 'react'

@@ -9,7 +9,7 @@ tags: bundle, conditional-loading, lazy-loading
 
 큰 데이터나 모듈은 해당 기능이 활성화된 경우에만 로드한다.
 
-**Example (lazy-load animation frames):**
+**Example, lazy-load animation frames:**
 
 ```tsx
 function AnimationPlayer({ enabled, setEnabled }: { enabled: boolean; setEnabled: React.Dispatch<React.SetStateAction<boolean>> }) {

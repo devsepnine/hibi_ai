@@ -66,6 +66,6 @@ function cachePrefs(user: FullUser) {
 }
 ```
 
-**Always wrap in try-catch:** `getItem()`, `setItem()`은 incognito/private 모드(Safari, Firefox), 할당량 초과, 비활성화 상태에서 throw를 던진다.
+**Always wrap in try-catch:** `getItem()`, `setItem()`은 incognito/private 모드인 Safari와 Firefox, 할당량 초과, 비활성화 상태에서 throw를 던진다.
 
 **Benefits:** versioning을 통한 스키마 진화, 저장 크기 감소, 토큰/PII/내부 플래그의 저장 방지.

@@ -19,7 +19,7 @@ Theme::KanagawaWave / KanagawaDragon / KanagawaLotus
 Theme::Moonfly / Nightfly / Oxocarbon / Ferra
 ```
 
-`Theme::ALL` is a `&'static [Theme]` with every built-in — pass it straight to `pick_list`:
+`Theme::ALL` is a `&'static [Theme]` with every built-in. Pass it straight to `pick_list`:
 
 ```rust
 pick_list(Theme::ALL, Some(&app.theme), Message::ThemeChanged)
@@ -124,7 +124,7 @@ container(content)
     })
 ```
 
-## Custom Theme (Custom Palette)
+## Custom Theme: Custom Palette
 
 When the built-in themes don't match your brand, define a palette and build a `Theme::custom`:
 
@@ -193,7 +193,7 @@ Message::WindowEvent(window::Event::ThemeChanged(t)) => {
 }
 ```
 
-(API names evolve across 0.13/0.14 — check your version's `window::Event` enum.)
+API names evolve across 0.13/0.14, so check your version's `window::Event` enum.
 
 ## When to customize vs use built-in
 
@@ -225,4 +225,4 @@ button("Save").style(style::primary_button);
 container(content).style(style::card);
 ```
 
-This keeps `view` narrative ("a button that says save") and style changes local to one file.
+This keeps `view` narrative, as in "a button that says save", and style changes local to one file.

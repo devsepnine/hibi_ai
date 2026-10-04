@@ -12,7 +12,7 @@ shared value를 다른 shared value로부터 derive할 때는 `useAnimatedReacti
 자동으로 추적하며, 바로 쓸 수 있는 값을 반환한다. animated reaction은 값을
 derive하는 게 아니라 사이드 이펙트를 위한 것이다.
 
-**Incorrect (useAnimatedReaction for derivation):**
+**Incorrect, useAnimatedReaction for derivation:**
 
 ```tsx
 import { useSharedValue, useAnimatedReaction } from 'react-native-reanimated'
@@ -32,7 +32,7 @@ function MyComponent() {
 }
 ```
 
-**Correct (useDerivedValue):**
+**Correct, useDerivedValue:**
 
 ```tsx
 import { useSharedValue, useDerivedValue } from 'react-native-reanimated'
@@ -46,8 +46,8 @@ function MyComponent() {
 }
 ```
 
-`useAnimatedReaction`은 값을 만들어내지 않는 사이드 이펙트(예: haptic 트리거,
-로깅, `runOnJS` 호출)에만 사용한다.
+`useAnimatedReaction`은 값을 만들어내지 않는 사이드 이펙트, 예를 들어 haptic 트리거,
+로깅, `runOnJS` 호출에만 사용한다.
 
 Reference:
 [Reanimated useDerivedValue](https://docs.swmansion.com/react-native-reanimated/docs/core/useDerivedValue)

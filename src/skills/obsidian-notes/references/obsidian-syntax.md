@@ -15,7 +15,7 @@ docs: <https://help.obsidian.md>.
 ![[image.png|300]]              embed image with width hint
 ```
 
-Wikilinks are vault-relative — Obsidian resolves them regardless of the
+Wikilinks are vault-relative, so Obsidian resolves them regardless of the
 linker's folder. Prefer them for any internal reference.
 
 ## Callouts
@@ -37,11 +37,11 @@ Callouts are blockquotes with a type hint. Folded by default when
 > `-` means start collapsed.
 ```
 
-Supported types (aliases in parens): `note`, `abstract` (`summary`,
-`tldr`), `info`, `todo`, `tip` (`hint`, `important`), `success` (`check`,
-`done`), `question` (`help`, `faq`), `warning` (`caution`, `attention`),
-`failure` (`fail`, `missing`), `danger` (`error`), `bug`, `example`,
-`quote` (`cite`).
+Supported types and their aliases: `note`; `abstract`, also `summary` or
+`tldr`; `info`; `todo`; `tip`, also `hint` or `important`; `success`, also
+`check` or `done`; `question`, also `help` or `faq`; `warning`, also
+`caution` or `attention`; `failure`, also `fail` or `missing`; `danger`,
+also `error`; `bug`; `example`; `quote`, also `cite`.
 
 Use them semantically:
 - **Context section** → `> [!info]`
@@ -52,7 +52,7 @@ Use them semantically:
 
 ## Headings
 
-Use `# H1` exactly once (the title). H2 sections scope the body. Dataview
+Use `# H1` exactly once, as the title. H2 sections scope the body. Dataview
 and the outline panel rely on heading hierarchy.
 
 ## Tags
@@ -63,11 +63,11 @@ and the outline panel rely on heading hierarchy.
 #topic/perf
 ```
 
-Nested with `/` — `#type/adr` and `#type/release` are siblings under
-`#type`. Tags in frontmatter (preferred for metadata) and in body are
+Nested with `/`, so `#type/adr` and `#type/release` are siblings under
+`#type`. Tags in frontmatter, preferred for metadata, and in body are
 merged by Obsidian. Don't duplicate.
 
-## Properties (frontmatter)
+## Properties: frontmatter
 
 YAML block at the top of the file:
 
@@ -82,7 +82,7 @@ created: 2026-04-21
 ```
 
 Use arrays with square brackets for multi-value fields. Obsidian parses
-these into typed properties — dataview and the property panel both read
+these into typed properties, and dataview and the property panel both read
 them.
 
 ## Block references
@@ -107,7 +107,7 @@ Useful for long ADR context sections referenced from release notes.
 - [-] cancelled
 ```
 
-Dataview can query tasks by status across the vault — retrospectives and
+Dataview can query tasks by status across the vault, so retrospectives and
 debug logs benefit from this.
 
 ## Tables
@@ -131,7 +131,7 @@ Claim backed by source.[^1]
 
 Useful for release notes citing PRs/issues without cluttering the flow.
 
-## Embeds (`![[...]]`)
+## Embeds: `![[...]]`
 
 Transclude a whole note or section into the current one. The Live Preview
 and Reading modes render the referenced content inline. Useful for:
@@ -143,7 +143,7 @@ and Reading modes render the referenced content inline. Useful for:
 ![[ADR-0012 Scope find_git_root#Consequences]]
 ```
 
-## Dataview (essentials)
+## Dataview: essentials
 
 Dataview is a community plugin, but most vaults have it. It turns
 frontmatter + tags into queryable data.
@@ -163,8 +163,8 @@ WHERE status = "accepted"
 SORT file.name ASC
 ```
 
-Don't inline dataview queries in every template — reserve them for index
-notes (MOC / folder notes) that aggregate.
+Don't inline dataview queries in every template. Reserve them for index
+notes that aggregate, such as MOC and folder notes.
 
 ## Mermaid diagrams
 
@@ -181,9 +181,9 @@ flowchart LR
 
 Full diagram catalog and "which diagram for which shape" guide lives
 in [diagrams.md](diagrams.md). Prefer Mermaid over PlantUML when the
-shape fits — PlantUML needs a community plugin.
+shape fits, since PlantUML needs a community plugin.
 
-## Math (MathJax)
+## Math: MathJax
 
 Inline math: `$e^{i\pi} + 1 = 0$`.
 Block math:
@@ -199,10 +199,10 @@ backticks like `` `O(n log n)` `` read better than forced LaTeX.
 
 ## What NOT to use
 
-- **HTML `<br>`/`<div>`** for layout — breaks Reading-mode rendering in
+- **HTML `<br>`/`<div>`** for layout, which breaks Reading-mode rendering in
   older Obsidian versions and hurts graph parsing.
-- **Inline images as base64** — use vault-relative `![[image.png]]`.
-- **Absolute paths in wikilinks** — redundant and breaks if folders move.
-- **`- [ ]` tasks in frontmatter** — tasks live in the body only.
-- **PlantUML without the plugin installed** — renders as raw text;
+- **Inline images as base64**: use vault-relative `![[image.png]]`.
+- **Absolute paths in wikilinks**: redundant and breaks if folders move.
+- **`- [ ]` tasks in frontmatter**: tasks live in the body only.
+- **PlantUML without the plugin installed**: renders as raw text;
   prefer Mermaid unless the diagram genuinely needs PlantUML features.

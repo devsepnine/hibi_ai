@@ -9,11 +9,11 @@ tags: design-system, components, composition
 
 Don't create components that can accept a string if they aren't a text node. If
 a component can receive a string child, it must be a dedicated `*Text`
-component. For components like buttons, which can have both a View (or
-Pressable) together with text, use compound components, such a `Button`,
+component. For components like buttons, which can have both a View or
+Pressable together with text, use compound components, such a `Button`,
 `ButtonText`, and `ButtonIcon`.
 
-**Incorrect (polymorphic children):**
+**Incorrect, polymorphic children:**
 
 ```tsx
 import { Pressable, Text } from 'react-native'
@@ -37,7 +37,7 @@ function Button({ children, icon }: ButtonProps) {
 <Button><CustomText>Save</CustomText></Button>
 ```
 
-**Correct (compound components):**
+**Correct, compound components:**
 
 ```tsx
 import { Pressable, Text } from 'react-native'

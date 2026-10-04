@@ -9,7 +9,7 @@ tags: bundle, preload, user-intent, hover
 
 사용자가 사용할 가능성이 높은 시점에 무거운 번들을 미리 로드해 체감 지연을 줄인다.
 
-**Example (preload on hover/focus):**
+**Example, preload on hover/focus:**
 
 ```tsx
 function EditorButton({ onClick }: { onClick: () => void }) {
@@ -31,7 +31,7 @@ function EditorButton({ onClick }: { onClick: () => void }) {
 }
 ```
 
-**Example (preload when feature flag is enabled):**
+**Example, preload when feature flag is enabled:**
 
 ```tsx
 function FlagsProvider({ children, flags }: Props) {

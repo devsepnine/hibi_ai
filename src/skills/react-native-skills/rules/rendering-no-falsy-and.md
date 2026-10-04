@@ -8,10 +8,10 @@ tags: rendering, conditional, jsx, crash
 ## Never Use && with Potentially Falsy Values
 
 Never use `{value && <Component />}` when `value` could be an empty string or
-`0`. These are falsy but JSX-renderable—React Native will try to render them as
+`0`. These are falsy but JSX-renderable, and React Native will try to render them as
 text outside a `<Text>` component, causing a hard crash in production.
 
-**Incorrect (crashes if count is 0 or name is ""):**
+**Incorrect, crashes if count is 0 or name is "":**
 
 ```tsx
 function Profile({ name, count }: { name: string; count: number }) {
@@ -25,7 +25,7 @@ function Profile({ name, count }: { name: string; count: number }) {
 // If name="" or count=0, renders the falsy value → crash
 ```
 
-**Correct (ternary with null):**
+**Correct, ternary with null:**
 
 ```tsx
 function Profile({ name, count }: { name: string; count: number }) {
@@ -38,7 +38,7 @@ function Profile({ name, count }: { name: string; count: number }) {
 }
 ```
 
-**Correct (explicit boolean coercion):**
+**Correct, explicit boolean coercion:**
 
 ```tsx
 function Profile({ name, count }: { name: string; count: number }) {
@@ -51,7 +51,7 @@ function Profile({ name, count }: { name: string; count: number }) {
 }
 ```
 
-**Best (early return):**
+**Best, early return:**
 
 ```tsx
 function Profile({ name, count }: { name: string; count: number }) {

@@ -7,11 +7,11 @@ tags: server, io, performance, next.js, route-handlers, og-image
 
 ## 정적 I/O를 모듈 레벨로 호이스트한다
 
-**Impact: HIGH (요청마다 반복되는 파일/네트워크 I/O를 회피)**
+**Impact: HIGH, 요청마다 반복되는 파일/네트워크 I/O를 회피**
 
-route handler나 server function에서 정적 자산(폰트, 로고, 이미지, 설정 파일)을 로딩할 때는 I/O 연산을 모듈 레벨로 호이스트한다. 모듈 레벨 코드는 모듈이 처음 import될 때 한 번만 실행되며, 매 요청에서 실행되지 않는다. 이로써 호출마다 발생하는 중복된 파일 시스템 읽기나 네트워크 fetch를 제거한다.
+route handler나 server function에서 폰트, 로고, 이미지, 설정 파일 같은 정적 자산을 로딩할 때는 I/O 연산을 모듈 레벨로 호이스트한다. 모듈 레벨 코드는 모듈이 처음 import될 때 한 번만 실행되며, 매 요청에서 실행되지 않는다. 이로써 호출마다 발생하는 중복된 파일 시스템 읽기나 네트워크 fetch를 제거한다.
 
-**잘못된 예 (매 요청마다 폰트 파일을 읽음):**
+**잘못된 예, 매 요청마다 폰트 파일을 읽음:**
 
 ```typescript
 // app/api/og/route.tsx
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
 }
 ```
 
-**올바른 예 (모듈 초기화 시 한 번만 로드):**
+**올바른 예, 모듈 초기화 시 한 번만 로드:**
 
 ```typescript
 // app/api/og/route.tsx
@@ -66,7 +66,7 @@ export async function GET(request: Request) {
 }
 ```
 
-**올바른 예 (모듈 레벨에서 동기 fs):**
+**올바른 예, 모듈 레벨에서 동기 fs:**
 
 ```typescript
 // app/api/og/route.tsx
@@ -94,7 +94,7 @@ export async function GET(request: Request) {
 }
 ```
 
-**잘못된 예 (호출마다 config 읽기):**
+**잘못된 예, 호출마다 config 읽기:**
 
 ```typescript
 import fs from 'node:fs/promises'
@@ -109,7 +109,7 @@ export async function processRequest(data: Data) {
 }
 ```
 
-**올바른 예 (config와 template을 모듈 레벨로 호이스트):**
+**올바른 예, config와 template을 모듈 레벨로 호이스트:**
 
 ```typescript
 import fs from 'node:fs/promises'
@@ -140,7 +140,7 @@ export async function processRequest(data: Data) {
 이 패턴을 사용하지 않는 시점:
 
 - 요청 또는 사용자별로 달라지는 자산
-- 런타임 도중 변경 가능한 파일 (대신 TTL이 있는 캐싱 사용)
+- 런타임 도중 변경 가능한 파일. 대신 TTL이 있는 캐싱을 사용한다
 - 유지하면 메모리를 과도하게 소비할 큰 파일
 - 메모리에 남아 있어서는 안 되는 민감 정보
 

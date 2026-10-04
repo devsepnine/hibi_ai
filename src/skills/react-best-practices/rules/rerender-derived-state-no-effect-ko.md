@@ -9,7 +9,7 @@ tags: rerender, derived-state, useEffect, state
 
 현재의 props/state로부터 계산할 수 있는 값이라면, state에 저장하거나 effect에서 갱신하지 않는다. 추가 렌더링과 state drift를 피하기 위해 렌더링 중에 derive한다. 단지 prop 변경에 반응하기 위해 effect에서 state를 설정하지 않는다. 대신 derived value 또는 keyed reset을 우선 사용한다.
 
-**잘못된 예 (불필요한 state와 effect):**
+**잘못된 예, 불필요한 state와 effect:**
 
 ```tsx
 function Form() {
@@ -25,7 +25,7 @@ function Form() {
 }
 ```
 
-**올바른 예 (렌더링 중에 derive):**
+**올바른 예, 렌더링 중에 derive:**
 
 ```tsx
 function Form() {

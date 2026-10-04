@@ -9,7 +9,7 @@ tags: async, suspense, streaming, layout-shift
 
 Instead of awaiting data in async components before returning JSX, use Suspense boundaries to show the wrapper UI faster while data loads.
 
-**Incorrect (wrapper blocked by data fetching):**
+**Incorrect, wrapper blocked by data fetching:**
 
 ```tsx
 async function Page() {
@@ -30,7 +30,7 @@ async function Page() {
 
 The entire layout waits for data even though only the middle section needs it.
 
-**Correct (wrapper shows immediately, data streams in):**
+**Correct, wrapper shows immediately, data streams in:**
 
 ```tsx
 function Page() {
@@ -56,7 +56,7 @@ async function DataDisplay() {
 
 Sidebar, Header, and Footer render immediately. Only DataDisplay waits for data.
 
-**Alternative (share promise across components):**
+**Alternative, share promise across components:**
 
 ```tsx
 function Page() {
@@ -91,9 +91,9 @@ Both components share the same promise, so only one fetch occurs. Layout renders
 
 **When NOT to use this pattern:**
 
-- Critical data needed for layout decisions (affects positioning)
+- Critical data needed for layout decisions, since it affects positioning
 - SEO-critical content above the fold
 - Small, fast queries where suspense overhead isn't worth it
-- When you want to avoid layout shift (loading → content jump)
+- When you want to avoid layout shift, the jump from loading to content
 
 **Trade-off:** Faster initial paint vs potential layout shift. Choose based on your UX priorities.

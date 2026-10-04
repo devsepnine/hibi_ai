@@ -13,7 +13,7 @@ hook에서 가져온 함수는 render 스코프 최상단에서 destructure한�
 접근으로 함수를 호출하는 일은 절대 하지 않는다. destructure된 함수는 안정적인
 참조를 갖지만, dot 접근은 새 참조를 만들어 메모이제이션을 깨뜨린다.
 
-**Incorrect (dotting into object):**
+**Incorrect, dotting into object:**
 
 ```tsx
 import { useRouter } from 'expo-router'
@@ -31,7 +31,7 @@ function SaveButton(props) {
 }
 ```
 
-**Correct (destructure early):**
+**Correct, destructure early:**
 
 ```tsx
 import { useRouter } from 'expo-router'

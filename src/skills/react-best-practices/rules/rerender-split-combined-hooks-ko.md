@@ -7,9 +7,9 @@ tags: rerender, useMemo, useEffect, dependencies, optimization
 
 ## 결합된 Hook 계산을 분리한다
 
-하나의 hook이 서로 다른 의존성을 가진 여러 독립 작업을 포함할 때는 별도의 hook으로 분리한다. 결합된 hook은 의존성 중 하나라도 변경되면 모든 작업을 재실행한다 — 일부 작업이 변경된 값을 사용하지 않더라도 마찬가지다.
+하나의 hook이 서로 다른 의존성을 가진 여러 독립 작업을 포함할 때는 별도의 hook으로 분리한다. 결합된 hook은 의존성 중 하나라도 변경되면 모든 작업을 재실행한다. 일부 작업이 변경된 값을 사용하지 않더라도 마찬가지다.
 
-**잘못된 예 (`sortOrder` 변경이 filtering도 재계산하게 만듦):**
+**잘못된 예, `sortOrder` 변경이 filtering도 재계산하게 만듦:**
 
 ```tsx
 const sortedProducts = useMemo(() => {
@@ -21,7 +21,7 @@ const sortedProducts = useMemo(() => {
 }, [products, category, sortOrder])
 ```
 
-**올바른 예 (filtering은 products나 category가 변경될 때만 재계산):**
+**올바른 예, filtering은 products나 category가 변경될 때만 재계산:**
 
 ```tsx
 const filteredProducts = useMemo(
@@ -40,7 +40,7 @@ const sortedProducts = useMemo(
 
 이 패턴은 무관한 사이드 이펙트를 결합한 `useEffect`에도 적용된다.
 
-**잘못된 예 (의존성 중 하나만 바뀌어도 두 effect 모두 실행):**
+**잘못된 예, 의존성 중 하나만 바뀌어도 두 effect 모두 실행:**
 
 ```tsx
 useEffect(() => {
@@ -49,7 +49,7 @@ useEffect(() => {
 }, [pathname, pageTitle])
 ```
 
-**올바른 예 (effect가 독립적으로 실행):**
+**올바른 예, effect가 독립적으로 실행:**
 
 ```tsx
 useEffect(() => {

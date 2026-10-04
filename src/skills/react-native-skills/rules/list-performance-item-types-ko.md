@@ -7,12 +7,12 @@ tags: list, performance, recycling, heterogeneous, LegendList
 
 ## Use Item Types for Heterogeneous Lists
 
-리스트에 서로 다른 아이템 레이아웃(message, image, header 등)이 섞여 있다면
+리스트에 서로 다른 아이템 레이아웃, 예를 들어 message, image, header 등이 섞여 있다면
 각 아이템에 `type` 필드를 두고 리스트에 `getItemType`을 제공한다. 이렇게 하면
 아이템들이 별도의 recycling pool에 들어가서 message 컴포넌트가 image 컴포넌트
 자리에 재사용되는 일이 없어진다.
 
-**Incorrect (single component with conditionals):**
+**Incorrect, single component with conditionals:**
 
 ```tsx
 type Item = { id: string; text?: string; imageUrl?: string; isHeader?: boolean }
@@ -38,7 +38,7 @@ function Feed({ items }: { items: Item[] }) {
 }
 ```
 
-**Correct (typed items with separate components):**
+**Correct, typed items with separate components:**
 
 ```tsx
 type HeaderItem = { id: string; type: 'header'; title: string }

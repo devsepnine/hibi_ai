@@ -8,10 +8,10 @@ tags: state, hooks, useState, callbacks
 ## Use Dispatch Updaters for State That Depends on Current Value
 
 다음 state가 현재 state에 의존한다면, 콜백 안에서 state 변수를 직접 읽지 말고
-dispatch updater(`setState(prev => ...)`)를 사용한다. 이렇게 해야 stale
+dispatch updater인 `setState(prev => ...)`를 사용한다. 이렇게 해야 stale
 closure를 피하고 항상 최신 값과 비교할 수 있다.
 
-**Incorrect (reads state directly):**
+**Incorrect, reads state directly:**
 
 ```tsx
 const [size, setSize] = useState<Size | undefined>(undefined)
@@ -25,7 +25,7 @@ const onLayout = (e: LayoutChangeEvent) => {
 }
 ```
 
-**Correct (dispatch updater):**
+**Correct, dispatch updater:**
 
 ```tsx
 const [size, setSize] = useState<Size | undefined>(undefined)
@@ -43,7 +43,7 @@ updater에서 이전 값을 그대로 반환하면 re-render를 건너뛴다.
 
 primitive state라면 re-render 전에 값을 비교할 필요가 없다.
 
-**Incorrect (unnecessary comparison for primitive state):**
+**Incorrect, unnecessary comparison for primitive state:**
 
 ```tsx
 const [size, setSize] = useState<Size | undefined>(undefined)
@@ -54,7 +54,7 @@ const onLayout = (e: LayoutChangeEvent) => {
 }
 ```
 
-**Correct (sets primitive state directly):**
+**Correct, sets primitive state directly:**
 
 ```tsx
 const [size, setSize] = useState<Size | undefined>(undefined)
@@ -68,7 +68,7 @@ const onLayout = (e: LayoutChangeEvent) => {
 다만 다음 state가 현재 state에 의존한다면, 그때는 여전히 dispatch updater를
 사용해야 한다.
 
-**Incorrect (reads state directly from the callback):**
+**Incorrect, reads state directly from the callback:**
 
 ```tsx
 const [count, setCount] = useState(0)
@@ -78,7 +78,7 @@ const onTap = () => {
 }
 ```
 
-**Correct (dispatch updater):**
+**Correct, dispatch updater:**
 
 ```tsx
 const [count, setCount] = useState(0)

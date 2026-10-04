@@ -19,7 +19,7 @@ aliases: ["Alt Title"]   # optional
 
 ## Field reference
 
-### `type` (required)
+### `type`: required
 어떤 template이 적용되고 어떤 `status` 값이 합법인지 제어한다.
 
 | Value | Template |
@@ -36,15 +36,15 @@ aliases: ["Alt Title"]   # optional
 | `book`     | Book / article capture |
 | `fleeting` | 빠르게 캡처되어 나중에 리뷰되는 빠른 아이디어 |
 
-여기서 새 type을 만들지 마라 — 먼저 새 template을 추가한다.
+여기서 새 type을 만들지 마라. 먼저 새 template을 추가한다.
 
-### `status` (required)
+### `status`: required
 허용되는 값은 `type`에 의존한다.
 
 | type | status values | Transitions |
 |------|---------------|-------------|
 | `release`  | `draft` → `published` | 버전이 잘릴 때까지 `draft` |
-| `adr`      | `proposed` → `accepted` → `superseded` \| `deprecated` | superseded ADR을 절대 삭제하지 않는다 — 표시하고 frontmatter의 `supersededBy`에 link한다 |
+| `adr`      | `proposed` → `accepted` → `superseded` \| `deprecated` | superseded ADR을 절대 삭제하지 않는다. 표시하고 frontmatter의 `supersededBy`에 link한다 |
 | `retro`    | `active` → `closed` | 액션 아이템이 열려있는 동안 `active` |
 | `debug`    | `open` → `resolved` → `archived` | 수정이 land되면 `resolved`로 뒤집기; 검색을 조용히 하기 위해 몇 달 후 `archived` 추가 |
 | `learning` | `draft` → `stable` → `stale` | API가 콘텐츠를 무효화할 만큼 변경되면 `stale` |
@@ -55,20 +55,20 @@ aliases: ["Alt Title"]   # optional
 | `book`     | `reading` → `completed` → `revisited` | 재독 후 `revisited`; 아래에 새 revisit 로그 추가 |
 | `fleeting` | `new` → `processed` \| `discarded` | 콘텐츠가 learning/ADR/MOC로 승급되면 `processed`; 결과가 없으면 `discarded` |
 
-### `created` (required), `updated` (optional)
+### `created`: required, `updated`: optional
 ISO `YYYY-MM-DD`. 노트에서 백데이팅한다면 "today"가 아닌 생성 날짜를 사용한다.
 
-### `tags` (required)
+### `tags`: required
 세 축이 필요하다; 더 많아도 괜찮다. 다음 섹션의 분류에 충실한다.
 
-### `project` (required)
+### `project`: required
 소문자 slug, 다단어이면 kebab-case. `project/<slug>` 태그와 일치시킨다. 예: `project: hibi-ai`이면 태그 `project/hibi-ai`.
 
-### `related` (optional)
-컨텍스트를 공유하는 노트로의 wikilink 배열. 양방향 링크는 Obsidian의 슈퍼파워이다 — 큰 임베드 블록 하나보다 두 개의 가벼운 `related` 항목을 선호한다.
+### `related`: optional
+컨텍스트를 공유하는 노트로의 wikilink 배열. 양방향 링크는 Obsidian의 슈퍼파워이다. 큰 임베드 블록 하나보다 두 개의 가벼운 `related` 항목을 선호한다.
 
-### `aliases` (optional)
-검색을 위한 대체 제목. ADR에 유용 (예: aliases가 기저 주제를 포함: `"Switch DB to Postgres"`).
+### `aliases`: optional
+검색을 위한 대체 제목. ADR에 유용하며, 예를 들어 aliases가 기저 주제를 포함한다: `"Switch DB to Postgres"`.
 
 ### Type-specific extras
 일부 type은 추가 frontmatter를 가진다. 같은 블록에 유지한다.
@@ -168,7 +168,7 @@ source: "shower" | "reading" | "walk" | "conversation" | ...
 - `project/hibi-ai`, `project/installer`, `project/dashboard-frontend`
 
 ### `topic/<area>`
-도메인 영역 — 가능하면 기존 vault 컨벤션을 사용한다. 일반적인 것:
+도메인 영역: 가능하면 기존 vault 컨벤션을 사용한다. 일반적인 것:
 - `topic/auth`, `topic/perf`, `topic/build`, `topic/ci`, `topic/db`
 - `topic/ui`, `topic/api`, `topic/devx`, `topic/ops`, `topic/security`
 - `topic/testing`, `topic/docs`
@@ -177,11 +177,11 @@ source: "shower" | "reading" | "walk" | "conversation" | ...
 
 ### Optional axes
 
-- `stage/<phase>` — `stage/rfc`, `stage/implementation`, `stage/rollout`
-- `tech/<stack>` — `tech/rust`, `tech/typescript`, `tech/react`
-- `owner/<person>` — vault가 태그로 소유권을 추적한다면
+- `stage/<phase>`: `stage/rfc`, `stage/implementation`, `stage/rollout`
+- `tech/<stack>`: `tech/rust`, `tech/typescript`, `tech/react`
+- `owner/<person>`: vault가 태그로 소유권을 추적한다면
 
-`status/...` 태그는 피한다 — `status`는 자체 frontmatter field를 가진다.
+`status/...` 태그는 피한다. `status`는 자체 frontmatter field를 가진다.
 
 ## Worked example
 

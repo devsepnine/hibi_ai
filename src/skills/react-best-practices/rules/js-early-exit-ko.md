@@ -9,7 +9,7 @@ tags: javascript, functions, optimization, early-return
 
 결과가 결정되면 즉시 return해서 불필요한 처리를 건너뛴다.
 
-**Incorrect (processes all items even after finding answer):**
+**Incorrect, processes all items even after finding answer:**
 
 ```typescript
 function validateUsers(users: User[]) {
@@ -32,7 +32,7 @@ function validateUsers(users: User[]) {
 }
 ```
 
-**Correct (returns immediately on first error):**
+**Correct, returns immediately on first error:**
 
 ```typescript
 function validateUsers(users: User[]) {

@@ -9,7 +9,7 @@ tags: composition, variants, architecture
 
 여러 boolean prop을 가진 하나의 컴포넌트 대신, 명시적인 변형 컴포넌트를 만든다. 각 변형은 필요한 부분을 조합한다. 코드가 스스로 문서화된다.
 
-**Incorrect (one component, many modes):**
+**Incorrect, one component, many modes:**
 
 ```tsx
 // What does this component actually render?
@@ -22,7 +22,7 @@ tags: composition, variants, architecture
 />
 ```
 
-**Correct (explicit variants):**
+**Correct, explicit variants:**
 
 ```tsx
 // Immediately clear what this renders

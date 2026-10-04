@@ -83,5 +83,5 @@ tags: styling, css, layout, shadows, gradients
 <Text style={{ color: '#999' }}>Caption</Text>
 ```
 
-폰트 사이즈를 제한하면 시각적 일관성이 생긴다. 대신 `fontWeight`(bold/semibold)와
+폰트 사이즈를 제한하면 시각적 일관성이 생긴다. 대신 `fontWeight`의 bold나 semibold와
 회색조 컬러로 위계를 표현한다.

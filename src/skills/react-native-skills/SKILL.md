@@ -1,6 +1,6 @@
 ---
 name: react-native-skills
-description: React Native/Expo practices — FlashList performance, Reanimated, navigation, native modules, monorepo setup. Use when building RN/Expo apps. 리액트 네이티브, Expo, 모바일 성능, 네이티브 모듈.
+description: "React Native/Expo practices: FlashList performance, Reanimated, navigation, native modules, monorepo setup. Use when building RN/Expo apps. 리액트 네이티브, Expo, 모바일 성능, 네이티브 모듈."
 license: MIT
 metadata:
   author: vercel
@@ -27,14 +27,14 @@ Reference these guidelines when:
 ## Rules by Section
 
 Section order and impact levels come from `rules/_sections.md`. Every entry below
-is a file: `rules/<id>.md` (`rules/<id>-ko.md` for the Korean translation).
+is a file: `rules/<id>.md`, with `rules/<id>-ko.md` as the Korean translation.
 
-### 1. Core Rendering — CRITICAL
+### 1. Core Rendering: CRITICAL
 
 - `rendering-text-in-text-component` - Wrap text in Text components
 - `rendering-no-falsy-and` - Avoid falsy && for conditional rendering
 
-### 2. List Performance — HIGH
+### 2. List Performance: HIGH
 
 - `list-performance-virtualize` - Use FlashList for large lists
 - `list-performance-item-memo` - Memoize list item components
@@ -45,36 +45,36 @@ is a file: `rules/<id>.md` (`rules/<id>-ko.md` for the Korean translation).
 - `list-performance-item-expensive` - Move expensive work outside items
 - `list-performance-item-types` - Use item types for heterogeneous lists
 
-### 3. Animation — HIGH
+### 3. Animation: HIGH
 
 - `animation-gpu-properties` - Animate only transform and opacity
 - `animation-derived-value` - Use useDerivedValue for computed animations
 - `animation-gesture-detector-press` - Use Gesture.Tap instead of Pressable
 
-### 4. Scroll Performance — HIGH
+### 4. Scroll Performance: HIGH
 
 - `scroll-position-no-state` - Never track scroll position in useState
 
-### 5. Navigation — HIGH
+### 5. Navigation: HIGH
 
 - `navigation-native-navigators` - Use native stack and native tabs over JS navigators
 
-### 6. React State — MEDIUM
+### 6. React State: MEDIUM
 
 - `react-state-minimize` - Minimize state subscriptions
 - `react-state-dispatcher` - Use dispatcher pattern for callbacks
 - `react-state-fallback` - Show fallback on first render
 
-### 7. State Architecture — MEDIUM
+### 7. State Architecture: MEDIUM
 
 - `state-ground-truth` - State represents ground truth, not derived visual values
 
-### 8. React Compiler — MEDIUM
+### 8. React Compiler: MEDIUM
 
 - `react-compiler-destructure-functions` - Destructure for React Compiler
 - `react-compiler-reanimated-shared-values` - Handle shared values with compiler
 
-### 9. User Interface — MEDIUM
+### 9. User Interface: MEDIUM
 
 - `ui-expo-image` - Use expo-image for all images
 - `ui-image-gallery` - Use Galeria for image lightboxes
@@ -83,27 +83,27 @@ is a file: `rules/<id>.md` (`rules/<id>-ko.md` for the Korean translation).
 - `ui-scrollview-content-inset` - Use contentInset for headers
 - `ui-menus` - Use native context menus
 - `ui-native-modals` - Use native modals when possible
-- `ui-measure-views` - Use onLayout, not measure()
+- `ui-measure-views` - Use onLayout, not `measure()`
 - `ui-styling` - Use StyleSheet.create or Nativewind
 
-### 10. Design System — MEDIUM
+### 10. Design System: MEDIUM
 
 - `design-system-compound-components` - Use compound components over polymorphic children
 
-### 11. Monorepo — LOW
+### 11. Monorepo: LOW
 
 - `monorepo-native-deps-in-app` - Keep native dependencies in app package
 - `monorepo-single-dependency-versions` - Use single versions across packages
 
-### 12. Third-Party Dependencies — LOW
+### 12. Third-Party Dependencies: LOW
 
 - `imports-design-system-folder` - Organize design system imports
 
-### 13. JavaScript — LOW
+### 13. JavaScript: LOW
 
 - `js-hoist-intl` - Hoist Intl object creation
 
-### 14. Fonts — LOW
+### 14. Fonts: LOW
 
 - `fonts-config-plugin` - Use config plugins for custom fonts
 

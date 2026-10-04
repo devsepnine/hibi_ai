@@ -34,10 +34,10 @@ println!("{}, {}", x, y);  // OK: both are valid
 ```
 
 **Copy Types**:
-- All integers (`i32`, `u64`, etc.)
-- Booleans (`bool`)
-- Floating point (`f32`, `f64`)
-- Characters (`char`)
+- All integers, `i32`, `u64`, etc.
+- Booleans, `bool`
+- Floating point, `f32`, `f64`
+- Characters, `char`
 - Tuples containing only Copy types
 
 ### Ownership Transfer Patterns
@@ -72,7 +72,7 @@ println!("{}", s);     // s still valid
 
 ## Borrowing Rules
 
-### Immutable References (&T)
+### Immutable References, &T
 
 ```rust
 // Multiple immutable borrows allowed simultaneously
@@ -86,7 +86,7 @@ let len2 = calculate_length(&s);  // OK: multiple immutable borrows
 println!("s: {}, len: {}, {}", s, len1, len2);  // s still valid
 ```
 
-### Mutable References (&mut T)
+### Mutable References, &mut T
 
 ```rust
 // Only one mutable borrow allowed at a time
@@ -105,7 +105,7 @@ println!("{}", s);  // "hello world"
    - One mutable reference, OR
    - Any number of immutable references
 
-2. **References must always be valid** (no dangling references)
+2. **References must always be valid**, no dangling references
 
 ```rust
 // ❌ ERROR: Cannot have mutable and immutable references simultaneously
@@ -286,7 +286,7 @@ impl Data {
 }
 ```
 
-### Pattern 5: Cow (Clone on Write)
+### Pattern 5: Cow, Clone on Write
 
 ```rust
 use std::borrow::Cow;
@@ -399,7 +399,7 @@ static STATIC: &str = "static string";     // Explicitly 'static
 
 ## Smart Pointers
 
-### Box<T> - Heap Allocation
+### Box<T>: Heap Allocation
 
 ```rust
 // Use Box for heap allocation
@@ -423,7 +423,7 @@ let shapes: Vec<Box<dyn Draw>> = vec![
 ];
 ```
 
-### Rc<T> - Reference Counting
+### Rc<T>: Reference Counting
 
 ```rust
 use std::rc::Rc;
@@ -438,7 +438,7 @@ println!("Count: {}", Rc::strong_count(&data));  // 3
 // ❌ Rc is not thread-safe - use Arc for threads
 ```
 
-### Arc<T> - Atomic Reference Counting
+### Arc<T>: Atomic Reference Counting
 
 ```rust
 use std::sync::Arc;
@@ -592,17 +592,17 @@ impl Data {
 1. **Prefer borrowing over ownership** when you don't need to modify or keep the data
 2. **Use `&str` over `String`** for function parameters
 3. **Use `&[T]` over `Vec<T>`** for function parameters
-4. **Clone only when necessary** - prefer references
-5. **Use lifetime elision** - don't add explicit lifetimes unless needed
+4. **Clone only when necessary**: prefer references
+5. **Use lifetime elision**: don't add explicit lifetimes unless needed
 6. **Prefer `Arc` over `Rc`** if you might need thread-safety later
-7. **Use `Mutex` or `RwLock` sparingly** - they have runtime overhead
-8. **Interior mutability is a last resort** - prefer `&mut self` methods
+7. **Use `Mutex` or `RwLock` sparingly**: they have runtime overhead
+8. **Interior mutability is a last resort**: prefer `&mut self` methods
 9. **Document why you use `unsafe`** if you must use it
-10. **Let the compiler guide you** - borrow checker errors are helpful
+10. **Let the compiler guide you**: borrow checker errors are helpful
 
 ## Further Reading
 
-- [The Rust Book - Chapter 4: Understanding Ownership](https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html)
-- [The Rust Book - Chapter 10: Generic Types, Traits, and Lifetimes](https://doc.rust-lang.org/book/ch10-00-generics.html)
-- [The Rustonomicon - Advanced Unsafe Rust](https://doc.rust-lang.org/nomicon/)
-- [Rust API Guidelines - Borrowing](https://rust-lang.github.io/api-guidelines/flexibility.html)
+- [The Rust Book, Chapter 4: Understanding Ownership](https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html)
+- [The Rust Book, Chapter 10: Generic Types, Traits, and Lifetimes](https://doc.rust-lang.org/book/ch10-00-generics.html)
+- [The Rustonomicon, Advanced Unsafe Rust](https://doc.rust-lang.org/nomicon/)
+- [Rust API Guidelines, Borrowing](https://rust-lang.github.io/api-guidelines/flexibility.html)

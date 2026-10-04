@@ -9,7 +9,7 @@ tags: javascript, map, indexing, optimization, performance
 
 같은 키로 반복되는 `.find()` 호출은 Map을 사용한다.
 
-**Incorrect (O(n) per lookup):**
+**Incorrect, `O(n)` per lookup:**
 
 ```typescript
 function processOrders(orders: Order[], users: User[]) {
@@ -20,7 +20,7 @@ function processOrders(orders: Order[], users: User[]) {
 }
 ```
 
-**Correct (O(1) per lookup):**
+**Correct, `O(1)` per lookup:**
 
 ```typescript
 function processOrders(orders: Order[], users: User[]) {
@@ -33,5 +33,5 @@ function processOrders(orders: Order[], users: User[]) {
 }
 ```
 
-map을 한 번 만들고 나면(O(n)) 이후 모든 조회는 O(1)이다.
+map을 `O(n)`에 한 번 만들고 나면 이후 모든 조회는 `O(1)`이다.
 주문 1000개 × 사용자 1000명: 1M ops → 2K ops.

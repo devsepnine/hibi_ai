@@ -9,7 +9,7 @@ tags: rerender, useEffect, dependencies, optimization
 
 객체 대신 primitive 의존성을 명시해 effect 재실행을 최소화한다.
 
-**잘못된 예 (user의 어떤 필드가 바뀌어도 재실행):**
+**잘못된 예, user의 어떤 필드가 바뀌어도 재실행:**
 
 ```tsx
 useEffect(() => {
@@ -17,7 +17,7 @@ useEffect(() => {
 }, [user])
 ```
 
-**올바른 예 (id가 바뀔 때만 재실행):**
+**올바른 예, id가 바뀔 때만 재실행:**
 
 ```tsx
 useEffect(() => {

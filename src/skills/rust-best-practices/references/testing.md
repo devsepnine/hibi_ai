@@ -803,7 +803,7 @@ struct MyStruct {
 
 ## Best Practices
 
-### 1. Write Tests First (TDD)
+### 1. Write Tests First, TDD
 
 ```rust
 // Write test first
@@ -999,8 +999,8 @@ cargo llvm-cov --html --open
 
 ## Further Reading
 
-- [The Rust Book - Chapter 11: Writing Automated Tests](https://doc.rust-lang.org/book/ch11-00-testing.html)
-- [Rust By Example - Testing](https://doc.rust-lang.org/rust-by-example/testing.html)
+- [The Rust Book, Chapter 11: Writing Automated Tests](https://doc.rust-lang.org/book/ch11-00-testing.html)
+- [Rust By Example, Testing](https://doc.rust-lang.org/rust-by-example/testing.html)
 - [proptest Documentation](https://altsysrq.github.io/proptest-book/)
 - [Criterion.rs Guide](https://bheisler.github.io/criterion.rs/book/)
 - [mockall Documentation](https://docs.rs/mockall/)

@@ -14,7 +14,7 @@ bundles, runtime conflicts, and inconsistent behavior across packages.
 Use a tool like syncpack to enforce this. As a last resort, use yarn resolutions
 or npm overrides.
 
-**Incorrect (version ranges, multiple versions):**
+**Incorrect, version ranges, multiple versions:**
 
 ```json
 // packages/app/package.json
@@ -32,7 +32,7 @@ or npm overrides.
 }
 ```
 
-**Correct (exact versions, single source of truth):**
+**Correct, exact versions, single source of truth:**
 
 ```json
 // package.json (root)

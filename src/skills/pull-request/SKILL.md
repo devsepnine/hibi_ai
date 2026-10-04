@@ -8,13 +8,13 @@ description: PR body from the diff, review that questions whether each change is
 A PR is a review request, not a delivery mechanism. Its job is to let someone
 else judge the change: what it does, why, what could break, and what evidence
 says it works. Everything below serves that, which is why the conventions come
-from the repository being worked in rather than from this document — a reviewer
+from the repository being worked in rather than from this document. A reviewer
 looking for a field their team defined must find it where they expect it.
 
 **Ask instead of guessing.** Most bad PRs come from one of two guesses: writing a
 body from what the branch name implies rather than from the diff, or applying a
 review comment without checking whether it belongs to this PR. When the diff, the
-thread, or the ticket does not answer a question, ask it — one message costs less
+thread, or the ticket does not answer a question, ask it. One message costs less
 than a rationale a reviewer then trusts and repeats. Where the answer would not
 change what you write, state the assumption in the body instead of blocking on
 it.
@@ -23,16 +23,16 @@ it.
 
 | Need | Where |
 |---|---|
-| Open, update, review, or answer comments on a PR in any repository | §1–§7 below |
-| Promote a session-derived improvement into the distributed config | `references/upstream-config.md` — adds source resolution, four gates, and a privacy review on top of §1–§7 |
-| Default body template and review checklists (fallback only) | `references/pr-body.md` |
+| Open, update, review, or answer comments on a PR in any repository | §1 to §7 below |
+| Promote a session-derived improvement into the distributed config | `references/upstream-config.md`, which adds source resolution, four gates, and a privacy review on top of §1 to §7 |
+| Default body template and review checklists, fallback only | `references/pr-body.md` |
 
 ## 1. Read the conventions from the repo, not from memory
 
 Every value below is discoverable. Assuming one is how a PR ends up targeting a
 branch that does not exist or carrying a ticket prefix the project never used.
 
-**Base branch** — never assume `main` or `develop`:
+**Base branch**: never assume `main` or `develop`:
 
 ```bash
 gh repo view --json defaultBranchRef -q .defaultBranchRef.name
@@ -43,20 +43,20 @@ The default branch is the starting guess; what recent merged PRs actually
 targeted is the stronger signal, because plenty of projects merge into an
 integration branch instead. When the two disagree, say so and ask.
 
-**Ticket ID** — extract, do not invent:
+**Ticket ID**: extract, do not invent:
 
 ```bash
 git branch --show-current          # feature/ABC-123-thing → ABC-123
 git log --oneline -20              # the prefix existing commits use, not a number to reuse
 ```
 
-If the branch and history yield no ticket, **omit the prefix entirely** — the
+If the branch and history yield no ticket, **omit the prefix entirely**. The
 title is the summary alone. A config PR, a personal project, and a repo with no
 tracker all legitimately have no ticket, and inventing a placeholder like
 `[TICKET-1]` is worse than having none.
 
 The branch decides. When history carries a prefix the branch does not, say so
-and ask instead of borrowing the number — someone else's real ticket reads as
+and ask instead of borrowing the number. Someone else's real ticket reads as
 valid in the title, which makes it worse than an omitted one.
 
 Title format, therefore:
@@ -66,7 +66,7 @@ Title format, therefore:
 Add user authentication system               # no tracker, or none applies
 ```
 
-**Body** — the repository's own template wins unconditionally:
+**Body**: the repository's own template wins unconditionally:
 
 ```bash
 ls .github/pull_request_template.md .github/PULL_REQUEST_TEMPLATE.md \
@@ -74,12 +74,12 @@ ls .github/pull_request_template.md .github/PULL_REQUEST_TEMPLATE.md \
 ```
 
 Fill that template's sections with the content §2 derives. Only when none
-exists, fall back to `references/pr-body.md`. Do not merge the two — a reviewer
+exists, fall back to `references/pr-body.md`. Do not merge the two. A reviewer
 reading their own template with extra sections spliced in cannot tell what the
 project requires.
 
-**Tracker links** — follow the convention the repo documents (existing PR bodies
-show it). Never hardcode a tracker host.
+**Tracker links**: follow the convention the repo documents, which existing PR bodies
+show. Never hardcode a tracker host.
 
 ## 2. Write the body from the diff
 
@@ -98,7 +98,7 @@ describe.
 
 **Match the body to the diff both ways.** Every non-trivial hunk appears
 somewhere in the body; every claim in the body maps to a hunk. Each unmatched
-item is a defect you get to fix before a reviewer finds it — an unlisted hunk is
+item is a defect you get to fix before a reviewer finds it. An unlisted hunk is
 scope that crept in, and an unmatched claim is fiction.
 
 **Be concise by writing what the diff cannot show.** One line per change a
@@ -108,52 +108,52 @@ could break. A body that restates the diff in prose is longer and less useful
 than three lines that say what is not visible in it.
 
 **Ask when you cannot recover a why.** A magic number, a skipped test, a
-dependency bump, a behavior change the ticket does not imply — if the diff does
+dependency bump, a behavior change the ticket does not imply: if the diff does
 not explain it and neither does the history, ask the author rather than composing
 a plausible reason. A body that states a wrong reason is worse than one that
 omits it, because the wrong reason gets quoted in the next design discussion.
 
 If the Changes section grows past what a reviewer will hold in their head, the
-problem is the PR, not the body — split it (§3, Size).
+problem is the PR, not the body. Split it, see §3, Size.
 
 ## 3. Pass the pre-PR gates
 
-1. **Verification** — lint, type-check, and tests green (`verification-loop`).
-2. **Branch** — on a feature branch, not the base branch.
-3. **Up to date** — rebased on the target resolved in §1.
-4. **Commits** — squash noise; each commit independently buildable (`commit-rules`).
-5. **Conflicts** — resolved.
-6. **Docs** — updated if behavior or an API changed.
-7. **Code comments** — every comment the diff touched, and every comment it
-   invalidated elsewhere, still holds (`coding-standards` → Comments).
-8. **Secrets** — no credentials, PII, debug code, or stray logging in the diff.
+1. **Verification**: lint, type-check, and tests green, see `verification-loop`.
+2. **Branch**: on a feature branch, not the base branch.
+3. **Up to date**: rebased on the target resolved in §1.
+4. **Commits**: squash noise; each commit independently buildable, see `commit-rules`.
+5. **Conflicts**: resolved.
+6. **Docs**: updated if behavior or an API changed.
+7. **Code comments**: every comment the diff touched, and every comment it
+   invalidated elsewhere, still holds; see `coding-standards` → Comments.
+8. **Secrets**: no credentials, PII, debug code, or stray logging in the diff.
 
-Depth for each lives elsewhere — this table is the routing, not the policy:
+Depth for each lives elsewhere. This table is the routing, not the policy:
 
 | Check | Source of truth |
 |-------|-----------------|
 | File/function size, complexity | `coding-standards` → `references/code-thresholds.md` |
-| Code comments (stale, orphaned, unfounded) | `coding-standards` → Comments and `references/review-checklist.md` |
+| Code comments: stale, orphaned, unfounded | `coding-standards` → Comments and `references/review-checklist.md` |
 | Secrets, injection, XSS, authn | `security-review` |
 | Coverage, regression, E2E paths | `tdd-workflow` |
 | Build, type, lint | `verification-loop` |
 | Commit message format | `commit-rules` |
 | Coupling and module boundaries | `dependency-design` |
 | Change summary for the body | `qa-handoff` |
-| How much rigor this change warrants | `do-178c` (A–E tier) |
+| How much rigor this change warrants | `do-178c`, tiers A to E |
 
-**Size** — keep PRs small and split by logical unit. A reviewer's attention is
+**Size**: keep PRs small and split by logical unit. A reviewer's attention is
 the scarce resource; two reviewable PRs beat one that gets rubber-stamped.
 
-## 4. Open it — only when asked
+## 4. Open it, only when asked
 
 **Preparing a branch and drafting a description is not permission to open a PR.**
 Opening one is outward-facing: it notifies people and publishes the branch. Do it
-only on an explicit request for that push or PR, the same rule that governs commits —
+only on an explicit request for that push or PR, the same rule that governs commits,
 and that request never carries over: an earlier "just handle it", an approval that
 covered a previous push, an accepted plan, and a permission mode that would
 auto-approve the command are each not one. Without it, show the
-draft and stop. Cases that reach a public repository raise this bar further — see
+draft and stop. Cases that reach a public repository raise this bar further; see
 `references/upstream-config.md`.
 
 Show the rendered title and body first, then:
@@ -163,13 +163,13 @@ gh pr create --base "$BASE" --title "$TITLE" --body-file pr-body.md --draft
 gh pr ready <PR-number>      # when it is no longer a draft
 ```
 
-- **`--body-file`, not `--body`** — a multi-line body with backticks and quotes is easy to mangle through shell quoting.
-- **`--draft` when anything is still moving** — CI unverified, a question open, or the branch likely to be rebased.
-- **`--fill` only for a single clean commit** — it builds the body from commit messages, which skips §2 entirely; on a branch with noise commits it produces a body nobody wrote.
+- **`--body-file`, not `--body`**: a multi-line body with backticks and quotes is easy to mangle through shell quoting.
+- **`--draft` when anything is still moving**: CI unverified, a question open, or the branch likely to be rebased.
+- **`--fill` only for a single clean commit**: it builds the body from commit messages, which skips §2 entirely; on a branch with noise commits it produces a body nobody wrote.
 
 ## 5. Review an existing PR
 
-Gather before judging — the diff alone hides whether CI passed or someone already
+Gather before judging. The diff alone hides whether CI passed or someone already
 raised the point:
 
 ```bash
@@ -190,14 +190,14 @@ author did not intend to ship.
 body states a purpose; a hunk that does not serve it is either unmentioned scope
 or code nobody asked for.
 
-- **Delete-test** — if this hunk were removed, what breaks? "Nothing" means it is dead on arrival: an unused export, a parameter no caller passes, a branch no input can reach.
-- **Caller count** — a new abstraction, option, flag, or generic parameter with exactly one caller and no second use in the diff is speculative. Ask what the second use will be; absent one, the concrete version is the smaller change.
-- **Already exists** — grep the repo before accepting a new helper. A reimplementation is the most expensive kind of addition, because both copies now need maintaining.
-- **Guards that cannot fire** — a null check on a non-nullable type, a `try` around code that does not throw, validation the caller already performed. Each one tells the next reader that condition is reachable.
-- **Unrelated to the purpose** — a rename, a formatting sweep, or a drive-by fix folded into a feature PR. Not wrong to want; wrong to hide here, because it makes the diff unreviewable and the revert unusable.
+- **Delete-test**: if this hunk were removed, what breaks? "Nothing" means it is dead on arrival: an unused export, a parameter no caller passes, a branch no input can reach.
+- **Caller count**: a new abstraction, option, flag, or generic parameter with exactly one caller and no second use in the diff is speculative. Ask what the second use will be; absent one, the concrete version is the smaller change.
+- **Already exists**: grep the repo before accepting a new helper. A reimplementation is the most expensive kind of addition, because both copies now need maintaining.
+- **Guards that cannot fire**: a null check on a non-nullable type, a `try` around code that does not throw, validation the caller already performed. Each one tells the next reader that condition is reachable.
+- **Unrelated to the purpose**: a rename, a formatting sweep, or a drive-by fix folded into a feature PR. Not wrong to want; wrong to hide here, because it makes the diff unreviewable and the revert unusable.
 
 Necessity is a question, not a verdict. When you cannot tell what a hunk is for,
-ask the author — the answer is usually one sentence, and it belonged in the body
+ask the author. The answer is usually one sentence, and it belonged in the body
 anyway.
 
 **c. Is it correct?** Edge cases, error paths, existing callers. Depth in
@@ -205,9 +205,9 @@ anyway.
 handling, or secrets.
 
 **d. Is it tested?** Would a test fail if this change were reverted? If not, the
-claim is unverified regardless of coverage numbers (`tdd-workflow`).
+claim is unverified regardless of coverage numbers; see `tdd-workflow`.
 
-Posting a review is outward-facing too — draft it, show it, and post only when
+Posting a review is outward-facing too: draft it, show it, and post only when
 asked:
 
 ```bash
@@ -226,7 +226,7 @@ into shipped code.
 
 Read the whole thread first, resolved rounds included. Every listing here
 truncates silently at its default, so paginate: a REST page stops at 30, and
-`gh pr view --json commits` stops at the oldest 100 — on a longer PR it drops
+`gh pr view --json commits` stops at the oldest 100. On a longer PR it drops
 exactly the recent commits an n-th round turns on.
 
 ```bash
@@ -256,7 +256,7 @@ Classify each comment before touching code:
 
 **The scope test**: would this change still be needed if this PR had never
 existed? If yes, it is a follow-up, not this PR's work. Growing scope is a
-decision the author and reviewer make together and record in the thread — never a
+decision the author and reviewer make together and record in the thread, never a
 silent extra commit.
 
 **When the class is unclear, ask the commenter.** "Do you want this in this PR or
@@ -264,7 +264,7 @@ as a follow-up?" is one line and settles it. Guessing fails in one of two
 directions: a PR that grew past reviewability, or a reviewer whose point was
 quietly dropped.
 
-Reply to every comment, including the ones you do not act on — name the class it
+Reply to every comment, including the ones you do not act on. Name the class it
 fell into and where it went. A comment with no reply reads as ignored, and the
 next round re-raises it.
 
@@ -283,11 +283,11 @@ base branch.
 
 | Need | Where |
 |---|---|
-| Config contribution method (gates, privacy, source resolution) | `references/upstream-config.md`, or `/upstream-pr` |
+| Config contribution method: gates, privacy, source resolution | `references/upstream-config.md`, or `/upstream-pr` |
 | Extracting a session pattern into a skill before contributing it | `/learn` |
 | Default body template, reviewer and author checklists | `references/pr-body.md` |
 | Commit message format and splitting | `commit-rules` |
 | Change summary to paste into the body | `qa-handoff` |
 | Code review depth | `/code-review`, or the `code-reviewer` agent |
 | Security sign-off | `security-review` |
-| Tier definitions (A–E) driving how much rigor to apply | `do-178c` |
+| Tier definitions, A to E, driving how much rigor to apply | `do-178c` |

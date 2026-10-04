@@ -11,7 +11,7 @@ Move state management into dedicated provider components. This allows sibling
 components outside the main UI to access and modify state without prop drilling
 or awkward refs.
 
-**Incorrect (state trapped inside component):**
+**Incorrect, state trapped inside component:**
 
 ```tsx
 function ForwardMessageComposer() {
@@ -41,7 +41,7 @@ function ForwardMessageDialog() {
 }
 ```
 
-**Incorrect (useEffect to sync state up):**
+**Incorrect, useEffect to sync state up:**
 
 ```tsx
 function ForwardMessageDialog() {
@@ -62,7 +62,7 @@ function ForwardMessageComposer({ onInputChange }) {
 }
 ```
 
-**Incorrect (reading state from ref on submit):**
+**Incorrect, reading state from ref on submit:**
 
 ```tsx
 function ForwardMessageDialog() {
@@ -76,7 +76,7 @@ function ForwardMessageDialog() {
 }
 ```
 
-**Correct (state lifted to provider):**
+**Correct, state lifted to provider:**
 
 ```tsx
 function ForwardMessageProvider({ children }: { children: React.ReactNode }) {
@@ -122,4 +122,4 @@ component, it can still access the composer's state and actions from outside the
 UI itself.
 
 **Key insight:** Components that need shared state don't have to be visually
-nested inside each other—they just need to be within the same provider.
+nested inside each other. They just need to be within the same provider.

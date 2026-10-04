@@ -1,4 +1,4 @@
-# iced Canvas — Custom 2D Drawing
+# iced Canvas: Custom 2D Drawing
 
 시각화, 게임, 플롯, iced의 빌트인 widget으로 표현할 수 없는 어떤 UI든. `canvas` feature 필요:
 
@@ -78,11 +78,11 @@ enum Message {}
 
 ### `Canvas::new(program)`
 
-어떤 `&impl canvas::Program<Message>`든 전달한다 — 보통 `self`를 전달한다. Canvas는 `&self`를 받으므로 (not `&mut`), draw 중에 mutation은 허용되지 않는다. `draw`가 `&self`를 받는 것으로 강제된다.
+어떤 `&impl canvas::Program<Message>`든 전달한다. 보통 `self`를 전달한다. Canvas는 `&mut`가 아니라 `&self`를 받으므로 draw 중에 mutation은 허용되지 않는다. `draw`가 `&self`를 받는 것으로 강제된다.
 
 ### `type State`
 
-`canvas::Program`은 iced가 앱 state와 독립적으로 사용자 대신 보관하는 연관 `State`를 가진다. 메인 `App`에 누출되지 않아야 하는 *interaction* state(hover target, drag start, 드래그 중 ghost shape)에 사용한다. 정적 그리기에는 `type State = ()`.
+`canvas::Program`은 iced가 앱 state와 독립적으로 사용자 대신 보관하는 연관 `State`를 가진다. 메인 `App`에 누출되지 않아야 하는 *interaction* state에 사용한다. 예: hover target, drag start, 드래그 중 ghost shape. 정적 그리기에는 `type State = ()`.
 
 ### `Cache`
 
@@ -101,7 +101,7 @@ fn update(&mut self, msg: Message) {
 }
 ```
 
-`Cache` 없이는 draw가 매 프레임 실행된다 — 간단한 그림에는 괜찮지만 무거운 그림에는 비싸다.
+`Cache` 없이는 draw가 매 프레임 실행된다. 간단한 그림에는 괜찮지만 무거운 그림에는 비싸다.
 
 ## The `Frame` API
 
@@ -173,9 +173,9 @@ frame.with_save(|frame| {
 
 `with_save`는 transform 스택을 push/pop하므로 외부 그리기에 영향을 주지 않는다.
 
-## Interaction — `update` / `mouse_interaction`
+## Interaction: `update` / `mouse_interaction`
 
-인터랙티브 캔버스의 경우 `update`와 (선택적으로) `mouse_interaction`을 구현한다:
+인터랙티브 캔버스의 경우 `update`와, 선택적으로 `mouse_interaction`을 구현한다:
 
 ```rust
 impl canvas::Program<Message> for Board {
@@ -253,11 +253,11 @@ fn draw(&self, state: &Self::State, renderer: &Renderer, theme: &Theme, bounds: 
 - [ ] 정적 레이어당 하나의 `Cache`; 변경 시에만 invalidate
 - [ ] 매 draw마다 재구축되지 않고 state에 미리 계산된 long-lived `Path` 객체
 - [ ] Text `size`를 적당히 유지; 매우 큰 래스터화된 텍스트는 느리다
-- [ ] `draw`에서 할당을 피한다 (매 프레임 `format!`) — `update`에서 문자열을 미리 계산
-- [ ] 정말 무거운 그리기 (10만 포인트 차트)의 경우, `update`에서 다운샘플링하고 결과를 그리는 것을 고려
+- [ ] `draw`에서 할당을 피한다. 매 프레임 `format!` 대신 `update`에서 문자열을 미리 계산
+- [ ] 10만 포인트 차트처럼 정말 무거운 그리기의 경우, `update`에서 다운샘플링하고 결과를 그리는 것을 고려
 
 ## When NOT to use Canvas
 
-- 정적 이미지 — `image`/`svg` widget을 사용한다.
-- 동일한 widget의 grid — 실제 widget의 `column!`/`row!`를 사용한다; a11y와 focus를 무료로 얻는다.
-- 3D — 캔버스는 2D 전용. 3D는 `wgpu`로 직접 떨어져 커스텀 widget으로 wrap한다.
+- 정적 이미지: `image`/`svg` widget을 사용한다.
+- 동일한 widget의 grid: 실제 widget의 `column!`/`row!`를 사용한다; a11y와 focus를 무료로 얻는다.
+- 3D: 캔버스는 2D 전용. 3D는 `wgpu`로 직접 떨어져 커스텀 widget으로 wrap한다.

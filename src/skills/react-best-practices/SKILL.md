@@ -1,6 +1,6 @@
 ---
 name: react-best-practices
-description: React/Next.js performance (Vercel Engineering) — fetch waterfalls, bundle size, server/client fetching, re-render patterns. Use when tuning React/Next.js performance. 리액트 성능, Next.js 최적화, 번들 최적화.
+description: "React/Next.js performance from Vercel Engineering: fetch waterfalls, bundle size, server/client fetching, re-render patterns. Use when tuning React/Next.js performance. 리액트 성능, Next.js 최적화, 번들 최적화."
 license: MIT
 metadata:
   author: vercel
@@ -15,24 +15,24 @@ Comprehensive performance optimization guide for React and Next.js applications,
 
 Reference these guidelines when:
 - Writing new React components or Next.js pages
-- Implementing data fetching (client or server-side)
+- Implementing data fetching on the client or server side
 - Reviewing code for performance issues
 - Refactoring existing React/Next.js code
 - Optimizing bundle size or load times
 
 ## Quick Reference
 
-### 1. Eliminating Waterfalls (CRITICAL)
+### 1. Eliminating Waterfalls, CRITICAL
 
 - `async-cheap-condition-before-await` - Check cheap sync conditions before awaiting flags or remote values
 - `async-defer-await` - Move await into branches where actually used
-- `async-parallel` - Use Promise.all() for independent operations
+- `async-parallel` - Use `Promise.all()` for independent operations
 - `async-dependencies` - Use better-all for partial dependencies
 - `async-api-routes` - Start promises early, await late in API routes
 - `async-suspense-boundaries` - Use Suspense to stream content
 - `async-optimistic-ui` - Use `useOptimistic` inside Actions for zero-latency mutations with auto-rollback
 
-### 2. Bundle Size Optimization (CRITICAL)
+### 2. Bundle Size Optimization, CRITICAL
 
 - `bundle-barrel-imports` - Import directly, avoid barrel files
 - `bundle-dynamic-imports` - Use next/dynamic for heavy components
@@ -40,26 +40,26 @@ Reference these guidelines when:
 - `bundle-conditional` - Load modules only when feature is activated
 - `bundle-preload` - Preload on hover/focus for perceived speed
 
-### 3. Server-Side Performance (HIGH)
+### 3. Server-Side Performance, HIGH
 
 - `server-auth-actions` - Authenticate server actions like API routes
-- `server-cache-react` - Use React.cache() for per-request deduplication
+- `server-cache-react` - Use `React.cache()` for per-request deduplication
 - `server-cache-lru` - Use LRU cache for cross-request caching
 - `server-dedup-props` - Avoid duplicate serialization in RSC props
-- `server-hoist-static-io` - Hoist static I/O (fonts, logos) to module level
+- `server-hoist-static-io` - Hoist static I/O such as fonts and logos to module level
 - `server-serialization` - Minimize data passed to client components
 - `server-parallel-fetching` - Restructure components to parallelize fetches
 - `server-parallel-nested-fetching` - Chain nested fetches per item in Promise.all
-- `server-after-nonblocking` - Use after() for non-blocking operations
+- `server-after-nonblocking` - Use `after()` for non-blocking operations
 
-### 4. Client-Side Data Fetching (MEDIUM-HIGH)
+### 4. Client-Side Data Fetching, MEDIUM-HIGH
 
 - `client-swr-dedup` - Use SWR for automatic request deduplication
 - `client-event-listeners` - Deduplicate global event listeners
 - `client-passive-event-listeners` - Use passive listeners for scroll
 - `client-localstorage-schema` - Version and minimize localStorage data
 
-### 5. Re-render Optimization (MEDIUM)
+### 5. Re-render Optimization, MEDIUM
 
 - `rerender-defer-reads` - Don't subscribe to state only used in callbacks
 - `rerender-memo` - Extract expensive work into memoized components
@@ -77,7 +77,7 @@ Reference these guidelines when:
 - `rerender-use-ref-transient-values` - Use refs for transient frequent values
 - `rerender-no-inline-components` - Don't define components inside components
 
-### 6. Rendering Performance (MEDIUM)
+### 6. Rendering Performance, MEDIUM
 
 - `rendering-animate-svg-wrapper` - Animate div wrapper, not SVG element
 - `rendering-content-visibility` - Use content-visibility for long lists
@@ -92,7 +92,7 @@ Reference these guidelines when:
 - `rendering-resource-hints` - Use React DOM resource hints for preloading
 - `rendering-script-defer-async` - Use defer or async on script tags
 
-### 7. JavaScript Performance (LOW-MEDIUM)
+### 7. JavaScript Performance, LOW-MEDIUM
 
 - `js-batch-dom-css` - Group CSS changes via classes or cssText
 - `js-index-maps` - Build Map for repeated lookups
@@ -104,12 +104,12 @@ Reference these guidelines when:
 - `js-early-exit` - Return early from functions
 - `js-hoist-regexp` - Hoist RegExp creation outside loops
 - `js-min-max-loop` - Use loop for min/max instead of sort
-- `js-set-map-lookups` - Use Set/Map for O(1) lookups
-- `js-tosorted-immutable` - Use toSorted() for immutability
+- `js-set-map-lookups` - Use Set/Map for `O(1)` lookups
+- `js-tosorted-immutable` - Use `toSorted()` for immutability
 - `js-flatmap-filter` - Use flatMap to map and filter in one pass
 - `js-request-idle-callback` - Defer non-critical work to browser idle time
 
-### 8. Advanced Patterns (LOW)
+### 8. Advanced Patterns, LOW
 
 - `advanced-event-handler-refs` - Store event handlers in refs
 - `advanced-init-once` - Initialize app once per app load

@@ -12,7 +12,7 @@ v7's native form sheet instead of JS-based bottom sheet libraries. Native modals
 have built-in gestures, accessibility, and better performance. Rely on native UI
 for low-level primitives.
 
-**Incorrect (JS-based bottom sheet):**
+**Incorrect, JS-based bottom sheet:**
 
 ```tsx
 import BottomSheet from 'custom-js-bottom-sheet'
@@ -33,7 +33,7 @@ function MyScreen() {
 }
 ```
 
-**Correct (native Modal with formSheet):**
+**Correct, native Modal with formSheet:**
 
 ```tsx
 import { Modal, View, Text, Button } from 'react-native'
@@ -59,7 +59,7 @@ function MyScreen() {
 }
 ```
 
-**Correct (React Navigation v7 native form sheet):**
+**Correct, React Navigation v7 native form sheet:**
 
 ```tsx
 // In your navigator

@@ -7,12 +7,12 @@ tags: state, derived-state, reanimated, hooks
 
 ## State Must Represent Ground Truth
 
-state 변수 — React `useState`와 Reanimated shared value 모두 — 는 어떤 것의
-실제 상태(예: `pressed`, `progress`, `isOpen`)를 표현해야지, derive된 시각적
-값(예: `scale`, `opacity`, `translateY`)을 표현해서는 안 된다. 시각적 값은
+state 변수는 React `useState`와 Reanimated shared value 모두 해당하며, 어떤 것의
+실제 상태, 예를 들어 `pressed`, `progress`, `isOpen`을 표현해야지, derive된 시각적
+값, 예를 들어 `scale`, `opacity`, `translateY`를 표현해서는 안 된다. 시각적 값은
 state로부터 계산이나 interpolation으로 derive한다.
 
-**Incorrect (storing the visual output):**
+**Incorrect, storing the visual output:**
 
 ```tsx
 const scale = useSharedValue(1)
@@ -30,7 +30,7 @@ const animatedStyle = useAnimatedStyle(() => ({
 }))
 ```
 
-**Correct (storing the state, deriving the visual):**
+**Correct, storing the state, deriving the visual:**
 
 ```tsx
 const pressed = useSharedValue(0) // 0 = not pressed, 1 = pressed
@@ -52,12 +52,12 @@ const animatedStyle = useAnimatedStyle(() => ({
 
 state 변수는 실제 "상태"를 표현해야 하며, 원하는 최종 결과 그 자체가 아니다.
 
-1. **Single source of truth** — state(`pressed`)는 무슨 일이 일어나는지를
+1. **Single source of truth**: state인 `pressed`는 무슨 일이 일어나는지를
    기술하고, 시각적 값은 그것에서 derive된다
-2. **Easier to extend** — opacity, rotation 같은 다른 효과를 추가할 때 동일한
+2. **Easier to extend**: opacity, rotation 같은 다른 효과를 추가할 때 동일한
    state로부터 interpolation만 추가하면 된다
-3. **Debugging** — `pressed = 1`을 검사하는 게 `scale = 0.95`보다 명확하다
-4. **Reusable logic** — 동일한 `pressed` 값이 여러 시각적 속성을 구동할 수
+3. **Debugging**: `pressed = 1`을 검사하는 게 `scale = 0.95`보다 명확하다
+4. **Reusable logic**: 동일한 `pressed` 값이 여러 시각적 속성을 구동할 수
    있다
 
 **Same principle for React state:**

@@ -1,10 +1,10 @@
-# TUI Gotchas (Things That Will Bite You)
+# TUI Gotchas, Things That Will Bite You
 
 A catalog of subtle bugs that don't crash but produce a wrecked terminal, lost work, or a "why isn't anything happening" feeling. Each entry: what, why, fix.
 
 ## 1. `eprintln!` While Raw Mode Is Active = Corrupted Screen
 
-**What**: Calling `eprintln!`, `println!`, `dbg!`, or `panic!` (without ratatui's panic hook) while the alternate screen is up writes raw bytes that interleave with ratatui's output. Result: a smeared screen the user has to `reset` to fix.
+**What**: Calling `eprintln!`, `println!`, `dbg!`, or `panic!`, without ratatui's panic hook, while the alternate screen is up writes raw bytes that interleave with ratatui's output. Result: a smeared screen the user has to `reset` to fix.
 
 **Why**: ratatui draws via the backend; arbitrary writes to stdout/stderr bypass it. The terminal interprets them in the middle of escape sequences.
 
@@ -32,7 +32,7 @@ writeln!(log, "selected={}", app.selected)?;
 
 ## 2. `drop(JoinHandle)` Does NOT Join the Thread
 
-**What**: You spawn a thread, drop the handle, assume it's joined or cleaned up. It isn't — it's *detached*. The thread keeps running.
+**What**: You spawn a thread, drop the handle, assume it's joined or cleaned up. It isn't, it's *detached*. The thread keeps running.
 
 **Why**: `JoinHandle::drop` only releases the handle, not the thread. There's no way to forcibly stop a Rust thread; it must cooperate.
 
@@ -53,11 +53,11 @@ For the cancelable-process pattern, the read threads exit naturally when the chi
 
 ## 3. Forgetting Panic Hook = Black Terminal Forever
 
-**What**: App panics. You're back at the shell. Type a key — nothing visible. Echo is off, raw mode still on. User has to `stty sane` or reopen the terminal.
+**What**: App panics. You're back at the shell. Type a key, nothing visible. Echo is off, raw mode still on. User has to `stty sane` or reopen the terminal.
 
 **Why**: The `Drop` impl for `Terminal` does NOT restore the terminal. `enable_raw_mode()` and `EnterAlternateScreen` are pure side effects with no automatic undo.
 
-**Fix**: use `ratatui::init()` (installs the hook automatically) OR install a panic hook manually:
+**Fix**: use `ratatui::init()`, installs the hook automatically, OR install a panic hook manually:
 
 ```rust
 let prev = std::panic::take_hook();
@@ -82,7 +82,7 @@ if event::poll(Duration::from_millis(50))? {
 // Then drain background work, redraw, repeat.
 ```
 
-50–100ms is the sweet spot — tighter wastes CPU on syscalls, looser feels laggy.
+50 to 100ms is the sweet spot. Tighter wastes CPU on syscalls, and looser feels laggy.
 
 ## 5. `try_recv()` in a Tight Loop Without Sleep = 100% CPU
 
@@ -102,7 +102,7 @@ loop {
 }
 ```
 
-If you have NO event::poll (e.g., a pure background task), use `recv_timeout`:
+If you have NO event::poll, e.g., a pure background task, use `recv_timeout`:
 
 ```rust
 match rx.recv_timeout(Duration::from_millis(100)) {
@@ -114,7 +114,7 @@ match rx.recv_timeout(Duration::from_millis(100)) {
 
 ## 6. Widening `Layout::Min(0)` Vs `Layout::Fill(1)`
 
-**What**: Two `Min(0)` regions don't split remaining space the way you expect — one of them eats almost everything.
+**What**: Two `Min(0)` regions don't split remaining space the way you expect, one of them eats almost everything.
 
 **Why**: `Min(0)` means "at least 0", with no upper bound. The solver picks somewhat arbitrarily.
 
@@ -153,13 +153,13 @@ terminal.draw(|f| ui(f, &snapshot))?;
 
 **Why**: Layouts are recomputed on every draw, but app state about "where focus is" is in cells, not in semantic units.
 
-**Fix**: store focus by semantic ID (e.g., `FieldId::Email`), not by `(x, y)`. Recompute the cell on each draw from the current layout.
+**Fix**: store focus by a semantic ID such as `FieldId::Email`, not by `(x, y)`. Recompute the cell on each draw from the current layout.
 
 ## 9. `Constraint::Length(n)` Doesn't Subtract Borders
 
 **What**: A `Block::bordered()` with `Constraint::Length(3)` shows 1 line of content, not 3.
 
-**Why**: Borders take 2 lines (top + bottom). The 3 = 2 borders + 1 content.
+**Why**: Borders take 2 lines, top + bottom. The 3 = 2 borders + 1 content.
 
 **Fix**: account for borders, or get the inner area:
 
@@ -182,10 +182,10 @@ f.render_widget(content, inner);
 
 ## Quick Self-Check Before Shipping
 
-- [ ] Used `ratatui::init()` / `ratatui::restore()` (or installed a panic hook)
+- [ ] Used `ratatui::init()` / `ratatui::restore()`, or installed a panic hook
 - [ ] No `eprintln!`/`println!`/`dbg!` inside the run loop
 - [ ] `event::poll(timeout)` used, not bare `event::read()`
 - [ ] Background channels drained per loop iteration
-- [ ] `Constraint::Fill(n)` used for proportional space (not `Min(0)`)
+- [ ] `Constraint::Fill(n)` used for proportional space, not `Min(0)`
 - [ ] All threads either explicitly joined or designed to exit
 - [ ] Tested with `--release`

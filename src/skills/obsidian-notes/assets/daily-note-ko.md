@@ -18,7 +18,7 @@ related: []
 
 ## Plan
 
-- [ ] <task 1> — 해당되면 티켓/노트로 링크
+- [ ] <task 1>: 해당되면 티켓/노트로 링크
 - [ ] <task 2>
 - [ ] <task 3>
 
@@ -26,18 +26,18 @@ related: []
 
 ## Notes during the day
 
-타임스탬프가 붙은 진행 로그. 일이 일어나는 대로 항목을 추가한다 —
+타임스탬프가 붙은 진행 로그. 일이 일어나는 대로 항목을 추가한다.
 생각을 소리 내어 적는 메모, 관찰, 작은 결정들.
 
-- `HH:MM` — <note>
-- `HH:MM` — <note>
+- `HH:MM`: <note>
+- `HH:MM`: <note>
 
 긴 생각은 별도 노트로 빼고 링크한다.
-- `HH:MM` — 접근 X를 스파이크함 ([[Spike — approach X]] 참고)
+- `HH:MM`: 접근 X를 스파이크함, [[Spike — approach X]] 참고
 
 ## Meetings
 
-오늘의 회의 노트들을 wikilink 목록으로 — 나중에 훑어보기에 좋다.
+오늘의 회의 노트들을 wikilink 목록으로, 나중에 훑어보기에 좋다.
 
 - [[YYYY-MM-DD <meeting slug>]]
 
@@ -47,15 +47,15 @@ related: []
 
 - 출시함 …
 - 리뷰함 …
-- 디버깅함 … ([[Debug YYYY-MM-DD <slug>]] 참고)
+- 디버깅함 …, [[Debug YYYY-MM-DD <slug>]] 참고
 
 ## What I learned
 
 오늘의 깨달음을 기록한다. 따로 떼어 둘 만큼 큰 것은 학습/플리팅 노트로
 링크한다.
 
-- [[Fleeting YYYY-MM-DD-HHmm idea]] — 엣지에서의 캐싱 경계
-- Zustand v5는 기본적으로 `Object.is`를 사용함을 확인 (→ [[Zustand — useShallow and v5 selector equality]])
+- [[Fleeting YYYY-MM-DD-HHmm idea]]: 엣지에서의 캐싱 경계
+- Zustand v5는 기본적으로 `Object.is`를 사용함을 확인, [[Zustand — useShallow and v5 selector equality]] 참고
 
 ## Tomorrow
 
@@ -66,5 +66,5 @@ related: []
 
 ## Related
 
-- [[YYYY-Wnn]] — 이번 주 리뷰 (금요일에 채워짐)
+- [[YYYY-Wnn]]: 이번 주 리뷰, 금요일에 채워짐
 - [[{{previous daily}}]]

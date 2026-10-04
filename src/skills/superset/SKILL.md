@@ -1,11 +1,11 @@
 ---
 name: superset
-description: Apache Superset via MCP — dashboards, charts, datasets, metrics, calculated columns, filters, SQL Lab. Use when working in Superset. 슈퍼셋, 대시보드 생성, 차트 수정, 데이터셋 메트릭, BI 분석.
+description: "Apache Superset via MCP: dashboards, charts, datasets, metrics, calculated columns, filters, SQL Lab. Use when working in Superset. 슈퍼셋, 대시보드 생성, 차트 수정, 데이터셋 메트릭, BI 분석."
 ---
 
 # Apache Superset via MCP
 
-Practical patterns for managing Apache Superset dashboards, charts, datasets, and SQL Lab through MCP tools (`mcp__superset__*`).
+Practical patterns for managing Apache Superset dashboards, charts, datasets, and SQL Lab through MCP tools such as `mcp__superset__*`.
 
 ## When to Use
 
@@ -18,13 +18,13 @@ Use immediately when the MCP tools are connected and the task is one of:
 
 **Always go through MCP** for anything that requires precise IDs or schemas. Do not reproduce the Superset web UI from memory or guess from screenshots.
 
-## Required call order (Discovery → Read → Write)
+## Required call order: Discovery → Read → Write
 
 Superset is an ID-based API, so every mutating operation must follow three steps:
 
-1. **Discovery** — find candidate targets with `list_*`.
-2. **Read** — fetch current state with `get_*` and validate the schema.
-3. **Write** — call `create_*` / `update_*` / `set_*`.
+1. **Discovery**: find candidate targets with `list_*`.
+2. **Read**: fetch current state with `get_*` and validate the schema.
+3. **Write**: call `create_*` / `update_*` / `set_*`.
 
 ```
 ex) Change chart filters
@@ -57,7 +57,7 @@ get_dashboard_chart_query_context(...)   # actual query context per chart
 
 ### 2. Chart create / update
 
-**Create a new chart (standard flow):**
+**Create a new chart, standard flow:**
 
 ```
 1) list_datasets(search="...")            # find target dataset
@@ -90,7 +90,7 @@ get_chart_filters(chart_id)               # current filter dict
 set_chart_filters(chart_id, filters)      # overwrite filters
 ```
 
-Filter shape varies by chart — `adhoc_filters` / `filters` / `time_range` are mixed — so always **inspect the current shape with `get`** before you mutate.
+Filter shape varies by chart, with `adhoc_filters` / `filters` / `time_range` mixed, so always **inspect the current shape with `get`** before you mutate.
 
 ### 4. Dataset management
 
@@ -157,7 +157,7 @@ find_and_replace_in_sql(find, replace)    # bulk replace in saved queries
 7. get_dashboard_charts(dashboard_id) → confirm inclusion
 ```
 
-### Template B: update chart filters (safe variant)
+### Template B: update chart filters, safe variant
 
 ```
 1. get_current_chart_config(chart_id)      # snapshot full config
@@ -180,7 +180,7 @@ find_and_replace_in_sql(find, replace)    # bulk replace in saved queries
 
 ## Minimum params per viz_type
 
-`create_chart` / `update_chart` requires **different fields per viz_type**. Don't memorize them all — clone the structure from a working chart of the same `viz_type` via `get_current_chart_config`.
+`create_chart` / `update_chart` requires **different fields per viz_type**. Don't memorize them all; clone the structure from a working chart of the same `viz_type` via `get_current_chart_config`.
 
 Common required keys:
 
@@ -202,7 +202,7 @@ get_dashboard_config(dashboard_id)
 → overwrite only required fields via update_dashboard_config
 ```
 
-`position_json` is a tree — don't hand-craft it; **make minimal edits on top of the existing structure**. If your goal is just to add a chart, `add_chart_to_dashboard` is usually enough — direct config edits are for advanced layout/tab restructuring.
+`position_json` is a tree, so don't hand-craft it; **make minimal edits on top of the existing structure**. If your goal is just to add a chart, `add_chart_to_dashboard` is usually enough. Direct config edits are for advanced layout/tab restructuring.
 
 ## Common mistakes
 
@@ -217,7 +217,7 @@ get_dashboard_config(dashboard_id)
    - If the upstream table added a column and `refresh_dataset_schema` wasn't called, Superset doesn't know about it.
 
 4. **Filter type confusion**
-   - adhoc_filters (chart-internal) vs native dashboard filter vs `time_range` are different fields. Inspect via `get` first.
+   - adhoc_filters, which are chart-internal, vs native dashboard filter vs `time_range` are different fields. Inspect via `get` first.
 
 5. **Abusing execute_sql**
    - Analysis queries only. No metadata edits or DDL. Metric/column changes go through the dedicated MCP tools.
@@ -234,9 +234,9 @@ Always re-verify with MCP tools before declaring done:
 - [ ] Pre-change state captured via `get_*`
 - [ ] Post-change state confirmed by re-calling `get_*`
 - [ ] For deletes, referencing charts/dashboards were checked
-- [ ] For new charts, dashboard linkage (`add_chart_to_dashboard`) is complete
+- [ ] For new charts, dashboard linkage via `add_chart_to_dashboard` is complete
 
-## Quick Reference (key MCP tools)
+## Quick Reference: key MCP tools
 
 | Area        | Tools                                                                                     |
 |-------------|------------------------------------------------------------------------------------------|

@@ -7,9 +7,9 @@ tags: rendering, ssr, hydration, localStorage, flicker
 
 ## 깜빡임 없이 Hydration 불일치를 방지한다
 
-클라이언트 측 저장소(localStorage, cookies)에 의존하는 콘텐츠를 렌더링할 때, SSR 깨짐과 hydration 이후 깜빡임을 모두 피하려면 React가 hydrate하기 전에 DOM을 갱신하는 동기 스크립트를 주입한다.
+클라이언트 측 저장소인 localStorage, cookies에 의존하는 콘텐츠를 렌더링할 때, SSR 깨짐과 hydration 이후 깜빡임을 모두 피하려면 React가 hydrate하기 전에 DOM을 갱신하는 동기 스크립트를 주입한다.
 
-**잘못된 예 (SSR이 깨짐):**
+**잘못된 예, SSR이 깨짐:**
 
 ```tsx
 function ThemeWrapper({ children }: { children: ReactNode }) {
@@ -26,7 +26,7 @@ function ThemeWrapper({ children }: { children: ReactNode }) {
 
 `localStorage`가 정의되지 않아 서버 측 렌더링에서 실패한다.
 
-**잘못된 예 (시각적 깜빡임 발생):**
+**잘못된 예, 시각적 깜빡임 발생:**
 
 ```tsx
 function ThemeWrapper({ children }: { children: ReactNode }) {
@@ -48,9 +48,9 @@ function ThemeWrapper({ children }: { children: ReactNode }) {
 }
 ```
 
-컴포넌트가 먼저 기본값(`light`)으로 렌더되고, hydration 이후 갱신되어 잘못된 콘텐츠가 잠깐 보이는 깜빡임이 발생한다.
+컴포넌트가 먼저 기본값 `light`로 렌더되고, hydration 이후 갱신되어 잘못된 콘텐츠가 잠깐 보이는 깜빡임이 발생한다.
 
-**올바른 예 (깜빡임 없음, hydration 불일치 없음):**
+**올바른 예, 깜빡임 없음, hydration 불일치 없음:**
 
 ```tsx
 function ThemeWrapper({ children }: { children: ReactNode }) {

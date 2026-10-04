@@ -9,7 +9,7 @@ tags: rerender, memo, useMemo, optimization
 
 비싼 작업을 memoized 컴포넌트로 추출해 계산 전에 early return이 가능하도록 한다.
 
-**잘못된 예 (loading 중에도 avatar를 계산):**
+**잘못된 예, loading 중에도 avatar를 계산:**
 
 ```tsx
 function Profile({ user, loading }: Props) {
@@ -23,7 +23,7 @@ function Profile({ user, loading }: Props) {
 }
 ```
 
-**올바른 예 (loading 중에 계산을 건너뜀):**
+**올바른 예, loading 중에 계산을 건너뜀:**
 
 ```tsx
 const UserAvatar = memo(function UserAvatar({ user }: { user: User }) {

@@ -12,8 +12,8 @@ related: []
 # Sprint <sprint> Retrospective
 
 > [!info] Sprint summary
-> Dates, team, shipped count, rough theme (e.g., "stability push",
-> "feature spike"). One paragraph.
+> Dates, team, shipped count, rough theme such as "stability push"
+> or "feature spike". One paragraph.
 
 ## What shipped
 
@@ -25,7 +25,7 @@ related: []
 
 Things the team is **not doing today** that we should start.
 
-- [ ] Actionable item — owner, expected outcome.
+- [ ] Actionable item, owner, expected outcome.
 - [ ] Another one.
 
 ## Stop
@@ -38,20 +38,20 @@ Things we're doing that are hurting us.
 
 Things working well that we want to preserve as the team grows.
 
-- Practice / habit — why it worked this sprint.
+- Practice / habit: why it worked this sprint.
 
 ## Action items
 
 Track the commitments coming out of this retro. Link each action item to
 its follow-up note or ticket so retros don't rot.
 
-- [ ] <Action> — owner: <handle> — due: YYYY-MM-DD — tracking:
+- [ ] <Action>, owner: <handle>, due: YYYY-MM-DD, tracking:
   [[<follow-up note>]] or `<ticket url>`
-- [ ] <Action> — owner: …
+- [ ] <Action>, owner: …
 
 ## What surprised us
 
-Space for observations that don't map to start/stop/continue — data we
+Space for observations that don't map to start/stop/continue, data we
 didn't expect, cross-team friction, operational signals worth watching.
 
 ## Related

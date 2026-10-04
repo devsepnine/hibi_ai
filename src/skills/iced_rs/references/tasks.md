@@ -1,6 +1,6 @@
-# iced Tasks — Async the Right Way
+# iced Tasks: Async the Right Way
 
-A `Task<Message>` is iced's Elm-style "command": something the runtime performs and whose outcome returns as another `Message`. The rule: **never block or `tokio::spawn` inside `update`**. Issue a Task instead — iced clones messages through the runtime and keeps ordering sane.
+A `Task<Message>` is iced's Elm-style "command": something the runtime performs and whose outcome returns as another `Message`. The rule: **never block or `tokio::spawn` inside `update`**. Issue a Task instead. iced clones messages through the runtime and keeps ordering sane.
 
 ## Basic `Task::perform`
 
@@ -29,9 +29,9 @@ fn update(app: &mut App, msg: Message) -> Task<Message> {
 async fn fetch_data() -> Result<Data, String> { /* ... */ }
 ```
 
-**Return `Task::none()`** from branches that don't issue work — iced requires every arm to return a `Task`, even if empty.
+**Return `Task::none()`** from branches that don't issue work. iced requires every arm to return a `Task`, even if empty.
 
-## Parallel Tasks — `Task::batch`
+## Parallel Tasks: `Task::batch`
 
 Fire multiple independent tasks at once. Their completions arrive as separate messages, in whatever order the futures finish:
 
@@ -43,9 +43,9 @@ Message::Initialize => Task::batch([
 ])
 ```
 
-Don't hand-craft `tokio::join!` — `Task::batch` hands the runtime what it needs to multiplex them.
+Don't hand-craft `tokio::join!`. `Task::batch` hands the runtime what it needs to multiplex them.
 
-## Sequencing — `.then(...)`
+## Sequencing: `.then(...)`
 
 When step B depends on step A's result, chain:
 
@@ -56,11 +56,11 @@ Message::SaveAndExit => {
 }
 ```
 
-`.then` receives the future's output and returns a new `Task`. Use this sparingly — prefer a Message round-trip if the result needs to touch state.
+`.then` receives the future's output and returns a new `Task`. Use this sparingly. Prefer a Message round-trip if the result needs to touch state.
 
-## Stream Progress — `Task::sip`
+## Stream Progress: `Task::sip`
 
-When a long-running task should report progress during its run (downloads, indexing), use `Task::sip`. It takes a stream-producing future, a progress mapper, and a completion mapper:
+When a long-running task should report progress during its run, such as downloads or indexing, use `Task::sip`. It takes a stream-producing future, a progress mapper, and a completion mapper:
 
 ```rust
 use iced::{Task, task};
@@ -100,9 +100,9 @@ fn update(app: &mut App, msg: Message) -> Task<Message> {
 }
 ```
 
-**Why `abort_on_drop`**: when state transitions away from `Downloading` (e.g., user cancels), the `Handle` is dropped and the in-flight task is aborted. No manual cancel flag needed.
+**Why `abort_on_drop`**: when state transitions away from `Downloading`, for example when the user cancels, the `Handle` is dropped and the in-flight task is aborted. No manual cancel flag needed.
 
-## Cancellation — `abortable`
+## Cancellation: `abortable`
 
 Any task can be made abortable:
 
@@ -123,9 +123,9 @@ Message::Cancel => {
 }
 ```
 
-Dropping the handle without `abort()` does **not** cancel — the task finishes in the background and its completion Message is still delivered. If you want drop = cancel, call `.abort_on_drop()` on the handle.
+Dropping the handle without `abort()` does **not** cancel. The task finishes in the background and its completion Message is still delivered. If you want drop = cancel, call `.abort_on_drop()` on the handle.
 
-## Sending Side Effects — `iced::exit`, `window::close`
+## Sending Side Effects: `iced::exit`, `window::close`
 
 ```rust
 // Close the whole app
@@ -212,4 +212,4 @@ enum Message {
 }
 ```
 
-Using `String` for the error makes `Clone` trivial (required since `Message: Clone`). For richer errors, define your own `Clone + Debug` error type or wrap in `Arc<anyhow::Error>`.
+Using `String` for the error makes `Clone` trivial, which is required since `Message: Clone`. For richer errors, define your own `Clone + Debug` error type or wrap in `Arc<anyhow::Error>`.

@@ -11,7 +11,7 @@ tags: javascript, intl, optimization, memoization
 loop 안에서 생성하지 않는다. 이들은 인스턴스화 비용이 크다. locale/options가
 정적이라면 모듈 스코프로 호이스팅한다.
 
-**Incorrect (new formatter every render):**
+**Incorrect, new formatter every render:**
 
 ```tsx
 function Price({ amount }: { amount: number }) {
@@ -23,7 +23,7 @@ function Price({ amount }: { amount: number }) {
 }
 ```
 
-**Correct (hoisted to module scope):**
+**Correct, hoisted to module scope:**
 
 ```tsx
 const currencyFormatter = new Intl.NumberFormat('en-US', {

@@ -1,6 +1,6 @@
 ---
 name: composition-patterns
-description: React composition — compound components, context, state lifting, render props instead of boolean-prop sprawl; React 19 APIs. Use when designing component APIs. 컴포지션 패턴, 컴포넌트 설계, 컴파운드 컴포넌트.
+description: "React composition: compound components, context, state lifting, render props instead of boolean-prop sprawl; React 19 APIs. Use when designing component APIs. 컴포지션 패턴, 컴포넌트 설계, 컴파운드 컴포넌트."
 license: MIT
 metadata:
   author: vercel
@@ -26,14 +26,14 @@ component, 상태 끌어올리기, 내부 컴포지션을 사용해 boolean prop
 
 ## 빠른 참조
 
-### 1. Component Architecture (HIGH)
+### 1. Component Architecture, impact HIGH
 
 - `architecture-avoid-boolean-props` - 동작 커스터마이징을 위한 boolean
   prop 추가 금지; 컴포지션 사용
 - `architecture-compound-components` - 공유 context로 복잡한 컴포넌트
   구조화
 
-### 2. State Management (MEDIUM)
+### 2. State Management, impact MEDIUM
 
 - `state-decouple-implementation` - Provider만이 상태 관리 방법을 알아야
   하는 유일한 곳
@@ -41,14 +41,14 @@ component, 상태 끌어올리기, 내부 컴포지션을 사용해 boolean prop
   제네릭 인터페이스 정의
 - `state-lift-state` - 형제 접근을 위해 상태를 provider 컴포넌트로 이동
 
-### 3. Implementation Patterns (MEDIUM)
+### 3. Implementation Patterns, impact MEDIUM
 
 - `patterns-explicit-variants` - boolean 모드 대신 명시적 variant
   컴포넌트 생성
 - `patterns-children-over-render-props` - renderX prop 대신 children
   으로 컴포지션
 
-### 4. React 19 APIs (MEDIUM)
+### 4. React 19 APIs, impact MEDIUM
 
 > **⚠️ React 19+ 전용.** React 18 이하 사용 시 이 섹션은 건너뛴다.
 

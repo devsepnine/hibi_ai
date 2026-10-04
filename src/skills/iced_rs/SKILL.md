@@ -1,11 +1,11 @@
 ---
 name: iced_rs
-description: Rust iced GUI — widgets, Message/update/view, Task/Subscription, compile errors, 0.12→0.14 migration. Use when building iced apps. iced 앱, 러스트 GUI, iced 마이그레이션. NOT egui/Slint/Dioxus/Tauri/ratatui.
+description: "Rust iced GUI: widgets, Message/update/view, Task/Subscription, compile errors, 0.12→0.14 migration. Use when building iced apps. iced 앱, 러스트 GUI, iced 마이그레이션. NOT egui/Slint/Dioxus/Tauri/ratatui."
 ---
 
-# iced (Rust GUI) — Production Guide
+# iced Rust GUI: Production Guide
 
-Retained-mode, Elm-architecture GUI library for Rust. One `Message` enum, one `update`, one `view`, and the runtime drives the loop. This skill encodes the 0.13/0.14 idioms — the ones that replaced the old `Application`/`Sandbox` traits — plus async, theming, and canvas patterns proven in real apps.
+Retained-mode, Elm-architecture GUI library for Rust. One `Message` enum, one `update`, one `view`, and the runtime drives the loop. This skill encodes the 0.13/0.14 idioms, the ones that replaced the old `Application`/`Sandbox` traits, plus async, theming, and canvas patterns proven in real apps.
 
 ## When to use which reference
 
@@ -14,17 +14,17 @@ This SKILL.md is the index. Open the focused reference for the sub-task:
 | Task | Reference |
 |---|---|
 | App entry point: `iced::run` vs `iced::application()` builder, `Settings`, `window::Settings` | `references/application.md` |
-| Pick a widget (text/button/column/row/container/text_input/scrollable/pick_list/checkbox/slider/toggler/tooltip) | `references/widgets.md` |
+| Pick a widget: text/button/column/row/container/text_input/scrollable/pick_list/checkbox/slider/toggler/tooltip | `references/widgets.md` |
 | Async work: `Task::perform`, `Task::sip`, `Task::batch`, chaining, cancellation, `iced::exit()` | `references/tasks.md` |
 | Runtime events: `time::every`, `event::listen`, keyboard/mouse, batching subscriptions | `references/subscriptions.md` |
-| Styling: built-in stylers (`button::primary`, `container::rounded_box`), custom style closures, `Theme::ALL`, `extended_palette()` | `references/theming.md` |
+| Styling: built-in stylers like `button::primary` and `container::rounded_box`, custom style closures, `Theme::ALL`, `extended_palette()` | `references/theming.md` |
 | Custom drawing: `canvas::Program`, `Cache`, `Path`, `Frame::fill/stroke/fill_text`, `Geometry` | `references/canvas.md` |
-| Migrating from 0.12 (`Application`/`Sandbox` traits) to 0.13/0.14 builder API | `references/migration.md` |
-| Avoiding common iced footguns (Element lifetimes, Message Clone, runtime choice, view churn) | `references/gotchas.md` |
+| Migrating from the 0.12 `Application`/`Sandbox` traits to the 0.13/0.14 builder API | `references/migration.md` |
+| Avoiding common iced footguns: Element lifetimes, Message Clone, runtime choice, view churn | `references/gotchas.md` |
 
 ## Project Setup
 
-Use edition 2024 (Rust 1.85+) and the current stable `iced`. The builder API (`iced::application`) covers 99% of apps; reserve `iced_runtime` for advanced embeds.
+Use edition 2024 on Rust 1.85+ and the current stable `iced`. The builder API, `iced::application`, covers 99% of apps; reserve `iced_runtime` for advanced embeds.
 
 ```toml
 [package]
@@ -50,7 +50,7 @@ Feature flags worth knowing:
 
 Pick **one** of `tokio`/`smol`. Enabling both wastes deps and can cause runtime conflicts when a library upstream picks the other.
 
-## Minimal App — `iced::run` (no state struct needed)
+## Minimal App: `iced::run`, no state struct needed
 
 The smallest legal iced app. State can be a bare `u64`; iced doesn't force a struct.
 
@@ -83,7 +83,7 @@ fn view(counter: &u64) -> iced::Element<'_, Message> {
 
 **Why this works**: `iced::run` accepts any `State: Default` plus a pure `update(&mut State, Msg)` and `view(&State) -> Element`. Good for demos and small tools. Upgrade to `iced::application()` the moment you need a theme, subscription, async work, or window config.
 
-## Standard App — `iced::application()` builder
+## Standard App: `iced::application()` builder
 
 The idiomatic choice for almost everything. Each builder method is optional; chain only what you need.
 
@@ -134,9 +134,9 @@ impl Counter {
 }
 ```
 
-**Key shape**: `new` returns `(Self, Task<Message>)` so the app can fire an initial async load (e.g., read a config) without a special "init" message. `update` also returns `Task<Message>` — the Elm-style "command" that the runtime executes and whose result comes back as another `Message`.
+**Key shape**: `new` returns `(Self, Task<Message>)` so the app can fire an initial async load, for example reading a config, without a special "init" message. `update` also returns `Task<Message>`, the Elm-style "command" that the runtime executes and whose result comes back as another `Message`.
 
-Details, including window settings (size, position, min/max, decorations) and multi-window apps, live in `references/application.md`.
+Details, including window settings such as size, position, min/max, and decorations, and multi-window apps, live in `references/application.md`.
 
 ## Layout Essentials
 
@@ -163,15 +163,15 @@ fn view(state: &State) -> Element<'_, Message> {
 }
 ```
 
-**Length primitives**: `Fill` (take all remaining), `Shrink` (size to content), `FillPortion(n)` (proportional share), or a bare `f32` (fixed pixels). Prefer `Fill`/`FillPortion` over hardcoded widths so the layout survives window resizes.
+**Length primitives**: `Fill` to take all remaining, `Shrink` to size to content, `FillPortion(n)` for a proportional share, or a bare `f32` for fixed pixels. Prefer `Fill`/`FillPortion` over hardcoded widths so the layout survives window resizes.
 
-More patterns — `scrollable`, `pick_list`, `tooltip`, `text_input`, `canvas` — in `references/widgets.md`.
+More patterns such as `scrollable`, `pick_list`, `tooltip`, `text_input`, and `canvas` are in `references/widgets.md`.
 
 ## Message Discipline
 
 The message enum is the spine of the app. Three rules keep it maintainable:
 
-1. **`#[derive(Debug, Clone)]` on every Message.** The runtime clones messages across the event boundary. `Copy` where the payload allows — iced happily uses it.
+1. **`#[derive(Debug, Clone)]` on every Message.** The runtime clones messages across the event boundary. `Copy` where the payload allows. iced happily uses it.
 2. **One Message variant per user-observable event**, not per internal transition. `ThemeChanged(Theme)` > `InternalMutationA/B/C`.
 3. **Nest sub-modules' messages inside a variant** instead of flattening. `Message::Editor(editor::Message)` scales better than `Message::EditorKeyPressed / Message::EditorSaved / ...` at 30 variants.
 
@@ -184,7 +184,7 @@ enum Message {
 }
 ```
 
-## Async Work — `Task::perform`
+## Async Work: `Task::perform`
 
 `update` returns `Task<Message>`. Issue async work via `Task::perform(future, on_complete)`; the result comes back as a message.
 
@@ -223,18 +223,18 @@ button("Delete").style(|theme, status| {
 });
 ```
 
-Palette roles (`primary`/`secondary`/`success`/`danger`/`background`) × strength (`base`/`strong`/`weak`) × what (`color`/`text`) — all of it via `theme.extended_palette()`. Full reference: `references/theming.md`.
+Palette roles `primary`/`secondary`/`success`/`danger`/`background` × strength `base`/`strong`/`weak` × what `color`/`text`, all of it via `theme.extended_palette()`. Full reference: `references/theming.md`.
 
 ## Performance Quick Rules
 
-1. **`view` must stay cheap** — it runs every frame that state changes. Don't allocate or format inside hot loops; precompute in `update` and cache on `App`.
+1. **`view` must stay cheap**: it runs every frame that state changes. Don't allocate or format inside hot loops; precompute in `update` and cache on `App`.
 2. **Borrow in `view`, own in `update`.** `Element<'a, Message>` borrows from `&self`, so move expensive owned data into the App struct and expose references to the builder.
-3. **Use `canvas::Cache`** for custom drawings — `Cache::draw` skips re-tessellation until you call `.clear()`.
+3. **Use `canvas::Cache`** for custom drawings: `Cache::draw` skips re-tessellation until you call `.clear()`.
 4. **Don't over-nest layouts.** Each `container`/`column`/`row` is a node; 5 levels deep is fine, 15 is a smell.
-5. **Prefer `Task::batch` over spawning**; the runtime already parallelizes. Don't `tokio::spawn` inside `update` — you lose the message plumbing.
+5. **Prefer `Task::batch` over spawning**; the runtime already parallelizes. Don't `tokio::spawn` inside `update`. You lose the message plumbing.
 
 ## Related Skills
 
 - General Rust idioms: `rust-best-practices`
-- If the UI is a terminal instead: `ratatui` (this project)
+- If the UI is a terminal instead: `ratatui` from this project
 - Testing/error patterns shared with iced state logic: `rust-best-practices` / `tdd-workflow`

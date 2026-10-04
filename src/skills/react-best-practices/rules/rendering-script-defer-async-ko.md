@@ -7,7 +7,7 @@ tags: rendering, script, defer, async, performance
 
 ## Script 태그에 defer 또는 async를 사용한다
 
-**Impact: HIGH (렌더 블로킹을 제거)**
+**Impact: HIGH, 렌더 블로킹을 제거**
 
 `defer`나 `async` 없이 사용된 script 태그는 스크립트를 다운로드하고 실행하는 동안 HTML 파싱을 차단한다. 이는 First Contentful Paint와 Time to Interactive를 지연시킨다.
 
@@ -16,7 +16,7 @@ tags: rendering, script, defer, async, performance
 
 DOM이나 다른 스크립트에 의존하는 스크립트에는 `defer`를 사용한다. analytics 같은 독립적인 스크립트에는 `async`를 사용한다.
 
-**잘못된 예 (렌더 블로킹):**
+**잘못된 예, 렌더 블로킹:**
 
 ```tsx
 export default function Document() {
@@ -32,7 +32,7 @@ export default function Document() {
 }
 ```
 
-**올바른 예 (논블로킹):**
+**올바른 예, 논블로킹:**
 
 ```tsx
 export default function Document() {
@@ -65,4 +65,4 @@ export default function Page() {
 }
 ```
 
-참고: [MDN - Script element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script#defer)
+참고: [MDN Script element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script#defer)

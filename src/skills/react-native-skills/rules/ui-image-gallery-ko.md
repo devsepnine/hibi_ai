@@ -13,7 +13,7 @@ tags: images, gallery, lightbox, expo-image, ui
 pinch-to-zoom, double-tap zoom, pan-to-close를 제공한다. `expo-image`를 비롯해
 어떤 이미지 컴포넌트와도 같이 쓸 수 있다.
 
-**Incorrect (custom modal implementation):**
+**Incorrect, custom modal implementation:**
 
 ```tsx
 function ImageGallery({ urls }: { urls: string[] }) {
@@ -34,7 +34,7 @@ function ImageGallery({ urls }: { urls: string[] }) {
 }
 ```
 
-**Correct (Galeria with expo-image):**
+**Correct, Galeria with expo-image:**
 
 ```tsx
 import { Galeria } from '@nandorojo/galeria'

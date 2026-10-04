@@ -1,11 +1,11 @@
 ---
 name: ratatui_rs
-description: Rust TUI: ratatui/crossterm — widgets, List/TableState, cancelable event loops, raw mode/alt screen, 0.28→0.30. Use when building or fixing a Rust TUI. 러스트 TUI, 터미널 UI, 대화형 CLI, 알트 스크린, 이벤트 루프, 작업 취소. NOT GUI, ncurses.
+description: "Rust TUI: ratatui/crossterm, widgets, List/TableState, cancelable event loops, raw mode/alt screen, 0.28→0.30. Use when building or fixing a Rust TUI. 러스트 TUI, 터미널 UI, 대화형 CLI, 알트 스크린, 이벤트 루프, 작업 취소. NOT GUI, ncurses."
 ---
 
-# Ratatui (Rust TUI) — 프로덕션 가이드
+# Ratatui, Rust TUI: 프로덕션 가이드
 
-Rust용 immediate-mode 터미널 UI 프레임워크. 이 skill은 프로덕션에서 검증된 패턴 (취소 가능한 백그라운드 작업, 크로스 플랫폼 처리, panic-safe 터미널 복원) 을 인코딩한다 — hello-world가 아니다.
+Rust용 immediate-mode 터미널 UI 프레임워크. 이 skill은 프로덕션에서 검증된 패턴, 취소 가능한 백그라운드 작업, 크로스 플랫폼 처리, panic-safe 터미널 복원, 을 인코딩한다, hello-world가 아니다.
 
 ## 어떤 reference를 언제 사용할지
 
@@ -13,16 +13,16 @@ Rust용 immediate-mode 터미널 UI 프레임워크. 이 skill은 프로덕션�
 
 | Task | Reference |
 |---|---|
-| 위젯 사용 (List/Table/Paragraph/Gauge/Tabs/...) | `references/widgets.md` |
+| 위젯 사용, List/Table/Paragraph/Gauge/Tabs/... | `references/widgets.md` |
 | 백그라운드 작업 + 사용자 취소 가능 spawn | `references/cancelable-processes.md` |
 | Windows 경로/명령 특이사항, MSYS 변환 | `references/cross-platform.md` |
 | `TestBackend`로 렌더링 단위 테스트 | `references/testing.md` |
-| TUI 흔한 함정 회피 (panic, eprintln, JoinHandle) | `references/gotchas.md` |
+| TUI 흔한 함정 회피, panic, eprintln, JoinHandle | `references/gotchas.md` |
 | 앱 구조, 모듈, state machine, channel | `references/best-practices.md` |
 
 ## 프로젝트 설정
 
-panic-safe 터미널 처리를 위해 Edition 2024 (Rust 1.85+) 와 `ratatui::init()` (0.28+ 추가) 를 사용한다.
+panic-safe 터미널 처리를 위해 Edition 2024, Rust 1.85+, 와 `ratatui::init()`, 0.28+ 추가, 를 사용한다.
 
 ```toml
 [package]
@@ -36,7 +36,7 @@ crossterm = "0.29"
 anyhow = "1.0"
 ```
 
-## 최소 앱 (관용적 0.30)
+## 최소 앱, 관용적 0.30
 
 ```rust
 use ratatui::{
@@ -81,7 +81,7 @@ fn run(terminal: &mut DefaultTerminal) -> anyhow::Result<()> {
 
 **수동 `Terminal::new` 대신 `ratatui::init()`을 쓰는 이유**: 앱이 렌더링 중간에 panic해도 터미널을 복원하는 panic hook을 설치한다. 이게 없으면 panic이 터미널을 raw mode로 남겨두어 사용자는 자신이 입력하는 것을 볼 수 없게 된다.
 
-## 레이아웃 (0.30 destructuring 스타일)
+## 레이아웃, 0.30 destructuring 스타일
 
 ```rust
 use ratatui::layout::{Constraint, Layout};
@@ -98,11 +98,11 @@ let [sidebar, main] = Layout::horizontal([
 ]).areas(body);
 ```
 
-비례 잔여 공간에는 `Constraint::Fill(n)` (0.27+) 을 사용한다 — `Min(0)`보다 의도가 명확하다.
+비례 잔여 공간에는 `Constraint::Fill(n)`, 0.27+, 을 사용한다, `Min(0)`보다 의도가 명확하다.
 
 ## 백그라운드 채널이 있는 이벤트 루프
 
-키 입력 AND 백그라운드 이벤트 (timer, async I/O, 자식 프로세스 출력) 모두에서 TUI가 업데이트되어야 할 때의 패턴:
+키 입력 AND 백그라운드 이벤트, timer, async I/O, 자식 프로세스 출력, 모두에서 TUI가 업데이트되어야 할 때의 패턴:
 
 ```rust
 use std::sync::mpsc;
@@ -136,7 +136,7 @@ fn run(terminal: &mut DefaultTerminal, rx: mpsc::Receiver<AppEvent>) -> anyhow::
 
 **취소 가능한** 자식 프로세스가 있는 프로덕션급 버전은 `references/cancelable-processes.md` 참조.
 
-## 상태 관리 (View enum 패턴)
+## 상태 관리, View enum 패턴
 
 비자명한 앱은, 가능한 화면을 enum으로 모델링해 전이가 타입 체크되도록 한다:
 
@@ -171,7 +171,7 @@ impl App {
 
 이유: 이 패턴 없는 13-state TUI는 `if/else`의 쥐 둥지가 된다. 이 패턴이 있으면 화면을 추가할 때 컴파일러가 누락된 분기를 잡아낸다.
 
-## 커스텀 위젯 (Widget trait)
+## 커스텀 위젯, Widget trait
 
 ```rust
 use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget, text::Line, style::Style};
@@ -188,16 +188,16 @@ impl Widget for StatusBar {
 f.render_widget(StatusBar { msg: "Ready".into() }, area);
 ```
 
-커스텀 위젯은 `draw(...)` 콜백을 짧게 유지하고 `TestBackend`로 렌더링을 단위 테스트할 수 있게 한다 (`references/testing.md` 참조).
+커스텀 위젯은 `draw(...)` 콜백을 짧게 유지하고 `TestBackend`로 렌더링을 단위 테스트할 수 있게 한다, `references/testing.md` 참조.
 
 ## 성능 빠른 규칙
 
-1. **Block 말고 Poll** — 백그라운드 채널을 비울 수 있도록 `event::poll(Duration::from_millis(50–100))`을 사용한다.
-2. **`tick()` ≠ 재 그리기** — 상태가 실제로 바뀐 경우에만 재 그리기; ratatui의 더블 버퍼는 저렴하지만, build_ui 클로저는 그렇지 않다.
-3. **raw mode 켜진 동안 `eprintln!` 금지** — alt screen이 망가진다. `references/gotchas.md` 참조.
-4. **detach vs join 스레드를 신중히** — `drop(JoinHandle)`은 join 하지 않는다. `references/gotchas.md` 참조.
+1. **Block 말고 Poll**: 백그라운드 채널을 비울 수 있도록 `event::poll(Duration::from_millis(50–100))`을 사용한다.
+2. **`tick()` ≠ 재 그리기**: 상태가 실제로 바뀐 경우에만 재 그리기; ratatui의 더블 버퍼는 저렴하지만, build_ui 클로저는 그렇지 않다.
+3. **raw mode 켜진 동안 `eprintln!` 금지**: alt screen이 망가진다. `references/gotchas.md` 참조.
+4. **detach vs join 스레드를 신중히**: `drop(JoinHandle)`은 join 하지 않는다. `references/gotchas.md` 참조.
 
-## 마이그레이션 노트 (0.28 → 0.30)
+## 마이그레이션 노트, 0.28 → 0.30
 
 - 수동 `enable_raw_mode` + `EnterAlternateScreen` 대신 `ratatui::init()` / `ratatui::restore()` 선호.
 - `Block::default().borders(Borders::ALL)` 대신 `Block::bordered()` 선호.
@@ -208,4 +208,4 @@ f.render_widget(StatusBar { msg: "Ready".into() }, area);
 ## 관련 skill
 
 - 일반 Rust 관용구: `rust-best-practices`
-- 크로스 플랫폼 셸 안전성: `references/cross-platform.md` (이 skill) + `coding-standards`
+- 크로스 플랫폼 셸 안전성: `references/cross-platform.md`, 이 skill + `coding-standards`

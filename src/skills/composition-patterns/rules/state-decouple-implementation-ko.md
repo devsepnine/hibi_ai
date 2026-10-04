@@ -7,9 +7,9 @@ tags: composition, state, architecture
 
 ## Decouple State Management from UI
 
-provider 컴포넌트는 상태가 어떻게 관리되는지를 아는 유일한 곳이어야 한다. UI 컴포넌트는 context 인터페이스를 소비할 뿐 — 상태가 useState, Zustand, 서버 동기화 중 어디서 오는지 알지 못한다.
+provider 컴포넌트는 상태가 어떻게 관리되는지를 아는 유일한 곳이어야 한다. UI 컴포넌트는 context 인터페이스를 소비할 뿐이며 상태가 useState, Zustand, 서버 동기화 중 어디서 오는지 알지 못한다.
 
-**Incorrect (UI coupled to state implementation):**
+**Incorrect, UI coupled to state implementation:**
 
 ```tsx
 function ChannelComposer({ channelId }: { channelId: string }) {
@@ -29,7 +29,7 @@ function ChannelComposer({ channelId }: { channelId: string }) {
 }
 ```
 
-**Correct (state management isolated in provider):**
+**Correct, state management isolated in provider:**
 
 ```tsx
 // Provider handles all state management details

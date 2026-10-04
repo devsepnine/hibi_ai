@@ -9,7 +9,7 @@ tags: client, swr, deduplication, data-fetching
 
 SWR은 컴포넌트 인스턴스 간에 요청 중복 제거, 캐싱, 재검증을 가능하게 한다.
 
-**Incorrect (no deduplication, each instance fetches):**
+**Incorrect, no deduplication, each instance fetches:**
 
 ```tsx
 function UserList() {
@@ -22,7 +22,7 @@ function UserList() {
 }
 ```
 
-**Correct (multiple instances share one request):**
+**Correct, multiple instances share one request:**
 
 ```tsx
 import useSWR from 'swr'

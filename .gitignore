@@ -24,3 +24,6 @@ Thumbs.db
 
 # Skill evaluation artifacts (reproducible)
 src/skills/*/workspace/
+
+# Python
+__pycache__/

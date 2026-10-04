@@ -1,4 +1,4 @@
-# iced Canvas — Custom 2D Drawing
+# iced Canvas: Custom 2D Drawing
 
 For visualizations, games, plots, or any UI iced's built-in widgets don't express. Requires the `canvas` feature:
 
@@ -78,11 +78,11 @@ enum Message {}
 
 ### `Canvas::new(program)`
 
-Pass any `&impl canvas::Program<Message>` — you usually pass `self`. Canvas takes `&self` (not `&mut`), so mutation during draw is not allowed. That's enforced by `draw` taking `&self`.
+Pass any `&impl canvas::Program<Message>`. You usually pass `self`. Canvas takes `&self`, not `&mut`, so mutation during draw is not allowed. That's enforced by `draw` taking `&self`.
 
 ### `type State`
 
-`canvas::Program` has an associated `State` that iced keeps on your behalf, independent of your app state. Use it for *interaction* state that shouldn't leak into the main `App` (hover target, drag start, ghost shape while dragging). For static drawing, `type State = ()`.
+`canvas::Program` has an associated `State` that iced keeps on your behalf, independent of your app state. Use it for *interaction* state that shouldn't leak into the main `App`, such as hover target, drag start, or ghost shape while dragging. For static drawing, `type State = ()`.
 
 ### `Cache`
 
@@ -101,7 +101,7 @@ fn update(&mut self, msg: Message) {
 }
 ```
 
-Without a `Cache`, draw runs on every frame — fine for simple drawings, expensive for heavy ones.
+Without a `Cache`, draw runs on every frame. That is fine for simple drawings, expensive for heavy ones.
 
 ## The `Frame` API
 
@@ -173,9 +173,9 @@ frame.with_save(|frame| {
 
 `with_save` pushes/pops the transform stack so outer drawing isn't affected.
 
-## Interaction — `update` / `mouse_interaction`
+## Interaction: `update` / `mouse_interaction`
 
-For interactive canvases, implement `update` and (optionally) `mouse_interaction`:
+For interactive canvases, implement `update` and, optionally, `mouse_interaction`:
 
 ```rust
 impl canvas::Program<Message> for Board {
@@ -253,11 +253,11 @@ Clear only the cache whose inputs changed. This is the main performance pattern 
 - [ ] One `Cache` per static layer; invalidate only on change
 - [ ] Long-lived `Path` objects precomputed in state, not re-built each draw
 - [ ] Text `size` kept modest; very large rasterized text is slow
-- [ ] Avoid `draw` doing allocation (`format!` every frame) — pre-compute strings in `update`
-- [ ] For really heavy drawing (charts with 100k points), consider downsampling in `update` and drawing the result
+- [ ] Avoid `draw` doing allocation, such as `format!` every frame; pre-compute strings in `update`
+- [ ] For really heavy drawing such as charts with 100k points, consider downsampling in `update` and drawing the result
 
 ## When NOT to use Canvas
 
-- Static images — use `image`/`svg` widget.
-- Grids of the same widget — use `column!`/`row!` of actual widgets; they get a11y and focus for free.
-- 3D — canvas is 2D only. For 3D, drop down to `wgpu` directly and wrap a custom widget.
+- Static images: use `image`/`svg` widget.
+- Grids of the same widget: use `column!`/`row!` of actual widgets; they get a11y and focus for free.
+- 3D: canvas is 2D only. For 3D, drop down to `wgpu` directly and wrap a custom widget.

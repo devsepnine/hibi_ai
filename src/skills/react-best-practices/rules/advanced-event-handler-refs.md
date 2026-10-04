@@ -9,7 +9,7 @@ tags: advanced, hooks, refs, event-handlers, optimization
 
 Store callbacks in refs when used in effects that shouldn't re-subscribe on callback changes.
 
-**Incorrect (re-subscribes on every render):**
+**Incorrect, re-subscribes on every render:**
 
 ```tsx
 function useWindowEvent(event: string, handler: (e) => void) {
@@ -20,7 +20,7 @@ function useWindowEvent(event: string, handler: (e) => void) {
 }
 ```
 
-**Correct (stable subscription):**
+**Correct, stable subscription:**
 
 ```tsx
 function useWindowEvent(event: string, handler: (e) => void) {

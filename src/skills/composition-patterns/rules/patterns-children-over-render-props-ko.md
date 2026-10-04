@@ -9,7 +9,7 @@ tags: composition, children, render-props
 
 `renderX` prop 대신 `children`을 composition에 사용한다. children은 더 읽기 쉽고, 자연스럽게 조합되며, 콜백 시그니처를 이해할 필요가 없다.
 
-**Incorrect (render props):**
+**Incorrect, render props:**
 
 ```tsx
 function Composer({
@@ -46,7 +46,7 @@ return (
 )
 ```
 
-**Correct (compound components with children):**
+**Correct, compound components with children:**
 
 ```tsx
 function ComposerFrame({ children }: { children: React.ReactNode }) {

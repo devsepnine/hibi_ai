@@ -14,12 +14,12 @@ related: []
 
 > [!info] Release summary
 > One-paragraph pitch: what's different, who should care, whether the
-> upgrade is mandatory. Aim for 2–3 sentences — users skim.
+> upgrade is mandatory. Aim for 2 to 3 sentences, users skim.
 
 ## Highlights
 
-- Bullet 1 — one user-visible change per line, not a commit dump.
-- Bullet 2 — link to the detail section or ADR.
+- Bullet 1: one user-visible change per line, not a commit dump.
+- Bullet 2: link to the detail section or ADR.
 
 ## Breaking changes
 
@@ -31,7 +31,7 @@ related: []
 
 ## Bug fixes
 
-- Short description — [GitHub PR](https://github.com/org/repo/pull/123).
+- Short description: [GitHub PR](https://github.com/org/repo/pull/123).
   Context: [[<ADR or debug note>]] if one exists.
 
 ## Improvements

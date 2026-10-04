@@ -1,8 +1,8 @@
-# iced Gotchas — Things That Will Bite You
+# iced Gotchas: Things That Will Bite You
 
 A catalog of the subtle issues that don't crash at compile time but produce confusing runtime behavior or friction in the code. Each entry: what, why, fix.
 
-## 1. `Message` Must Be `Clone` — And Everything Inside It Too
+## 1. `Message` Must Be `Clone`, And Everything Inside It Too
 
 **What**: `#[derive(Debug, Clone)]` on `Message` fails because a variant carries a non-`Clone` type like `std::io::Error` or `reqwest::Error`.
 
@@ -39,7 +39,7 @@ enum Message {
 
 **Why**: `Element<'a, Message>` borrows from `&self`. Widgets like `text(&self.name)` take a reference into the App state and the `Element`'s lifetime is tied to that borrow.
 
-**Fix**: If the view needs an owned string, either store it owned on `self` (`self.display_name: String`) or build it as owned inside the widget call:
+**Fix**: If the view needs an owned string, either store it owned on `self`, as in `self.display_name: String`, or build it as owned inside the widget call:
 
 ```rust
 // Borrow — preferred when the data already lives on self
@@ -90,7 +90,7 @@ impl App {
 
 **Why**: The spawned task runs, but its output never becomes a `Message`. The runtime has no idea it exists.
 
-**Fix**: Always use `Task::perform` (or `Task::sip` for streaming):
+**Fix**: Always use `Task::perform`, or `Task::sip` for streaming:
 
 ```rust
 // Wrong
@@ -121,11 +121,11 @@ iced = { version = "0.14", features = ["tokio"], default-features = false }
 
 Then `cargo tree | grep -E "tokio|async-std|smol"` to find stragglers.
 
-## 6. `view` Re-runs Every Frame — Don't Do Work In It
+## 6. `view` Re-runs Every Frame: Don't Do Work In It
 
 **What**: UI feels laggy, CPU usage is high, framerate is low with only trivial widgets on screen.
 
-**Why**: `view` is called every frame a redraw happens (usually on each message). If `view` formats strings from scratch, sorts a `Vec`, or reads a file, it multiplies that cost by framerate.
+**Why**: `view` is called every frame a redraw happens, usually on each message. If `view` formats strings from scratch, sorts a `Vec`, or reads a file, it multiplies that cost by framerate.
 
 **Fix**: Precompute in `update`, cache on `self`:
 
@@ -154,7 +154,7 @@ impl App {
 
 **What**: You wrap something in `container` expecting it to center in the window. It sits in the top-left corner.
 
-**Why**: `container` defaults to `Shrink` on both axes — it sizes to its child. Centering only works if the container has space to center *within*.
+**Why**: `container` defaults to `Shrink` on both axes, so it sizes to its child. Centering only works if the container has space to center *within*.
 
 **Fix**: Give it a Fill-axis explicitly:
 
@@ -164,7 +164,7 @@ container(content)
     .center_y(Fill)           // height = Fill, content vertically centered
 ```
 
-Or compose `.width(Fill).height(Fill).align_x(Center).align_y(Center)` — same result, more verbose.
+Or compose `.width(Fill).height(Fill).align_x(Center).align_y(Center)`. Same result, more verbose.
 
 ## 8. Forgetting `.on_press` Renders A Disabled Button
 
@@ -180,11 +180,11 @@ button("Submit").on_press_maybe(
 )
 ```
 
-## 9. `print!` / `eprintln!` Doesn't Corrupt iced (but silently logs)
+## 9. `print!` / `eprintln!` Doesn't Corrupt iced, But Silently Logs
 
 **What**: Logs from `println!` don't show up anywhere visible.
 
-**Why** (and the *not* a problem): unlike ratatui, iced owns the window, not the terminal — logging to stdout/stderr from an iced app is harmless but usually invisible because the app isn't launched from a terminal on a typical user install.
+**Why**, and why it is *not* a problem: unlike ratatui, iced owns the window, not the terminal. Logging to stdout/stderr from an iced app is harmless but usually invisible because the app isn't launched from a terminal on a typical user install.
 
 **Fix**: Use `tracing` or `log` with a file appender for anything you need post-hoc. Don't try to read stderr from a running GUI.
 
@@ -194,15 +194,15 @@ button("Submit").on_press_maybe(
 
 **Why**: iced redraws on state change *triggered by a message*. The `theme(&self)` function is called on each frame, but frames only happen on events.
 
-**Fix**: The fix is "emit a follow-up message to force a redraw", which iced handles automatically — if you're seeing a stuck frame, you probably have state that isn't tied to a `Message` mutation. Make sure the theme switch *is* going through `update`. If it does, it'll repaint.
+**Fix**: The fix is "emit a follow-up message to force a redraw", which iced handles automatically. If you're seeing a stuck frame, you probably have state that isn't tied to a `Message` mutation. Make sure the theme switch *is* going through `update`. If it does, it'll repaint.
 
-For apps that need continuous animation even without user input, add a `time::every` subscription — it delivers frames at a fixed rate and guarantees repaints.
+For apps that need continuous animation even without user input, add a `time::every` subscription. It delivers frames at a fixed rate and guarantees repaints.
 
 ## 11. Subscription Restarts When the Closure "Shape" Changes
 
-**What**: You return a subscription conditionally, and every time the condition flips, the subscription's work restarts (file watcher re-reads, channel re-opens).
+**What**: You return a subscription conditionally, and every time the condition flips, the subscription's work restarts, for example the file watcher re-reads and the channel re-opens.
 
-**Why**: iced diffs subscriptions by their *identity* — the closure's captures and type. A new closure instance is a new subscription.
+**Why**: iced diffs subscriptions by their *identity*, meaning the closure's captures and type. A new closure instance is a new subscription.
 
 **Fix**: Keep the subscription's producer function stable across frames. Move the closure to a named `fn` if you find yourself conditionally capturing:
 
@@ -224,7 +224,7 @@ fn subscription(&self) -> Subscription<Message> {
 
 **What**: The app uses multiple windows; closing the main window exits the whole process. You wanted a tray-style lingering app.
 
-**Why**: `iced::application()` exits when its primary window closes. For persistent background apps, use `iced::daemon()` — no primary window, lifecycle tied to explicit `iced::exit()`.
+**Why**: `iced::application()` exits when its primary window closes. For persistent background apps, use `iced::daemon()`, which has no primary window and a lifecycle tied to explicit `iced::exit()`.
 
 **Fix**: Migrate to `iced::daemon` if the app should outlive a single window. See upstream `multi_window` example.
 
@@ -232,7 +232,7 @@ fn subscription(&self) -> Subscription<Message> {
 
 **What**: Long text draws off the right edge instead of wrapping.
 
-**Why**: `text` wraps within its container, but if the container itself is `Shrink` (default), there's no width to wrap *to*.
+**Why**: `text` wraps within its container, but if the container itself is `Shrink` by default, there's no width to wrap *to*.
 
 **Fix**: Set an explicit width somewhere up the chain:
 
@@ -257,4 +257,4 @@ container(text(long_string)).width(Fill)
 iced = { version = "0.14", features = ["advanced", ...] }
 ```
 
-Then `use iced::advanced::widget::Widget;`. Most apps never need this — compose built-in widgets first.
+Then `use iced::advanced::widget::Widget;`. Most apps never need this. Compose built-in widgets first.

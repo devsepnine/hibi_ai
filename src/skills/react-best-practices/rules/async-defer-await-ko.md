@@ -9,7 +9,7 @@ tags: async, await, conditional, optimization
 
 `await` 연산을 실제로 사용하는 분기 안으로 옮겨서, 해당 데이터가 필요 없는 코드 경로가 막히지 않도록 한다.
 
-**Incorrect (blocks both branches):**
+**Incorrect, blocks both branches:**
 
 ```typescript
 async function handleRequest(userId: string, skipProcessing: boolean) {
@@ -25,7 +25,7 @@ async function handleRequest(userId: string, skipProcessing: boolean) {
 }
 ```
 
-**Correct (only blocks when needed):**
+**Correct, only blocks when needed:**
 
 ```typescript
 async function handleRequest(userId: string, skipProcessing: boolean) {
@@ -40,7 +40,7 @@ async function handleRequest(userId: string, skipProcessing: boolean) {
 }
 ```
 
-**Another example (early return optimization):**
+**Another example, early return optimization:**
 
 ```typescript
 // Incorrect: always fetches permissions

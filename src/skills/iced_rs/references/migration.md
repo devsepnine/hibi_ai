@@ -1,10 +1,10 @@
-# iced Migration Notes (0.12 → 0.13 → 0.14)
+# iced Migration Notes: 0.12 → 0.13 → 0.14
 
-If you have a codebase on `iced = "0.12"` that imports `iced::Application` or `iced::Sandbox`, you are on the *old* API. 0.13 replaced both with the `iced::application()` builder function. The migration is mechanical — this page is the checklist.
+If you have a codebase on `iced = "0.12"` that imports `iced::Application` or `iced::Sandbox`, you are on the *old* API. 0.13 replaced both with the `iced::application()` builder function. The migration is mechanical. This page is the checklist.
 
 ## The Big Change: `Application` / `Sandbox` → `application()`
 
-Old (0.12):
+Old in 0.12:
 
 ```rust
 use iced::{Application, Command, Element, Settings, Subscription, Theme};
@@ -30,7 +30,7 @@ fn main() -> iced::Result {
 }
 ```
 
-New (0.13+):
+New in 0.13+:
 
 ```rust
 use iced::{Element, Task, Theme, Subscription};
@@ -59,7 +59,7 @@ Observations:
 - **`Command<T>` → `Task<T>`**: identical semantics, renamed. Replace across the codebase. `Command::none()` → `Task::none()`, `Command::perform` → `Task::perform`, `Command::batch` → `Task::batch`.
 - **`Executor`**: gone from user API. The executor is chosen by the `tokio` / `smol` feature flag.
 - **`Flags`**: gone. Initial state lives in `new()`'s return; any configuration that used to live in `Flags` now lives in a closure capture around the `new` passed to `application()`.
-- **`Sandbox`**: flat-out removed. If you were using `Sandbox` (no async), the migration target is still `iced::application()` — you just don't use `Task::perform`. Or use `iced::run(update, view)` for the *very* minimal case.
+- **`Sandbox`**: flat-out removed. If you were using a `Sandbox` with no async, the migration target is still `iced::application()`. You just don't use `Task::perform`. Or use `iced::run(update, view)` for the *very* minimal case.
 
 ### Mechanical migration checklist
 
@@ -83,9 +83,9 @@ Observations:
    - `Application,` removed from imports
    - `Sandbox,` removed from imports
    - `Executor,` removed from imports
-5. `cargo check` — compiler tells you exactly what remains.
+5. `cargo check`: compiler tells you exactly what remains.
 
-## Other Breaking Changes (0.12 → 0.13)
+## Other Breaking Changes, 0.12 → 0.13
 
 ### `Row::with_children` / `Column::with_children`
 
@@ -112,7 +112,7 @@ use iced::{Fill, FillPortion};
 
 ### `button::Appearance` → `button::Style`
 
-The nested-layer style API was flattened. Same fields (background, text_color, border, shadow), new name.
+The nested-layer style API was flattened. Same fields, namely background, text_color, border, shadow, under a new name.
 
 ```rust
 // 0.12
@@ -122,7 +122,7 @@ button::Appearance { background: ..., ..Default::default() }
 button::Style { background: ..., ..Default::default() }
 ```
 
-Applies to `container`, `text_input`, `checkbox`, `pick_list`, `slider`, etc. — all `Appearance` → `Style`.
+Applies to `container`, `text_input`, `checkbox`, `pick_list`, `slider`, etc. All `Appearance` → `Style`.
 
 ### `theme::Button::*` enum variants → styler functions
 
@@ -136,9 +136,9 @@ button("Go").style(theme::Button::Primary)
 button("Go").style(button::primary)
 ```
 
-Same for text/container/etc. The functions live in the widget's module (`iced::widget::button::primary`).
+Same for text/container/etc. The functions live in the widget's module, for example `iced::widget::button::primary`.
 
-### `f.area()` was never a thing (that's ratatui)
+### `f.area()` was never a thing: that's ratatui
 
 iced doesn't have `f.area()`. If you see that, the code is ratatui, not iced. Keep them straight.
 
@@ -146,34 +146,34 @@ iced doesn't have `f.area()`. If you see that, the code is ratatui, not iced. Ke
 
 Much smaller. The main additions are:
 
-- **`Task::sip`** — stream progress with cancellation. See `references/tasks.md`.
-- **`iced::daemon`** — background apps with no main window.
+- **`Task::sip`**: stream progress with cancellation. See `references/tasks.md`.
+- **`iced::daemon`**: background apps with no main window.
 - **Multi-window improvements**: `window::open` returns `(window::Id, Task<Message>)`.
 - **`text_editor`** gained richer actions and undo groups.
-- **More themes** (KanagawaWave etc. — predated 0.14 in some releases; check your version).
+- **More themes**: KanagawaWave etc. predated 0.14 in some releases; check your version.
 
-Breaking changes are rare; most 0.13 code compiles unchanged. The release notes are short — skim them rather than reading blog posts.
+Breaking changes are rare; most 0.13 code compiles unchanged. The release notes are short. Skim them rather than reading blog posts.
 
 ## Feature Flag Renames
 
 | 0.12 feature | 0.13+ feature |
 |---|---|
-| `tokio` | `tokio` (unchanged) |
-| `async-std` | removed — use `smol` (`async-std` crates work on top) |
+| `tokio` | `tokio`, unchanged |
+| `async-std` | removed. Use `smol`, which `async-std` crates run on top of |
 | `debug` | removed from default; no explicit feature needed |
 
-If `Cargo.toml` references `iced/async-std`, drop it — you're on `tokio` or `smol` now.
+If `Cargo.toml` references `iced/async-std`, drop it. You're on `tokio` or `smol` now.
 
-## After Migration — Sanity Check
+## After Migration: Sanity Check
 
 - [ ] App builds with `cargo check`
 - [ ] All `.style(theme::X::Y)` references are now `.style(widget::style_fn)`
 - [ ] No remaining `Command<Message>` types
 - [ ] No `impl Application for` / `impl Sandbox for`
 - [ ] `Cargo.toml` specifies exactly one of `tokio` / `smol`
-- [ ] App runs and a theme change still works (canary for palette access regressions)
+- [ ] App runs and a theme change still works, a canary for palette access regressions
 
 ## When NOT to migrate
 
 - The app is on 0.10 or 0.11: don't jump to 0.14 in one shot. Go to 0.12 first, then 0.13. Every hop has its own errata.
-- You rely on a third-party widget crate (`iced_aw`, etc.): check whether it supports your target iced version *first*. These crates sometimes lag.
+- You rely on a third-party widget crate such as `iced_aw`: check whether it supports your target iced version *first*. These crates sometimes lag.

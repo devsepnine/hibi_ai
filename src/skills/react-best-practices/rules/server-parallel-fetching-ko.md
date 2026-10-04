@@ -9,7 +9,7 @@ tags: server, rsc, parallel-fetching, composition
 
 React Server Components는 트리 내에서 순차적으로 실행된다. 데이터 페칭을 병렬화하려면 컴포지션으로 구조를 재정렬한다.
 
-**잘못된 예 (Sidebar가 Page의 fetch 완료를 기다림):**
+**잘못된 예, Sidebar가 Page의 fetch 완료를 기다림:**
 
 ```tsx
 export default async function Page() {
@@ -28,7 +28,7 @@ async function Sidebar() {
 }
 ```
 
-**올바른 예 (둘 다 동시에 fetch):**
+**올바른 예, 둘 다 동시에 fetch:**
 
 ```tsx
 async function Header() {

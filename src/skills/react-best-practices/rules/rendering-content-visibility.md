@@ -35,4 +35,4 @@ function MessageList({ messages }: { messages: Message[] }) {
 }
 ```
 
-For 1000 messages, browser skips layout/paint for ~990 off-screen items (10× faster initial render).
+For 1000 messages, browser skips layout/paint for ~990 off-screen items, making initial render about 10× faster.

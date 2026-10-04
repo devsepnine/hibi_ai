@@ -1,7 +1,7 @@
-# Zustand Store Acceptance Criteria (TypeScript, v5)
+# Zustand Store Acceptance Criteria, TypeScript, v5
 
 **Library**: Zustand v5+
-**Purpose**: 생성된 Zustand 코드를 현재 (v5) 모범 사례와 대조하여 검증한다. v4에서의 변경 사항에 대한 Migration 섹션을 포함한다.
+**Purpose**: 생성된 Zustand 코드를 현재 v5 모범 사례와 대조하여 검증한다. v4에서의 변경 사항에 대한 Migration 섹션을 포함한다.
 
 ---
 
@@ -40,7 +40,7 @@ import { shallow } from 'zustand/shallow';
 
 ## 2. Store Creation
 
-### 2.1 ✅ CORRECT: Plain store (no middleware needed)
+### 2.1 ✅ CORRECT: Plain store, no middleware needed
 
 ```typescript
 import { create } from 'zustand';
@@ -56,7 +56,7 @@ export const useMyStore = create<MyStore>()((set) => ({
 }));
 ```
 
-`subscribeWithSelector`는 **필수가 아니다**. store가 React 외부에서 subscribe될 때만 추가한다 (§5 참조).
+`subscribeWithSelector`는 **필수가 아니다**. store가 React 외부에서 subscribe될 때만 추가한다. §5 참조.
 
 ### 2.2 ✅ CORRECT: With `get()`
 
@@ -70,7 +70,7 @@ export const useMyStore = create<MyStore>()((set, get) => ({
 
 ### 2.3 ✅ CORRECT: Generic syntax with middleware
 
-**double parentheses**에 주의 — `create<T>()(middleware(...))`. 빈 쌍이 middleware를 통한 type inference를 가능하게 한다.
+`create<T>()(middleware(...))`의 **double parentheses**에 주의한다. 빈 쌍이 middleware를 통한 type inference를 가능하게 한다.
 
 ```typescript
 export const useMyStore = create<MyStore>()(
@@ -139,7 +139,7 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
 
 ### 4.1 ✅ CORRECT: Single-field selectors
 
-개별 selector가 가장 안전한 형태이다 — wrapper가 필요 없다.
+개별 selector가 가장 안전한 형태이므로 wrapper가 필요 없다.
 
 ```typescript
 const count = useMyStore((s) => s.count);
@@ -199,9 +199,9 @@ const { count, text } = useStore((s) => ({ count: s.count, text: s.text }), shal
 
 ---
 
-## 5. Subscribe Outside React (`subscribeWithSelector`)
+## 5. Subscribe Outside React, `subscribeWithSelector`
 
-React 외부에서 subscribe할 때만 (event bridge, 로깅, URL sync, 분석) `subscribeWithSelector`를 포함한다. 그렇지 않으면 건너뛴다.
+React 외부에서 subscribe할 때만 `subscribeWithSelector`를 포함한다. 대상은 event bridge, 로깅, URL sync, 분석이다. 그렇지 않으면 건너뛴다.
 
 ### 5.1 ✅ CORRECT
 
@@ -285,9 +285,9 @@ export const useMyStore = create<MyStore>()(
 );
 ```
 
-모든 `set()` 호출에 이름을 준다 — 세 번째 인자가 Redux DevTools에 표시된다.
+모든 `set()` 호출에 이름을 준다. 세 번째 인자가 Redux DevTools에 표시된다.
 
-### 7.2 Compose order (common chain)
+### 7.2 Compose order, common chain
 
 ```typescript
 // devtools wraps persist wraps the state creator
@@ -413,7 +413,7 @@ test('increment advances count', () => {
 });
 ```
 
-### 11.2 ✅ CORRECT: Global reset registry (e.g., on logout)
+### 11.2 ✅ CORRECT: Global reset registry, e.g., on logout
 
 ```typescript
 import { create as actualCreate, type StateCreator } from 'zustand';

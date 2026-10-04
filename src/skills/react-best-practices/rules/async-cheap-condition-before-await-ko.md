@@ -7,7 +7,7 @@ tags: async, await, feature-flags, short-circuit, conditional
 
 ## Check Cheap Conditions Before Async Flags
 
-플래그나 원격 값을 위한 `await`이 들어가는 분기에서 **저비용 동기** 조건(local props, request metadata, 이미 로드된 state)도 함께 요구된다면, 동기 조건을 **먼저** 평가한다. 그렇지 않으면 합성 조건이 결코 참이 될 수 없는 경우에도 async 호출 비용을 지불한다.
+플래그나 원격 값을 위한 `await`이 들어가는 분기에서 **저비용 동기** 조건예: local props, request metadata, 이미 로드된 state도 함께 요구된다면, 동기 조건을 **먼저** 평가한다. 그렇지 않으면 합성 조건이 결코 참이 될 수 없는 경우에도 async 호출 비용을 지불한다.
 
 이는 [Defer Await Until Needed](./async-defer-await.md)를 `flag && cheapCondition` 형태에 특화한 변형이다.
 

@@ -10,17 +10,17 @@ project: <slug>
 related: []
 ---
 
-# <Project name> — Project Map
+# <Project name>: Project Map
 
 > [!info] What this project is
 > Two sentences. First: what problem it solves. Second: current
-> status — alive, paused, or winding down.
+> status, alive, paused, or winding down.
 
 ## Quick links
 
 - **Repository**: [<org/repo>](https://github.com/org/repo)
 - **Release notes**: [[Release Notes]] folder, latest [[v<latest>]]
-- **Active sprint**: [[YYYY-Wnn Retrospective]] (or [[YYYY-Wnn Review]])
+- **Active sprint**: [[YYYY-Wnn Retrospective]] or [[YYYY-Wnn Review]]
 - **Onboarding**: [[<Project> — Onboarding]] when one exists
 
 ## Current focus
@@ -28,7 +28,7 @@ related: []
 - Top thing: [[note or task]]
 - Secondary: …
 
-Keep this to 2–3 items. When the focus changes, rewrite this section;
+Keep this to 2 to 3 items. When the focus changes, rewrite this section;
 the version history is in git.
 
 ## Architecture Decisions
@@ -39,7 +39,7 @@ FROM #type/adr AND #project/<slug>
 SORT number ASC
 ```
 
-Open / proposed ADRs stand out — don't leave them in `proposed` for
+Open / proposed ADRs stand out, don't leave them in `proposed` for
 weeks; either accept, reject, or supersede.
 
 ## Releases
@@ -77,18 +77,18 @@ SORT severity DESC, created DESC
 Things not yet bugs but worth keeping an eye on. Each bullet should
 link to the note tracking the concern.
 
-- <Risk> — see [[…]]
+- <Risk>: see [[…]]
 - <Risk>
 
 ## Team / stakeholders
 
-- <handle> — role
-- <handle> — role
+- <handle>: role
+- <handle>: role
 
 ## Related MOCs
 
-- [[MOC — <sibling project>]] — shared dependencies / users
-- [[MOC — <area>]] — broader area this belongs to
+- [[MOC — <sibling project>]]: shared dependencies / users
+- [[MOC — <area>]]: broader area this belongs to
 
 ## Notes
 

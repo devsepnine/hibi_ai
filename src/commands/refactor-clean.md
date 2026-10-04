@@ -7,10 +7,10 @@ effort: low
 
 # Refactor Clean
 
-Thin entry point for safe dead-code removal. Run the `refactor-cleaner` agent, which analyzes (knip / depcheck / ts-prune), categorizes findings by risk, and deletes only after the test suite passes.
+Thin entry point for safe dead-code removal. Run the `refactor-cleaner` agent, which analyzes with knip / depcheck / ts-prune, categorizes findings by risk, and deletes only after the test suite passes.
 
-How to invoke: hand the task to the `refactor-cleaner` agent (e.g. on dead-code cleanup, unused exports, or duplicate consolidation). It deletes nothing without a passing test run and rolls back on failure.
+How to invoke: hand the task to the `refactor-cleaner` agent, for example on dead-code cleanup, unused exports, or duplicate consolidation. It deletes nothing without a passing test run and rolls back on failure.
 
 Non-negotiable: never delete code without running tests first.
 
-**Full workflow lives in the `refactor-cleaner` agent — follow that as the source of truth.**
+**Full workflow lives in the `refactor-cleaner` agent. Follow that as the source of truth.**

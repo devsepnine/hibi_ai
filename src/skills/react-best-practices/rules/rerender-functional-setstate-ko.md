@@ -9,7 +9,7 @@ tags: react, hooks, useState, useCallback, callbacks, closures
 
 현재 state 값에 기반해 state를 갱신할 때는 state 변수를 직접 참조하는 대신 setState의 functional update form을 사용한다. 이는 stale closure를 방지하고, 불필요한 의존성을 제거하며, 안정적인 콜백 참조를 만든다.
 
-**잘못된 예 (state를 의존성으로 요구):**
+**잘못된 예, state를 의존성으로 요구:**
 
 ```tsx
 function TodoList() {
@@ -31,7 +31,7 @@ function TodoList() {
 
 첫 번째 콜백은 `items`가 변경될 때마다 재생성되며, 자식 컴포넌트가 불필요하게 재렌더될 수 있다. 두 번째 콜백은 stale closure 버그가 있어 항상 초기 `items` 값을 참조한다.
 
-**올바른 예 (안정적인 콜백, stale closure 없음):**
+**올바른 예, 안정적인 콜백, stale closure 없음:**
 
 ```tsx
 function TodoList() {
@@ -53,10 +53,10 @@ function TodoList() {
 
 **이점:**
 
-1. **안정적인 콜백 참조** — state가 변해도 콜백을 재생성하지 않는다
-2. **stale closure 없음** — 항상 최신 state 값으로 동작한다
-3. **의존성 감소** — 의존성 배열을 단순화하고 메모리 누수를 줄인다
-4. **버그 예방** — React closure 관련 가장 흔한 버그 원인을 제거한다
+1. **안정적인 콜백 참조**: state가 변해도 콜백을 재생성하지 않는다
+2. **stale closure 없음**: 항상 최신 state 값으로 동작한다
+3. **의존성 감소**: 의존성 배열을 단순화하고 메모리 누수를 줄인다
+4. **버그 예방**: React closure 관련 가장 흔한 버그 원인을 제거한다
 
 **Functional update를 써야 할 때:**
 

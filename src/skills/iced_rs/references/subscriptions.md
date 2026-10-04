@@ -1,6 +1,6 @@
-# iced Subscriptions — Listening to the Outside World
+# iced Subscriptions: Listening to the Outside World
 
-A `Subscription<Message>` is a declarative "while this is returned, deliver these messages." Timers, global events, channels — anything the runtime multiplexes over time. Unlike a `Task` (fire-and-forget, one outcome), a Subscription keeps producing messages until you stop returning it.
+A `Subscription<Message>` is a declarative "while this is returned, deliver these messages." Timers, global events, channels: anything the runtime multiplexes over time. Unlike a fire-and-forget `Task` with one outcome, a Subscription keeps producing messages until you stop returning it.
 
 ## The shape
 
@@ -13,9 +13,9 @@ fn subscription(&self) -> Subscription<Message> {
 }
 ```
 
-Return different subscriptions depending on state — the runtime diffs the set and starts/stops the underlying producers for you. No manual start/stop.
+Return different subscriptions depending on state. The runtime diffs the set and starts/stops the underlying producers for you. No manual start/stop.
 
-## Timers — `time::every`
+## Timers: `time::every`
 
 ```rust
 use iced::time::{self, Duration};
@@ -25,7 +25,7 @@ fn subscription(&self) -> Subscription<Message> {
 }
 ```
 
-The ticks arrive as the `Message::Tick` variant. `time::every` gives you an `Instant` — keep it with `.map(Message::Tick)` if you want the timestamp, or `_ => Message::Tick` if you don't.
+The ticks arrive as the `Message::Tick` variant. `time::every` gives you an `Instant`. Keep it with `.map(Message::Tick)` if you want the timestamp, or `_ => Message::Tick` if you don't.
 
 Stop the timer by conditionally not returning it:
 
@@ -39,9 +39,9 @@ if self.clock_running {
 
 The runtime detects the change and shuts the timer down between frames.
 
-## Global Events — `event::listen`
+## Global Events: `event::listen`
 
-All runtime events (keyboard, mouse, window, touch):
+All runtime events, namely keyboard, mouse, window, and touch:
 
 ```rust
 use iced::event::{self, Event};
@@ -68,7 +68,7 @@ Message::Event(Event::Keyboard(keyboard::Event::KeyPressed { key, modifiers, .. 
 
 ## Keyboard-specific
 
-Focused keypress subscriptions (only fire when your app's window has focus):
+Focused keypress subscriptions, which only fire when your app's window has focus:
 
 ```rust
 use iced::keyboard;
@@ -82,9 +82,9 @@ keyboard::on_key_press(|key, modifiers| {
 })
 ```
 
-Return `None` to ignore — cleaner than a catch-all match in `update`.
+Return `None` to ignore. This is cleaner than a catch-all match in `update`.
 
-## Mixing Multiple Subscriptions — `Subscription::batch`
+## Mixing Multiple Subscriptions: `Subscription::batch`
 
 ```rust
 fn subscription(&self) -> Subscription<Message> {
@@ -98,9 +98,9 @@ fn subscription(&self) -> Subscription<Message> {
 
 Return a batch whenever you have >1 subscription active. Order inside doesn't matter.
 
-## Channel-based — `Subscription::run`
+## Channel-based: `Subscription::run`
 
-For background tasks that produce a *stream* of messages (file watcher, long-running async worker), use `Subscription::run`:
+For background tasks that produce a *stream* of messages, such as a file watcher or long-running async worker, use `Subscription::run`:
 
 ```rust
 use iced::{Subscription, stream};
@@ -117,7 +117,7 @@ fn subscription(&self) -> Subscription<Message> {
 }
 ```
 
-The subscription's identity is the function pointer / closure captures — if the same `run` is returned on the next frame, the runtime keeps the existing stream alive. Change what's returned to restart.
+The subscription's identity is the function pointer / closure captures. If the same `run` is returned on the next frame, the runtime keeps the existing stream alive. Change what's returned to restart.
 
 ## Conditional / dynamic
 
@@ -137,7 +137,7 @@ fn subscription(&self) -> Subscription<Message> {
 }
 ```
 
-This pattern — a `Vec<Subscription<Message>>` built conditionally and batched — scales better than nested `if`/`else` returning `Subscription::none()`.
+This pattern, a `Vec<Subscription<Message>>` built conditionally and batched, scales better than nested `if`/`else` returning `Subscription::none()`.
 
 ## Window-level events
 
@@ -148,7 +148,7 @@ window::resize_events().map(|(id, size)| Message::WindowResized(id, size))
 window::close_requests().map(|id| Message::WindowClosing(id))
 ```
 
-Use `close_requests` to intercept close (to prompt "save changes?") before actually closing the window with `window::close`.
+Use `close_requests` to intercept close, to prompt "save changes?", before actually closing the window with `window::close`.
 
 ## Common Patterns
 

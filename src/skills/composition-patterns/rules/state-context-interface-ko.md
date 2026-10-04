@@ -7,11 +7,11 @@ tags: composition, context, state, typescript, dependency-injection
 
 ## Define Generic Context Interfaces for Dependency Injection
 
-컴포넌트 context를 위한 **제네릭 인터페이스**를 세 부분으로 정의한다: `state`, `actions`, `meta`. 이 인터페이스는 어떤 provider든 구현할 수 있는 계약이며 — 같은 UI 컴포넌트가 완전히 다른 상태 구현과 함께 작동하도록 한다.
+컴포넌트 context를 위한 **제네릭 인터페이스**를 세 부분으로 정의한다: `state`, `actions`, `meta`. 이 인터페이스는 어떤 provider든 구현할 수 있는 계약이며, 같은 UI 컴포넌트가 완전히 다른 상태 구현과 함께 작동하도록 한다.
 
 **Core principle:** 상태를 끌어올리고, 내부 구성요소를 조합하며, 상태를 의존성 주입 가능하게 만든다.
 
-**Incorrect (UI coupled to specific state implementation):**
+**Incorrect, UI coupled to specific state implementation:**
 
 ```tsx
 function ComposerInput() {
@@ -21,7 +21,7 @@ function ComposerInput() {
 }
 ```
 
-**Correct (generic interface enables dependency injection):**
+**Correct, generic interface enables dependency injection:**
 
 ```tsx
 // Define a GENERIC interface that any provider can implement

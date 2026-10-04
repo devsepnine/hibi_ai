@@ -7,11 +7,11 @@ tags: lists, performance, memo, primitives
 
 ## Pass Primitives to List Items for Memoization
 
-When possible, pass only primitive values (strings, numbers, booleans) as props
+When possible, pass only primitive values such as strings, numbers, and booleans as props
 to list item components. Primitives enable shallow comparison in `memo()` to
 work correctly, skipping re-renders when values haven't changed.
 
-**Incorrect (object prop requires deep comparison):**
+**Incorrect, object prop requires deep comparison:**
 
 ```tsx
 type User = { id: string; name: string; email: string; avatar: string }
@@ -27,7 +27,7 @@ renderItem={({ item }) => <UserRow user={item} />}
 
 This can still be optimized, but it is harder to memoize properly.
 
-**Correct (primitive props enable shallow comparison):**
+**Correct, primitive props enable shallow comparison:**
 
 ```tsx
 const UserRow = memo(function UserRow({

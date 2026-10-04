@@ -9,7 +9,7 @@ tags: composition, state, context, providers
 
 상태 관리를 전용 provider 컴포넌트로 옮긴다. 이를 통해 메인 UI 외부의 형제 컴포넌트가 prop drilling이나 어색한 ref 없이 상태에 접근하고 수정할 수 있다.
 
-**Incorrect (state trapped inside component):**
+**Incorrect, state trapped inside component:**
 
 ```tsx
 function ForwardMessageComposer() {
@@ -39,7 +39,7 @@ function ForwardMessageDialog() {
 }
 ```
 
-**Incorrect (useEffect to sync state up):**
+**Incorrect, useEffect to sync state up:**
 
 ```tsx
 function ForwardMessageDialog() {
@@ -60,7 +60,7 @@ function ForwardMessageComposer({ onInputChange }) {
 }
 ```
 
-**Incorrect (reading state from ref on submit):**
+**Incorrect, reading state from ref on submit:**
 
 ```tsx
 function ForwardMessageDialog() {
@@ -74,7 +74,7 @@ function ForwardMessageDialog() {
 }
 ```
 
-**Correct (state lifted to provider):**
+**Correct, state lifted to provider:**
 
 ```tsx
 function ForwardMessageProvider({ children }: { children: React.ReactNode }) {
@@ -116,4 +116,4 @@ function ForwardButton() {
 
 ForwardButton은 Composer.Frame 외부에 있지만 여전히 submit 액션에 접근할 수 있다. provider 내부에 있기 때문이다. 일회성 컴포넌트라 하더라도 UI 자체 외부에서 composer의 상태와 액션에 접근할 수 있다.
 
-**Key insight:** 공유 상태가 필요한 컴포넌트는 서로 시각적으로 중첩될 필요가 없다 — 같은 provider 내에 있기만 하면 된다.
+**Key insight:** 공유 상태가 필요한 컴포넌트는 서로 시각적으로 중첩될 필요가 없다. 같은 provider 내에 있기만 하면 된다.

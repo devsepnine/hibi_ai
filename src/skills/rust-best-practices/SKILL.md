@@ -1,6 +1,6 @@
 ---
 name: rust-best-practices
-description: Rust practices — ownership, error handling, async, testing, project structure. Use when writing or reviewing Rust. 러스트 코드 작성, Rust 모범사례, 소유권, Rust 리뷰. NOT iced/ratatui specifics.
+description: Rust practices, ownership, error handling, async, testing, project structure. Use when writing or reviewing Rust. 러스트 코드 작성, Rust 모범사례, 소유권, Rust 리뷰. NOT iced/ratatui specifics.
 version: 1.0.0
 ---
 
@@ -24,17 +24,17 @@ edition = "2024"
 resolver = "2"
 ```
 
-Edition 2024 brings: native `async fn` in traits (drops `async-trait`), `if let` chains, RPITIT, better lifetime elision, improved const fn, sharper diagnostics. See [edition-2024.md](references/edition-2024.md).
+Edition 2024 brings: native `async fn` in traits, drops `async-trait`, `if let` chains, RPITIT, better lifetime elision, improved const fn, sharper diagnostics. See [edition-2024.md](references/edition-2024.md).
 
 ## 1. Ownership & Borrowing
 
-Rules: single owner, dropped at scope end, move or borrow (`&` / `&mut`).
+Rules: single owner, dropped at scope end, move or borrow, `&` / `&mut`.
 
 | Use | When |
 |-----|------|
 | `&T` | read-only access |
 | `&mut T` | exclusive write |
-| `T` (owned) | transfer ownership / store |
+| `T`, owned | transfer ownership / store |
 | `Clone` | only when caller AND callee need ownership |
 
 Function param defaults: prefer `&str` over `String`, `&[T]` over `Vec<T>`, `&Path` over `PathBuf`.
@@ -70,7 +70,7 @@ fn load(path: &str) -> Result<Config, ConfigError> {
 Rules:
 - Never `unwrap()` / `expect()` in production without a documented invariant.
 - Propagate with `?`; add context with `map_err` or `anyhow::Context::context`.
-- Combine `Option`/`Result` with combinators (`and_then`, `map`, `ok_or`).
+- Combine `Option`/`Result` with combinators, `and_then`, `map`, `ok_or`.
 
 Details: [error-handling.md](references/error-handling.md) · [Rust Book Ch.9](https://doc.rust-lang.org/book/ch09-00-error-handling.html)
 
@@ -92,10 +92,10 @@ let (tx, mut rx) = tokio::sync::mpsc::channel(100);
 ```
 
 Rules:
-- Pick one runtime (tokio for I/O-heavy, smol for embedded, async-std rarely).
+- Pick one runtime, tokio for I/O-heavy, smol for embedded, async-std rarely.
 - NEVER block in async: use `tokio::time::sleep`, not `std::thread::sleep`. CPU work → `tokio::task::spawn_blocking`.
 - Structured concurrency: `join!`, `select!`, `tokio::time::timeout`. Handle cancel via drop.
-- Beware task overhead — don't spawn for trivial work.
+- Beware task overhead, don't spawn for trivial work.
 
 Details: [async-patterns.md](references/async-patterns.md) · [Tokio Tutorial](https://tokio.rs/tokio/tutorial)
 
@@ -120,12 +120,12 @@ mod tests {
 ```
 
 Strategy:
-- Unit tests live next to code (`#[cfg(test)] mod tests`).
+- Unit tests live next to code, `#[cfg(test)] mod tests`.
 - Integration tests in `tests/` per public API surface.
 - Doc tests via `cargo test --doc`.
 - Property tests with `proptest`; coverage with `cargo-llvm-cov`.
 - Mock external deps via traits, not concrete types.
-- Always test failure paths and edge cases (empty/max/concurrent).
+- Always test failure paths and edge cases, empty/max/concurrent.
 
 Details: [testing.md](references/testing.md) · [Rust Book Ch.11](https://doc.rust-lang.org/book/ch11-00-testing.html)
 
@@ -164,7 +164,7 @@ Details: [project-structure.md](references/project-structure.md) · [Cargo Book]
 
 ## Performance Quick Wins
 
-- Iterator chains compile to tight loops — prefer over manual indexing.
+- Iterator chains compile to tight loops, prefer over manual indexing.
 - Pre-size: `Vec::with_capacity`, `String::with_capacity` for known bounds.
 - `#[inline]` only on small hot functions; trust the compiler otherwise.
 - Avoid `.collect()` in middle of pipelines; collect once at the end.
@@ -194,7 +194,7 @@ fn verify(a: &[u8], b: &[u8]) -> bool { a.ct_eq(b).into() }
 |--------------|-----|
 | `fn f(s: String)` then only reading | `fn f(s: &str)` |
 | `s.clone()` to "make it work" | borrow, or restructure ownership |
-| `pub fn divide(a, b) -> i32 { a / b }` | return `Result` — no panics in libs |
+| `pub fn divide(a, b) -> i32 { a / b }` | return `Result`, no panics in libs |
 | `let _ = file.write_all(data);` | propagate or log the error |
 | `std::thread::sleep` in `async` | `tokio::time::sleep(...).await` |
 | `unwrap()` in prod paths | `?`, `ok_or`, or document the invariant |
@@ -216,7 +216,7 @@ enum_glob_use = "deny"
 
 ## References
 
-- [Edition 2024 Guide](references/edition-2024.md) (start here)
+- [Edition 2024 Guide](references/edition-2024.md), start here
 - [Ownership & Borrowing](references/ownership-borrowing.md)
 - [Error Handling](references/error-handling.md)
 - [Async Patterns](references/async-patterns.md)

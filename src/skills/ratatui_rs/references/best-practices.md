@@ -48,7 +48,7 @@ pub struct App {
 ```
 
 **Why a single struct**: easy to pass `&App` to render fns, easy to snapshot for tests.
-**Why an enum for view**: the compiler catches missing branches when you add a screen. Booleans (`is_modal_open`, `is_loading`) silently allow invalid combinations.
+**Why an enum for view**: the compiler catches missing branches when you add a screen. Booleans such as `is_modal_open` and `is_loading` silently allow invalid combinations.
 
 ## Channels: Bundle Them, Don't Pass Loose
 
@@ -81,15 +81,15 @@ fn run_loop(terminal: &mut DefaultTerminal, app: &mut App) -> anyhow::Result<()>
 
 For per-job cancellation isolation, see `references/cancelable-processes.md`.
 
-## Keyboard Shortcuts (Discoverable Defaults)
+## Keyboard Shortcuts, Discoverable Defaults
 
 Pick the bindings users already know from vi / less / ranger / lazygit. Don't invent.
 
 | Key | Action | Notes |
 |---|---|---|
 | `q`, `Esc` | Quit / Back | `q` quits app at top level; `Esc` backs out of a modal. |
-| `j` / `k` / arrows | Down / Up | Both forms — vi users and arrow users coexist. |
-| `h` / `l` | Left / Right (or back/forward) | |
+| `j` / `k` / arrows | Down / Up | Both forms, vi users and arrow users coexist. |
+| `h` / `l` | Left / Right, or back/forward | |
 | `g` / `G` | Top / Bottom | |
 | `Enter` | Confirm / Open | |
 | `Space` | Toggle selection | When the screen is checklist-like. |
@@ -98,9 +98,9 @@ Pick the bindings users already know from vi / less / ranger / lazygit. Don't in
 | `Tab` / `Shift+Tab` | Next / Prev field in a form | |
 | `Ctrl+C` | Force quit | Treat as `q` even mid-operation; cleanup must run. |
 
-Show the active bindings in a status bar — discoverability is half the battle.
+Show the active bindings in a status bar, discoverability is half the battle.
 
-## Status Bar (Always Visible)
+## Status Bar, Always Visible
 
 A footer status bar with mode, item count, and "?: help" hint trains users:
 
@@ -175,7 +175,7 @@ impl App {
 let glyph = SPINNER_FRAMES[app.frame];
 ```
 
-The render layer never owns wall-clock time — easier to test.
+The render layer never owns wall-clock time, easier to test.
 
 ## Error Handling
 
@@ -190,26 +190,26 @@ match install_item(item) {
 
 For unrecoverable errors that should exit the app, set `app.should_quit = true` and let the loop print after `ratatui::restore()`.
 
-## Performance: When (Not) to Care
+## Performance: When, Not, to Care
 
 ratatui's renderer is fast. Don't optimize until you measure. The two things that *do* matter:
 
 1. **Build cost of widget data**: if you rebuild a 10k-item list every frame, you're hot. Cache the prepared `Vec<ListItem>` and only rebuild when items change.
-2. **Polling interval**: 100ms is fine for most apps; 16ms for animation-heavy. Don't go below 16ms — you're past terminal refresh anyway.
+2. **Polling interval**: 100ms is fine for most apps; 16ms for animation-heavy. Don't go below 16ms, you're past terminal refresh anyway.
 
 ## Accessibility
 
 - High contrast: avoid light-gray-on-white or yellow-on-white.
-- Don't rely on color alone: pair with symbols (`✓ ok`, `✗ failed`, `▶ running`).
+- Don't rely on color alone: pair with symbols, `✓ ok`, `✗ failed`, `▶ running`.
 - Always keyboard-accessible: assume mouse is unavailable.
-- Predictable focus indicators: `> `, `█`, or background highlight — pick one and stick to it.
+- Predictable focus indicators: `> `, `█`, or background highlight, pick one and stick to it.
 
 ## Ship Checklist
 
-- [ ] `ratatui::init()` / `ratatui::restore()` (or panic hook)
-- [ ] All long operations cancelable (`references/cancelable-processes.md`)
-- [ ] Tested on Windows + macOS + Linux (`references/cross-platform.md`)
-- [ ] At least one rendering test per non-trivial screen (`references/testing.md`)
+- [ ] `ratatui::init()` / `ratatui::restore()`, or panic hook
+- [ ] All long operations cancelable, `references/cancelable-processes.md`
+- [ ] Tested on Windows + macOS + Linux, `references/cross-platform.md`
+- [ ] At least one rendering test per non-trivial screen, `references/testing.md`
 - [ ] Keybindings shown in status bar
 - [ ] Errors show as toast, not panic
 - [ ] Builds with `cargo build --release` warning-free

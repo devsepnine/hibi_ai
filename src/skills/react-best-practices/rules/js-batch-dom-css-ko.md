@@ -7,9 +7,9 @@ tags: javascript, dom, css, performance, reflow, layout-thrashing
 
 ## Avoid Layout Thrashing
 
-스타일 쓰기와 레이아웃 읽기를 교차로 실행하지 않는다. 스타일 변경 사이에 레이아웃 속성(`offsetWidth`, `getBoundingClientRect()`, `getComputedStyle()` 등)을 읽으면 브라우저가 동기 reflow를 강제 트리거한다.
+스타일 쓰기와 레이아웃 읽기를 교차로 실행하지 않는다. 스타일 변경 사이에 레이아웃 속성인 `offsetWidth`, `getBoundingClientRect()`, `getComputedStyle()` 등을 읽으면 브라우저가 동기 reflow를 강제 트리거한다.
 
-**This is OK (browser batches style changes):**
+**This is OK, browser batches style changes:**
 ```typescript
 function updateElementStyles(element: HTMLElement) {
   // Each line invalidates style, but browser batches the recalculation
@@ -20,7 +20,7 @@ function updateElementStyles(element: HTMLElement) {
 }
 ```
 
-**Incorrect (interleaved reads and writes force reflows):**
+**Incorrect, interleaved reads and writes force reflows:**
 ```typescript
 function layoutThrashing(element: HTMLElement) {
   element.style.width = '100px'
@@ -30,7 +30,7 @@ function layoutThrashing(element: HTMLElement) {
 }
 ```
 
-**Correct (batch writes, then read once):**
+**Correct, batch writes, then read once:**
 ```typescript
 function updateElementStyles(element: HTMLElement) {
   // Batch all writes together
@@ -44,7 +44,7 @@ function updateElementStyles(element: HTMLElement) {
 }
 ```
 
-**Correct (batch reads, then writes):**
+**Correct, batch reads, then writes:**
 ```typescript
 function avoidThrashing(element: HTMLElement) {
   // Read phase - all layout queries first

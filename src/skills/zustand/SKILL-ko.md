@@ -1,23 +1,23 @@
 ---
 name: zustand
-description: Zustand v5 — state/action split, useShallow selectors, subscribeWithSelector, devtools/persist, slices, v4 migration, infinite-loop fixes. Use when managing React state. 주스탄드, 전역 상태 관리, useShallow.
+description: "Zustand v5: state/action split, useShallow selectors, subscribeWithSelector, devtools/persist, slices, v4 migration, infinite-loop fixes. Use when managing React state. 주스탄드, 전역 상태 관리, useShallow."
 ---
 
-# Zustand Store (v5)
+# Zustand Store, v5
 
-TypeScript 타입, 적절한 미들웨어, 흔한 함정(infinite re-render, zombie children, stale closure)을 피하는 selector 패턴과 함께 v5 베스트 프랙티스를 따라 Zustand store를 작성한다.
+TypeScript 타입, 적절한 미들웨어, 흔한 함정인 infinite re-render, zombie children, stale closure를 피하는 selector 패턴과 함께 v5 베스트 프랙티스를 따라 Zustand store를 작성한다.
 
 **Zustand v5+**를 가정한다. v4 마이그레이션 포인터는 [references/acceptance-criteria.md](references/acceptance-criteria.md) 참고.
 
 ## Quick Start
 
 [assets/template.md](assets/template.md)에서 템플릿을 복사하고 다음을 치환:
-- `{{StoreName}}` → PascalCase store 이름 (예: `Project`)
+- `{{StoreName}}` → PascalCase store 이름, 예: `Project`
 - `{{description}}` → 한 줄 JSDoc description
 
 ## State / Actions 분리
 
-store 타입을 **state**(데이터)와 **actions**(mutator)로 분리한다. 이렇게 하면 의도가 명확해지고, selector를 위한 `Pick<>`이 쉬워지며, 절대 re-render하지 않는 action-only selector가 드러난다.
+store 타입을 **state**인 데이터와 **actions**인 mutator로 분리한다. 이렇게 하면 의도가 명확해지고, selector를 위한 `Pick<>`이 쉬워지며, 절대 re-render하지 않는 action-only selector가 드러난다.
 
 ```typescript
 export interface MyState {
@@ -59,11 +59,11 @@ const addItem = useMyStore((s) => s.addItem);
 
 엄지 손가락 규칙: **단일 필드 selector는 wrapper가 필요 없다**; 튜플, 배열, 객체 리터럴을 반환할 때는 `useShallow`로 감싼다.
 
-v4의 equality-function API를 선호한다면 `zustand/traditional`의 `createWithEqualityFn`을 쓸 수 있다 — 하지만 `useShallow`가 v5의 권장 경로다.
+v4의 equality-function API를 선호한다면 `zustand/traditional`의 `createWithEqualityFn`을 쓸 수 있다. 하지만 `useShallow`가 v5의 권장 경로다.
 
 ## `subscribeWithSelector`: outside-React 전용
 
-`subscribeWithSelector` 미들웨어는 `.subscribe()`에 selector + equality 인자를 추가한다. React 바깥(이벤트 브릿지, 로깅, URL 동기화)에서 store를 subscribe해야 할 때 **만** 포함시킨다. 컴포넌트 안에서는 `useShallow`가 같은 필요를 커버한다.
+`subscribeWithSelector` 미들웨어는 `.subscribe()`에 selector + equality 인자를 추가한다. 이벤트 브릿지, 로깅, URL 동기화처럼 React 바깥에서 store를 subscribe해야 할 때 **만** 포함시킨다. 컴포넌트 안에서는 `useShallow`가 같은 필요를 커버한다.
 
 ```typescript
 import { create } from 'zustand';
@@ -110,7 +110,7 @@ export const useMyStore = create<MyStore>()(
 
 가이드라인:
 - devtools 트레이싱을 위해 모든 `set()`에 이름을 붙여라: `set(partial, false, 'action/name')`
-- transient state(loading, error)를 storage에서 제외하려면 `partialize`를 사용한다
+- loading, error 같은 transient state를 storage에서 제외하려면 `partialize`를 사용한다
 - 사용자 prefs는 `localStorage`, tab 범위 state는 `sessionStorage`를 선호한다
 
 ## 초기 state + reset
@@ -129,7 +129,7 @@ reset: () => set(initialState),
 useMyStore.setState(useMyStore.getInitialState(), true);
 ```
 
-## Slices 패턴 (큰 store)
+## Slices 패턴, 큰 store
 
 store가 ~5개 action을 넘거나 여러 도메인에 걸치면, typed slice로 분할해 합성한다. 각 slice는 cross-slice `get()`이 동작하도록 최종 store shape으로 파라미터화된 `StateCreator`다.
 
@@ -153,7 +153,7 @@ export const useJungleStore = create<Bear & Fish>()((...a) => ({
 - 테스트 사이에 store reset: `useMyStore.setState(useMyStore.getInitialState(), true)`
 - async action은 `await` 후 `store.getState()`로 assert
 - fetch/IO는 boundary에서 mock; store에서 mock하지 않는다
-- 다중 store 테스트 스위트는 global-reset wrapper를 도입한다 (slices 가이드 참고)
+- 다중 store 테스트 스위트는 global-reset wrapper를 도입한다. slices 가이드 참고
 
 ## 통합 단계
 

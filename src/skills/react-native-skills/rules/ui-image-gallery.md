@@ -8,11 +8,11 @@ tags: images, gallery, lightbox, expo-image, ui
 
 ## Use Galeria for Image Galleries and Lightbox
 
-For image galleries with lightbox (tap to fullscreen), use `@nandorojo/galeria`.
+For image galleries with lightbox, where a tap opens fullscreen, use `@nandorojo/galeria`.
 It provides native shared element transitions with pinch-to-zoom, double-tap
 zoom, and pan-to-close. Works with any image component including `expo-image`.
 
-**Incorrect (custom modal implementation):**
+**Incorrect, custom modal implementation:**
 
 ```tsx
 function ImageGallery({ urls }: { urls: string[] }) {
@@ -33,7 +33,7 @@ function ImageGallery({ urls }: { urls: string[] }) {
 }
 ```
 
-**Correct (Galeria with expo-image):**
+**Correct, Galeria with expo-image:**
 
 ```tsx
 import { Galeria } from '@nandorojo/galeria'

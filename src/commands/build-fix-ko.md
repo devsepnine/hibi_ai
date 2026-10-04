@@ -11,12 +11,12 @@ effort: low
 
 ## Invoke
 
-빌드를 실행하고(`npm run build` / `pnpm build`) 오류 출력을 `build-error-resolver`에 전달한다. 에이전트는 한 번에 하나의 오류만 minimal diff로 수정하고 매번 검증한다.
+`npm run build` 또는 `pnpm build`로 빌드를 실행하고 오류 출력을 `build-error-resolver`에 전달한다. 에이전트는 한 번에 하나의 오류만 minimal diff로 수정하고 매번 검증한다.
 
 ## Command-specific stop gates
 
-- 수정이 새로운 오류를 유발하면(regression) 중단한다.
+- 수정이 새로운 오류를 유발하면 중단한다. 이는 regression이다.
 - 동일한 오류가 3회 시도 후에도 지속되면 중단한다.
 - 사용자가 일시 중지를 요청하면 중단한다.
 
-전체 diagnostic command, 오류 패턴 표, minimal-diff 전략, safety guard, report format은 `build-error-resolver` 에이전트(`src/agents/build-error-resolver.md`)에 있다. 이를 source of truth로 따른다.
+전체 diagnostic command, 오류 패턴 표, minimal-diff 전략, safety guard, report format은 `build-error-resolver` 에이전트인 `src/agents/build-error-resolver.md`에 있다. 이를 source of truth로 따른다.

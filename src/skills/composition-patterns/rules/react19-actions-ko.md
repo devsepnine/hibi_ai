@@ -7,9 +7,9 @@ tags: react19, actions, forms, useActionState, useFormStatus, composition
 
 ## Compose Forms Around Actions, Not Local Loading State
 
-React 19는 **Actions** — `<form action={fn}>`이나 `<button formAction={fn}>`에 전달되는 비동기 함수 — 를 mutation의 주된 composition 경계로 권장한다. `useActionState`, `useFormStatus`, `useOptimistic`과 결합하면 모든 자손에 끼워 넣었던 수작업 `isLoading` / `error` / `startTransition` 배선을 대체한다.
+React 19는 **Actions**, 즉 `<form action={fn}>`이나 `<button formAction={fn}>`에 전달되는 비동기 함수를 mutation의 주된 composition 경계로 권장한다. `useActionState`, `useFormStatus`, `useOptimistic`과 결합하면 모든 자손에 끼워 넣었던 수작업 `isLoading` / `error` / `startTransition` 배선을 대체한다.
 
-mutation이 **form 형태**일 때 (사용자가 제출, 서버가 업데이트, UI가 반영) Actions를 사용한다. 실제로는 mutation이 아닌 사이드 이펙트 (모달 열기, 로깅)에는 고전적인 `onClick` 핸들러를 그대로 둔다.
+mutation이 **form 형태**일 때, 즉 사용자가 제출하고 서버가 업데이트하고 UI가 반영할 때 Actions를 사용한다. 실제로는 mutation이 아닌 사이드 이펙트, 예를 들어 모달 열기나 로깅에는 고전적인 `onClick` 핸들러를 그대로 둔다.
 
 ### Benefits over manual state
 
@@ -17,7 +17,7 @@ mutation이 **form 형태**일 때 (사용자가 제출, 서버가 업데이트,
 - **Progressive enhancement**: JS가 비활성화되어도 평범한 `<form action="/path">`가 여전히 작동한다. Actions가 네이티브 form 계약을 재사용하기 때문이다.
 - **Composable**: 자식들이 prop drilling 없이 `useFormStatus`나 `useActionState`로 pending/error를 읽는다.
 
-### Incorrect — manual pending + error state across props
+### Incorrect, manual pending + error state across props
 
 ```tsx
 function EditNameForm({ user }: { user: User }) {
@@ -49,7 +49,7 @@ function SubmitButton({ isSaving }: { isSaving: boolean }) {
 }
 ```
 
-### Correct — Action + useActionState + useFormStatus
+### Correct, Action + useActionState + useFormStatus
 
 ```tsx
 function EditNameForm({ user }: { user: User }) {
@@ -92,7 +92,7 @@ async function action(formData: FormData) {
 }
 ```
 
-optimistic 업데이트는 **순수하고 되돌릴 수 있게** 유지한다 — action이 거부되면 React가 optimistic 값을 자동으로 폐기한다.
+optimistic 업데이트는 **순수하고 되돌릴 수 있게** 유지한다. action이 거부되면 React가 optimistic 값을 자동으로 폐기한다.
 
 ### Composition rules of thumb
 
@@ -101,6 +101,6 @@ optimistic 업데이트는 **순수하고 되돌릴 수 있게** 유지한다 �
 - `<form>`당 하나의 Action. 다중 버튼 제출의 경우, 같은 form에서 다른 Action으로 라우팅하기 위해 `<button>`에 `formAction`을 사용한다.
 
 Reference:
-- [React 19 — Actions & useActionState](https://react.dev/blog/2024/12/05/react-19)
+- [React 19: Actions & useActionState](https://react.dev/blog/2024/12/05/react-19)
 - [`useFormStatus`](https://react.dev/reference/react-dom/hooks/useFormStatus)
 - [`useOptimistic`](https://react.dev/reference/react/useOptimistic)

@@ -11,7 +11,7 @@ tags: safe-area, scrollview, layout
 `contentInsetAdjustmentBehavior="automatic"`을 설정한다. 그러면 iOS가 safe area
 inset을 native로 처리하면서 스크롤 동작도 적절히 유지된다.
 
-**Incorrect (SafeAreaView wrapper):**
+**Incorrect, SafeAreaView wrapper:**
 
 ```tsx
 import { SafeAreaView, ScrollView, View, Text } from 'react-native'
@@ -29,7 +29,7 @@ function MyScreen() {
 }
 ```
 
-**Incorrect (manual safe area padding):**
+**Incorrect, manual safe area padding:**
 
 ```tsx
 import { ScrollView, View, Text } from 'react-native'
@@ -48,7 +48,7 @@ function MyScreen() {
 }
 ```
 
-**Correct (native content inset adjustment):**
+**Correct, native content inset adjustment:**
 
 ```tsx
 import { ScrollView, View, Text } from 'react-native'
@@ -64,5 +64,5 @@ function MyScreen() {
 }
 ```
 
-native 방식은 동적인 safe area(키보드, 툴바)를 다루고, 콘텐츠가 status bar
+native 방식은 동적인 safe area인 키보드와 툴바를 다루고, 콘텐츠가 status bar
 뒤로 자연스럽게 스크롤되도록 한다.

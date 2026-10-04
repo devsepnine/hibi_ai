@@ -1,6 +1,6 @@
 ---
 name: web-design-guidelines
-description: Review UI code against Web Interface Guidelines — accessibility, UX, design audit. Use when asked to review UI/UX or check accessibility. UI 리뷰, 웹 디자인 검토, 접근성 점검, UX 리뷰.
+description: "Review UI code against Web Interface Guidelines: accessibility, UX, design audit. Use when asked to review UI/UX or check accessibility. UI 리뷰, 웹 디자인 검토, 접근성 점검, UX 리뷰."
 metadata:
   author: vercel
   version: "1.0.0"
@@ -14,7 +14,7 @@ Web Interface Guidelines 준수를 위해 파일을 리뷰한다.
 ## 동작 방식
 
 1. 아래 source URL에서 최신 가이드라인을 fetch
-2. 지정된 파일을 읽음 (없다면 사용자에게 파일/패턴 요청)
+2. 지정된 파일을 읽음. 없다면 사용자에게 파일/패턴 요청
 3. fetch한 가이드라인의 모든 규칙에 대해 점검
 4. 간결한 `file:line` 포맷으로 결과 출력
 

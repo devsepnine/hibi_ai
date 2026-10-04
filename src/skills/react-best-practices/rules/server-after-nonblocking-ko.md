@@ -5,11 +5,11 @@ impactDescription: faster response times
 tags: server, async, logging, analytics, side-effects
 ---
 
-## 논블로킹 작업에는 after()를 사용한다
+## 논블로킹 작업에는 `after()`를 사용한다
 
 응답이 전송된 후 실행되어야 할 작업은 Next.js의 `after()`로 스케줄링한다. 이를 통해 로깅, analytics 같은 사이드 이펙트가 응답을 차단하지 않도록 한다.
 
-**잘못된 예 (응답을 차단):**
+**잘못된 예, 응답을 차단:**
 
 ```tsx
 import { logUserAction } from '@/app/utils'
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 }
 ```
 
-**올바른 예 (논블로킹):**
+**올바른 예, 논블로킹:**
 
 ```tsx
 import { after } from 'next/server'
@@ -60,10 +60,10 @@ export async function POST(request: Request) {
 **대표적인 사용 사례:**
 
 - Analytics 추적
-- 감사 로그(audit logging)
+- 감사 로그, audit logging
 - 알림 전송
 - 캐시 무효화
-- 정리(cleanup) 작업
+- 정리, cleanup 작업
 
 **중요 사항:**
 

@@ -15,15 +15,15 @@ aliases: ["<Alt title>"]
 
 # ADR-NNNN: <Concise decision title>
 
-> [!info] Status — <status>
+> [!info] Status: <status>
 > <status flips from `proposed` → `accepted` once deciders sign off. If
 > it's later replaced, update to `superseded` and set `supersededBy`.
 > Never delete superseded ADRs; they're part of the audit trail.>
 
 ## Context
 
-Why is a decision needed right now? Describe the forcing function (new
-requirement, scaling pain, regulatory change, postmortem outcome). Keep
+Why is a decision needed right now? Describe the forcing function: a new
+requirement, scaling pain, regulatory change, or postmortem outcome. Keep
 this about **why we're deciding**, not the decision itself.
 
 Link adjacent material:
@@ -32,25 +32,25 @@ Link adjacent material:
 
 ## Constraints
 
-- Must-haves (hard requirements, non-negotiable)
-- Nice-to-haves (tiebreakers)
-- Out-of-scope (what we are explicitly not deciding here)
+- Must-haves: hard requirements, non-negotiable
+- Nice-to-haves: tiebreakers
+- Out-of-scope: what we are explicitly not deciding here
 
 ## Options considered
 
-### Option A — <name>
+### Option A: <name>
 
 - Shape: one-paragraph summary.
 - Pros: ...
 - Cons: ...
 
-### Option B — <name>
+### Option B: <name>
 
 - Shape: ...
 - Pros: ...
 - Cons: ...
 
-### Option C — <name>
+### Option C: <name>
 
 - Shape: ...
 - Pros: ...
@@ -59,7 +59,7 @@ Link adjacent material:
 ## Decision
 
 > [!success] Decided: <option>
-> One sentence restating the choice. Then 2–5 sentences on **why** this
+> One sentence restating the choice. Then 2 to 5 sentences on **why** this
 > option beat the others, citing the constraints. This is the paragraph
 > future-you will re-read.
 
@@ -79,7 +79,7 @@ Link adjacent material:
 
 ## Implementation notes
 
-- Milestone plan (small bullet list; defer deep plans to tickets)
+- Milestone plan: a small bullet list, with deep plans deferred to tickets
 - Rollout / rollback strategy
 - Metrics that tell us if this was the right call
 

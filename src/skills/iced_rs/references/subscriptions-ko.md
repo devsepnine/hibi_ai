@@ -1,6 +1,6 @@
-# iced Subscriptions — Listening to the Outside World
+# iced Subscriptions: Listening to the Outside World
 
-`Subscription<Message>`은 "이것이 반환되는 동안 이 메시지들을 전달한다"는 선언적 표현이다. 타이머, 글로벌 이벤트, 채널 — 런타임이 시간 경과에 따라 멀티플렉싱하는 어떤 것이든. `Task`(fire-and-forget, one outcome)와 달리, Subscription은 반환을 멈출 때까지 메시지 생성을 계속한다.
+`Subscription<Message>`은 "이것이 반환되는 동안 이 메시지들을 전달한다"는 선언적 표현이다. 타이머, 글로벌 이벤트, 채널처럼 런타임이 시간 경과에 따라 멀티플렉싱하는 어떤 것이든. fire-and-forget이며 결과가 하나인 `Task`와 달리, Subscription은 반환을 멈출 때까지 메시지 생성을 계속한다.
 
 ## The shape
 
@@ -13,9 +13,9 @@ fn subscription(&self) -> Subscription<Message> {
 }
 ```
 
-state에 따라 다른 subscription을 반환한다 — 런타임이 집합을 diff하고 기저 producer를 시작/중지한다. 수동 시작/중지 없음.
+state에 따라 다른 subscription을 반환한다. 런타임이 집합을 diff하고 기저 producer를 시작/중지한다. 수동 시작/중지 없음.
 
-## Timers — `time::every`
+## Timers: `time::every`
 
 ```rust
 use iced::time::{self, Duration};
@@ -25,7 +25,7 @@ fn subscription(&self) -> Subscription<Message> {
 }
 ```
 
-tick은 `Message::Tick` variant로 도착한다. `time::every`는 `Instant`를 준다 — timestamp를 원하면 `.map(Message::Tick)`로 유지하고, 그렇지 않으면 `_ => Message::Tick`.
+tick은 `Message::Tick` variant로 도착한다. `time::every`는 `Instant`를 준다. timestamp를 원하면 `.map(Message::Tick)`로 유지하고, 그렇지 않으면 `_ => Message::Tick`.
 
 조건부로 반환하지 않음으로써 타이머를 중지한다:
 
@@ -39,9 +39,9 @@ if self.clock_running {
 
 런타임이 변경을 감지하고 프레임 사이에 타이머를 종료한다.
 
-## Global Events — `event::listen`
+## Global Events: `event::listen`
 
-모든 런타임 이벤트 (keyboard, mouse, window, touch):
+모든 런타임 이벤트, 즉 keyboard, mouse, window, touch:
 
 ```rust
 use iced::event::{self, Event};
@@ -68,7 +68,7 @@ Message::Event(Event::Keyboard(keyboard::Event::KeyPressed { key, modifiers, .. 
 
 ## Keyboard-specific
 
-포커스된 keypress subscription (앱 윈도우가 포커스를 가졌을 때만 발화):
+포커스된 keypress subscription, 앱 윈도우가 포커스를 가졌을 때만 발화한다:
 
 ```rust
 use iced::keyboard;
@@ -82,9 +82,9 @@ keyboard::on_key_press(|key, modifiers| {
 })
 ```
 
-무시하려면 `None`을 반환한다 — `update`의 catch-all match보다 깔끔하다.
+무시하려면 `None`을 반환한다. `update`의 catch-all match보다 깔끔하다.
 
-## Mixing Multiple Subscriptions — `Subscription::batch`
+## Mixing Multiple Subscriptions: `Subscription::batch`
 
 ```rust
 fn subscription(&self) -> Subscription<Message> {
@@ -98,9 +98,9 @@ fn subscription(&self) -> Subscription<Message> {
 
 활성 subscription이 1개를 초과할 때마다 batch를 반환한다. 내부 순서는 중요하지 않다.
 
-## Channel-based — `Subscription::run`
+## Channel-based: `Subscription::run`
 
-메시지의 *stream*을 생성하는 background task (file watcher, 장시간 실행 비동기 worker)는 `Subscription::run`을 사용한다:
+메시지의 *stream*을 생성하는 background task, 예를 들어 file watcher나 장시간 실행 비동기 worker는 `Subscription::run`을 사용한다:
 
 ```rust
 use iced::{Subscription, stream};
@@ -117,7 +117,7 @@ fn subscription(&self) -> Subscription<Message> {
 }
 ```
 
-subscription의 identity는 함수 포인터 / closure 캡처이다 — 다음 프레임에서 같은 `run`이 반환되면, 런타임이 기존 stream을 살려둔다. 재시작하려면 반환되는 것을 변경한다.
+subscription의 identity는 함수 포인터 / closure 캡처이다. 다음 프레임에서 같은 `run`이 반환되면, 런타임이 기존 stream을 살려둔다. 재시작하려면 반환되는 것을 변경한다.
 
 ## Conditional / dynamic
 
@@ -137,7 +137,7 @@ fn subscription(&self) -> Subscription<Message> {
 }
 ```
 
-이 패턴 — 조건부로 빌드되어 batch되는 `Vec<Subscription<Message>>` — 은 `Subscription::none()`을 반환하는 중첩된 `if`/`else`보다 더 잘 확장된다.
+조건부로 빌드되어 batch되는 `Vec<Subscription<Message>>` 패턴은 `Subscription::none()`을 반환하는 중첩된 `if`/`else`보다 더 잘 확장된다.
 
 ## Window-level events
 
@@ -148,7 +148,7 @@ window::resize_events().map(|(id, size)| Message::WindowResized(id, size))
 window::close_requests().map(|id| Message::WindowClosing(id))
 ```
 
-`window::close`로 실제로 윈도우를 닫기 전에 ("save changes?"를 prompt하기 위해) close를 가로채려면 `close_requests`를 사용한다.
+`window::close`로 실제로 윈도우를 닫기 전에 "save changes?"를 prompt하기 위해 close를 가로채려면 `close_requests`를 사용한다.
 
 ## Common Patterns
 

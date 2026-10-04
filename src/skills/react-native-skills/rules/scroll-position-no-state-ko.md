@@ -11,7 +11,7 @@ tags: scroll, performance, reanimated, useRef
 발생하므로 state 업데이트가 render thrashing과 프레임 드롭을 만든다. 애니메이션
 용도라면 Reanimated shared value를, 비반응적 추적이 필요하면 ref를 사용한다.
 
-**Incorrect (useState causes jank):**
+**Incorrect, useState causes jank:**
 
 ```tsx
 import { useState } from 'react'
@@ -32,7 +32,7 @@ function Feed() {
 }
 ```
 
-**Correct (Reanimated for animations):**
+**Correct, Reanimated for animations:**
 
 ```tsx
 import Animated, {
@@ -60,7 +60,7 @@ function Feed() {
 }
 ```
 
-**Correct (ref for non-reactive tracking):**
+**Correct, ref for non-reactive tracking:**
 
 ```tsx
 import { useRef } from 'react'

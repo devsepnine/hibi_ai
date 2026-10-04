@@ -5,18 +5,18 @@ queryable database. Most MOC notes, weekly reviews, and project
 overviews benefit from embedding a dataview block rather than
 hand-maintaining a list.
 
-These recipes assume the skill's frontmatter schema (see
-[frontmatter-conventions.md](frontmatter-conventions.md)).
+These recipes assume the skill's frontmatter schema, described in
+[frontmatter-conventions.md](frontmatter-conventions.md).
 
 ## Query types
 
-- `TABLE` — rows with chosen columns
-- `LIST` — flat bulleted list
-- `TASK` — checkboxes (`- [ ]`) across the vault
-- `CALENDAR` — heat-map by date field (needs the DV Calendar plugin)
+- `TABLE`: rows with chosen columns
+- `LIST`: flat bulleted list
+- `TASK`: `- [ ]` checkboxes across the vault
+- `CALENDAR`: heat-map by date field, needs the DV Calendar plugin
 
-Wrap any query in a fenced block tagged `dataview` (regular DQL) or
-`dataviewjs` (JavaScript for more control).
+Wrap any query in a fenced block tagged `dataview` for regular DQL or
+`dataviewjs` for JavaScript with more control.
 
 ## Per-type recipes
 
@@ -35,7 +35,7 @@ SORT created DESC
 ```
 ````
 
-### Superseded / deprecated ADRs (audit trail)
+### Superseded / deprecated ADRs: audit trail
 
 ````markdown
 ```dataview
@@ -93,7 +93,7 @@ SORT file.name ASC
 ```
 ````
 
-Dynamic "current week" (dataviewjs):
+Dynamic "current week", using dataviewjs:
 
 ````markdown
 ```dataviewjs
@@ -174,15 +174,15 @@ LIMIT 20
 
 ## Common pitfalls
 
-- **Tag vs field queries** — `FROM #type/adr` and `WHERE type = "adr"`
+- **Tag vs field queries**: `FROM #type/adr` and `WHERE type = "adr"`
   both work, but only the tag query can use Obsidian's cached tag
   index. Prefer tags in `FROM`.
-- **String fields as dates** — if `created` is a string
-  `"2026-04-22"`, compare with `date("2026-04-22")` (not `<="..."`
-  which is lexicographic).
-- **Array contains** — `contains(array, value)` for `attendees:
+- **String fields as dates**: if `created` is a string
+  `"2026-04-22"`, compare with `date("2026-04-22")` and not `<="..."`,
+  which is lexicographic.
+- **Array contains**: `contains(array, value)` for `attendees:
   [alice, bob]`. `"alice" in attendees` also works in newer versions.
-- **LIMIT before SORT is wrong** — DQL applies them in source order;
+- **LIMIT before SORT is wrong**: DQL applies them in source order;
   write `SORT ... DESC LIMIT 10`, not `LIMIT 10 ... SORT ...`.
 
 ## Performance
@@ -190,18 +190,18 @@ LIMIT 20
 Dataview re-queries on every vault change in the affected scope.
 Noticeably slow queries are almost always from:
 
-- `FROM ""` (entire vault) with no tag filter — add tags
-- `file.content` regex searches — avoid, use frontmatter fields
-- Unbounded `SORT` over hundreds of notes — add `LIMIT`
+- `FROM ""` over the entire vault with no tag filter: add tags
+- `file.content` regex searches: avoid, use frontmatter fields
+- Unbounded `SORT` over hundreds of notes: add `LIMIT`
 
 ## When to reach for `dataviewjs`
 
 Use the JavaScript mode only when DQL can't express the shape:
 
-- Aggregations beyond `GROUP BY` (bucketing by custom predicate)
-- Cross-note math (totals, rolling averages)
-- Dynamic date ranges ("this month", relative to today)
-- Mutations (rare — prefer Templater)
+- Aggregations beyond `GROUP BY`, such as bucketing by custom predicate
+- Cross-note math, such as totals and rolling averages
+- Dynamic date ranges, such as "this month" or relative to today
+- Mutations, which are rare, where Templater is preferred
 
 `dataview` DQL is readable and survives plugin updates better. Reach
 for JS only when you need it.

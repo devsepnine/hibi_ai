@@ -34,10 +34,10 @@ println!("{}, {}", x, y);  // OK: both are valid
 ```
 
 **Copy Types**:
-- 모든 정수 (`i32`, `u64` 등)
-- Boolean (`bool`)
-- 부동 소수점 (`f32`, `f64`)
-- 문자 (`char`)
+- 모든 정수, `i32`, `u64` 등
+- Boolean, `bool`
+- 부동 소수점, `f32`, `f64`
+- 문자, `char`
 - Copy 타입만 포함하는 tuple
 
 ### Ownership Transfer Patterns
@@ -72,7 +72,7 @@ println!("{}", s);     // s still valid
 
 ## Borrowing Rules
 
-### Immutable References (&T)
+### Immutable References, &T
 
 ```rust
 // Multiple immutable borrows allowed simultaneously
@@ -86,7 +86,7 @@ let len2 = calculate_length(&s);  // OK: multiple immutable borrows
 println!("s: {}, len: {}, {}", s, len1, len2);  // s still valid
 ```
 
-### Mutable References (&mut T)
+### Mutable References, &mut T
 
 ```rust
 // Only one mutable borrow allowed at a time
@@ -105,7 +105,7 @@ println!("{}", s);  // "hello world"
    - 하나의 mutable reference, 또는
    - 임의의 수의 immutable references
 
-2. **References must always be valid** (no dangling references)
+2. **References must always be valid**, no dangling references
 
 ```rust
 // ❌ ERROR: Cannot have mutable and immutable references simultaneously
@@ -286,7 +286,7 @@ impl Data {
 }
 ```
 
-### Pattern 5: Cow (Clone on Write)
+### Pattern 5: Cow, Clone on Write
 
 ```rust
 use std::borrow::Cow;
@@ -399,7 +399,7 @@ static STATIC: &str = "static string";     // Explicitly 'static
 
 ## Smart Pointers
 
-### Box<T> - Heap Allocation
+### Box<T>: Heap Allocation
 
 ```rust
 // Use Box for heap allocation
@@ -423,7 +423,7 @@ let shapes: Vec<Box<dyn Draw>> = vec![
 ];
 ```
 
-### Rc<T> - Reference Counting
+### Rc<T>: Reference Counting
 
 ```rust
 use std::rc::Rc;
@@ -438,7 +438,7 @@ println!("Count: {}", Rc::strong_count(&data));  // 3
 // ❌ Rc is not thread-safe - use Arc for threads
 ```
 
-### Arc<T> - Atomic Reference Counting
+### Arc<T>: Atomic Reference Counting
 
 ```rust
 use std::sync::Arc;
@@ -592,17 +592,17 @@ impl Data {
 1. 데이터를 수정하거나 유지할 필요가 없을 때 ownership보다 **borrowing을 선호**한다
 2. 함수 파라미터에 `String`보다 **`&str`을 사용**한다
 3. 함수 파라미터에 `Vec<T>`보다 **`&[T]`를 사용**한다
-4. **필요할 때만 clone** — reference를 선호한다
-5. **lifetime elision을 사용** — 필요하지 않으면 명시적 lifetime을 추가하지 않는다
+4. **필요할 때만 clone**: reference를 선호한다
+5. **lifetime elision을 사용**: 필요하지 않으면 명시적 lifetime을 추가하지 않는다
 6. 나중에 thread-safety가 필요할 수 있으면 **`Rc`보다 `Arc`를 선호**한다
-7. **`Mutex`나 `RwLock`을 절약해서 사용** — 런타임 오버헤드가 있다
-8. **Interior mutability는 최후의 수단** — `&mut self` 메서드를 선호한다
+7. **`Mutex`나 `RwLock`을 절약해서 사용**: 런타임 오버헤드가 있다
+8. **Interior mutability는 최후의 수단**: `&mut self` 메서드를 선호한다
 9. `unsafe`를 사용해야 한다면 **사용하는 이유를 문서화**한다
-10. **컴파일러가 안내하도록 둔다** — borrow checker 에러는 도움이 된다
+10. **컴파일러가 안내하도록 둔다**: borrow checker 에러는 도움이 된다
 
 ## Further Reading
 
-- [The Rust Book - Chapter 4: Understanding Ownership](https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html)
-- [The Rust Book - Chapter 10: Generic Types, Traits, and Lifetimes](https://doc.rust-lang.org/book/ch10-00-generics.html)
-- [The Rustonomicon - Advanced Unsafe Rust](https://doc.rust-lang.org/nomicon/)
-- [Rust API Guidelines - Borrowing](https://rust-lang.github.io/api-guidelines/flexibility.html)
+- [The Rust Book, Chapter 4: Understanding Ownership](https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html)
+- [The Rust Book, Chapter 10: Generic Types, Traits, and Lifetimes](https://doc.rust-lang.org/book/ch10-00-generics.html)
+- [The Rustonomicon, Advanced Unsafe Rust](https://doc.rust-lang.org/nomicon/)
+- [Rust API Guidelines, Borrowing](https://rust-lang.github.io/api-guidelines/flexibility.html)

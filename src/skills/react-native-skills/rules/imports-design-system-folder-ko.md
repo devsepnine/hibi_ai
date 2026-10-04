@@ -11,7 +11,7 @@ tags: imports, architecture, design-system
 import하지 않고 design system 폴더에서 import한다. 이렇게 하면 전역적인
 변경과 손쉬운 리팩토링이 가능해진다.
 
-**Incorrect (imports directly from package):**
+**Incorrect, imports directly from package:**
 
 ```tsx
 import { View, Text } from 'react-native'
@@ -27,7 +27,7 @@ function Profile() {
 }
 ```
 
-**Correct (imports from design system):**
+**Correct, imports from design system:**
 
 ```tsx
 // components/view.tsx

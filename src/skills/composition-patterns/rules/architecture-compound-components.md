@@ -11,7 +11,7 @@ Structure complex components as compound components with a shared context. Each
 subcomponent accesses shared state via context, not props. Consumers compose the
 pieces they need.
 
-**Incorrect (monolithic component with render props):**
+**Incorrect, monolithic component with render props:**
 
 ```tsx
 function Composer({
@@ -41,7 +41,7 @@ function Composer({
 }
 ```
 
-**Correct (compound components with shared context):**
+**Correct, compound components with shared context:**
 
 ```tsx
 const ComposerContext = createContext<ComposerContextValue | null>(null)

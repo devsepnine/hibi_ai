@@ -11,7 +11,7 @@ Use `children` for composition instead of `renderX` props. Children are more
 readable, compose naturally, and don't require understanding callback
 signatures.
 
-**Incorrect (render props):**
+**Incorrect, render props:**
 
 ```tsx
 function Composer({
@@ -48,7 +48,7 @@ return (
 )
 ```
 
-**Correct (compound components with children):**
+**Correct, compound components with children:**
 
 ```tsx
 function ComposerFrame({ children }: { children: React.ReactNode }) {

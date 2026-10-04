@@ -1,12 +1,12 @@
 ---
 name: rust-best-practices
-description: Rust practices — ownership, error handling, async, testing, project structure. Use when writing or reviewing Rust. 러스트 코드 작성, Rust 모범사례, 소유권, Rust 리뷰. NOT iced/ratatui specifics.
+description: Rust practices, ownership, error handling, async, testing, project structure. Use when writing or reviewing Rust. 러스트 코드 작성, Rust 모범사례, 소유권, Rust 리뷰. NOT iced/ratatui specifics.
 version: 1.0.0
 ---
 
 # Rust Best Practices
 
-다섯 영역(소유권, 에러, async, 테스트, 프로젝트 구조)에 걸친 관용적이고 안전하며 성능 좋은 Rust 코드 작성법.
+다섯 영역인 소유권, 에러, async, 테스트, 프로젝트 구조에 걸친 관용적이고 안전하며 성능 좋은 Rust 코드 작성법.
 
 ## 기본 설정: Edition 2024
 
@@ -24,17 +24,17 @@ edition = "2024"
 resolver = "2"
 ```
 
-Edition 2024는 다음을 지원한다: trait의 native `async fn` (`async-trait` 의존 제거), `if let` chain, RPITIT, 개선된 lifetime elision, 향상된 const fn, 더 정확한 진단. 자세한 내용은 [edition-2024.md](references/edition-2024.md) 참고.
+Edition 2024는 다음을 지원한다: trait의 native `async fn`, `async-trait` 의존 제거, `if let` chain, RPITIT, 개선된 lifetime elision, 향상된 const fn, 더 정확한 진단. 자세한 내용은 [edition-2024.md](references/edition-2024.md) 참고.
 
 ## 1. Ownership & Borrowing
 
-규칙: 단일 소유자, scope 종료 시 drop, move 또는 borrow (`&` / `&mut`).
+규칙: 단일 소유자, scope 종료 시 drop, move 또는 borrow, `&` / `&mut`.
 
 | Use | When |
 |-----|------|
 | `&T` | 읽기 전용 접근 |
 | `&mut T` | 배타적 쓰기 |
-| `T` (owned) | 소유권 이전 / 저장 |
+| `T`, owned | 소유권 이전 / 저장 |
 | `Clone` | 호출자와 피호출자 모두 소유권이 필요할 때만 |
 
 함수 파라미터 기본값: `String`보다 `&str`, `Vec<T>`보다 `&[T]`, `PathBuf`보다 `&Path`를 선호한다.
@@ -70,7 +70,7 @@ fn load(path: &str) -> Result<Config, ConfigError> {
 규칙:
 - 문서화된 invariant 없이 프로덕션에서 `unwrap()` / `expect()` 금지.
 - `?`로 propagate; `map_err` 또는 `anyhow::Context::context`로 컨텍스트를 더한다.
-- `Option`/`Result`는 combinator(`and_then`, `map`, `ok_or`)로 합성한다.
+- `Option`/`Result`는 combinator인 `and_then`, `map`, `ok_or`로 합성한다.
 
 자세한 내용: [error-handling.md](references/error-handling.md) · [Rust Book Ch.9](https://doc.rust-lang.org/book/ch09-00-error-handling.html)
 
@@ -92,10 +92,10 @@ let (tx, mut rx) = tokio::sync::mpsc::channel(100);
 ```
 
 규칙:
-- 런타임은 하나만 고른다 (I/O 중심에는 tokio, 임베디드에는 smol, async-std는 거의 안 씀).
+- 런타임은 하나만 고른다, I/O 중심에는 tokio, 임베디드에는 smol, async-std는 거의 안 씀.
 - async 안에서 절대 블로킹 금지: `std::thread::sleep` 대신 `tokio::time::sleep`을 쓴다. CPU 작업 → `tokio::task::spawn_blocking`.
 - 구조적 동시성: `join!`, `select!`, `tokio::time::timeout`. drop을 통한 cancel을 처리한다.
-- 태스크 오버헤드를 의식한다 — 사소한 작업에 spawn 하지 않는다.
+- 태스크 오버헤드를 의식한다, 사소한 작업에 spawn 하지 않는다.
 
 자세한 내용: [async-patterns.md](references/async-patterns.md) · [Tokio Tutorial](https://tokio.rs/tokio/tutorial)
 
@@ -120,12 +120,12 @@ mod tests {
 ```
 
 전략:
-- 유닛 테스트는 코드 옆에 둔다 (`#[cfg(test)] mod tests`).
+- 유닛 테스트는 코드 옆에 둔다, `#[cfg(test)] mod tests`.
 - 통합 테스트는 public API surface 단위로 `tests/`에 둔다.
 - Doc test는 `cargo test --doc`으로.
 - 프로퍼티 테스트는 `proptest`, 커버리지는 `cargo-llvm-cov`.
 - 외부 의존성은 구체 타입이 아닌 trait로 mocking 한다.
-- 항상 실패 경로와 엣지 케이스(empty/max/concurrent)를 테스트한다.
+- 항상 실패 경로와 엣지 케이스인 empty/max/concurrent를 테스트한다.
 
 자세한 내용: [testing.md](references/testing.md) · [Rust Book Ch.11](https://doc.rust-lang.org/book/ch11-00-testing.html)
 
@@ -164,7 +164,7 @@ serde = { version = "1", features = ["derive"] }
 
 ## 성능 빠른 개선
 
-- iterator chain은 타이트한 루프로 컴파일된다 — 수동 인덱싱보다 선호하라.
+- iterator chain은 타이트한 루프로 컴파일된다, 수동 인덱싱보다 선호하라.
 - 미리 사이즈를 잡는다: 알려진 경계에는 `Vec::with_capacity`, `String::with_capacity`.
 - `#[inline]`은 작고 hot한 함수에만; 그 외에는 컴파일러를 신뢰한다.
 - 파이프라인 중간에서 `.collect()` 금지; 마지막에 한 번만 collect 한다.
@@ -194,7 +194,7 @@ fn verify(a: &[u8], b: &[u8]) -> bool { a.ct_eq(b).into() }
 |--------------|-----|
 | `fn f(s: String)` 인데 읽기만 함 | `fn f(s: &str)` |
 | 동작시키려고 `s.clone()` | borrow 하거나 소유권 구조를 다시 잡는다 |
-| `pub fn divide(a, b) -> i32 { a / b }` | `Result` 반환 — lib에서는 panic 금지 |
+| `pub fn divide(a, b) -> i32 { a / b }` | `Result` 반환, lib에서는 panic 금지 |
 | `let _ = file.write_all(data);` | 에러를 propagate 하거나 log 한다 |
 | `async`에서 `std::thread::sleep` | `tokio::time::sleep(...).await` |
 | 프로덕션 경로에서 `unwrap()` | `?`, `ok_or`, 또는 invariant 문서화 |
@@ -216,7 +216,7 @@ enum_glob_use = "deny"
 
 ## References
 
-- [Edition 2024 Guide](references/edition-2024.md) (start here)
+- [Edition 2024 Guide](references/edition-2024.md), start here
 - [Ownership & Borrowing](references/ownership-borrowing.md)
 - [Error Handling](references/error-handling.md)
 - [Async Patterns](references/async-patterns.md)

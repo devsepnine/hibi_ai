@@ -9,7 +9,7 @@ tags: composition, props, architecture
 
 `isThread`, `isEditing`, `isDMThread` 같은 boolean prop을 추가해 컴포넌트 동작을 커스터마이즈하지 않는다. 각 boolean은 가능한 상태를 두 배로 늘리고 유지보수가 불가능한 조건부 로직을 만든다. 대신 composition을 사용한다.
 
-**Incorrect (boolean props create exponential complexity):**
+**Incorrect, boolean props create exponential complexity:**
 
 ```tsx
 function Composer({
@@ -43,7 +43,7 @@ function Composer({
 }
 ```
 
-**Correct (composition eliminates conditionals):**
+**Correct, composition eliminates conditionals:**
 
 ```tsx
 // Channel composer

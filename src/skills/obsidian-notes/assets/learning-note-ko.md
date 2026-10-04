@@ -11,7 +11,7 @@ related: []
 aliases: []
 ---
 
-# <Library> — <Specific topic or feature>
+# <Library>: <Specific topic or feature>
 
 > [!info] Why this note exists
 > 문서를 찾아 읽게 만든 문제를 한 문장으로. 미래의 자신이 이 프레이밍에
@@ -21,9 +21,9 @@ aliases: []
 
 30초 훑어보기를 위한 세 불릿 요약.
 
-- **무엇인가** — 개념을 정의하는 한 문장.
-- **언제 쓰는가** — 구체적인 트리거 / 문제 형태.
-- **언제 쓰지 않는가** — 흔한 오용이나 더 적합한 인접 도구.
+- **무엇인가**: 개념을 정의하는 한 문장.
+- **언제 쓰는가**: 구체적인 트리거 / 문제 형태.
+- **언제 쓰지 않는가**: 흔한 오용이나 더 적합한 인접 도구.
 
 ## Core API / pattern
 
@@ -36,11 +36,11 @@ aliases: []
 
 ## Gotchas
 
-번호 매긴 목록. 각 함정은 (a) 트랩, (b) 어떻게 당했는지, (c) 어떻게
+번호 매긴 목록. 각 함정은 트랩, 어떻게 당했는지, 어떻게
 피하는지로 구성된 단락이다.
 
-1. **<Trap name>** — <paragraph>.
-2. **<Another>** — <paragraph>.
+1. **<Trap name>**: <paragraph>.
+2. **<Another>**: <paragraph>.
 
 ## Comparison with alternatives
 
@@ -53,9 +53,9 @@ aliases: []
 | Performance | ... | ... |
 | Ecosystem | ... | ... |
 
-## Visualization (optional)
+## Visualization, optional
 
-다이어그램이 산문보다 더 명확할 때 추가한다 — 상태 머신, 데이터플로우,
+다이어그램이 산문보다 더 명확할 때 추가한다, 상태 머신, 데이터플로우,
 타임라인. 순수 텍스트 개념에는 생략.
 
 ```mermaid
@@ -65,8 +65,8 @@ flowchart LR
   Eq -- false --> Render[re-render] --> Call
 ```
 
-다이어그램 유형 선택 (sequence / state / ER / gantt / timeline /
-mindmap / quadrant / MathJax / Excalidraw / JSON Canvas):
+다이어그램 유형은 sequence, state, ER, gantt, timeline,
+mindmap, quadrant, MathJax, Excalidraw, JSON Canvas 중에서 고른다:
 [../references/diagrams.md](../references/diagrams.md).
 
 ## How it connects to this project

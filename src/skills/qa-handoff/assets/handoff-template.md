@@ -1,4 +1,4 @@
-# <Scope> QA Handoff — <YYYY-MM-DD>
+# <Scope> QA Handoff: <YYYY-MM-DD>
 
 Range: `<v1.14.0..HEAD>` · Commits: `<N>` · Prepared by: `<name>`
 Build / version to test: `<1.14.1-rc3 on staging>` · Range interpretation: `<last 7 days, rolling>`
@@ -7,28 +7,28 @@ Build / version to test: `<1.14.1-rc3 on staging>` · Range interpretation: `<la
 
 - **What changed**: <one sentence a non-developer can repeat in a standup>
 - **Affected areas**: <screens / features / platforms>
-- **Deploy notes**: <migration, config change, feature flag — or "none">
+- **Deploy notes**: <migration, config change, feature flag, or "none">
 - **Test focus**: <the one or two things most worth checking>
 
-## What changed (plain language)
+## What changed, in plain language
 
 | # | Change | What the user experiences | Commits |
 |---|---|---|---|
 | 1 | <change> | <observable difference, before → after> | `abc1234` |
 
-## Internal changes — no verification needed
+## Internal changes with no verification needed
 
-- <change> — <why it is invisible from outside> (`abc1234`)
+- <change>: <why it is invisible from outside>, commit `abc1234`
 
 ## QA checklist
 
-- [ ] **1. <title>** — priority: must-pass
+- [ ] **1. <title>**: priority must-pass
   - Preconditions: <account / data / environment / OS>
-  - Steps: 1) <action> 2) <action>
+  - Steps: 1. <action> 2. <action>
   - Expected: <observable result>
-- [ ] **2. <title>** — priority: secondary
+- [ ] **2. <title>**: priority secondary
   - Preconditions: <...>
-  - Steps: 1) <...>
+  - Steps: 1. <...>
   - Expected: <...>
 
 ## Regression watch
@@ -45,4 +45,4 @@ Build / version to test: `<1.14.1-rc3 on staging>` · Range interpretation: `<la
 
 ## Open questions for the developer
 
-- <question> — ask: `<commit author>` · blocks: <which checklist item cannot be judged without it>
+- <question>. Ask: `<commit author>` · blocks: <which checklist item cannot be judged without it>

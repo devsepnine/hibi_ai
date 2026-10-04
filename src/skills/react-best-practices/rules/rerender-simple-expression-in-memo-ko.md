@@ -7,7 +7,7 @@ tags: rerender, useMemo, optimization
 
 ## primitive 결과 타입의 단순 표현식을 useMemo로 감싸지 않는다
 
-표현식이 단순(논리/산술 연산자 몇 개 정도)하고 결과 타입이 primitive(boolean, number, string)일 때는 `useMemo`로 감싸지 않는다.
+표현식이 논리/산술 연산자 몇 개 정도로 단순하고 결과 타입이 boolean, number, string 같은 primitive일 때는 `useMemo`로 감싸지 않는다.
 `useMemo` 호출과 hook 의존성 비교가 표현식 자체보다 더 많은 자원을 소비할 수 있다.
 
 **잘못된 예:**

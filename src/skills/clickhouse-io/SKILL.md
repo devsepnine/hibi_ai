@@ -14,7 +14,7 @@ Docs: https://clickhouse.com/docs
 | Engine | Use Case | Key Trait |
 |---|---|---|
 | `MergeTree` | Default analytical tables | Partition + ORDER BY index |
-| `ReplacingMergeTree` | Dedup by key (multi-source ingest) | Keeps latest by version/insert order |
+| `ReplacingMergeTree` | Dedup by key for multi-source ingest | Keeps latest by version/insert order |
 | `AggregatingMergeTree` | Pre-aggregated metrics | Stores `*State` aggregate functions |
 | `SummingMergeTree` | Numeric sums by key | Auto-sums on merge |
 
@@ -29,13 +29,13 @@ ORDER BY (date, key)
 SETTINGS index_granularity = 8192;
 ```
 
-`AggregatingMergeTree` reads use `*Merge` to finalize: `sumMerge(volume)`, `uniqMerge(users)`, `countMerge(trades)`. Writes (typically via materialized view) emit `*State`: `sumState(amount)`, `uniqState(user_id)`.
+`AggregatingMergeTree` reads use `*Merge` to finalize: `sumMerge(volume)`, `uniqMerge(users)`, `countMerge(trades)`. Writes, typically via materialized view, emit `*State`: `sumState(amount)`, `uniqState(user_id)`.
 
 Docs: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family
 
 ## Query Optimization
 
-**Filter order matters.** Put indexed columns (PARTITION BY + ORDER BY prefix) first; avoid leading `LIKE '%...%'` on non-indexed columns.
+**Filter order matters.** Put indexed columns first, meaning the PARTITION BY and ORDER BY prefix; avoid leading `LIKE '%...%'` on non-indexed columns.
 
 ```sql
 -- Good: hits partition + sort key
@@ -48,16 +48,16 @@ ORDER BY date DESC LIMIT 100;
 
 | Goal | Function |
 |---|---|
-| Distinct count | `uniq(col)` (HLL approx) / `uniqExact` |
+| Distinct count | `uniq(col)` for HLL approximation / `uniqExact` |
 | Percentile | `quantile(0.95)(col)` |
 | Conditional count | `countIf(cond)` / `sumIf(col, cond)` |
 | Time bucket | `toStartOfHour/Day/Month(ts)` |
 
-**Window functions** work with standard SQL syntax (`OVER (PARTITION BY ... ORDER BY ...)`).
+**Window functions** work with standard SQL syntax, for example `OVER (PARTITION BY ... ORDER BY ...)`.
 
 Docs: https://clickhouse.com/docs/en/sql-reference/aggregate-functions
 
-## Materialized Views (Real-time Aggregation)
+## Materialized Views: Real-time Aggregation
 
 ```sql
 CREATE MATERIALIZED VIEW stats_hourly_mv TO stats_hourly AS
@@ -67,7 +67,7 @@ SELECT toStartOfHour(timestamp) AS hour, market_id,
 FROM trades GROUP BY hour, market_id;
 ```
 
-Read with `*Merge` against the target table. MVs trigger on INSERT into the source — design source schema for write throughput, MV target for read patterns.
+Read with `*Merge` against the target table. MVs trigger on INSERT into the source, so design source schema for write throughput, MV target for read patterns.
 
 Docs: https://clickhouse.com/docs/en/sql-reference/statements/create/view#materialized-view
 
@@ -87,7 +87,7 @@ await clickhouse.insert({
 // or the async_insert engine setting for high-frequency producers.
 ```
 
-Use parameterized queries (`{var:Type}`) to avoid string interpolation injection. For very high-frequency writes, enable `async_insert=1` server-side rather than batching on the client.
+Use parameterized queries such as `{var:Type}` to avoid string interpolation injection. For very high-frequency writes, enable `async_insert=1` server-side rather than batching on the client.
 
 Docs: https://clickhouse.com/docs/en/optimize/asynchronous-inserts
 
@@ -130,9 +130,9 @@ FROM user_activity GROUP BY cohort, months ORDER BY cohort, months;
 
 ## Pipeline Patterns
 
-- **ETL**: extract from OLTP (Postgres/MySQL) on schedule, transform to analytical schema, batch insert.
+- **ETL**: extract from OLTP sources such as Postgres/MySQL on schedule, transform to analytical schema, batch insert.
 - **CDC**: Postgres `LISTEN/NOTIFY` or Debezium-style stream → append-only event table in ClickHouse; use `ReplacingMergeTree` if you need current-state views.
-- Prefer denormalized tables for analytics; avoid heavy JOINs across large tables. Use dictionaries (`dictGet`) for low-cardinality lookups.
+- Prefer denormalized tables for analytics; avoid heavy JOINs across large tables. Use dictionaries via `dictGet` for low-cardinality lookups.
 
 Docs: https://clickhouse.com/docs/en/sql-reference/dictionaries
 
@@ -142,7 +142,7 @@ Docs: https://clickhouse.com/docs/en/sql-reference/dictionaries
 |---|---|---|
 | Partition | By month/day, low count | Per-hour or per-user partitions |
 | ORDER BY | Frequent filter columns first, consider cardinality | Random column order |
-| Types | Smallest fit (`UInt32`), `LowCardinality(String)`, `Enum` | Always-`String`, `Nullable` when avoidable |
+| Types | Smallest fit such as `UInt32`, `LowCardinality(String)`, `Enum` | Always-`String`, `Nullable` when avoidable |
 | Reads | Specify columns | `SELECT *`, `FINAL`, many JOINs |
 | Writes | Batch / async_insert | Per-row INSERT loops |
 | Ops | Track slow queries, merges, disk usage | Ignoring `system.query_log` |

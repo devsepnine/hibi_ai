@@ -10,7 +10,7 @@ tags: fonts, expo, performance, config-plugin
 `useFonts`나 `Font.loadAsync` 대신 `expo-font` config plugin을 사용해 빌드
 시점에 폰트를 임베드한다. 임베드된 폰트가 더 효율적이다.
 
-**Incorrect (async font loading):**
+**Incorrect, async font loading:**
 
 ```tsx
 import { useFonts } from 'expo-font'
@@ -33,7 +33,7 @@ function App() {
 }
 ```
 
-**Correct (config plugin, fonts embedded at build):**
+**Correct, config plugin, fonts embedded at build:**
 
 ```json
 // app.json

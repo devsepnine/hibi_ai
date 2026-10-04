@@ -11,7 +11,7 @@ Instead of one component with many boolean props, create explicit variant
 components. Each variant composes the pieces it needs. The code documents
 itself.
 
-**Incorrect (one component, many modes):**
+**Incorrect, one component, many modes:**
 
 ```tsx
 // What does this component actually render?
@@ -24,7 +24,7 @@ itself.
 />
 ```
 
-**Correct (explicit variants):**
+**Correct, explicit variants:**
 
 ```tsx
 // Immediately clear what this renders

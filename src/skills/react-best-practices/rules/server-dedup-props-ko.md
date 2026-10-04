@@ -7,18 +7,18 @@ tags: server, rsc, serialization, props, client-components
 
 ## RSC props에서 중복 직렬화를 피한다
 
-**Impact: LOW (중복 직렬화를 피해 네트워크 payload를 감소)**
+**Impact: LOW, 중복 직렬화를 피해 네트워크 payload를 감소**
 
-RSC→client 직렬화는 객체 참조 기준으로 중복 제거한다 — 값 기준이 아니다. 동일 참조 = 한 번만 직렬화, 새 참조 = 다시 직렬화. `.toSorted()`, `.filter()`, `.map()` 같은 변환은 서버가 아닌 클라이언트에서 수행한다.
+RSC→client 직렬화는 객체 참조 기준으로 중복 제거하며, 값 기준이 아니다. 동일 참조 = 한 번만 직렬화, 새 참조 = 다시 직렬화. `.toSorted()`, `.filter()`, `.map()` 같은 변환은 서버가 아닌 클라이언트에서 수행한다.
 
-**잘못된 예 (배열을 중복 전송):**
+**잘못된 예, 배열을 중복 전송:**
 
 ```tsx
 // RSC: sends 6 strings (2 arrays × 3 items)
 <ClientList usernames={usernames} usernamesOrdered={usernames.toSorted()} />
 ```
 
-**올바른 예 (3개 문자열만 전송):**
+**올바른 예, 3개 문자열만 전송:**
 
 ```tsx
 // RSC: send once
@@ -33,8 +33,8 @@ const sorted = useMemo(() => [...usernames].sort(), [usernames])
 
 중복 제거는 재귀적으로 적용된다. 데이터 타입에 따라 영향이 다르다.
 
-- `string[]`, `number[]`, `boolean[]`: **HIGH 영향** — 배열과 모든 primitive가 완전히 중복됨
-- `object[]`: **LOW 영향** — 배열 자체는 중복되지만 중첩 객체는 참조 기준으로 중복 제거됨
+- `string[]`, `number[]`, `boolean[]`: **HIGH 영향**: 배열과 모든 primitive가 완전히 중복됨
+- `object[]`: **LOW 영향**: 배열 자체는 중복되지만 중첩 객체는 참조 기준으로 중복 제거됨
 
 ```tsx
 // string[] - duplicates everything
@@ -44,7 +44,7 @@ usernames={['a','b']} sorted={usernames.toSorted()} // sends 4 strings
 users={[{id:1},{id:2}]} sorted={users.toSorted()} // sends 2 arrays + 2 unique objects (not 4)
 ```
 
-**중복 제거를 깨뜨리는 연산 (새 참조 생성):**
+**새 참조를 생성해 중복 제거를 깨뜨리는 연산:**
 
 - 배열: `.toSorted()`, `.filter()`, `.map()`, `.slice()`, `[...arr]`
 - 객체: `{...obj}`, `Object.assign()`, `structuredClone()`, `JSON.parse(JSON.stringify())`

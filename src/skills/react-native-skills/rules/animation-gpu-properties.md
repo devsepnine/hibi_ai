@@ -7,9 +7,9 @@ tags: animation, performance, reanimated, transform, opacity
 
 ## Animate Transform and Opacity Instead of Layout Properties
 
-Avoid animating `width`, `height`, `top`, `left`, `margin`, or `padding`. These trigger layout recalculation on every frame. Instead, use `transform` (scale, translate) and `opacity` which run on the GPU without triggering layout.
+Avoid animating `width`, `height`, `top`, `left`, `margin`, or `padding`. These trigger layout recalculation on every frame. Instead, use `transform` with scale and translate, and `opacity`, which run on the GPU without triggering layout.
 
-**Incorrect (animates height, triggers layout every frame):**
+**Incorrect, animates height, triggers layout every frame:**
 
 ```tsx
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
@@ -24,7 +24,7 @@ function CollapsiblePanel({ expanded }: { expanded: boolean }) {
 }
 ```
 
-**Correct (animates scaleY, GPU-accelerated):**
+**Correct, animates scaleY, GPU-accelerated:**
 
 ```tsx
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
@@ -45,7 +45,7 @@ function CollapsiblePanel({ expanded }: { expanded: boolean }) {
 }
 ```
 
-**Correct (animates translateY for slide animations):**
+**Correct, animates translateY for slide animations:**
 
 ```tsx
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
@@ -62,4 +62,4 @@ function SlideIn({ visible }: { visible: boolean }) {
 }
 ```
 
-GPU-accelerated properties: `transform` (translate, scale, rotate), `opacity`. Everything else triggers layout.
+GPU-accelerated properties: `transform` with translate, scale, and rotate, and `opacity`. Everything else triggers layout.

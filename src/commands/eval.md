@@ -19,6 +19,6 @@ Manages the eval-driven development workflow: defining evals, checking pass@k me
 - `check <name>` - Run and check evals
 - `report <name>` - Generate a full report
 - `list` - Show all evals
-- `clean` - Remove old eval logs (keeps last 10 runs)
+- `clean`: Remove old eval logs, keeping the last 10 runs
 
-Full workflow, templates, and metric formats live in the `eval-harness` skill — follow that as the source of truth.
+Full workflow, templates, and metric formats live in the `eval-harness` skill. Follow that as the source of truth.

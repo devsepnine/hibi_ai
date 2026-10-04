@@ -7,7 +7,7 @@ tags: layout, measurement, onLayout, useLayoutEffect
 
 ## Measuring View Dimensions
 
-`useLayoutEffect`(동기 측정)와 `onLayout`(이후 업데이트)을 함께 사용한다. 동기
+동기 측정에는 `useLayoutEffect`를, 이후 업데이트에는 `onLayout`을 함께 사용한다. 동기
 측정은 마운트 시 즉시 초기 크기를 알려주고, `onLayout`은 view가 바뀌었을 때
 값을 최신으로 유지한다. non-primitive state라면 dispatch updater로 값을
 비교해 불필요한 re-render를 막는다.
@@ -75,4 +75,4 @@ function MeasuredBox({ children }: { children: React.ReactNode }) {
 }
 ```
 
-함수형 setState를 사용해 비교한다 — 콜백 안에서 state를 직접 읽지 않는다.
+함수형 setState를 사용해 비교하며, 콜백 안에서 state를 직접 읽지 않는다.

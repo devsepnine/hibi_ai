@@ -1,4 +1,4 @@
-# Cross-Platform TUI (Windows / macOS / Linux)
+# Cross-Platform TUI, Windows / macOS / Linux
 
 Most ratatui tutorials assume POSIX. Production TUIs ship to Windows users running Git Bash / MSYS / native cmd, and the assumptions break in subtle ways.
 
@@ -38,9 +38,9 @@ pub fn split_command(cmd: &str) -> Option<Vec<String>> {
 }
 ```
 
-### 2. MSYS Paths (`/c/Users/...`) Are Not Real Windows Paths
+### 2. MSYS Paths, `/c/Users/...`, Are Not Real Windows Paths
 
-Git for Windows / MSYS represents `C:\Users\me` as `/c/Users/me`. Native Windows APIs (and `std::fs::canonicalize` on Windows) don't understand this form.
+Git for Windows / MSYS represents `C:\Users\me` as `/c/Users/me`. Native Windows APIs, and `std::fs::canonicalize` on Windows, don't understand this form.
 
 ```rust
 /// Convert `/c/Users/me` → `C:\Users\me` on Windows. On other platforms returns input unchanged.
@@ -61,7 +61,7 @@ pub fn normalize_git_path(p: &str) -> String { p.to_string() }
 
 ### 3. Shell Metacharacters Differ
 
-Unix-only blocklists miss `%`, `^`, `!` (cmd.exe), and Windows-only blocklists miss `;`, `&`, `|`, `<`, `>`, `` ` ``.
+Unix-only blocklists miss `%`, `^`, `!` for cmd.exe, and Windows-only blocklists miss `;`, `&`, `|`, `<`, `>`, `` ` ``.
 
 ```rust
 pub fn is_safe_command(cmd: &str) -> bool {
@@ -113,8 +113,8 @@ fn to_display_path(p: &Path) -> String {
 
 ## Key Codes That Differ
 
-- **Ctrl+C**: on Windows, crossterm reports it as a `KeyCode::Char('c')` with `KeyModifiers::CONTROL`. Do not also try to install a SIGINT handler — the OS doesn't deliver SIGINT to console apps the same way.
-- **Function keys / Alt combos**: terminal capabilities vary widely (Windows Terminal vs ConHost vs MinTTY). Avoid relying on F-keys for primary actions; offer a Ctrl-letter fallback.
+- **Ctrl+C**: on Windows, crossterm reports it as a `KeyCode::Char('c')` with `KeyModifiers::CONTROL`. Do not also try to install a SIGINT handler, the OS doesn't deliver SIGINT to console apps the same way.
+- **Function keys / Alt combos**: terminal capabilities vary widely, Windows Terminal vs ConHost vs MinTTY. Avoid relying on F-keys for primary actions; offer a Ctrl-letter fallback.
 
 ## Testing Cross-Platform Code
 
@@ -151,7 +151,7 @@ mod tests {
 
 - [ ] No `cmd /c` anywhere
 - [ ] `split_command` cfg-gated for Windows
-- [ ] MSYS path normalization at every external-input boundary (git remotes, env vars)
+- [ ] MSYS path normalization at every external-input boundary, such as git remotes and env vars
 - [ ] `is_safe_command` blocks both `&|;<>$` and `%^!`
-- [ ] Native executable resolution (`npm.cmd` on Windows, `npm` on POSIX)
-- [ ] At least one Windows test in CI (GitHub Actions: `runs-on: windows-latest`)
+- [ ] Native executable resolution, `npm.cmd` on Windows, `npm` on POSIX
+- [ ] At least one Windows test in CI, GitHub Actions: `runs-on: windows-latest`

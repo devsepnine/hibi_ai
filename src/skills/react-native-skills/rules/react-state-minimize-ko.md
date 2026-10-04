@@ -9,9 +9,9 @@ tags: state, derived-state, hooks, optimization
 
 state 변수는 가능한 한 적게 둔다. 기존 state나 prop에서 계산할 수 있는
 값이라면 state로 저장하지 말고 render 시점에 derive한다. 중복 state는 불필요한
-re-render와 동기화 어긋남(state drift)을 만든다.
+re-render와 동기화 어긋남인 state drift를 만든다.
 
-**Incorrect (redundant state):**
+**Incorrect, redundant state:**
 
 ```tsx
 function Cart({ items }: { items: Item[] }) {
@@ -32,7 +32,7 @@ function Cart({ items }: { items: Item[] }) {
 }
 ```
 
-**Correct (derived values):**
+**Correct, derived values:**
 
 ```tsx
 function Cart({ items }: { items: Item[] }) {

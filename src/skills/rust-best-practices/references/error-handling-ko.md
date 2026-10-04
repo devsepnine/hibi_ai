@@ -16,8 +16,8 @@ Result, Option, error 라이브러리를 사용한 Rust의 에러 핸들링 종�
 
 Rust는 다음을 구분한다:
 
-- **복구 가능한 에러** - `Result<T, E>` 사용
-- **복구 불가능한 에러** - `panic!` 사용
+- **복구 가능한 에러**: `Result<T, E>` 사용
+- **복구 불가능한 에러**: `panic!` 사용
 
 ### When to Use Each
 
@@ -235,7 +235,7 @@ impl std::error::Error for ValidationError {}
 
 ## Error Libraries
 
-### thiserror - For Library Errors
+### thiserror: For Library Errors
 
 ```rust
 use thiserror::Error;
@@ -277,7 +277,7 @@ fn query_user(id: u64) -> Result<User, DataStoreError> {
 }
 ```
 
-### anyhow - For Application Errors
+### anyhow: For Application Errors
 
 ```rust
 use anyhow::{Context, Result, bail, ensure};
@@ -502,7 +502,7 @@ fn main() -> Result<()> {
 
 ## Best Practices
 
-### 1. Never Use unwrap() in Production
+### 1. Never Use `unwrap()` in Production
 
 ```rust
 // ❌ Bad - will panic on error
@@ -715,8 +715,8 @@ fn load_config_or_default(path: &str) -> Config {
 
 ## Further Reading
 
-- [The Rust Book - Chapter 9: Error Handling](https://doc.rust-lang.org/book/ch09-00-error-handling.html)
+- [The Rust Book, Chapter 9: Error Handling](https://doc.rust-lang.org/book/ch09-00-error-handling.html)
 - [thiserror Documentation](https://docs.rs/thiserror/)
 - [anyhow Documentation](https://docs.rs/anyhow/)
-- [Error Handling in Rust - Blog Post](https://blog.burntsushi.net/rust-error-handling/)
-- [Rust API Guidelines - Error Handling](https://rust-lang.github.io/api-guidelines/necessities.html#error-types-are-meaningful-and-well-behaved-c-good-err)
+- [Error Handling in Rust, Blog Post](https://blog.burntsushi.net/rust-error-handling/)
+- [Rust API Guidelines, Error Handling](https://rust-lang.github.io/api-guidelines/necessities.html#error-types-are-meaningful-and-well-behaved-c-good-err)

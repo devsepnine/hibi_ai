@@ -7,13 +7,13 @@ tags: server, server-actions, authentication, security, authorization
 
 ## Server Action도 API Route처럼 인증한다
 
-**Impact: CRITICAL (서버 mutation에 대한 비인가 접근을 방지)**
+**Impact: CRITICAL, 서버 mutation에 대한 비인가 접근을 방지**
 
-Server Actions(`"use server"` 함수)는 API route와 마찬가지로 공개 엔드포인트로 노출된다. 미들웨어, 레이아웃 가드, 페이지 단위 체크에만 의존하지 말고, 항상 각 Server Action **내부에서** 인증과 인가를 검증한다 — Server Actions는 직접 호출이 가능하기 때문이다.
+`"use server"` 함수인 Server Actions는 API route와 마찬가지로 공개 엔드포인트로 노출된다. 미들웨어, 레이아웃 가드, 페이지 단위 체크에만 의존하지 말고, 항상 각 Server Action **내부에서** 인증과 인가를 검증한다. Server Actions는 직접 호출이 가능하기 때문이다.
 
 Next.js 공식 문서는 다음과 같이 명시한다: "Treat Server Actions with the same security considerations as public-facing API endpoints, and verify if the user is allowed to perform a mutation."
 
-**잘못된 예 (인증 체크 없음):**
+**잘못된 예, 인증 체크 없음:**
 
 ```typescript
 'use server'
@@ -25,7 +25,7 @@ export async function deleteUser(userId: string) {
 }
 ```
 
-**올바른 예 (action 내부에서 인증):**
+**올바른 예, action 내부에서 인증:**
 
 ```typescript
 'use server'

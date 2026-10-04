@@ -9,7 +9,7 @@ tags: javascript, cache, memoization, performance
 
 렌더링 중 동일한 입력으로 같은 함수가 반복 호출된다면, 모듈 레벨 Map을 사용해 결과를 캐시한다.
 
-**Incorrect (redundant computation):**
+**Incorrect, redundant computation:**
 
 ```typescript
 function ProjectList({ projects }: { projects: Project[] }) {
@@ -26,7 +26,7 @@ function ProjectList({ projects }: { projects: Project[] }) {
 }
 ```
 
-**Correct (cached results):**
+**Correct, cached results:**
 
 ```typescript
 // Module-level cache

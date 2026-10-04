@@ -1,5 +1,5 @@
 ---
-description: Promote a session-derived improvement into the distributed config as a reviewable PR — locate the upstream from the install manifest, gate candidates by blast radius, and open the PR with its evidence.
+description: Promote a session-derived improvement into the distributed config as a reviewable PR by locating the upstream from the install manifest, gating candidates by blast radius, and opening the PR with its evidence.
 argument-hint: "[topic]"
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
@@ -9,7 +9,7 @@ effort: high
 # Upstream PR
 
 세션에서 얻은 것을 다른 사용자에게 배포되는 설정으로 되돌리기 위한 얇은 진입점이다.
-업스트림은 `~/.hibi/install.json` 에서 확인하고(설치만 한 사용자는 clone이 없다),
+업스트림은 `~/.hibi/install.json` 에서 확인한다. 설치만 한 사용자는 clone이 없다.
 installer가 관리하는 모든 디렉터리를 비교해 후보를 모으고, 게이트를 통과시킨 뒤
 `improve/<topic>` 브랜치로 변경을 올린다.
 
@@ -18,7 +18,7 @@ installer가 관리하는 모든 디렉터리를 비교해 후보를 모으고, 
 `$ARGUMENTS` 가 있으면 그 주제로 범위를 좁힌다.
 
 필수 원칙: 이 커맨드 실행은 로컬 브랜치와 커밋까지만 승인한다. 공유될 내용을 보여주고
-`git push` 와 PR 생성 전에 **두 번째** 확인을 받는다 — 둘 다 외부로 나가는 행위이고,
+`git push` 와 PR 생성 전에 **두 번째** 확인을 받는다. 둘 다 외부로 나가는 행위이고,
 세션 증거에는 먼저 다시 써야 할 고용주 코드나 내부 경로가 섞일 수 있다.
 
-**먼저 `pull-request` skill을 로드한다 — 이 경로를 소유한 스킬이다.** 전체 방법론 — 소스 확인, 후보 선별, 4단 게이트, PR 본문 구성 — 은 그 스킬의 `references/upstream-config.md` 를 source of truth로 삼아 따른다. 그것이 딛고 있는 규약은 같은 스킬의 §1–§7에 있다: 제목은 §1, diff에서 도출하는 본문은 §2, 브랜치 네이밍은 §7이다.
+**먼저 `pull-request` skill을 로드한다. 이 경로를 소유한 스킬이다.** 전체 방법론은 소스 확인, 후보 선별, 4단 게이트, PR 본문 구성을 포함하며 그 스킬의 `references/upstream-config.md` 를 source of truth로 삼아 따른다. 그것이 딛고 있는 규약은 같은 스킬의 §1부터 §7까지에 있다: 제목은 §1, diff에서 도출하는 본문은 §2, 브랜치 네이밍은 §7이다.

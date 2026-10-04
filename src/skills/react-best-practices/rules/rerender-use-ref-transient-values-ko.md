@@ -7,9 +7,9 @@ tags: rerender, useref, state, performance
 
 ## 일시적인 값에는 useRef를 사용한다
 
-값이 자주 변하고 매 업데이트마다 재렌더를 원하지 않을 때(예: 마우스 트래커, 인터벌, 일시적 플래그), `useState` 대신 `useRef`에 저장한다. 컴포넌트 state는 UI를 위해 두고, ref는 일시적인 DOM 인접 값에 사용한다. ref 갱신은 재렌더를 트리거하지 않는다.
+값이 자주 변하고 매 업데이트마다 재렌더를 원하지 않을 때, 예를 들어 마우스 트래커, 인터벌, 일시적 플래그에는 `useState` 대신 `useRef`에 저장한다. 컴포넌트 state는 UI를 위해 두고, ref는 일시적인 DOM 인접 값에 사용한다. ref 갱신은 재렌더를 트리거하지 않는다.
 
-**잘못된 예 (매 업데이트마다 렌더):**
+**잘못된 예, 매 업데이트마다 렌더:**
 
 ```tsx
 function Tracker() {
@@ -36,7 +36,7 @@ function Tracker() {
 }
 ```
 
-**올바른 예 (트래킹에 재렌더 없음):**
+**올바른 예, 트래킹에 재렌더 없음:**
 
 ```tsx
 function Tracker() {

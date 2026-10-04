@@ -9,7 +9,7 @@ tags: client, swr, event-listeners, subscription
 
 `useSWRSubscription()`을 사용해 컴포넌트 인스턴스 사이에서 전역 이벤트 리스너를 공유한다.
 
-**Incorrect (N instances = N listeners):**
+**Incorrect, N instances = N listeners:**
 
 ```tsx
 function useKeyboardShortcut(key: string, callback: () => void) {
@@ -27,7 +27,7 @@ function useKeyboardShortcut(key: string, callback: () => void) {
 
 `useKeyboardShortcut` hook을 여러 번 사용하면 인스턴스마다 새로운 리스너가 등록된다.
 
-**Correct (N instances = 1 listener):**
+**Correct, N instances = 1 listener:**
 
 ```tsx
 import useSWRSubscription from 'swr/subscription'

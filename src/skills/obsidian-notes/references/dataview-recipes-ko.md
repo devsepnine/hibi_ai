@@ -2,16 +2,16 @@
 
 Dataview는 frontmatter + tag를 쿼리 가능한 데이터베이스로 바꾸는 커뮤니티 플러그인이다. 대부분의 MOC 노트, 주간 리뷰, 프로젝트 개요는 손으로 리스트를 유지하기보다 dataview 블록을 임베드하는 것에서 이득을 본다.
 
-이 레시피들은 skill의 frontmatter 스키마를 가정한다 ([frontmatter-conventions.md](frontmatter-conventions.md) 참조).
+이 레시피들은 skill의 frontmatter 스키마를 가정하며, 자세한 내용은 [frontmatter-conventions.md](frontmatter-conventions.md)를 참조한다.
 
 ## Query types
 
-- `TABLE` — 선택된 컬럼이 있는 행
-- `LIST` — 평면 글머리표 리스트
-- `TASK` — vault 전반의 체크박스 (`- [ ]`)
-- `CALENDAR` — date field로 heat-map (DV Calendar 플러그인 필요)
+- `TABLE`: 선택된 컬럼이 있는 행
+- `LIST`: 평면 글머리표 리스트
+- `TASK`: vault 전반의 `- [ ]` 체크박스
+- `CALENDAR`: date field로 heat-map, DV Calendar 플러그인 필요
 
-`dataview` (일반 DQL) 또는 `dataviewjs` (더 많은 제어를 위한 JavaScript)로 태그된 fenced 블록으로 모든 query를 wrap한다.
+일반 DQL은 `dataview`, 더 많은 제어를 위한 JavaScript는 `dataviewjs`로 태그된 fenced 블록으로 모든 query를 wrap한다.
 
 ## Per-type recipes
 
@@ -30,7 +30,7 @@ SORT created DESC
 ```
 ````
 
-### Superseded / deprecated ADRs (audit trail)
+### Superseded / deprecated ADRs: audit trail
 
 ````markdown
 ```dataview
@@ -88,7 +88,7 @@ SORT file.name ASC
 ```
 ````
 
-동적 "current week" (dataviewjs):
+동적 "current week", dataviewjs 사용:
 
 ````markdown
 ```dataviewjs
@@ -169,26 +169,26 @@ LIMIT 20
 
 ## Common pitfalls
 
-- **Tag vs field queries** — `FROM #type/adr`와 `WHERE type = "adr"`는 둘 다 작동하지만, tag 쿼리만 Obsidian의 캐시된 tag 인덱스를 사용할 수 있다. `FROM`에서 tag를 선호한다.
-- **String fields as dates** — `created`가 문자열 `"2026-04-22"`라면, `date("2026-04-22")`와 비교한다 (사전식인 `<="..."`가 아니다).
-- **Array contains** — `attendees: [alice, bob]`에 대해 `contains(array, value)`. 새 버전에서는 `"alice" in attendees`도 작동한다.
-- **LIMIT before SORT is wrong** — DQL은 source 순서로 적용한다; `LIMIT 10 ... SORT ...`가 아닌 `SORT ... DESC LIMIT 10`을 작성한다.
+- **Tag vs field queries**: `FROM #type/adr`와 `WHERE type = "adr"`는 둘 다 작동하지만, tag 쿼리만 Obsidian의 캐시된 tag 인덱스를 사용할 수 있다. `FROM`에서 tag를 선호한다.
+- **String fields as dates**: `created`가 문자열 `"2026-04-22"`라면, `date("2026-04-22")`와 비교한다. 사전식인 `<="..."`로 비교하지 않는다.
+- **Array contains**: `attendees: [alice, bob]`에 대해 `contains(array, value)`. 새 버전에서는 `"alice" in attendees`도 작동한다.
+- **LIMIT before SORT is wrong**: DQL은 source 순서로 적용한다; `LIMIT 10 ... SORT ...`가 아닌 `SORT ... DESC LIMIT 10`을 작성한다.
 
 ## Performance
 
 Dataview는 영향받는 범위에서 vault 변경 시마다 재쿼리한다. 눈에 띄게 느린 쿼리는 거의 항상 다음에서 온다:
 
-- `FROM ""` (전체 vault) tag 필터 없이 — tag를 추가
-- `file.content` regex 검색 — 피하고 frontmatter field를 사용
-- 수백 개 노트에 걸친 unbounded `SORT` — `LIMIT`을 추가
+- `FROM ""`로 전체 vault를 tag 필터 없이 조회: tag를 추가
+- `file.content` regex 검색: 피하고 frontmatter field를 사용
+- 수백 개 노트에 걸친 unbounded `SORT`: `LIMIT`을 추가
 
 ## When to reach for `dataviewjs`
 
 DQL이 형태를 표현할 수 없을 때만 JavaScript 모드를 사용한다:
 
-- `GROUP BY`를 넘어선 집계 (커스텀 predicate에 의한 bucketing)
-- 노트 간 수학 (totals, rolling averages)
-- 동적 날짜 범위 ("this month", today에 상대적)
-- Mutation (드물다 — Templater를 선호)
+- `GROUP BY`를 넘어선 집계, 예를 들어 커스텀 predicate에 의한 bucketing
+- 노트 간 수학, 예를 들어 totals와 rolling averages
+- 동적 날짜 범위, 예를 들어 "this month"나 today에 상대적인 범위
+- Mutation은 드물며 Templater를 선호한다
 
 `dataview` DQL은 읽기 쉽고 플러그인 업데이트에서 더 잘 살아남는다. 정말 필요할 때만 JS에 손을 댄다.

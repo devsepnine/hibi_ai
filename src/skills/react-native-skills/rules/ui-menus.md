@@ -11,7 +11,7 @@ Use native platform menus instead of custom JS implementations. Native menus
 provide built-in accessibility, consistent platform UX, and better performance.
 Use [zeego](https://zeego.dev) for cross-platform native menus.
 
-**Incorrect (custom JS menu):**
+**Incorrect, custom JS menu:**
 
 ```tsx
 import { useState } from 'react'
@@ -40,7 +40,7 @@ function MyMenu() {
 }
 ```
 
-**Correct (native menu with zeego):**
+**Correct, native menu with zeego:**
 
 ```tsx
 import * as DropdownMenu from 'zeego/dropdown-menu'
@@ -72,7 +72,7 @@ function MyMenu() {
 }
 ```
 
-**Context menu (long-press):**
+**Context menu, long-press:**
 
 ```tsx
 import * as ContextMenu from 'zeego/context-menu'

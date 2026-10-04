@@ -8,18 +8,18 @@ tags: navigation, react-navigation, expo-router, native-stack, tabs
 ## Use Native Navigators for Navigation
 
 Always use native navigators instead of JS-based ones. Native navigators use
-platform APIs (UINavigationController on iOS, Fragment on Android) for better
+platform APIs, UINavigationController on iOS and Fragment on Android, for better
 performance and native behavior.
 
 **For stacks:** Use `@react-navigation/native-stack` or expo-router's default
-stack (which uses native-stack). Avoid `@react-navigation/stack`.
+stack, which uses native-stack. Avoid `@react-navigation/stack`.
 
-**For tabs:** Use `react-native-bottom-tabs` (native) or expo-router's native
+**For tabs:** Use `react-native-bottom-tabs` or expo-router's native
 tabs. Avoid `@react-navigation/bottom-tabs` when native feel matters.
 
 ### Stack Navigation
 
-**Incorrect (JS stack navigator):**
+**Incorrect, JS stack navigator:**
 
 ```tsx
 import { createStackNavigator } from '@react-navigation/stack'
@@ -36,7 +36,7 @@ function App() {
 }
 ```
 
-**Correct (native stack with react-navigation):**
+**Correct, native stack with react-navigation:**
 
 ```tsx
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
@@ -53,7 +53,7 @@ function App() {
 }
 ```
 
-**Correct (expo-router uses native stack by default):**
+**Correct, expo-router uses native stack by default:**
 
 ```tsx
 // app/_layout.tsx
@@ -66,7 +66,7 @@ export default function Layout() {
 
 ### Tab Navigation
 
-**Incorrect (JS bottom tabs):**
+**Incorrect, JS bottom tabs:**
 
 ```tsx
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
@@ -83,7 +83,7 @@ function App() {
 }
 ```
 
-**Correct (native bottom tabs with react-navigation):**
+**Correct, native bottom tabs with react-navigation:**
 
 ```tsx
 import { createNativeBottomTabNavigator } from '@bottom-tabs/react-navigation'
@@ -112,7 +112,7 @@ function App() {
 }
 ```
 
-**Correct (expo-router native tabs):**
+**Correct, expo-router native tabs:**
 
 ```tsx
 // app/(tabs)/_layout.tsx
@@ -141,7 +141,7 @@ behind the translucent tab bar. If you need to disable this, use
 
 ### Prefer Native Header Options Over Custom Components
 
-**Incorrect (custom header component):**
+**Incorrect, custom header component:**
 
 ```tsx
 <Stack.Screen
@@ -153,7 +153,7 @@ behind the translucent tab bar. If you need to disable this, use
 />
 ```
 
-**Correct (native header options):**
+**Correct, native header options:**
 
 ```tsx
 <Stack.Screen

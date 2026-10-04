@@ -9,7 +9,7 @@ tags: api-routes, server-actions, waterfalls, parallelization
 
 API 라우트와 Server Action에서는 독립적인 작업은 await을 미루더라도 즉시 시작한다.
 
-**Incorrect (config waits for auth, data waits for both):**
+**Incorrect, config waits for auth, data waits for both:**
 
 ```typescript
 export async function GET(request: Request) {
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 }
 ```
 
-**Correct (auth and config start immediately):**
+**Correct, auth and config start immediately:**
 
 ```typescript
 export async function GET(request: Request) {
@@ -35,4 +35,4 @@ export async function GET(request: Request) {
 }
 ```
 
-더 복잡한 의존성 체인을 가진 작업이라면 `better-all`을 사용해 자동으로 병렬성을 극대화한다 (Dependency-Based Parallelization 참고).
+더 복잡한 의존성 체인을 가진 작업이라면 `better-all`을 사용해 자동으로 병렬성을 극대화한다. Dependency-Based Parallelization을 참고한다.

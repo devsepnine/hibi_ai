@@ -1,4 +1,4 @@
-# iced Widgets (0.13 / 0.14)
+# iced Widgets for 0.13 / 0.14
 
 빌트인 widget과 그 관용적 사용법. 모든 예제는 적절히 `use iced::widget::*;`를 가정한다.
 
@@ -26,11 +26,11 @@ button("Save")
     .style(button::primary)
 ```
 
-- `.on_press(...)` 없이는 button이 disabled로 렌더된다 (회색).
-- 조건부 활성화: `.on_press_maybe(Some(msg_if_ready))` — `None`이면 disabled.
+- `.on_press(...)` 없이는 button이 회색의 disabled로 렌더된다.
+- 조건부 활성화: `.on_press_maybe(Some(msg_if_ready))`, `None`이면 disabled.
 - 빌트인 styler: `button::primary / secondary / success / danger / text`. 마지막은 링크처럼 보이게 한다.
 
-**자식으로 widget 전달** (문자열뿐만 아니라):
+**자식으로 widget 전달**, 문자열뿐만 아니라:
 
 ```rust
 button(text("Save").size(18)).on_press(Message::Save)
@@ -38,7 +38,7 @@ button(text("Save").size(18)).on_press(Message::Save)
 
 ## column! and row!
 
-이종(heterogeneous) 자식을 위한 매크로 — 일반적인 경우:
+heterogeneous 자식을 위한 매크로이며 일반적인 경우이다:
 
 ```rust
 column![
@@ -103,7 +103,7 @@ scrollable(column(rows).spacing(4))
     .width(Fill)
 ```
 
-방향 제어: `.direction(scrollable::Direction::Vertical(Default::default()))` — `Horizontal`과 `Both`도 있다. 무한 스크롤이나 가상화를 구현하기 위해 `.on_scroll(Message::Scrolled)`로 스크롤 오프셋을 구독한다.
+방향 제어: `.direction(scrollable::Direction::Vertical(Default::default()))`. `Horizontal`과 `Both`도 있다. 무한 스크롤이나 가상화를 구현하기 위해 `.on_scroll(Message::Scrolled)`로 스크롤 오프셋을 구독한다.
 
 ## text_input
 
@@ -118,7 +118,7 @@ text_input("Type here...", &state.value)
 ```
 
 - `on_input` disabled 형태: 호출을 생략하여 input을 read-only로 만든다.
-- 다중 라인: 대신 `text_editor`를 사용한다 — undo/redo가 있는 적절한 `Content` 타입을 가진다.
+- 다중 라인: 대신 `text_editor`를 사용한다. undo/redo가 있는 적절한 `Content` 타입을 가진다.
 - 비밀번호: `.secure(true)`가 문자를 마스킹한다.
 
 ## checkbox / toggler / radio
@@ -147,7 +147,7 @@ slider(0.0..=100.0, state.volume, Message::VolumeChanged)
     .width(Fill)
 ```
 
-- `Message::VolumeChanged(f32)` — 새 값을 직접 받는다.
+- `Message::VolumeChanged(f32)`: 새 값을 직접 받는다.
 - `.step(n)`이 양자화한다; 연속을 위해 생략한다.
 - 수직 형태: `vertical_slider(...)`.
 
@@ -206,7 +206,7 @@ svg("icon.svg").width(32);                    // requires `svg` feature
 
 소스는 bytes일 수도 있다: `image(image::Handle::from_bytes(include_bytes!("logo.png").to_vec()))`.
 
-## Stack (Z-layered overlays)
+## Stack: Z-layered overlays
 
 ```rust
 use iced::widget::stack;
@@ -231,7 +231,7 @@ vertical_space().height(16) // fixed height gap
 Space::new(20, 0)           // explicit WxH
 ```
 
-`row!` 내에서 형제를 분리하는 데 `horizontal_space()`를 사용한다 ("spacer 패턴").
+`row!` 내에서 형제를 분리하는 데 `horizontal_space()`를 사용한다. 이를 "spacer 패턴"이라 한다.
 
 ## Length Primitives
 
@@ -247,9 +247,9 @@ use iced::{Fill, Shrink, FillPortion};
 .width(300.0)             // fixed pixels
 ```
 
-**기본 규칙**: 대부분의 widget은 `Shrink`(width)와 `Shrink`(height)로 기본값이다. `container`도 `Shrink`로 기본값이다 — 즉, 기본적으로 남은 공간을 차지하지 않는다. "부모를 채우기"를 원할 때 `.width(Fill)` 또는 `.center_x(Fill)`을 명시적으로 설정한다.
+**기본 규칙**: 대부분의 widget은 width와 height 모두 `Shrink`로 기본값이다. `container`도 `Shrink`로 기본값이다. 즉, 기본적으로 남은 공간을 차지하지 않는다. "부모를 채우기"를 원할 때 `.width(Fill)` 또는 `.center_x(Fill)`을 명시적으로 설정한다.
 
-## text_editor (multi-line)
+## text_editor, multi-line
 
 undo/redo, 선택, 키보드 이동이 있는 다중 라인 텍스트:
 
@@ -267,9 +267,9 @@ text_editor(&state.content)
 Message::Edit(action) => state.content.perform(action)
 ```
 
-이는 widget의 내부 편집 의미에 위임한다 — 문자 mutation을 직접 만들지 않는다.
+이는 widget의 내부 편집 의미에 위임한다. 문자 mutation을 직접 만들지 않는다.
 
 ## Related
 
 - 각 widget 스타일링: `references/theming.md`
-- `Widget` trait를 통한 커스텀 widget (`advanced` feature 필요): 이 skill의 범위 밖 — upstream `custom_widget` 예제 참조.
+- `Widget` trait를 통한 커스텀 widget은 `advanced` feature가 필요하다. 이 skill의 범위 밖이므로 upstream `custom_widget` 예제 참조.

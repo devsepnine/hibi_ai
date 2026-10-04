@@ -28,18 +28,18 @@ src/routes/
 
 ### Dynamic and optional segments
 
-- `[slug]` — required: `/blog/hello`
-- `[[optional]]` — optional: `/blog` 또는 `/blog/hello`
-- `[...rest]` — catch-all: `/docs/a/b/c`
-- `[param=matcher]` — validated: `params.*.ts` matcher 참조
+- `[slug]`: required, `/blog/hello`
+- `[[optional]]`: optional, `/blog` 또는 `/blog/hello`
+- `[...rest]`: catch-all, `/docs/a/b/c`
+- `[param=matcher]`: validated, `params.*.ts` matcher 참조
 
 ### Route groups `(name)`
 
 괄호로 감싼 폴더는 URL 세그먼트가 되지 않는다. URL을 변경하지 않고 라우트의 부분집합에 자체 layout을 주기 위해 사용한다.
 
-## Load functions — universal vs server
+## Load functions: universal vs server
 
-### Universal — `+page.ts`, `+layout.ts`
+### Universal: `+page.ts`, `+layout.ts`
 
 초기 렌더링에서는 서버에서 실행되고, 클라이언트 사이드 nav에서는 브라우저에서 실행된다. 데이터 소스가 공개 endpoint일 때 사용한다.
 
@@ -57,10 +57,10 @@ export const load: PageLoad = async ({ fetch, params }) => {
 
 핵심 포인트:
 
-- 글로벌이 **아닌** `fetch` 인자를 사용한다 — 쿠키를 보존하고, 상대 URL을 해석하며, 서버에서 내부 라우트의 네트워크 hop을 피한다.
+- 글로벌이 **아닌** `fetch` 인자를 사용한다. 쿠키를 보존하고, 상대 URL을 해석하며, 서버에서 내부 라우트의 네트워크 hop을 피한다.
 - `error(...)`를 throw하면 가장 가까운 `+error.svelte`를 트리거한다.
 
-### Server — `+page.server.ts`, `+layout.server.ts`
+### Server: `+page.server.ts`, `+layout.server.ts`
 
 서버에서만 실행된다. DB 액세스, private env var, 파일시스템 read, auth 체크에 필요하다.
 
@@ -77,9 +77,9 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 
 규칙:
 
-- universal (`.ts`, `.server.ts` 아닌) 파일에서 `$env/static/private` 또는 `$env/dynamic/private`을 절대 import하지 마라 — 컴파일러가 막는다.
+- universal 파일, 즉 `.ts`이고 `.server.ts`가 아닌 파일에서 `$env/static/private` 또는 `$env/dynamic/private`을 절대 import하지 마라. 컴파일러가 막는다.
 - 반환된 객체는 직렬화된다. function, class instance, proxy는 strip된다. 평이한 데이터를 반환한다.
-- DB connection 같은 request-scoped 서비스는 `locals` (handle hook에서 채워짐)를 사용한다.
+- DB connection 같은 request-scoped 서비스는 `locals`를 사용하며, handle hook에서 채운다.
 
 ### Consuming load data
 
@@ -94,7 +94,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 <h1>{data.post.title}</h1>
 ```
 
-`PageData`는 `load` 반환 타입에서 생성된다 — 수동 타이핑 없음.
+`PageData`는 `load` 반환 타입에서 생성되므로 수동 타이핑이 필요 없다.
 
 ### Invalidation
 
@@ -115,9 +115,9 @@ export const load: PageLoad = async ({ depends, fetch }) => {
 }
 ```
 
-## Form actions — the default mutation path
+## Form actions: the default mutation path
 
-사용자 주도 변경 (create/update/delete)은 form action으로 시작한다. JS 없이 작동하고, progressive enhancement를 위해 `use:enhance`와 통합되며, 타이핑을 빈틈없이 유지한다.
+사용자 주도 변경, 즉 create, update, delete는 form action으로 시작한다. JS 없이 작동하고, progressive enhancement를 위해 `use:enhance`와 통합되며, 타이핑을 빈틈없이 유지한다.
 
 ```ts
 // +page.server.ts
@@ -177,9 +177,9 @@ export const actions: Actions = {
 
 ### `fail` vs `error` vs `redirect`
 
-- `fail(status, data)` — validation 실패; 데이터를 form으로 다시 반환하여 UI가 에러와 함께 다시 렌더링한다. 같은 페이지에 머무른다.
-- `error(status, message)` — 복구 불가능; `+error.svelte`를 렌더링한다.
-- `redirect(303, path)` — 성공한 mutation; 새 URL로 보낸다 (종종 생성/업데이트된 리소스).
+- `fail(status, data)`: validation 실패; 데이터를 form으로 다시 반환하여 UI가 에러와 함께 다시 렌더링한다. 같은 페이지에 머무른다.
+- `error(status, message)`: 복구 불가능; `+error.svelte`를 렌더링한다.
+- `redirect(303, path)`: 성공한 mutation; 새 URL로 보낸다. 종종 생성/업데이트된 리소스로 보낸다.
 
 ### Custom enhance behavior
 
@@ -191,9 +191,9 @@ export const actions: Actions = {
 }}>
 ```
 
-성공/실패에 사이드 이펙트가 필요할 때 (toast, confetti, optimistic UI) 커스텀 enhance를 사용한다. 대부분의 폼에는 default enhance가 괜찮다.
+성공/실패에 사이드 이펙트가 필요할 때, 예를 들어 toast, confetti, optimistic UI에는 커스텀 enhance를 사용한다. 대부분의 폼에는 default enhance가 괜찮다.
 
-## Hooks — request middleware
+## Hooks: request middleware
 
 ### `hooks.server.ts`
 
@@ -227,7 +227,7 @@ export const handleError: HandleServerError = ({ error, event }) => {
 
 ### `hooks.client.ts`
 
-표면이 작다 — 대부분 클라이언트 사이드 에러를 위한 `handleError`.
+표면이 작으며 대부분 클라이언트 사이드 에러를 위한 `handleError`.
 
 ```ts
 import type { HandleClientError } from '@sveltejs/kit'
@@ -244,7 +244,7 @@ static/dynamic × public/private에 따라 선택되는 네 가지:
 
 | Module | Safe in client? | Reads change at runtime? |
 |--------|:---:|:---:|
-| `$env/static/public`  | ✅ | ❌ (build time에 baked) |
+| `$env/static/public`  | ✅ | ❌, build time에 baked |
 | `$env/static/private` | ❌ | ❌ |
 | `$env/dynamic/public`  | ✅ | ✅ |
 | `$env/dynamic/private` | ❌ | ✅ |
@@ -258,9 +258,9 @@ import { env as priv }       from '$env/dynamic/private' // process.env at runti
 
 - `*/public`의 모든 것에 `PUBLIC_*` prefix가 필요하다.
 - 브라우저로 ship되는 파일에서 `*/private`을 import하면 컴파일 에러이다.
-- `static/*`을 선호한다 — 더 나은 tree-shaking과 런타임 lookup 비용 없음. 값이 실제로 deploy/요청별로 변경될 때만 `dynamic/*`을 사용한다.
+- `static/*`을 선호한다. 더 나은 tree-shaking과 런타임 lookup 비용 없음. 값이 실제로 deploy/요청별로 변경될 때만 `dynamic/*`을 사용한다.
 
-## `$app/state` — replaced `$app/stores` in v2
+## `$app/state`: replaced `$app/stores` in v2
 
 ```ts
 import { page, navigating, updated } from '$app/state'
@@ -273,11 +273,11 @@ if (navigating) {
 }
 ```
 
-코드에서 `$app/stores`나 `$page`가 보인다면 v1/v2-early 패턴이다 — 마이그레이션한다. v2 `$app/state` API는 이미 runes로 추적되므로 그저 field를 read하면 된다.
+코드에서 `$app/stores`나 `$page`가 보인다면 v1/v2-early 패턴이므로 마이그레이션한다. v2 `$app/state` API는 이미 runes로 추적되므로 그저 field를 read하면 된다.
 
-## API endpoints — `+server.ts`
+## API endpoints: `+server.ts`
 
-JSON-ish REST endpoint (모바일 클라이언트, webhook, 페이지를 렌더링하지 않는 것):
+JSON-ish REST endpoint, 즉 모바일 클라이언트, webhook, 페이지를 렌더링하지 않는 것:
 
 ```ts
 // src/routes/api/posts/+server.ts
@@ -309,26 +309,26 @@ export const csr = true              // keep client hydration (default)
 export const trailingSlash = 'never' // url normalization
 ```
 
-진정으로 정적인 페이지 (마케팅, 문서)에 `prerender = true`를 사용한다 — deploy 크기와 cold-start 비용을 줄인다. 풀 SSG 사이트는 `adapter-static`과 결합한다.
+진정으로 정적인 페이지, 예를 들어 마케팅이나 문서에 `prerender = true`를 사용한다. deploy 크기와 cold-start 비용을 줄인다. 풀 SSG 사이트는 `adapter-static`과 결합한다.
 
-## Adapters (quick map)
+## Adapters: quick map
 
 `svelte.config.js`로 target별 설정:
 
-- `@sveltejs/adapter-auto` — deploy 중 Vercel/Netlify/etc 자동 선택
-- `@sveltejs/adapter-node` — Node 서버; reverse proxy / Docker
-- `@sveltejs/adapter-static` — 순수 정적 사이트 (SSG)
-- `@sveltejs/adapter-vercel` — Vercel 특화 기능 (ISR, edge)
-- `@sveltejs/adapter-cloudflare` — Cloudflare Pages / Workers
-- `@sveltejs/adapter-netlify` — Netlify Functions / Edge
+- `@sveltejs/adapter-auto`: deploy 중 Vercel/Netlify/etc 자동 선택
+- `@sveltejs/adapter-node`: Node 서버; reverse proxy / Docker
+- `@sveltejs/adapter-static`: 순수 정적 사이트, SSG
+- `@sveltejs/adapter-vercel`: Vercel 특화 기능, 예를 들어 ISR, edge
+- `@sveltejs/adapter-cloudflare`: Cloudflare Pages / Workers
+- `@sveltejs/adapter-netlify`: Netlify Functions / Edge
 
-대부분의 앱은 `auto`로 시작한다. target의 기능 (edge runtime, ISR, image opt)이 중요할 때만 명시적 adapter로 전환한다.
+대부분의 앱은 `auto`로 시작한다. target의 기능, 예를 들어 edge runtime, ISR, image opt가 중요할 때만 명시적 adapter로 전환한다.
 
 ## Common mistakes
 
-- **load에서 `fetch` destructure 없이 fetch** — 글로벌 `fetch`가 쿠키를 운반하지 않고 상대 URL을 해석할 수 없으므로 SSR이 깨진다.
-- **`load`의 long-running 작업** — `load`는 모든 내비게이션마다 실행된다. 캐시하고, `depends` + `invalidate`을 사용하거나, 백그라운드 job으로 옮긴다.
-- **`load` 내부에서 `locals` mutate** — `locals`는 `handle`에서 요청당 한 번 설정된다; `load`/`action`에서는 read-only로 취급한다.
-- **새 코드에서 `$app/stores` 사용** — v2는 `$app/state`를 선호한다.
-- **form 제출에 `+server.ts` 사용** — progressive enhancement를 잃는다. form action을 사용한다.
-- **서버 `load`에서 직렬화 불가능한 데이터 반환** — class, function, proxy가 조용히 drop된다. plain 객체를 반환한다.
+- **load에서 `fetch` destructure 없이 fetch**: 글로벌 `fetch`가 쿠키를 운반하지 않고 상대 URL을 해석할 수 없으므로 SSR이 깨진다.
+- **`load`의 long-running 작업**: `load`는 모든 내비게이션마다 실행된다. 캐시하고, `depends` + `invalidate`을 사용하거나, 백그라운드 job으로 옮긴다.
+- **`load` 내부에서 `locals` mutate**: `locals`는 `handle`에서 요청당 한 번 설정된다; `load`/`action`에서는 read-only로 취급한다.
+- **새 코드에서 `$app/stores` 사용**: v2는 `$app/state`를 선호한다.
+- **form 제출에 `+server.ts` 사용**: progressive enhancement를 잃는다. form action을 사용한다.
+- **서버 `load`에서 직렬화 불가능한 데이터 반환**: class, function, proxy가 조용히 drop된다. plain 객체를 반환한다.

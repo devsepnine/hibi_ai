@@ -1,11 +1,11 @@
 ---
 name: ratatui_rs
-description: Rust TUI: ratatui/crossterm — widgets, List/TableState, cancelable event loops, raw mode/alt screen, 0.28→0.30. Use when building or fixing a Rust TUI. 러스트 TUI, 터미널 UI, 대화형 CLI, 알트 스크린, 이벤트 루프, 작업 취소. NOT GUI, ncurses.
+description: "Rust TUI: ratatui/crossterm, widgets, List/TableState, cancelable event loops, raw mode/alt screen, 0.28→0.30. Use when building or fixing a Rust TUI. 러스트 TUI, 터미널 UI, 대화형 CLI, 알트 스크린, 이벤트 루프, 작업 취소. NOT GUI, ncurses."
 ---
 
-# Ratatui (Rust TUI) — Production Guide
+# Ratatui, Rust TUI: Production Guide
 
-Immediate-mode terminal UI framework for Rust. This skill encodes patterns proven in production (cancelable background tasks, cross-platform handling, panic-safe terminal restoration) — not just hello-world.
+Immediate-mode terminal UI framework for Rust. This skill encodes patterns proven in production, cancelable background tasks, cross-platform handling, panic-safe terminal restoration, not just hello-world.
 
 ## When to use which reference
 
@@ -13,16 +13,16 @@ This SKILL.md is the index. Read the focused reference based on the task:
 
 | Task | Reference |
 |---|---|
-| Use a widget (List/Table/Paragraph/Gauge/Tabs/...) | `references/widgets.md` |
+| Use a widget, List/Table/Paragraph/Gauge/Tabs/... | `references/widgets.md` |
 | Background task + user-cancelable spawn | `references/cancelable-processes.md` |
 | Windows path/command quirks, MSYS conversion | `references/cross-platform.md` |
 | Unit-test rendering with `TestBackend` | `references/testing.md` |
-| Avoiding common TUI footguns (panic, eprintln, JoinHandle) | `references/gotchas.md` |
+| Avoiding common TUI footguns, panic, eprintln, JoinHandle | `references/gotchas.md` |
 | App structure, modules, state machines, channels | `references/best-practices.md` |
 
 ## Project Setup
 
-Use Edition 2024 (Rust 1.85+) with `ratatui::init()` (added in 0.28+) for panic-safe terminal handling.
+Use Edition 2024, Rust 1.85+, with `ratatui::init()`, added in 0.28+, for panic-safe terminal handling.
 
 ```toml
 [package]
@@ -36,7 +36,7 @@ crossterm = "0.29"
 anyhow = "1.0"
 ```
 
-## Minimal App (idiomatic 0.30)
+## Minimal App, idiomatic 0.30
 
 ```rust
 use ratatui::{
@@ -81,7 +81,7 @@ fn run(terminal: &mut DefaultTerminal) -> anyhow::Result<()> {
 
 **Why `ratatui::init()` instead of manual `Terminal::new`**: it installs a panic hook that restores the terminal even if the app panics mid-render. Without it, a panic leaves the terminal in raw mode and the user can't see anything they type.
 
-## Layout (0.30 destructuring style)
+## Layout, 0.30 destructuring style
 
 ```rust
 use ratatui::layout::{Constraint, Layout};
@@ -98,11 +98,11 @@ let [sidebar, main] = Layout::horizontal([
 ]).areas(body);
 ```
 
-Use `Constraint::Fill(n)` (0.27+) for proportional remaining space — clearer intent than `Min(0)`.
+Use `Constraint::Fill(n)`, 0.27+, for proportional remaining space, clearer intent than `Min(0)`.
 
 ## Event Loop with Background Channel
 
-The pattern when a TUI must update on both keypress AND background events (timers, async I/O, child-process output):
+The pattern when a TUI must update on both keypress AND background events, timers, async I/O, child-process output:
 
 ```rust
 use std::sync::mpsc;
@@ -136,7 +136,7 @@ fn run(terminal: &mut DefaultTerminal, rx: mpsc::Receiver<AppEvent>) -> anyhow::
 
 For the production-grade version with **cancelable** child processes, see `references/cancelable-processes.md`.
 
-## State Management (View enum pattern)
+## State Management, View enum pattern
 
 For non-trivial apps, model possible screens as an enum so transitions are type-checked:
 
@@ -171,7 +171,7 @@ impl App {
 
 Why: a 13-state TUI without this pattern becomes an `if/else` rats' nest. With it, the compiler catches missing branches when you add a screen.
 
-## Custom Widget (Widget trait)
+## Custom Widget, Widget trait
 
 ```rust
 use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget, text::Line, style::Style};
@@ -188,16 +188,16 @@ impl Widget for StatusBar {
 f.render_widget(StatusBar { msg: "Ready".into() }, area);
 ```
 
-Custom widgets keep `draw(...)` callbacks short and let you unit-test rendering with `TestBackend` (see `references/testing.md`).
+Custom widgets keep `draw(...)` callbacks short and let you unit-test rendering with `TestBackend`, see `references/testing.md`.
 
 ## Performance Quick Rules
 
-1. **Poll, don't block** — use `event::poll(Duration::from_millis(50–100))` so background channels can be drained.
-2. **`tick()` ≠ redraw** — only redraw if state actually changed; the double-buffer in ratatui is cheap, but your build_ui closure isn't.
-3. **No `eprintln!` while raw mode is on** — it corrupts the alt screen. See `references/gotchas.md`.
-4. **Detach vs join threads carefully** — `drop(JoinHandle)` does NOT join. See `references/gotchas.md`.
+1. **Poll, don't block**: use `event::poll(Duration::from_millis(50–100))` so background channels can be drained.
+2. **`tick()` ≠ redraw**: only redraw if state actually changed; the double-buffer in ratatui is cheap, but your build_ui closure isn't.
+3. **No `eprintln!` while raw mode is on**: it corrupts the alt screen. See `references/gotchas.md`.
+4. **Detach vs join threads carefully**: `drop(JoinHandle)` does NOT join. See `references/gotchas.md`.
 
-## Migration Notes (0.28 → 0.30)
+## Migration Notes, 0.28 → 0.30
 
 - Prefer `ratatui::init()` / `ratatui::restore()` over manual `enable_raw_mode` + `EnterAlternateScreen`.
 - Prefer `Block::bordered()` over `Block::default().borders(Borders::ALL)`.
@@ -208,4 +208,4 @@ Custom widgets keep `draw(...)` callbacks short and let you unit-test rendering 
 ## Related Skills
 
 - General Rust idioms: `rust-best-practices`
-- Cross-platform shell-safety: `references/cross-platform.md` (this skill) + `coding-standards`
+- Cross-platform shell-safety: `references/cross-platform.md`, this skill + `coding-standards`

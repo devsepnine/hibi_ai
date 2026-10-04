@@ -9,7 +9,7 @@ tags: advanced, hooks, refs, event-handlers, optimization
 
 콜백 변경 시 다시 구독되어선 안 되는 effect에서 사용한다면 콜백을 ref에 저장한다.
 
-**Incorrect (re-subscribes on every render):**
+**Incorrect, re-subscribes on every render:**
 
 ```tsx
 function useWindowEvent(event: string, handler: (e) => void) {
@@ -20,7 +20,7 @@ function useWindowEvent(event: string, handler: (e) => void) {
 }
 ```
 
-**Correct (stable subscription):**
+**Correct, stable subscription:**
 
 ```tsx
 function useWindowEvent(event: string, handler: (e) => void) {

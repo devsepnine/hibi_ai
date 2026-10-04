@@ -5,11 +5,11 @@ impactDescription: faster response times
 tags: server, async, logging, analytics, side-effects
 ---
 
-## Use after() for Non-Blocking Operations
+## Use `after()` for Non-Blocking Operations
 
 Use Next.js's `after()` to schedule work that should execute after a response is sent. This prevents logging, analytics, and other side effects from blocking the response.
 
-**Incorrect (blocks response):**
+**Incorrect, blocks response:**
 
 ```tsx
 import { logUserAction } from '@/app/utils'
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 }
 ```
 
-**Correct (non-blocking):**
+**Correct, non-blocking:**
 
 ```tsx
 import { after } from 'next/server'

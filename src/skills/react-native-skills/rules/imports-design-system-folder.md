@@ -10,7 +10,7 @@ tags: imports, architecture, design-system
 Re-export dependencies from a design system folder. App code imports from there,
 not directly from packages. This enables global changes and easy refactoring.
 
-**Incorrect (imports directly from package):**
+**Incorrect, imports directly from package:**
 
 ```tsx
 import { View, Text } from 'react-native'
@@ -26,7 +26,7 @@ function Profile() {
 }
 ```
 
-**Correct (imports from design system):**
+**Correct, imports from design system:**
 
 ```tsx
 // components/view.tsx

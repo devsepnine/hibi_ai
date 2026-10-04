@@ -9,7 +9,7 @@ tags: javascript, cache, memoization, performance
 
 Use a module-level Map to cache function results when the same function is called repeatedly with the same inputs during render.
 
-**Incorrect (redundant computation):**
+**Incorrect, redundant computation:**
 
 ```typescript
 function ProjectList({ projects }: { projects: Project[] }) {
@@ -26,7 +26,7 @@ function ProjectList({ projects }: { projects: Project[] }) {
 }
 ```
 
-**Correct (cached results):**
+**Correct, cached results:**
 
 ```typescript
 // Module-level cache
@@ -75,6 +75,6 @@ function onAuthChange() {
 }
 ```
 
-Use a Map (not a hook) so it works everywhere: utilities, event handlers, not just React components.
+Use a Map rather than a hook so it works everywhere: utilities, event handlers, not just React components.
 
 Reference: [How we made the Vercel Dashboard twice as fast](https://vercel.com/blog/how-we-made-the-vercel-dashboard-twice-as-fast)

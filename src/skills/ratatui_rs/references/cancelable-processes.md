@@ -1,8 +1,8 @@
 # Cancelable Background Processes in TUI
 
-Production pattern for spawning a child process from a TUI while keeping the UI responsive AND letting the user cancel it (Esc / Ctrl+C without quitting the app).
+Production pattern for spawning a child process from a TUI while keeping the UI responsive AND letting the user cancel it, Esc / Ctrl+C without quitting the app.
 
-This is the single most important non-obvious pattern in production TUIs. Naive `Command::output()` blocks the event loop — the user can't even press 'q'.
+This is the single most important non-obvious pattern in production TUIs. Naive `Command::output()` blocks the event loop, the user can't even press 'q'.
 
 ## The Race Condition That Bites Everyone
 
@@ -129,7 +129,7 @@ match key.code {
 
 ## Cooperative Cancellation in Pure-Rust Tasks
 
-Not every long task is a child process. For an in-process task (e.g., recursive scan), check the cancel receiver between work units:
+Not every long task is a child process. For an in-process task such as a recursive scan, check the cancel receiver between work units:
 
 ```rust
 fn scan_dir(root: &Path, cancel_rx: &Receiver<()>) -> anyhow::Result<Vec<PathBuf>> {
@@ -151,8 +151,8 @@ fn scan_dir(root: &Path, cancel_rx: &Receiver<()>) -> anyhow::Result<Vec<PathBuf
 
 Many tutorials reach for async + `tokio::select!`. That works, but it forces every TUI to depend on tokio and rewrite all sync code. The mpsc-channel pattern above:
 
-- works with the std blocking `Command` API (no async wrapper needed),
+- works with the std blocking `Command` API, no async wrapper needed,
 - composes with `event::poll(timeout)` in the TUI loop,
 - is testable with a regular `mpsc::channel` in unit tests.
 
-If the project is already async-first, `tokio::process::Command` + `tokio::select!` is fine — the principle (check completion first) still applies.
+If the project is already async-first, `tokio::process::Command` + `tokio::select!` is fine. The principle of checking completion first still applies.

@@ -9,7 +9,7 @@ tags: bundle, dynamic-import, code-splitting, next-dynamic
 
 초기 렌더링에 필요 없는 큰 컴포넌트는 `next/dynamic`으로 lazy-load한다.
 
-**Incorrect (Monaco bundles with main chunk ~300KB):**
+**Incorrect, Monaco bundles with main chunk ~300KB:**
 
 ```tsx
 import { MonacoEditor } from './monaco-editor'
@@ -19,7 +19,7 @@ function CodePanel({ code }: { code: string }) {
 }
 ```
 
-**Correct (Monaco loads on demand):**
+**Correct, Monaco loads on demand:**
 
 ```tsx
 import dynamic from 'next/dynamic'

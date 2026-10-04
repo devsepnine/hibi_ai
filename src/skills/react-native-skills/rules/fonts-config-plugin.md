@@ -10,7 +10,7 @@ tags: fonts, expo, performance, config-plugin
 Use the `expo-font` config plugin to embed fonts at build time instead of
 `useFonts` or `Font.loadAsync`. Embedded fonts are more efficient.
 
-**Incorrect (async font loading):**
+**Incorrect, async font loading:**
 
 ```tsx
 import { useFonts } from 'expo-font'
@@ -33,7 +33,7 @@ function App() {
 }
 ```
 
-**Correct (config plugin, fonts embedded at build):**
+**Correct, config plugin, fonts embedded at build:**
 
 ```json
 // app.json

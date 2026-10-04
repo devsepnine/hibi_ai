@@ -7,11 +7,11 @@ tags: server, io, performance, next.js, route-handlers, og-image
 
 ## Hoist Static I/O to Module Level
 
-**Impact: HIGH (avoids repeated file/network I/O per request)**
+**Impact: HIGH, avoids repeated file/network I/O per request**
 
-When loading static assets (fonts, logos, images, config files) in route handlers or server functions, hoist the I/O operation to module level. Module-level code runs once when the module is first imported, not on every request. This eliminates redundant file system reads or network fetches that would otherwise run on every invocation.
+When loading static assets such as fonts, logos, images, and config files in route handlers or server functions, hoist the I/O operation to module level. Module-level code runs once when the module is first imported, not on every request. This eliminates redundant file system reads or network fetches that would otherwise run on every invocation.
 
-**Incorrect (reads font file on every request):**
+**Incorrect, reads font file on every request:**
 
 ```typescript
 // app/api/og/route.tsx
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
 }
 ```
 
-**Correct (loads once at module initialization):**
+**Correct, loads once at module initialization:**
 
 ```typescript
 // app/api/og/route.tsx
@@ -66,7 +66,7 @@ export async function GET(request: Request) {
 }
 ```
 
-**Correct (synchronous fs at module level):**
+**Correct, synchronous fs at module level:**
 
 ```typescript
 // app/api/og/route.tsx
@@ -94,7 +94,7 @@ export async function GET(request: Request) {
 }
 ```
 
-**Incorrect (reads config on every call):**
+**Incorrect, reads config on every call:**
 
 ```typescript
 import fs from 'node:fs/promises'
@@ -109,7 +109,7 @@ export async function processRequest(data: Data) {
 }
 ```
 
-**Correct (hoists config and template to module level):**
+**Correct, hoists config and template to module level:**
 
 ```typescript
 import fs from 'node:fs/promises'
@@ -140,7 +140,7 @@ When to use this pattern:
 When not to use this pattern:
 
 - Assets that vary per request or user
-- Files that may change during runtime (use caching with TTL instead)
+- Files that may change during runtime. Use caching with TTL instead
 - Large files that would consume too much memory if kept loaded
 - Sensitive data that shouldn't persist in memory
 

@@ -1,13 +1,13 @@
 ---
 name: zustand
-description: Zustand v5 — state/action split, useShallow selectors, subscribeWithSelector, devtools/persist, slices, v4 migration, infinite-loop fixes. Use when managing React state. 주스탄드, 전역 상태 관리, useShallow.
+description: "Zustand v5: state/action split, useShallow selectors, subscribeWithSelector, devtools/persist, slices, v4 migration, infinite-loop fixes. Use when managing React state. 주스탄드, 전역 상태 관리, useShallow."
 ---
 
-# Zustand Store (v5)
+# Zustand Store, v5
 
 Create Zustand stores following v5 best practices with TypeScript types,
 appropriate middleware, and selector patterns that avoid common pitfalls
-(infinite re-renders, zombie children, stale closures).
+such as infinite re-renders, zombie children, and stale closures.
 
 Assumes **Zustand v5+**. For v4 migration pointers, see
 [references/acceptance-criteria.md](references/acceptance-criteria.md).
@@ -15,14 +15,14 @@ Assumes **Zustand v5+**. For v4 migration pointers, see
 ## Quick Start
 
 Copy the template from [assets/template.md](assets/template.md) and replace:
-- `{{StoreName}}` → PascalCase store name (e.g., `Project`)
+- `{{StoreName}}` → PascalCase store name, e.g., `Project`
 - `{{description}}` → one-line JSDoc description
 
 ## State / Actions Separation
 
-Split the store type into **state** (data) and **actions** (mutators). This
+Split the store type into **state**, the data, and **actions**, the mutators. This
 keeps intent obvious, makes `Pick<>` for selectors trivial, and surfaces
-action-only selectors (which never re-render).
+action-only selectors, which never re-render.
 
 ```typescript
 export interface MyState {
@@ -68,13 +68,13 @@ Rule of thumb: **single-field selectors need no wrapper**; any time you return
 a tuple, array, or object literal, wrap with `useShallow`.
 
 If you prefer v4's equality-function API, use `createWithEqualityFn` from
-`zustand/traditional` — but `useShallow` is the preferred v5 path.
+`zustand/traditional`, but `useShallow` is the preferred v5 path.
 
 ## `subscribeWithSelector`: outside-React only
 
 The `subscribeWithSelector` middleware adds a selector+equality argument to
 `.subscribe()`. Include it **only** when the store needs to be subscribed to
-outside React (event bridges, logging, URL sync). Inside components,
+outside React, such as event bridges, logging, and URL sync. Inside components,
 `useShallow` covers the same need.
 
 ```typescript
@@ -124,7 +124,7 @@ export const useMyStore = create<MyStore>()(
 
 Guidelines:
 - Name every `set()` for devtools tracing: `set(partial, false, 'action/name')`
-- Use `partialize` to exclude transient state (loading, error) from storage
+- Use `partialize` to exclude transient state such as loading and error from storage
 - Prefer `localStorage` for user prefs, `sessionStorage` for tab-scoped state
 
 ## Initial state + reset
@@ -144,7 +144,7 @@ reset: () => set(initialState),
 useMyStore.setState(useMyStore.getInitialState(), true);
 ```
 
-## Slices pattern (larger stores)
+## Slices pattern, larger stores
 
 When a store grows past ~5 actions or spans multiple domains, split into
 typed slices and compose. Each slice is a `StateCreator` parameterized by
@@ -171,7 +171,7 @@ Full guide + devtools integration + cross-slice patterns:
 - Reset the store between tests: `useMyStore.setState(useMyStore.getInitialState(), true)`
 - For async actions, assert on `store.getState()` after `await`
 - Mock fetch/IO at the boundary, not the store
-- For multi-store test suites, adopt the global-reset wrapper (see slices guide)
+- For multi-store test suites, adopt the global-reset wrapper, see the slices guide
 
 ## Integration Steps
 

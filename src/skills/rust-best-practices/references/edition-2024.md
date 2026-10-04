@@ -48,7 +48,7 @@ rust-version.workspace = true
 
 ### 1. Improved Pattern Matching
 
-**`if let` chains (stabilized)**:
+**`if let` chains, stabilized**:
 ```rust
 // ✅ Edition 2024: Cleaner conditional logic
 fn process_user(user: Option<User>) {
@@ -83,7 +83,7 @@ match value {
 
 ### 2. Async/Await Improvements
 
-**Async fn in traits (stabilized)**:
+**Async fn in traits, stabilized**:
 ```rust
 // ✅ Edition 2024: Native async in traits
 trait Repository {
@@ -116,7 +116,7 @@ impl Repository for DatabaseRepo {
 }
 ```
 
-**Return position impl Trait in traits (RPITIT)**:
+**Return position impl Trait in traits, RPITIT**:
 ```rust
 // ✅ Edition 2024: Cleaner trait definitions
 trait Processor {
@@ -132,12 +132,12 @@ impl Processor for TextProcessor {
 }
 ```
 
-**Async closures (stable in 1.85+)**:
+**Async closures, stable in 1.85+**:
 
 Before 1.85 async closures had to be written as `|x| async move { ... }`
 which produces a nested `Future`-returning closure. 1.85 stabilizes the
 `async |x| { ... }` form, giving callers a direct `AsyncFn` / `AsyncFnMut`
-/ `AsyncFnOnce` trait to work with — less indirection, better borrow
+/ `AsyncFnOnce` trait to work with, less indirection, better borrow
 tracking, and no desugaring surprise around captured state.
 
 ```rust
@@ -175,14 +175,14 @@ fn legacy() -> impl Future {
 ```
 
 Use `async |x| { ... }` when the callback is **consumed** asynchronously
-(e.g. passed into an `async fn` that awaits it). Use the older
+such as passed into an `async fn` that awaits it. Use the older
 `|x| async move { ... }` only when you actually want a factory that
 produces futures on demand.
 
-**async fn + `async {}` block capture (clarified in 2024)**:
+**async fn + `async {}` block capture, clarified in 2024**:
 Edition 2024 tightens rules so captures in `async {}` blocks inherit
 the enclosing function's lifetime contract without surprising
-promotions — prefer `async move` only when you need `'static`.
+promotions, prefer `async move` only when you need `'static`.
 
 ### 3. Enhanced Error Messages
 

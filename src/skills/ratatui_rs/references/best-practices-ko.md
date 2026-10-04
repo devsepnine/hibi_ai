@@ -48,7 +48,7 @@ pub struct App {
 ```
 
 **단일 struct인 이유**: render fn에 `&App`을 전달하기 쉽고, 테스트용 스냅샷을 잡기 쉽다.
-**view에 enum인 이유**: 화면을 추가할 때 컴파일러가 누락된 분기를 잡는다. Boolean (`is_modal_open`, `is_loading`)은 잘못된 조합을 조용히 허용한다.
+**view에 enum인 이유**: 화면을 추가할 때 컴파일러가 누락된 분기를 잡는다. `is_modal_open`, `is_loading` 같은 Boolean은 잘못된 조합을 조용히 허용한다.
 
 ## Channels: Bundle Them, Don't Pass Loose
 
@@ -81,15 +81,15 @@ fn run_loop(terminal: &mut DefaultTerminal, app: &mut App) -> anyhow::Result<()>
 
 job별 취소 격리를 위해 `references/cancelable-processes.md` 참조.
 
-## Keyboard Shortcuts (Discoverable Defaults)
+## Keyboard Shortcuts, Discoverable Defaults
 
 vi / less / ranger / lazygit에서 사용자가 이미 아는 binding을 선택한다. 발명하지 마라.
 
 | Key | Action | Notes |
 |---|---|---|
 | `q`, `Esc` | Quit / Back | `q`는 최상위에서 앱을 종료한다; `Esc`는 모달에서 빠져나온다. |
-| `j` / `k` / arrows | Down / Up | 두 형태 모두 — vi 사용자와 화살표 사용자가 공존한다. |
-| `h` / `l` | Left / Right (또는 back/forward) | |
+| `j` / `k` / arrows | Down / Up | 두 형태 모두, vi 사용자와 화살표 사용자가 공존한다. |
+| `h` / `l` | Left / Right, 또는 back/forward | |
 | `g` / `G` | Top / Bottom | |
 | `Enter` | Confirm / Open | |
 | `Space` | Toggle selection | 화면이 체크리스트 같을 때. |
@@ -98,9 +98,9 @@ vi / less / ranger / lazygit에서 사용자가 이미 아는 binding을 선택�
 | `Tab` / `Shift+Tab` | 폼의 Next / Prev field | |
 | `Ctrl+C` | Force quit | 작업 중이라도 `q`처럼 취급; cleanup이 실행되어야 한다. |
 
-상태 표시줄에 활성 binding을 표시한다 — discoverability가 절반의 싸움이다.
+상태 표시줄에 활성 binding을 표시한다, discoverability가 절반의 싸움이다.
 
-## Status Bar (Always Visible)
+## Status Bar, Always Visible
 
 mode, item count, "?: help" 힌트가 있는 footer 상태 표시줄이 사용자를 훈련시킨다:
 
@@ -175,7 +175,7 @@ impl App {
 let glyph = SPINNER_FRAMES[app.frame];
 ```
 
-렌더 레이어는 절대 wall-clock 시간을 소유하지 않는다 — 테스트하기 더 쉽다.
+렌더 레이어는 절대 wall-clock 시간을 소유하지 않는다, 테스트하기 더 쉽다.
 
 ## Error Handling
 
@@ -190,26 +190,26 @@ match install_item(item) {
 
 앱을 종료해야 하는 복구 불가능한 에러는 `app.should_quit = true`를 설정하고 루프가 `ratatui::restore()` 후에 출력하도록 한다.
 
-## Performance: When (Not) to Care
+## Performance: When, Not, to Care
 
 ratatui의 renderer는 빠르다. 측정할 때까지 최적화하지 마라. 두 가지가 *진짜로* 중요하다:
 
 1. **위젯 데이터의 빌드 비용**: 매 프레임마다 1만 항목 리스트를 재빌드한다면 hot이다. 준비된 `Vec<ListItem>`을 캐시하고 항목이 변경될 때만 재빌드한다.
-2. **폴링 간격**: 대부분의 앱에 100ms가 괜찮다; 애니메이션 헤비는 16ms. 16ms 아래로 가지 마라 — 어쨌든 터미널 refresh를 넘어선다.
+2. **폴링 간격**: 대부분의 앱에 100ms가 괜찮다; 애니메이션 헤비는 16ms. 16ms 아래로 가지 마라, 어쨌든 터미널 refresh를 넘어선다.
 
 ## Accessibility
 
 - 높은 대비: 라이트 그레이-온-화이트나 옐로-온-화이트를 피한다.
-- 색에만 의존하지 마라: 기호와 짝짓는다 (`✓ ok`, `✗ failed`, `▶ running`).
+- 색에만 의존하지 마라: 기호와 짝짓는다, `✓ ok`, `✗ failed`, `▶ running`.
 - 항상 키보드 접근 가능: 마우스가 사용 불가능하다고 가정한다.
-- 예측 가능한 focus 표시기: `> `, `█`, 또는 배경 하이라이트 — 하나를 선택하고 고수한다.
+- 예측 가능한 focus 표시기: `> `, `█`, 또는 배경 하이라이트, 하나를 선택하고 고수한다.
 
 ## Ship Checklist
 
-- [ ] `ratatui::init()` / `ratatui::restore()` (또는 panic hook)
-- [ ] 모든 긴 작업 cancelable (`references/cancelable-processes.md`)
-- [ ] Windows + macOS + Linux에서 테스트됨 (`references/cross-platform.md`)
-- [ ] 사소하지 않은 화면당 적어도 하나의 렌더링 테스트 (`references/testing.md`)
+- [ ] `ratatui::init()` / `ratatui::restore()`, 또는 panic hook
+- [ ] 모든 긴 작업 cancelable, `references/cancelable-processes.md`
+- [ ] Windows + macOS + Linux에서 테스트됨, `references/cross-platform.md`
+- [ ] 사소하지 않은 화면당 적어도 하나의 렌더링 테스트, `references/testing.md`
 - [ ] 상태 표시줄에 키 binding 표시
 - [ ] 에러는 panic이 아닌 toast로 표시
 - [ ] `cargo build --release`로 경고 없이 빌드

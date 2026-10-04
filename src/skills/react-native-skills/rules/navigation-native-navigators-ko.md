@@ -8,19 +8,19 @@ tags: navigation, react-navigation, expo-router, native-stack, tabs
 ## Use Native Navigators for Navigation
 
 JS 기반 대신 항상 native navigator를 사용한다. native navigator는 플랫폼
-API(iOS의 UINavigationController, Android의 Fragment)를 사용하므로 더 좋은
+API인 iOS의 UINavigationController와 Android의 Fragment를 사용하므로 더 좋은
 성능과 native 동작을 제공한다.
 
 **For stacks:** `@react-navigation/native-stack` 또는 expo-router의 기본
-stack(native-stack 기반)을 사용한다. `@react-navigation/stack`은 피한다.
+stack을 사용한다. 이는 native-stack 기반이다. `@react-navigation/stack`은 피한다.
 
-**For tabs:** `react-native-bottom-tabs`(native) 또는 expo-router의 native
+**For tabs:** `react-native-bottom-tabs` 또는 expo-router의 native
 tab을 사용한다. native 느낌이 중요하다면 `@react-navigation/bottom-tabs`은
 피한다.
 
 ### Stack Navigation
 
-**Incorrect (JS stack navigator):**
+**Incorrect, JS stack navigator:**
 
 ```tsx
 import { createStackNavigator } from '@react-navigation/stack'
@@ -37,7 +37,7 @@ function App() {
 }
 ```
 
-**Correct (native stack with react-navigation):**
+**Correct, native stack with react-navigation:**
 
 ```tsx
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
@@ -54,7 +54,7 @@ function App() {
 }
 ```
 
-**Correct (expo-router uses native stack by default):**
+**Correct, expo-router uses native stack by default:**
 
 ```tsx
 // app/_layout.tsx
@@ -67,7 +67,7 @@ export default function Layout() {
 
 ### Tab Navigation
 
-**Incorrect (JS bottom tabs):**
+**Incorrect, JS bottom tabs:**
 
 ```tsx
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
@@ -84,7 +84,7 @@ function App() {
 }
 ```
 
-**Correct (native bottom tabs with react-navigation):**
+**Correct, native bottom tabs with react-navigation:**
 
 ```tsx
 import { createNativeBottomTabNavigator } from '@bottom-tabs/react-navigation'
@@ -113,7 +113,7 @@ function App() {
 }
 ```
 
-**Correct (expo-router native tabs):**
+**Correct, expo-router native tabs:**
 
 ```tsx
 // app/(tabs)/_layout.tsx
@@ -142,7 +142,7 @@ iOS에서 native tab은 각 탭 화면 root의 첫 번째 `ScrollView`에서 자
 
 ### Prefer Native Header Options Over Custom Components
 
-**Incorrect (custom header component):**
+**Incorrect, custom header component:**
 
 ```tsx
 <Stack.Screen
@@ -154,7 +154,7 @@ iOS에서 native tab은 각 탭 화면 root의 첫 번째 `ScrollView`에서 자
 />
 ```
 
-**Correct (native header options):**
+**Correct, native header options:**
 
 ```tsx
 <Stack.Screen

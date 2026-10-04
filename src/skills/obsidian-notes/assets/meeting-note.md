@@ -22,7 +22,7 @@ related: []
 
 ## Attendees
 
-- <handle> — role if not obvious
+- <handle>: role if not obvious
 - <handle>
 
 ## Agenda
@@ -42,8 +42,8 @@ readers can jump without re-reading the whole transcript.
 ### 1. <Topic>
 
 - Key points raised
-- Data shared (link to [[supporting note]] or paste numbers)
-- Disagreements and their resolution (or that they're unresolved)
+- Data shared: link to [[supporting note]] or paste numbers
+- Disagreements and their resolution, or that they're unresolved
 
 ### 2. <Topic>
 
@@ -56,20 +56,19 @@ readers can jump without re-reading the whole transcript.
 > weighty enough to deserve an ADR, flag it and create one:
 > [[ADR-NNNN …]] to be drafted by <owner>.
 
-1. **<Decision>** — context in one line.
-2. **<Decision>** — …
+1. **<Decision>**: context in one line.
+2. **<Decision>**: …
 
-If nothing was decided, say so explicitly: `> [!question] Deferred —
-no decision.` It keeps the reader from wondering if they missed it.
+If nothing was decided, say so explicitly: `> [!question] Deferred: no decision.` It keeps the reader from wondering if they missed it.
 
 ## Action items
 
-Each task becomes an Obsidian task (`- [ ]`), with an owner and due
+Each task becomes an Obsidian task, written `- [ ]`, with an owner and due
 date, and a link to the follow-up note when one exists.
 
-- [ ] <Action> — owner: <handle> — due: YYYY-MM-DD — tracking:
+- [ ] <Action>, owner: <handle>, due: YYYY-MM-DD, tracking:
   [[Follow-up note]] or `<ticket url>`
-- [ ] <Action> — owner: <handle> — due: YYYY-MM-DD
+- [ ] <Action>, owner: <handle>, due: YYYY-MM-DD
 
 Dataview will roll these up across meetings into the weekly review.
 

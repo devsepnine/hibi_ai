@@ -11,11 +11,11 @@ related: []
 aliases: []
 ---
 
-# Debug — <one-line symptom> (YYYY-MM-DD)
+# Debug: <one-line symptom>, YYYY-MM-DD
 
 > [!bug] Symptom
-> What the user (or monitoring) sees. Include the exact error message,
-> stack trace snippet, or behavioral description. Avoid paraphrasing —
+> What the user or monitoring sees. Include the exact error message,
+> stack trace snippet, or behavioral description. Avoid paraphrasing.
 > the literal signal matters when searching later.
 
 ## Environment
@@ -37,13 +37,13 @@ aliases: []
 
 ## Hypotheses explored
 
-### ✗ Hypothesis 1 — <name>
+### ✗ Hypothesis 1: <name>
 
 - Why suspected: …
 - How tested: …
 - Result: ruled out because … [evidence](<link>)
 
-### ✓ Hypothesis 2 — <name>
+### ✓ Hypothesis 2: <name>
 
 - Why suspected: …
 - Evidence: `<log snippet / repro command>`
@@ -57,17 +57,17 @@ aliases: []
 
 ## Fix
 
-- What changed: `<file:line>` — before / after description.
-- PR: <url> — merged <date>.
-- Tests added: [[<test file or description>]] — regression coverage for
+- What changed: `<file:line>`: before / after description.
+- PR: <url>: merged <date>.
+- Tests added: [[<test file or description>]]: regression coverage for
   this specific path.
 
 ## Prevention
 
-- What would have caught this earlier? (lint rule, test, alert, review
-  checklist item). Convert to actionable [ ] tasks and link the
+- What would have caught this earlier? A lint rule, test, alert, or review
+  checklist item. Convert to actionable [ ] tasks and link the
   follow-up:
-  - [ ] <preventive action> — [[<tracking note>]]
+  - [ ] <preventive action>: [[<tracking note>]]
 
 ## Related
 

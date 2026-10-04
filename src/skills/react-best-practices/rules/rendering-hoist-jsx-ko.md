@@ -9,7 +9,7 @@ tags: rendering, jsx, static, optimization
 
 정적 JSX는 컴포넌트 외부로 추출해 재생성을 피한다.
 
-**잘못된 예 (렌더할 때마다 요소를 재생성):**
+**잘못된 예, 렌더할 때마다 요소를 재생성:**
 
 ```tsx
 function LoadingSkeleton() {
@@ -25,7 +25,7 @@ function Container() {
 }
 ```
 
-**올바른 예 (동일한 요소를 재사용):**
+**올바른 예, 동일한 요소를 재사용:**
 
 ```tsx
 const loadingSkeleton = (

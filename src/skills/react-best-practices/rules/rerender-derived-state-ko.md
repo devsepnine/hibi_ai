@@ -9,7 +9,7 @@ tags: rerender, derived-state, media-query, optimization
 
 연속적인 값이 아닌 파생 boolean state를 구독해 재렌더 빈도를 줄인다.
 
-**잘못된 예 (모든 픽셀 변화마다 재렌더):**
+**잘못된 예, 모든 픽셀 변화마다 재렌더:**
 
 ```tsx
 function Sidebar() {
@@ -19,7 +19,7 @@ function Sidebar() {
 }
 ```
 
-**올바른 예 (boolean이 변할 때만 재렌더):**
+**올바른 예, boolean이 변할 때만 재렌더:**
 
 ```tsx
 function Sidebar() {

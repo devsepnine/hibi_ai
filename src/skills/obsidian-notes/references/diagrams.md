@@ -1,8 +1,8 @@
 # Diagrams in Obsidian Notes
 
-Obsidian renders Mermaid natively (no plugin needed) and integrates with
+Obsidian renders Mermaid natively, with no plugin needed, and integrates with
 Excalidraw and JSON Canvas as sibling files in the vault. Pick the right
-tool for the shape you're describing — inline text diagrams for flows
+tool for the shape you're describing: inline text diagrams for flows
 and hierarchies, separate canvas files for spatial layouts.
 
 ## Decision tree
@@ -11,21 +11,21 @@ and hierarchies, separate canvas files for spatial layouts.
 |----------------------|-----------|
 | Sequence of steps, state machine, system boxes-and-arrows | **Mermaid** inline |
 | Timeline / milestones | **Mermaid** `timeline` or `gantt` |
-| Math, equations | **MathJax** (`$...$` / `$$...$$`) |
+| Math, equations | **MathJax** with `$...$` / `$$...$$` |
 | Hand-drawn feel, arbitrary 2D layout, sticky-note brainstorm | **Excalidraw** file, embed as `![[file.excalidraw]]` |
-| Node-and-link graph with different node kinds | **JSON Canvas** (`.canvas` file) |
-| Free-form spatial MOC (notes arranged on a plane) | **JSON Canvas** |
-| UML with stronger spec (class/component) than Mermaid | **PlantUML** (requires community plugin) |
+| Node-and-link graph with different node kinds | **JSON Canvas** as a `.canvas` file |
+| Free-form spatial MOC, with notes arranged on a plane | **JSON Canvas** |
+| UML with a stronger spec than Mermaid, such as class or component diagrams | **PlantUML**, requires community plugin |
 
 Rule of thumb: **text-based diagrams live inside the note**;
 **spatial/visual ones live as a sibling file** and are embedded.
 
-## Mermaid — recipe selector
+## Mermaid: recipe selector
 
 Mermaid supports many diagram types. Use the simplest that conveys the
 information; don't reach for `graph TB` when a list would do.
 
-### Flowchart — processes, system diagrams, call flows
+### Flowchart: processes, system diagrams, call flows
 
 ````markdown
 ```mermaid
@@ -38,10 +38,10 @@ flowchart LR
 ````
 
 - `LR` / `TB` / `RL` / `BT` for direction.
-- `[]` box, `(())` circle, `{}` diamond (decision), `[()]` database.
+- `[]` box, `(())` circle, `{}` diamond for a decision, `[()]` database.
 - Edge labels with `-- text -->` or `|text|`.
 
-### Sequence — interactions between participants
+### Sequence: interactions between participants
 
 ````markdown
 ```mermaid
@@ -59,7 +59,7 @@ sequenceDiagram
 Use when you care about ordering and who talks to whom.
 `->>` sync, `-->>` async/response, `-x` lost message.
 
-### State diagram — lifecycle, status transitions
+### State diagram: lifecycle, status transitions
 
 ````markdown
 ```mermaid
@@ -75,7 +75,7 @@ stateDiagram-v2
 
 Perfect for ADR status, bug lifecycle, feature flag rollout.
 
-### ER diagram — data model
+### ER diagram: data model
 
 ````markdown
 ```mermaid
@@ -97,7 +97,7 @@ erDiagram
 Use in learning notes for data-model introductions; in ADRs when a
 schema change is the decision.
 
-### Class diagram — type/trait relations
+### Class diagram: type/trait relations
 
 ````markdown
 ```mermaid
@@ -111,7 +111,7 @@ classDiagram
 ```
 ````
 
-### Timeline — non-quantitative time
+### Timeline: non-quantitative time
 
 ````markdown
 ```mermaid
@@ -126,7 +126,7 @@ timeline
 Prefer `timeline` for "what happened when" narratives. Use `gantt` when
 the bars carry duration information.
 
-### Gantt — schedules, sprints
+### Gantt: schedules, sprints
 
 ````markdown
 ```mermaid
@@ -142,7 +142,7 @@ gantt
 ```
 ````
 
-### Mindmap — brainstorm hierarchy
+### Mindmap: brainstorm hierarchy
 
 ````markdown
 ```mermaid
@@ -169,7 +169,7 @@ mindmap
 Fine for fleeting notes. Not a substitute for a MOC when the links
 matter.
 
-### Quadrant chart — tradeoffs, prioritization
+### Quadrant chart: tradeoffs, prioritization
 
 ````markdown
 ```mermaid
@@ -187,7 +187,7 @@ quadrantChart
 ```
 ````
 
-### Journey — user flow with sentiment
+### Journey: user flow with sentiment
 
 ````markdown
 ```mermaid
@@ -200,9 +200,9 @@ journey
 ```
 ````
 
-## MathJax — equations
+## MathJax: equations
 
-Obsidian renders MathJax inline (`$...$`) and block (`$$...$$`).
+Obsidian renders MathJax inline with `$...$` and as a block with `$$...$$`.
 
 ```markdown
 Inline: $e^{i\pi} + 1 = 0$
@@ -214,17 +214,17 @@ $$
 ```
 
 Use in learning notes when the math IS the content. Avoid for simple
-inequalities — `O(n log n)` in backticks is clearer than `$O(n \log n)$`
+inequalities, since `O(n log n)` in backticks is clearer than `$O(n \log n)$`
 for most prose.
 
 ## PlantUML
 
 Obsidian does not render PlantUML natively; the **PlantUML** community
 plugin is required. Syntax lives in a fenced `plantuml` block. Prefer
-Mermaid when the diagram fits — it renders without extra plugins, so
+Mermaid when the diagram fits. It renders without extra plugins, so
 your note works on any vault. Fall back to PlantUML only for diagrams
-Mermaid can't express (activity diagrams with detailed control flow,
-deployment diagrams, certain UML variants).
+Mermaid can't express, such as activity diagrams with detailed control flow,
+deployment diagrams, and certain UML variants.
 
 ## Excalidraw integration
 
@@ -239,10 +239,10 @@ Use cases: architecture sketches in ADRs, whiteboard-style
 brainstorms in fleeting notes, hand-drawn flowcharts too messy for
 Mermaid.
 
-Downside: the drawing is a JSON file — diffs aren't great in git.
+Downside: the drawing is a JSON file, so diffs aren't great in git.
 Prefer Mermaid for anything you want to review in pull requests.
 
-## JSON Canvas (`.canvas`)
+## JSON Canvas: `.canvas`
 
 Obsidian's built-in spatial-layout format. Create with the ribbon or
 `New canvas`. Canvas files live alongside notes and can **embed
@@ -250,25 +250,25 @@ existing notes as cards**, plus freeform text/file nodes.
 
 Best for:
 
-- **Spatial MOCs** — lay out `[[note cards]]` in zones ("doing",
-  "done", "blocked")
-- **System diagrams where each node IS a linked note** — click
+- **Spatial MOCs**: lay out `[[note cards]]` in zones such as "doing",
+  "done", and "blocked"
+- **System diagrams where each node IS a linked note**: click
   through to the ADR behind a box
-- **Workshop boards** — sprint planning, retro Start/Stop/Continue
+- **Workshop boards**: sprint planning, retro Start/Stop/Continue
 
-Embed a canvas in a note with `![[Project Board.canvas]]` (recent
-Obsidian versions render the preview inline).
+Embed a canvas in a note with `![[Project Board.canvas]]`. Recent
+Obsidian versions render the preview inline.
 
 See [vault-organization.md](vault-organization.md) for when a Canvas
 MOC beats a note-based MOC.
 
 ## Anti-patterns
 
-- **Huge flowchart in a learning note** — if the diagram takes 50+
+- **Huge flowchart in a learning note**: if the diagram takes 50+
   lines, make it its own `.excalidraw` or `.canvas` file and embed.
-- **Mermaid for tables** — use a real Markdown table.
-- **ASCII art** — Obsidian preserves whitespace in fenced code blocks,
+- **Mermaid for tables**: use a real Markdown table.
+- **ASCII art**: Obsidian preserves whitespace in fenced code blocks,
   but Mermaid / Canvas are more maintainable. Reserve ASCII for short
   directory trees or pipeline bar charts.
-- **PlantUML without the plugin** — fallback HTML won't render; viewer
+- **PlantUML without the plugin**: fallback HTML won't render; viewer
   sees raw text. Check the target vault has the plugin before using.

@@ -14,7 +14,7 @@ related: []
 
 > [!info] Week theme
 > If there was one, name it. Otherwise say "no theme" and don't
-> invent one — noise in the weekly review compounds across months.
+> invent one, noise in the weekly review compounds across months.
 
 ## This week's dailies
 
@@ -29,10 +29,10 @@ SORT file.name ASC
 
 ## Shipped / completed
 
-- <thing> — link to [[release note]] or ticket
+- <thing>: link to [[release note]] or ticket
 - <thing>
 
-Auto-feed from release / ADR frontmatter (replace dates):
+Auto-feed from release / ADR frontmatter, replacing the dates:
 
 ```dataview
 LIST file.link
@@ -46,16 +46,16 @@ SORT file.cday ASC
 Curate the week's learnings into atomic notes, not a long paragraph.
 
 - [[Zustand — useShallow and v5 selector equality]]
-- <one-line takeaway> — link to the daily/fleeting that captured it
+- <one-line takeaway>: link to the daily/fleeting that captured it
 
-## Metrics (optional)
+## Metrics, optional
 
 Track 1-3 things that matter. Examples:
 
 | Metric | This week | Last week | Delta |
 |--------|-----------|-----------|-------|
 | Commits | 32 | 28 | +4 |
-| Meetings (hrs) | 6 | 9 | −3 |
+| Meetings, hrs | 6 | 9 | −3 |
 | Deep-work blocks | 7 | 5 | +2 |
 
 Don't track what you won't act on. If a number never changes your
@@ -70,8 +70,8 @@ WHERE status = "new" AND review_on <= date(today)
 SORT review_on ASC
 ```
 
-For each due fleeting: **promote** (new note), **defer** (push
-`review_on`), or **discard** (mark and move on). See
+For each due fleeting: **promote** into a new note, **defer** by pushing
+`review_on`, or **discard** by marking and moving on. See
 [[vault-organization — Fleeting → Evergreen]] for the pattern.
 
 ## Open action items
@@ -87,11 +87,11 @@ GROUP BY file.link
 
 ## What went well
 
-- <thing> — why it worked; worth continuing
+- <thing>: why it worked; worth continuing
 
 ## What didn't
 
-- <thing> — what was the real cause (not "I didn't have time")
+- <thing>: what was the real cause and not "I didn't have time"
 
 Be specific. "Meetings were bad" is noise; "three back-to-back syncs
 Wednesday afternoon blocked a release" is actionable.
@@ -107,5 +107,5 @@ Friday.
 
 ## Related
 
-- [[YYYY-W(nn-1)]] — previous week
+- [[YYYY-W(nn-1)]]: previous week
 - [[MOC — <active project>]]

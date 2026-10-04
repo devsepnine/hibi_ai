@@ -2,7 +2,7 @@
 
 iced offers two entry points: the tiny `iced::run` and the full builder `iced::application`. Use the builder the moment you need anything beyond `update`/`view`.
 
-## `iced::run` — smallest possible app
+## `iced::run`: smallest possible app
 
 ```rust
 use iced::widget::{button, column, text};
@@ -18,9 +18,9 @@ fn view(count: &u64) -> iced::Element<'_, Message> { /* ... */ }
 **When**: demos, one-file experiments, tests.
 **When not**: you need a theme, window size, subscription, async init, or a title. That's all the builder.
 
-State for `iced::run` needs `Default` (so the runtime can construct the initial value). If your state isn't `Default`, move to `iced::application()`.
+State for `iced::run` needs `Default` so the runtime can construct the initial value. If your state isn't `Default`, move to `iced::application()`.
 
-## `iced::application()` — the builder
+## `iced::application()`: the builder
 
 ```rust
 use iced::{Element, Task, Theme, Subscription};
@@ -36,7 +36,7 @@ pub fn main() -> iced::Result {
 }
 ```
 
-Every builder method is optional; chain only what applies. Each builder method accepts either a closure or a function pointer that takes `&State` — both work, whichever reads cleaner.
+Every builder method is optional; chain only what applies. Each builder method accepts either a closure or a function pointer that takes `&State`. Both work, whichever reads cleaner.
 
 ### Required triple
 
@@ -46,7 +46,7 @@ fn update(&mut self, Message) -> Task<Message>
 fn view(&self) -> Element<'_, Message>
 ```
 
-The `new` returns a `(State, Task)` so the app can kick off initial async work (load config, fetch data) without a bootstrapping `Message::Init`.
+The `new` returns a `(State, Task)` so the app can kick off initial async work such as loading config or fetching data without a bootstrapping `Message::Init`.
 
 ### Title
 
@@ -65,7 +65,7 @@ Dynamic titles update automatically when state changes.
 .theme(|app: &App| app.theme.clone())
 ```
 
-Built-ins: `Theme::Light`, `Theme::Dark`, `Theme::Dracula`, `Theme::Nord`, `Theme::SolarizedLight/Dark`, `Theme::GruvboxLight/Dark`, `Theme::CatppuccinLatte/Frappe/Macchiato/Mocha`, `Theme::TokyoNight/Storm/Light`, `Theme::KanagawaWave/Dragon/Lotus`, `Theme::Moonfly`, `Theme::Nightfly`, `Theme::Oxocarbon`, `Theme::Ferra`. `Theme::ALL` gives you all of them as a slice — useful for a `pick_list`.
+Built-ins: `Theme::Light`, `Theme::Dark`, `Theme::Dracula`, `Theme::Nord`, `Theme::SolarizedLight/Dark`, `Theme::GruvboxLight/Dark`, `Theme::CatppuccinLatte/Frappe/Macchiato/Mocha`, `Theme::TokyoNight/Storm/Light`, `Theme::KanagawaWave/Dragon/Lotus`, `Theme::Moonfly`, `Theme::Nightfly`, `Theme::Oxocarbon`, `Theme::Ferra`. `Theme::ALL` gives you all of them as a slice, useful for a `pick_list`.
 
 See `references/theming.md` for custom palettes.
 
@@ -113,7 +113,7 @@ Pass with `.settings(settings())`.
 
 | Setting | Use for |
 |---|---|
-| `size: Size::new(w, h)` | Initial window size (logical pixels) |
+| `size: Size::new(w, h)` | Initial window size, logical pixels |
 | `position: Position::Centered` | Or `Specific(Point)` for exact placement |
 | `min_size` / `max_size` | Constrain resizes |
 | `resizable` | `false` for fixed-size dialogs |
@@ -121,7 +121,7 @@ Pass with `.settings(settings())`.
 | `transparent` | Required for rounded corners / acrylic backgrounds |
 | `icon` | `Some(window::icon::from_file_data(bytes, None)?)` |
 
-**Don't set**: `flags` and `id` directly — use the builder's shape; the runtime manages both.
+**Don't set**: `flags` and `id` directly. Use the builder's shape; the runtime manages both.
 
 ### Builder-level window shortcuts
 
@@ -139,11 +139,11 @@ Use these when the app only needs one or two overrides. Drop down to full `Setti
 
 ## Headless / default-less state
 
-If `State` can't implement `Default` (it holds a `Connection`, a `Runtime`, etc.), use `iced::application()` with an explicit `new`. For `iced::run`, wrap the state in `Default` by moving non-default fields into `Option<T>` and filling them in the first `update` from `new`.
+If `State` can't implement `Default` because it holds a `Connection`, a `Runtime`, etc., use `iced::application()` with an explicit `new`. For `iced::run`, wrap the state in `Default` by moving non-default fields into `Option<T>` and filling them in the first `update` from `new`.
 
 ## Multi-window
 
-0.13+ supports multiple native windows via `iced::daemon` for server-style apps (no startup window) and `window::open` / `window::close` for imperative window management. The window handle travels in messages:
+0.13+ supports multiple native windows via `iced::daemon` for server-style apps with no startup window and `window::open` / `window::close` for imperative window management. The window handle travels in messages:
 
 ```rust
 use iced::{window, Task};
@@ -162,7 +162,7 @@ fn update(&mut self, msg: Message) -> Task<Message> {
 }
 ```
 
-For serious multi-window apps, read the upstream `multi_window` example — it's the single best reference.
+For serious multi-window apps, read the upstream `multi_window` example, the single best reference.
 
 ## When to pick which entry point
 
@@ -171,6 +171,6 @@ For serious multi-window apps, read the upstream `multi_window` example — it's
 | Demo, test, one-file | `iced::run` |
 | Theme, title, async init | `iced::application()` |
 | Multi-window | `iced::application()` with `window::open` |
-| No main window (tray app / background) | `iced::daemon()` |
+| No main window, such as a tray app or background app | `iced::daemon()` |
 
 The builder is rarely over-engineered; even a trivial app benefits from the named method for `view`, which makes the future "add a theme" change trivial.

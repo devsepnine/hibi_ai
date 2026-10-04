@@ -11,7 +11,7 @@ tags: lists, performance, virtualization, hooks
 피하며, React Context 접근을 제한한다. 가상화 리스트는 스크롤 동안 많은
 아이템을 렌더하므로 비싼 아이템은 jank를 만든다.
 
-**Incorrect (heavy list item):**
+**Incorrect, heavy list item:**
 
 ```tsx
 function ProductRow({ id }: { id: string }) {
@@ -31,7 +31,7 @@ function ProductRow({ id }: { id: string }) {
 }
 ```
 
-**Correct (lightweight list item):**
+**Correct, lightweight list item:**
 
 ```tsx
 function ProductRow({ name, price, imageUrl }: Props) {
@@ -85,7 +85,7 @@ function ProductRow({ id, name }: Props) {
 **Guidelines for list items:**
 
 - query나 데이터 fetching을 하지 않는다
-- 비싼 계산을 하지 않는다 (부모로 옮기거나 부모 레벨에서 메모이즈한다)
+- 비싼 계산을 하지 않는다. 부모로 옮기거나 부모 레벨에서 메모이즈한다
 - React Context보다 Zustand selector를 선호한다
 - useState/useEffect hook을 최소화한다
 - pre-computed value를 prop으로 전달한다

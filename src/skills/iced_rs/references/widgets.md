@@ -1,4 +1,4 @@
-# iced Widgets (0.13 / 0.14)
+# iced Widgets for 0.13 / 0.14
 
 Built-in widgets and their idiomatic usage. All examples assume `use iced::widget::*;` where relevant.
 
@@ -26,11 +26,11 @@ button("Save")
     .style(button::primary)
 ```
 
-- Without `.on_press(...)`, the button renders disabled (grayed out).
-- Conditional enabling: `.on_press_maybe(Some(msg_if_ready))` — `None` disables.
+- Without `.on_press(...)`, the button renders disabled and grayed out.
+- Conditional enabling: `.on_press_maybe(Some(msg_if_ready))`; `None` disables.
 - Built-in stylers: `button::primary / secondary / success / danger / text`. The last one makes it look like a link.
 
-**Passing a widget as child** (not just a string):
+**Passing a widget as child**, not just a string:
 
 ```rust
 button(text("Save").size(18)).on_press(Message::Save)
@@ -38,7 +38,7 @@ button(text("Save").size(18)).on_press(Message::Save)
 
 ## column! and row!
 
-Macros for heterogeneous children — the common case:
+Macros for heterogeneous children, the common case:
 
 ```rust
 column![
@@ -103,7 +103,7 @@ scrollable(column(rows).spacing(4))
     .width(Fill)
 ```
 
-Control direction: `.direction(scrollable::Direction::Vertical(Default::default()))` — also `Horizontal` and `Both`. Subscribe to scroll offsets via `.on_scroll(Message::Scrolled)` to implement infinite scroll or virtualization.
+Control direction: `.direction(scrollable::Direction::Vertical(Default::default()))`. Also `Horizontal` and `Both` are available. Subscribe to scroll offsets via `.on_scroll(Message::Scrolled)` to implement infinite scroll or virtualization.
 
 ## text_input
 
@@ -118,7 +118,7 @@ text_input("Type here...", &state.value)
 ```
 
 - `on_input` disabled form: omit the call to make the input read-only.
-- Multi-line: use `text_editor` instead — it has a proper `Content` type with undo/redo.
+- Multi-line: use `text_editor` instead. It has a proper `Content` type with undo/redo.
 - Password: `.secure(true)` masks characters.
 
 ## checkbox / toggler / radio
@@ -147,7 +147,7 @@ slider(0.0..=100.0, state.volume, Message::VolumeChanged)
     .width(Fill)
 ```
 
-- `Message::VolumeChanged(f32)` — you get the new value directly.
+- `Message::VolumeChanged(f32)`: you get the new value directly.
 - `.step(n)` quantizes; omit for continuous.
 - Vertical form: `vertical_slider(...)`.
 
@@ -206,7 +206,7 @@ svg("icon.svg").width(32);                    // requires `svg` feature
 
 Sources can also be bytes: `image(image::Handle::from_bytes(include_bytes!("logo.png").to_vec()))`.
 
-## Stack (Z-layered overlays)
+## Stack: Z-layered overlays
 
 ```rust
 use iced::widget::stack;
@@ -231,7 +231,7 @@ vertical_space().height(16) // fixed height gap
 Space::new(20, 0)           // explicit WxH
 ```
 
-Use `horizontal_space()` inside a `row!` to push siblings apart ("spacer pattern").
+Use `horizontal_space()` inside a `row!` to push siblings apart. This is the "spacer pattern".
 
 ## Length Primitives
 
@@ -247,9 +247,9 @@ use iced::{Fill, Shrink, FillPortion};
 .width(300.0)             // fixed pixels
 ```
 
-**Default rule**: most widgets default to `Shrink` (width) and `Shrink` (height). `container` defaults to `Shrink` too — meaning by default it doesn't take remaining space. Set `.width(Fill)` or `.center_x(Fill)` explicitly when you want "fill the parent".
+**Default rule**: most widgets default to `Shrink` for both width and height. `container` defaults to `Shrink` too, meaning by default it doesn't take remaining space. Set `.width(Fill)` or `.center_x(Fill)` explicitly when you want "fill the parent".
 
-## text_editor (multi-line)
+## text_editor, multi-line
 
 For multi-line text with undo/redo, selection, keyboard nav:
 
@@ -267,9 +267,9 @@ text_editor(&state.content)
 Message::Edit(action) => state.content.perform(action)
 ```
 
-This delegates to the widget's internal edit semantics — you don't hand-roll character mutations.
+This delegates to the widget's internal edit semantics. You don't hand-roll character mutations.
 
 ## Related
 
 - Styling each widget: `references/theming.md`
-- Custom widgets via `Widget` trait (needs `advanced` feature): outside this skill's scope — see upstream `custom_widget` example.
+- Custom widgets via `Widget` trait need the `advanced` feature. They are outside this skill's scope, so see upstream `custom_widget` example.

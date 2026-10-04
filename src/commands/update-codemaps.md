@@ -11,4 +11,4 @@ Scans the codebase structure and regenerates token-lean architecture codemaps, d
 
 Invoke with `/update-codemaps` after notable architectural changes, or delegate to the `doc-updater` agent.
 
-Full workflow, codemap formats, and drift-approval rules live in the `doc-updater` agent — follow that as the source of truth.
+Full workflow, codemap formats, and drift-approval rules live in the `doc-updater` agent. Follow that as the source of truth.

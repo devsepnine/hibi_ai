@@ -11,7 +11,7 @@ Don't add boolean props like `isThread`, `isEditing`, `isDMThread` to customize
 component behavior. Each boolean doubles possible states and creates
 unmaintainable conditional logic. Use composition instead.
 
-**Incorrect (boolean props create exponential complexity):**
+**Incorrect, boolean props create exponential complexity:**
 
 ```tsx
 function Composer({
@@ -45,7 +45,7 @@ function Composer({
 }
 ```
 
-**Correct (composition eliminates conditionals):**
+**Correct, composition eliminates conditionals:**
 
 ```tsx
 // Channel composer

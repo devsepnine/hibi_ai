@@ -21,7 +21,7 @@ related: []
 
 ## Attendees
 
-- <handle> — 자명하지 않으면 역할
+- <handle>: 자명하지 않으면 역할
 - <handle>
 
 ## Agenda
@@ -41,8 +41,8 @@ related: []
 ### 1. <Topic>
 
 - 제기된 핵심
-- 공유된 데이터 ([[supporting note]] 링크 또는 숫자 붙여넣기)
-- 의견 차이와 해결 (또는 미해결로 남았다는 사실)
+- 공유된 데이터: [[supporting note]] 링크 또는 숫자 붙여넣기
+- 의견 차이와 해결, 또는 미해결로 남았다는 사실
 
 ### 2. <Topic>
 
@@ -53,22 +53,21 @@ related: []
 > [!success] Decided
 > 가능하면 담당자와 함께 번호 매긴 결정. ADR이 필요할 만큼 무거운
 > 결정이라면 표시하고 작성한다:
-> [[ADR-NNNN …]] — <owner>가 초안 작성 예정.
+> [[ADR-NNNN …]]: <owner>가 초안 작성 예정.
 
-1. **<Decision>** — 한 줄 맥락.
-2. **<Decision>** — …
+1. **<Decision>**: 한 줄 맥락.
+2. **<Decision>**: …
 
-아무것도 결정되지 않았다면 명시한다: `> [!question] Deferred —
-no decision.` 그래야 독자가 놓친 게 있는지 의심하지 않는다.
+아무것도 결정되지 않았다면 명시한다: `> [!question] Deferred: no decision.` 그래야 독자가 놓친 게 있는지 의심하지 않는다.
 
 ## Action items
 
-각 작업은 Obsidian 작업(`- [ ]`)이 되며, 담당자/마감일/후속 노트(있다면)
-링크가 함께 붙는다.
+각 작업은 Obsidian 작업 `- [ ]`이 되며, 담당자/마감일과 후속 노트가 있다면
+그 링크가 함께 붙는다.
 
-- [ ] <Action> — owner: <handle> — due: YYYY-MM-DD — tracking:
+- [ ] <Action>, owner: <handle>, due: YYYY-MM-DD, tracking:
   [[Follow-up note]] 또는 `<ticket url>`
-- [ ] <Action> — owner: <handle> — due: YYYY-MM-DD
+- [ ] <Action>, owner: <handle>, due: YYYY-MM-DD
 
 Dataview가 회의들에서 이들을 모아 주간 리뷰로 롤업한다.
 

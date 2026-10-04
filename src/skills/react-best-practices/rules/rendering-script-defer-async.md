@@ -7,7 +7,7 @@ tags: rendering, script, defer, async, performance
 
 ## Use defer or async on Script Tags
 
-**Impact: HIGH (eliminates render-blocking)**
+**Impact: HIGH, eliminates render-blocking**
 
 Script tags without `defer` or `async` block HTML parsing while the script downloads and executes. This delays First Contentful Paint and Time to Interactive.
 
@@ -16,7 +16,7 @@ Script tags without `defer` or `async` block HTML parsing while the script downl
 
 Use `defer` for scripts that depend on DOM or other scripts. Use `async` for independent scripts like analytics.
 
-**Incorrect (blocks rendering):**
+**Incorrect, blocks rendering:**
 
 ```tsx
 export default function Document() {
@@ -32,7 +32,7 @@ export default function Document() {
 }
 ```
 
-**Correct (non-blocking):**
+**Correct, non-blocking:**
 
 ```tsx
 export default function Document() {
@@ -65,4 +65,4 @@ export default function Page() {
 }
 ```
 
-Reference: [MDN - Script element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script#defer)
+Reference: [MDN Script element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script#defer)
