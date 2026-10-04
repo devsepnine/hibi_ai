@@ -1,6 +1,6 @@
 # hibi-ai Architecture Rules
 
-Verified at `c29d8ce` · `2026-10-04` · Structural view: `docs/INDEX.md` · Feature map: `docs/FEATURES.md`
+Verified at `e3a4143` · `2026-10-04` · Structural view: `docs/INDEX.md` · Feature map: `docs/FEATURES.md`
 Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `tools/statusline`은 서로 독립 · 경계 lint 도구 없음, 의존 측정은 `use crate::` grep · `src/`는 실행 코드가 아니라 배포되는 마크다운 설정
 
 ## How to use these rules
