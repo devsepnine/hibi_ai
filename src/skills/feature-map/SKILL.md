@@ -191,15 +191,15 @@ grep -hE '^- \*\*(Pitfalls|함정)\*\*:' $MAP | grep -vE ': none$|: [^→]+ → 
 - Every feature has at least one test path, or says `tests: none` explicitly,
   unless the repo has no tests at all, which the `Premises` line says once. The
   gap is information.
-- Record `Verified at <sha> · <YYYY-MM-DD>`, which is `검증 시점` in the Korean template,
-  in the `docs/FEATURES.md` header, the **only** place the SHA lives. Entry
+- Record `Verified at <sha> · <YYYY-MM-DD>` in the `docs/FEATURES.md` header, the **only** place the SHA lives. Entry
   files under `docs/features/` carry none; two SHAs drift apart, and update mode
   cannot tell which one to trust.
 
-Then make sure an AI finds the map when a report comes in. Propose a one-line
-pointer in the project's `CLAUDE.md` / `AGENTS.md`, under whichever section
-covers debugging, or a new file with that one line if neither exists, and add
-it when the user agrees:
+Then make sure an AI finds the map when a report comes in. Add a one-line
+pointer to the project's root `CLAUDE.md`, under whichever section covers
+debugging, and create the file with that line when it does not exist. When
+`AGENTS.md` exists, add the same line there. On update, keep the line and fix it
+only if the map moved. Report the change in the reply:
 
 ```markdown
 - Vague bug report ("X on the sidebar doesn't work")? Look it up in `docs/FEATURES.md` before searching the code.
@@ -227,7 +227,11 @@ Diff from the recorded SHA: `git diff --name-status -M <sha>..HEAD`.
 
 ## Document template
 
-Use `assets/feature-map-template.md`. Keep the section order: the header, holding the SHA and
+Use `assets/feature-map-template.md`. Write the map's prose in the language the
+project's docs use, and keep the template's headings and field labels in
+English, because the step-6 checks grep for them. A map written earlier with
+Korean labels such as `검증 시점` still verifies, since the checks accept both.
+Keep the section order: the header, holding the SHA and
 optional `Premises` and `Note` lines, then the lookup protocol, which the AI reads before
 anything else, then the two indexes, then the entries. Nothing else goes
 between the header and the protocol.
