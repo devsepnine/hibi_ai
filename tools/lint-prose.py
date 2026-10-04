@@ -13,6 +13,9 @@ import sys
 from pathlib import Path
 
 DEFAULT_ROOTS = ["src", "docs", "README.md"]
+# The skill listing drops a description entirely once the combined budget
+# overflows; docs/ARCHITECTURE.md arch-description-length caps each one.
+MAX_DESCRIPTION = 220
 
 INLINE_CODE = re.compile(r"(`+)(?:(?!\1).)+?\1")
 WIKILINK = re.compile(r"\[\[[^\]]*\]\]")
@@ -40,32 +43,49 @@ def lint_file(path):
     open_fence = None
     in_frontmatter = False
     in_block_description = False
+    block_start, block_parts = 0, []
+
+    def check_length(number, text):
+        if len(text) > MAX_DESCRIPTION:
+            violations.append((number, f"description over {MAX_DESCRIPTION} chars", text))
+
+    def close_block():
+        nonlocal in_block_description
+        if in_block_description:
+            check_length(block_start, " ".join(block_parts))
+        in_block_description = False
+
     for number, raw in enumerate(path.read_text(encoding="utf-8-sig").splitlines(), 1):
         if number == 1 and raw.strip() == "---":
             in_frontmatter = True
             continue
         if in_frontmatter:
             if raw.strip() == "---":
+                close_block()
                 in_frontmatter = False
                 continue
             if in_block_description and raw[:1] in (" ", "\t"):
+                block_parts.append(raw.strip())
                 prose = prose_of(raw)
                 for label, pattern in CHECKS:
                     if pattern.search(prose):
                         violations.append((number, label, raw.strip()))
                 continue
-            in_block_description = False
+            close_block()
             key, _, value = raw.partition(":")
             if key.strip() != "description":
                 continue
             raw = value.strip()
             if raw[:1] in (">", "|"):
                 in_block_description = True
+                block_start, block_parts = number, []
                 continue
             # Rewriting a dash as a colon leaves ": " inside a plain scalar, which a
             # YAML parser rejects as a nested mapping; the value must be quoted.
             if raw and raw[0] not in "\"'" and ": " in raw:
                 violations.append((number, "unquoted colon in description", raw))
+            quoted = len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in "\"'"
+            check_length(number, raw[1:-1] if quoted else raw)
         fence = FENCE.match(raw)
         if open_fence is None:
             if fence:

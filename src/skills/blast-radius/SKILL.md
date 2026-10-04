@@ -1,6 +1,6 @@
 ---
 name: blast-radius
-description: "Pre-merge blast radius: what a diff could break beyond itself, proving the one fact it is safe because of by running real code. Use when asked what a change could break or whether a small diff is safe to merge. 블라스트 레디어스, 뭐가 깨질까, 머지해도 안전해, 사이드 이펙트 검증."
+description: "Pre-merge blast radius: what a diff breaks beyond itself, proven by running real code. Use when asked what a change could break or if a small diff is safe to merge. 블라스트 레디어스, 뭐가 깨질까, 머지해도 안전해, 사이드 이펙트 검증."
 ---
 
 # Blast Radius

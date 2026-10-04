@@ -1,6 +1,6 @@
 ---
 name: technical-writing
-description: "Technical writing standard: one Diátaxis mode per doc, plain direct sentences, an AI-slop cut list, and no dashes or parentheses in prose. Use when writing or reviewing docs, READMEs, guides, or skill and agent text. 기술 문서 작성, 문서 리뷰, AI 문체 제거, 글 다듬기."
+description: "Technical writing: one Diátaxis mode per doc, plain sentences, an AI-slop cut list, no dashes or parentheses. Use when writing or reviewing docs, READMEs, or skill and agent text. 기술 문서 작성, 문서 리뷰, AI 문체 제거, 글 다듬기."
 ---
 
 # Technical Writing
