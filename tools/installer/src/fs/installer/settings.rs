@@ -257,12 +257,12 @@ pub(super) fn register_output_style_in_settings(dest_dir: &Path, style_name: &st
 
 /// Auto-register a statusline in settings.json if no statusline is currently set
 pub(super) fn register_statusline_in_settings(dest_dir: &Path, statusline_name: &str) -> Result<()> {
-    let mut settings = read_settings(dest_dir)?;
+    let settings = read_settings(dest_dir)?;
 
-    // Only set if statusLine is not already configured
-    if settings.get("statusLine").is_none() {
-        settings["statusLine"] = serde_json::json!(statusline_name);
-        write_settings(dest_dir, &settings)?;
+    // Earlier installers wrote a bare string here, and `read_current_settings`
+    // only reads an object's `command`, so a string counts as unset and is replaced.
+    if !settings.get("statusLine").is_some_and(Value::is_object) {
+        set_statusline(dest_dir, statusline_name)?;
     }
 
     Ok(())
@@ -335,6 +335,56 @@ mod tests {
         let v: Value = serde_json::from_str(&raw).unwrap();
         assert_eq!(v.get("theme").and_then(|x| x.as_str()), Some("dark"));
         assert!(v.get("outputStyle").is_none());
+
+        let _ = std::fs::remove_dir_all(&dest);
+    }
+
+    /// Claude Code and this installer's own Statusline tab both read
+    /// `statusLine.command`, so an auto-registered statusline must be the same
+    /// `{type, command}` object the `s` key writes, not a bare file name.
+    #[test]
+    fn auto_registered_statusline_is_a_command_object() {
+        let dest = unique_dest("statusline");
+        std::fs::write(dest.join("settings.json"), "{}").unwrap();
+
+        register_statusline_in_settings(&dest, "statusline.exe").unwrap();
+
+        let raw = std::fs::read_to_string(dest.join("settings.json")).unwrap();
+        let v: Value = serde_json::from_str(&raw).unwrap();
+        assert_eq!(v["statusLine"]["type"], "command", "{v}");
+        let command = v["statusLine"]["command"].as_str().unwrap_or_default();
+        assert!(command.ends_with("statusline/statusline.exe"), "{v}");
+
+        let _ = std::fs::remove_dir_all(&dest);
+    }
+
+    #[test]
+    fn auto_registration_replaces_a_bare_string_left_by_older_installs() {
+        let dest = unique_dest("statusline_repair");
+        std::fs::write(dest.join("settings.json"), r#"{"statusLine":"statusline.exe"}"#).unwrap();
+
+        register_statusline_in_settings(&dest, "statusline.exe").unwrap();
+
+        let raw = std::fs::read_to_string(dest.join("settings.json")).unwrap();
+        let v: Value = serde_json::from_str(&raw).unwrap();
+        assert_eq!(v["statusLine"]["type"], "command", "{v}");
+        let command = v["statusLine"]["command"].as_str().unwrap_or_default();
+        assert!(command.ends_with("statusline/statusline.exe"), "{v}");
+
+        let _ = std::fs::remove_dir_all(&dest);
+    }
+
+    #[test]
+    fn auto_registration_keeps_a_statusline_the_user_already_set() {
+        let dest = unique_dest("statusline_keep");
+        let mine = r#"{"statusLine":{"type":"command","command":"~/bin/my-line"}}"#;
+        std::fs::write(dest.join("settings.json"), mine).unwrap();
+
+        register_statusline_in_settings(&dest, "statusline.exe").unwrap();
+
+        let raw = std::fs::read_to_string(dest.join("settings.json")).unwrap();
+        let v: Value = serde_json::from_str(&raw).unwrap();
+        assert_eq!(v["statusLine"]["command"], "~/bin/my-line", "{v}");
 
         let _ = std::fs::remove_dir_all(&dest);
     }
