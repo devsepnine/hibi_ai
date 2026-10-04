@@ -146,10 +146,10 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 
 - **Level**: MUST
 - **Rule**: 인스톨러는 이름이 `-ko`로 끝나는 파일을 설치 대상에서 뺀다.
-- **Why**: 코드가 증명함. 미러가 설치되면 같은 skill이 두 번 로드된다. 같은 판정이 스캐너 두 파일에 중복돼 있다.
-- **Evidence**: 스캐너 두 곳에 구현 · `grep -n 'ends_with("-ko")' tools/installer/src/fs/scanner/components.rs tools/installer/src/fs/scanner/external.rs`
+- **Why**: 코드가 증명함. 미러가 설치되면 같은 skill이 두 번 로드된다. 판정은 한 함수에만 둬서 두 스캐너가 갈라지지 않게 한다.
+- **Evidence**: 판정은 `tools/installer/src/fs/scanner/mod.rs`의 `is_korean_mirror` 한 곳 · `grep -rn 'ends_with("-ko")' tools/installer/src`
 - **Exceptions**: none
-- **Enforced by**: `tools/installer/src/fs/scanner/components.rs`의 테스트
+- **Enforced by**: `tools/installer/src/fs/scanner/mod.rs`와 두 스캐너의 테스트
 
 ### `arch-policy-in-skills`
 

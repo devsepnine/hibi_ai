@@ -125,11 +125,8 @@ fn external_component_name(
         }
     }
 
-    // Skip Korean reference siblings (`*-ko.md`).
-    if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-        if stem.ends_with("-ko") {
-            return None;
-        }
+    if super::is_korean_mirror(path) {
+        return None;
     }
 
     let relative = path.strip_prefix(type_dir).ok()?;

@@ -105,13 +105,8 @@ fn scan_directory(
             continue;
         }
 
-        // Skip *-ko.* files: Korean reference versions kept for developer
-        // readability but never installed (English originals are
-        // token-cheaper for the LLM).
-        if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-            if stem.ends_with("-ko") {
-                continue;
-            }
+        if super::is_korean_mirror(&path) {
+            continue;
         }
 
         let relative = path.strip_prefix(source_dir)?;
