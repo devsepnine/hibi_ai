@@ -1,15 +1,14 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::time::Duration;
 
 use anyhow::{Context, Result};
-use wait_timeout::ChildExt;
 
 use super::config::{validate_branch, validate_git_url};
 
 const CLONE_TIMEOUT_SECS: u64 = 60;
 const FETCH_TIMEOUT_SECS: u64 = 30;
 const RESET_TIMEOUT_SECS: u64 = 10;
+const GIT_PROBE_TIMEOUT_SECS: u64 = 5;
 
 /// Clone or update a git repository into the cache directory.
 /// Returns the local path to the cached repo.
@@ -153,38 +152,19 @@ fn run_git_command(args: &[&str], working_dir: Option<&Path>, timeout_secs: u64)
     if let Some(dir) = working_dir {
         cmd.current_dir(dir);
     }
-    cmd.stdin(std::process::Stdio::null());
-    cmd.stdout(std::process::Stdio::piped());
-    cmd.stderr(std::process::Stdio::piped());
-
-    let mut child = cmd.spawn()?;
-
-    match child.wait_timeout(Duration::from_secs(timeout_secs))? {
-        Some(status) if status.success() => Ok(()),
-        Some(status) => {
-            let mut stderr_buf = Vec::new();
-            if let Some(mut stderr) = child.stderr.take() {
-                let _ = std::io::Read::read_to_end(&mut stderr, &mut stderr_buf);
-            }
-            let raw_stderr = String::from_utf8_lossy(&stderr_buf);
-            let safe_stderr = sanitize_stderr(&raw_stderr);
-            anyhow::bail!(
-                "git {} failed (exit {}): {}",
-                args.first().unwrap_or(&""),
-                status.code().unwrap_or(-1),
-                safe_stderr
-            )
-        }
-        None => {
-            let _ = child.kill();
-            let _ = child.wait();
-            anyhow::bail!(
-                "git {} timed out after {}s",
-                args.first().unwrap_or(&""),
-                timeout_secs
-            )
-        }
+    let subcommand = args.first().unwrap_or(&"");
+    let output = crate::exec::run_with_timeout(&mut cmd, timeout_secs, |_, e| e.into())?
+        .ok_or_else(|| anyhow::anyhow!("git {} timed out after {}s", subcommand, timeout_secs))?;
+    if output.status.success() {
+        return Ok(());
     }
+    let raw_stderr = String::from_utf8_lossy(&output.stderr);
+    anyhow::bail!(
+        "git {} failed (exit {}): {}",
+        subcommand,
+        output.status.code().unwrap_or(-1),
+        sanitize_stderr(&raw_stderr)
+    )
 }
 
 /// Remove lines from stderr that may contain credentials or sensitive info.
@@ -209,13 +189,12 @@ fn sanitize_stderr(stderr: &str) -> String {
 }
 
 fn git_available() -> bool {
-    Command::new("git")
-        .arg("--version")
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status()
-        .is_ok()
+    let mut cmd = Command::new("git");
+    cmd.arg("--version");
+    matches!(
+        crate::exec::run_with_timeout(&mut cmd, GIT_PROBE_TIMEOUT_SECS, |_, e| e.into()),
+        Ok(Some(_))
+    )
 }
 
 fn unix_timestamp_now() -> String {

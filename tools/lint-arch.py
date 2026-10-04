@@ -20,6 +20,7 @@ STATUSLINE = Path("tools/statusline")
 LEAF_MODULES = ["component.rs", "mcp.rs", "plugin.rs", "theme.rs", "source"]
 INNER_MODULES = "app|ui|cli|fs|loading|tree|process_exec"
 CONFIG_WRITERS = ("fs/installer/", "fs/manifest.rs", "source/")
+SPAWNERS = (INSTALLER / "exec.rs", INSTALLER / "fs/installer/process.rs")
 
 # Only an inline `mod tests {` opens test code. `#[cfg(test)] mod tests;` merely
 # declares a sibling tests.rs, so the code after it is still production code.
@@ -84,8 +85,9 @@ def leaf_modules_no_crate_import():
 
 
 def process_spawn_in_fs():
-    for path in files_matching(INSTALLER, r"Command::new|\.spawn\(\)|\.status\(\)|\.output\(\)"):
-        if not posix(path).startswith(posix(INSTALLER / "fs") + "/"):
+    """Building a Command is free; running one is not."""
+    for path in files_matching(INSTALLER, r"\.spawn\(\)|\.status\(\)|\.output\(\)"):
+        if path not in SPAWNERS:
             yield path
 
 

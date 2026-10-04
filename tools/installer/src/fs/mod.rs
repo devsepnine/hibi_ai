@@ -6,8 +6,6 @@ pub mod scanner;
 use crate::target::TargetCli;
 use anyhow::Result;
 use std::process::{Command, Stdio};
-use std::time::Duration;
-use wait_timeout::ChildExt;
 
 /// Application version string, derived from Cargo.toml at compile time.
 pub const VERSION: &str = concat!("v", env!("CARGO_PKG_VERSION"));
@@ -136,48 +134,14 @@ pub(crate) fn enrich_spawn_error(command: &Command, err: std::io::Error) -> anyh
     }
 }
 
-/// Run a command with a timeout, returning its output.
-/// Kills the child process if it exceeds the timeout to prevent orphans.
-///
-/// Note: stdin is set to null as defense-in-depth. Callers typically use
-/// `create_cli_command()` which already sets null stdin, but direct callers
-/// or future code paths are also protected from interactive prompt hangs.
+/// Run a CLI command with a timeout through the shared runner, turning a
+/// missing binary into an install hint and a timeout into an error.
 pub(crate) fn run_with_timeout(
     command: &mut Command,
     timeout_secs: u64,
 ) -> Result<std::process::Output> {
-    let mut child = command
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|e| enrich_spawn_error(command, e))?;
-
-    match child.wait_timeout(Duration::from_secs(timeout_secs))? {
-        Some(status) => {
-            let mut stdout_data = Vec::new();
-            let mut stderr_data = Vec::new();
-            // Partial reads are acceptable: if the pipe fails after process exit,
-            // we still return whatever was captured. Callers check status first.
-            if let Some(mut stdout) = child.stdout.take() {
-                let _ = std::io::Read::read_to_end(&mut stdout, &mut stdout_data);
-            }
-            if let Some(mut stderr) = child.stderr.take() {
-                let _ = std::io::Read::read_to_end(&mut stderr, &mut stderr_data);
-            }
-
-            Ok(std::process::Output {
-                status,
-                stdout: stdout_data,
-                stderr: stderr_data,
-            })
-        }
-        None => {
-            let _ = child.kill();
-            let _ = child.wait();
-            anyhow::bail!("Command timed out after {}s", timeout_secs);
-        }
-    }
+    crate::exec::run_with_timeout(command, timeout_secs, enrich_spawn_error)?
+        .ok_or_else(|| anyhow::anyhow!("Command timed out after {}s", timeout_secs))
 }
 
 #[cfg(test)]

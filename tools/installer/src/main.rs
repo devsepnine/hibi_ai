@@ -1,6 +1,7 @@
 mod app;
 mod cli;
 mod component;
+mod exec;
 mod fs;
 mod loading;
 mod mcp;
