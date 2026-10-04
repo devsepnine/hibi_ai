@@ -1,6 +1,6 @@
 # hibi-ai 기능맵
 
-검증 시점 `30573a5` · `2026-10-04` · 구조 뷰: 없음, 컴포넌트 위치는 `docs/INDEX.md`
+검증 시점 `2c80ccd` · `2026-10-04` · 구조 뷰: 없음, 컴포넌트 위치는 `docs/INDEX.md`
 전제: 서버 없음, 상태는 로컬 파일 ~/.claude · ~/.codex · ~/.hibi 뿐 · i18n 없음, UI 문구는 Rust 문자열 리터럴 그대로이고 번역본이 없다 · 인스톨러 테스트는 각 모듈의 `#[cfg(test)]` 블록과 `tools/installer/src/cli/tests.rs`, `tools/installer/src/ui/tests.rs` 에 있고 `cargo test --manifest-path tools/installer/Cargo.toml` 로 돈다 · 배포 설정 `src/` 는 산문이라 실행 테스트가 없고 일부 스킬만 `evals/` 평가셋을 가진다
 
 ## 이 맵 사용법
