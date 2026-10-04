@@ -21,6 +21,7 @@ pub(crate) fn start_loading_thread(app: &App, refresh_tx: &Sender<Result<Refresh
     thread::spawn(move || {
         let mut cleaned = fs::installer::auto_cleanup_deprecated_hooks(&source_dir, &dest_dir);
         cleaned.extend(fs::installer::auto_cleanup_renamed_skills(
+            &source_dir,
             &dest_dir,
             &fs::manifest::recorded_component_ids(&dest_dir),
         ));

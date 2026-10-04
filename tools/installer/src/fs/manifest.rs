@@ -57,25 +57,24 @@ pub fn manifest_path() -> Result<PathBuf> {
 }
 
 /// Component IDs the last install into `dest_dir` recorded. A missing or
-/// unreadable record, or one written for another target, yields none, so a
-/// caller that deletes recorded files deletes nothing.
+/// unreadable record, or one written for any other directory, yields none,
+/// so a caller that deletes recorded files deletes nothing.
 pub fn recorded_component_ids(dest_dir: &Path) -> Vec<String> {
-    manifest_path()
-        .ok()
-        .and_then(|path| fs::read_to_string(path).ok())
-        .map(|text| ids_for_target(&text, dest_dir))
+    let (Ok(path), Some(home)) = (manifest_path(), crate::paths::home_dir()) else {
+        return Vec::new();
+    };
+    fs::read_to_string(path)
+        .map(|text| ids_for_target(&text, dest_dir, &home))
         .unwrap_or_default()
 }
 
-fn ids_for_target(record: &str, dest_dir: &Path) -> Vec<String> {
+/// The record names only the target directory, and an install always goes
+/// directly under home, so any other `dest_dir` is not the one it describes.
+fn ids_for_target(record: &str, dest_dir: &Path, home: &Path) -> Vec<String> {
     let Ok(manifest) = serde_json::from_str::<InstallManifest>(record) else {
         return Vec::new();
     };
-    let target = dest_dir
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or_default();
-    if manifest.target != target {
+    if dest_dir != home.join(&manifest.target) {
         return Vec::new();
     }
     manifest.components
@@ -253,12 +252,17 @@ mod tests {
         let record = r#"{"source":"s","version":"v1","target":".claude",
             "updated_at":"t","components":["skills/iced_rs/SKILL.md"]}"#;
 
+        let home = Path::new("/home/u");
         assert_eq!(
-            ids_for_target(record, Path::new("/home/u/.claude")),
+            ids_for_target(record, &home.join(".claude"), home),
             vec![String::from("skills/iced_rs/SKILL.md")]
         );
-        assert!(ids_for_target(record, Path::new("/home/u/.codex")).is_empty());
-        assert!(ids_for_target("not json", Path::new("/home/u/.claude")).is_empty());
+        assert!(ids_for_target(record, &home.join(".codex"), home).is_empty());
+        assert!(
+            ids_for_target(record, Path::new("/work/project/.claude"), home).is_empty(),
+            "a project .claude is not the directory the record describes"
+        );
+        assert!(ids_for_target("not json", &home.join(".claude"), home).is_empty());
     }
 
     #[test]
