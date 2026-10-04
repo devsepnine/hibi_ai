@@ -97,7 +97,7 @@ pub fn load_config() -> Result<(Vec<SourceEntry>, bool)> {
 
 /// Path to `~/.hibi/sources.yaml`.
 fn config_path() -> Result<PathBuf> {
-    let home = dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
+    let home = crate::paths::require_home_dir()?;
     Ok(home.join(".hibi").join("sources.yaml"))
 }
 
@@ -121,10 +121,10 @@ pub fn save_config(entries: &[SourceEntry], auto_update: bool) -> Result<()> {
 pub fn expand_tilde(path: &Path) -> PathBuf {
     let s = path.to_string_lossy();
     if s == "~" {
-        return dirs::home_dir().unwrap_or_else(|| path.to_path_buf());
+        return crate::paths::home_dir().unwrap_or_else(|| path.to_path_buf());
     }
     if s.starts_with("~/") || s.starts_with("~\\") {
-        if let Some(home) = dirs::home_dir() {
+        if let Some(home) = crate::paths::home_dir() {
             return home.join(&s[2..]);
         }
     }
@@ -168,7 +168,7 @@ pub fn validate_local_path(path: &Path) -> Result<()> {
     // Canonicalize to resolve symlinks, then re-check
     let canonical = expanded.canonicalize().unwrap_or_else(|_| expanded.clone());
 
-    if let Some(home) = dirs::home_dir() {
+    if let Some(home) = crate::paths::home_dir() {
         let claude_dir = home.join(".claude");
         let canonical_claude = claude_dir.canonicalize().unwrap_or(claude_dir);
         if canonical.starts_with(&canonical_claude) {

@@ -23,9 +23,10 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 | `fs` | `tools/installer/src/fs/` | 스캔, 설치·제거, manifest, diff, CLI 프로세스, settings.json 쓰기 | `component`, `mcp`, `plugin`, `source` |
 | `loading` | `tools/installer/src/loading/` | 백그라운드 스레드 채널과 대기 화면 상태 | `app`, `fs`, `component`, `mcp`, `plugin`, `process_exec` |
 | `process_exec` | `tools/installer/src/process_exec.rs` | 백그라운드 설치·제거의 `ProcessData` 조정 | `app`, `component`, `fs`, `mcp`, `plugin` |
-| `source` | `tools/installer/src/source/` | 소스 탐색, git clone과 캐시, `sources.yaml` | 없음 |
+| `source` | `tools/installer/src/source/` | 소스 탐색, git clone과 캐시, `sources.yaml` | `paths` |
 | `tree` | `tools/installer/src/tree/` | 컴포넌트 목록을 접는 트리 모델 | `component` |
 | leaf 타입 | `tools/installer/src/component.rs`, `tools/installer/src/mcp.rs`, `tools/installer/src/plugin.rs`, `tools/installer/src/theme.rs` | 컴포넌트·MCP·플러그인 타입과 색 테마 | 없음 |
+| `paths` | `tools/installer/src/paths.rs` | 홈 디렉터리를 얻는 유일한 지점 | 없음 |
 | `statusline` | `tools/statusline/` | stdin JSON을 상태줄로 렌더링하는 독립 바이너리 | 외부 크레이트만 |
 | 배포 설정 | `src/` | agents, commands, skills, hooks, mcps, plugins, output-styles, 상태줄 바이너리 | 해당 없음 |
 
@@ -61,7 +62,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 ### `arch-leaf-modules-no-crate-import`
 
 - **Level**: MUST
-- **Rule**: `component`, `mcp`, `plugin`, `theme`, `source`는 크레이트 내부의 다른 모듈을 import하지 않는다.
+- **Rule**: `component`, `mcp`, `plugin`, `theme`, `source`는 크레이트 내부 모듈 가운데 `paths`만 import할 수 있다. `paths`는 아무것도 import하지 않는다.
 - **Why**: 코드가 증명함, 위반 0건. 이 모듈들은 모든 unit이 가져다 쓰는 바닥이라, 위를 참조하는 순간 순환이 생긴다.
 - **Evidence**: 0 edges · `grep -rnE "crate::(app|ui|cli|fs|loading|tree|process_exec)" tools/installer/src/component.rs tools/installer/src/mcp.rs tools/installer/src/plugin.rs tools/installer/src/theme.rs tools/installer/src/source`
 - **Exceptions**: none
@@ -79,11 +80,11 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 ### `arch-home-dir-single-source`
 
 - **Level**: MUST
-- **Rule**: 홈 디렉터리 경로는 접근 지점 하나에서만 얻는다.
-- **Why**: 경로 계산이 흩어져 있으면 테스트에서 HOME을 바꾸기 어렵고 규칙이 어긋난다. 2026-10-04 결정, 마이그레이션. 접근 지점의 위치는 옮기는 작업에서 정한다.
-- **Evidence**: 테스트 밖 호출 11회, 6개 파일 · `for f in $(grep -rl 'home_dir()' tools/installer/src); do awk '/mod tests/{exit} /home_dir\(\)/{print FILENAME}' $f; done | sort | uniq -c`
+- **Rule**: 홈 디렉터리 경로는 `tools/installer/src/paths.rs`에서만 얻는다.
+- **Why**: 경로 계산이 흩어져 있으면 테스트에서 HOME을 바꾸기 어렵고 규칙이 어긋난다. 2026-10-04 결정. 접근 지점은 어떤 unit이든 순환 없이 쓸 수 있도록 내부 의존이 없는 leaf 모듈 `paths`로 정했다.
+- **Evidence**: `paths.rs` 밖 호출 0건 · `grep -rn "dirs::home_dir(" tools/installer/src`
 - **Exceptions**: none
-- **Enforced by**: review
+- **Enforced by**: `tools/lint-arch.py`
 
 ### `arch-config-writes-in-fs-or-source`
 
@@ -215,12 +216,6 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 | `tools/installer/src/fs/scanner/external.rs` | `arch-fs-no-app-import` | fix |
 | `tools/installer/src/fs/scanner/mcp.rs` | `arch-fs-no-app-import` | fix |
 | `tools/installer/src/source/git.rs` | `arch-process-spawn-in-fs` | fix, `run_with_timeout`으로 옮긴다 |
-| `tools/installer/src/source/config.rs` | `arch-home-dir-single-source` | fix |
-| `tools/installer/src/source/git.rs` | `arch-home-dir-single-source` | fix |
-| `tools/installer/src/app/mod.rs` | `arch-home-dir-single-source` | fix |
-| `tools/installer/src/app/types.rs` | `arch-home-dir-single-source` | fix |
-| `tools/installer/src/fs/manifest.rs` | `arch-home-dir-single-source` | fix |
-| `tools/installer/src/fs/scanner/plugin.rs` | `arch-home-dir-single-source` | fix |
 | `src/skills/composition-patterns/README.md` | `arch-skill-layout` | fix, 내용을 `SKILL.md`나 `src/skills/<name>/references/`로 옮긴다 |
 | `src/skills/dependency-design/README.md` | `arch-skill-layout` | fix |
 | `src/skills/react-best-practices/README.md` | `arch-skill-layout` | fix |
@@ -237,7 +232,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 | `2026-10-04` | 커맨드 27개 중 7개가 절차를 직접 담는다 | 정책은 skill, 절차형 커맨드는 허용 |
 | `2026-10-04` | description 220자 초과 4개 | MUST로 두고 4개를 바로 수정, `tools/lint-prose.py`가 길이를 검사 |
 | `2026-10-04` | git만 프로세스를 `run_with_timeout` 밖에서 직접 실행한다 | 마이그레이션: `fs` 래퍼로 통일 |
-| `2026-10-04` | `home_dir()` 호출이 6개 파일에 흩어져 있다 | 마이그레이션: 접근 지점 하나로 모은다 |
+| `2026-10-04` | `home_dir()` 호출이 6개 파일에 흩어져 있다 | 접근 지점 하나로 모은다. 위치는 leaf 모듈 `paths`, 완료 |
 | `2026-10-04` | 테스트가 인라인과 `tests.rs` 분리로 섞여 있다 | Rust 일반 관례: 인라인 기본, 모듈 전체 테스트만 분리 |
 | `2026-10-04` | skill 하위 구조와 이름에 예외가 있다 | 표준으로 고정: 마이그레이션 |
 | `2026-10-04` | 상태줄 바이너리는 수동 빌드 후 커밋된다 | 수동 빌드 유지, 소스 변경 시 바이너리 갱신을 MUST로 |

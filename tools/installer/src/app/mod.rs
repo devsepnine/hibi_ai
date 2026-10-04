@@ -127,9 +127,7 @@ fn load_init_data() -> Result<InitData> {
     };
     let (source_entries, source_auto_update) =
         crate::source::config::load_config().unwrap_or((Vec::new(), true));
-    let dest_dir = dirs::home_dir()
-        .ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?
-        .join(".claude");
+    let dest_dir = crate::paths::require_home_dir()?.join(".claude");
     let default_project = std::env::current_dir()
         .map(|p| p.to_string_lossy().to_string())
         .unwrap_or_default();

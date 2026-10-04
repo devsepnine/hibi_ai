@@ -44,7 +44,7 @@ pub fn cache_exists(cache_dir: &Path) -> bool {
 /// Compute cache directory path for a git source.
 /// `~/.hibi/cache/<sanitized_label>/`
 pub fn cache_path_for(url: &str) -> Result<PathBuf> {
-    let home = dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
+    let home = crate::paths::require_home_dir()?;
     let label = sanitize_label(url);
     Ok(home.join(".hibi").join("cache").join(label))
 }
@@ -55,7 +55,7 @@ pub fn remove_cache(url: &str) -> Result<bool> {
     let cache_dir = cache_path_for(url)?;
 
     // Defense-in-depth: ensure we only delete within ~/.hibi/cache/
-    let home = dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
+    let home = crate::paths::require_home_dir()?;
     let cache_base = home.join(".hibi").join("cache");
     if !cache_dir.starts_with(&cache_base) {
         anyhow::bail!(
@@ -80,7 +80,7 @@ pub fn remove_cache(url: &str) -> Result<bool> {
 /// is dead data; this performs a one-time cleanup.
 /// Returns `Ok(true)` if the cache was removed, `Ok(false)` if none existed.
 pub fn cleanup_bundled_cache() -> Result<bool> {
-    let home = dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Cannot find home directory"))?;
+    let home = crate::paths::require_home_dir()?;
     // Fixed path (~/.hibi/cache/bundled), built from home_dir — safe by construction
     // (no external input, unlike remove_cache which sanitizes a user-supplied URL).
     let bundled_dir = home.join(".hibi").join("cache").join("bundled");

@@ -89,6 +89,12 @@ def process_spawn_in_fs():
             yield path
 
 
+def home_dir_single_source():
+    for path in files_matching(INSTALLER, r"\bdirs::home_dir\("):
+        if path != INSTALLER / "paths.rs":
+            yield path
+
+
 def config_writes_in_fs_or_source():
     for path in files_matching(INSTALLER, r"\bfs::write\("):
         inner = posix(path.relative_to(INSTALLER))
@@ -126,6 +132,7 @@ CHECKS = {
     "arch-ui-reads-state-only": ui_reads_state_only,
     "arch-leaf-modules-no-crate-import": leaf_modules_no_crate_import,
     "arch-process-spawn-in-fs": process_spawn_in_fs,
+    "arch-home-dir-single-source": home_dir_single_source,
     "arch-config-writes-in-fs-or-source": config_writes_in_fs_or_source,
     "arch-statusline-standalone": statusline_standalone,
     "arch-ko-mirror": ko_mirror,

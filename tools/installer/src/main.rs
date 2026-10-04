@@ -4,6 +4,7 @@ mod component;
 mod fs;
 mod loading;
 mod mcp;
+mod paths;
 mod plugin;
 mod process_exec;
 mod source;

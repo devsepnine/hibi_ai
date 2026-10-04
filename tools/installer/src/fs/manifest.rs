@@ -52,7 +52,7 @@ pub struct InstallManifest {
 
 /// `~/.hibi/install.json`.
 pub fn manifest_path() -> Result<PathBuf> {
-    let home = dirs::home_dir().context("Could not determine home directory")?;
+    let home = crate::paths::require_home_dir()?;
     Ok(home.join(".hibi").join("install.json"))
 }
 
