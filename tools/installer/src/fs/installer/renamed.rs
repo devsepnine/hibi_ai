@@ -172,12 +172,25 @@ mod tests {
     }
 
     #[cfg(unix)]
-    fn make_undeletable(file: &Path) -> std::fs::Permissions {
+    struct RestorePermissions {
+        dir: PathBuf,
+        before: std::fs::Permissions,
+    }
+
+    #[cfg(unix)]
+    impl Drop for RestorePermissions {
+        fn drop(&mut self) {
+            let _ = std::fs::set_permissions(&self.dir, self.before.clone());
+        }
+    }
+
+    #[cfg(unix)]
+    fn make_undeletable(file: &Path) -> RestorePermissions {
         use std::os::unix::fs::PermissionsExt;
-        let dir = file.parent().unwrap();
-        let before = std::fs::metadata(dir).unwrap().permissions();
-        std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o555)).unwrap();
-        before
+        let dir = file.parent().unwrap().to_path_buf();
+        let before = std::fs::metadata(&dir).unwrap().permissions();
+        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o555)).unwrap();
+        RestorePermissions { dir, before }
     }
 
     #[test]
