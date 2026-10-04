@@ -112,24 +112,8 @@ fn remove_empty_dirs(dir: &Path) {
 
 #[cfg(test)]
 mod tests {
+    use super::super::test_support::{link_dir, make_undeletable, put, unique_dir};
     use super::*;
-    use std::time::{SystemTime, UNIX_EPOCH};
-
-    fn unique_dir(label: &str) -> PathBuf {
-        let nanos = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let dir = std::env::temp_dir().join(format!("hibi_renamed_{label}_{nanos}"));
-        std::fs::create_dir_all(&dir).unwrap();
-        dir
-    }
-
-    fn put(root: &Path, rel: &str) {
-        let path = root.join(rel);
-        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-        std::fs::write(path, "x").unwrap();
-    }
 
     /// A source that ships both new names.
     fn source_with_new_names() -> PathBuf {
@@ -137,60 +121,6 @@ mod tests {
         put(&source, "skills/iced-rs/SKILL.md");
         put(&source, "skills/ratatui-rs/SKILL.md");
         source
-    }
-
-    #[cfg(unix)]
-    fn link_dir(target: &Path, link: &Path) -> bool {
-        std::os::unix::fs::symlink(target, link).is_ok()
-    }
-
-    #[cfg(windows)]
-    fn link_dir(target: &Path, link: &Path) -> bool {
-        // Symlinks need a privilege on Windows; a junction does not, and it is
-        // the link a user is most likely to have made. mklink rejects `/`, which
-        // `Path::join` leaves in place.
-        let native = |p: &Path| p.to_string_lossy().replace('/', "\\");
-        std::process::Command::new("cmd")
-            .args(["/C", "mklink", "/J"])
-            .arg(native(link))
-            .arg(native(target))
-            .output()
-            .is_ok_and(|out| out.status.success())
-    }
-
-    /// Make `file` impossible to delete while the returned guard lives:
-    /// Windows refuses to delete a file another handle holds without
-    /// delete sharing, and Unix refuses to unlink from a read-only directory.
-    #[cfg(windows)]
-    fn make_undeletable(file: &Path) -> std::fs::File {
-        use std::os::windows::fs::OpenOptionsExt;
-        std::fs::OpenOptions::new()
-            .read(true)
-            .share_mode(0)
-            .open(file)
-            .unwrap()
-    }
-
-    #[cfg(unix)]
-    struct RestorePermissions {
-        dir: PathBuf,
-        before: std::fs::Permissions,
-    }
-
-    #[cfg(unix)]
-    impl Drop for RestorePermissions {
-        fn drop(&mut self) {
-            let _ = std::fs::set_permissions(&self.dir, self.before.clone());
-        }
-    }
-
-    #[cfg(unix)]
-    fn make_undeletable(file: &Path) -> RestorePermissions {
-        use std::os::unix::fs::PermissionsExt;
-        let dir = file.parent().unwrap().to_path_buf();
-        let before = std::fs::metadata(&dir).unwrap().permissions();
-        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o555)).unwrap();
-        RestorePermissions { dir, before }
     }
 
     #[test]

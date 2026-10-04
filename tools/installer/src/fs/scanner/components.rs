@@ -286,13 +286,6 @@ fn add_config_files(
     Ok(())
 }
 
-/// Strip `\r` bytes so that CRLF and LF files compare as equal.
-/// This avoids false "Modified" status when the same content is checked out
-/// with different git `autocrlf` settings.
-fn normalize_line_endings(content: &[u8]) -> Vec<u8> {
-    content.iter().copied().filter(|&b| b != b'\r').collect()
-}
-
 fn determine_status(source: &Path, dest: &Path) -> Result<InstallStatus> {
     if !dest.exists() {
         return Ok(InstallStatus::New);
@@ -302,7 +295,9 @@ fn determine_status(source: &Path, dest: &Path) -> Result<InstallStatus> {
     let dest_content = std::fs::read(dest)?;
 
     // Compare with normalized line endings to ignore CRLF/LF differences
-    if normalize_line_endings(&source_content) == normalize_line_endings(&dest_content) {
+    if crate::fs::normalize_line_endings(&source_content)
+        == crate::fs::normalize_line_endings(&dest_content)
+    {
         Ok(InstallStatus::Unchanged)
     } else {
         Ok(InstallStatus::Modified)

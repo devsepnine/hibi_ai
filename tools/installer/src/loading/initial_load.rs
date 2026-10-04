@@ -19,12 +19,21 @@ pub(crate) fn start_loading_thread(app: &App, refresh_tx: &Sender<Result<Refresh
     let target_cli = app.target_cli.unwrap_or(TargetCli::Claude);
 
     thread::spawn(move || {
+        let record = fs::manifest::recorded_install(&dest_dir);
         let mut cleaned = fs::installer::auto_cleanup_deprecated_hooks(&source_dir, &dest_dir);
         cleaned.extend(fs::installer::auto_cleanup_renamed_skills(
             &source_dir,
             &dest_dir,
-            &fs::manifest::recorded_component_ids(&dest_dir),
+            &record.ids,
         ));
+        let unshipped =
+            fs::installer::auto_cleanup_unshipped_files(&source_dir, &dest_dir, &record);
+        cleaned.extend(unshipped.report);
+        if !unshipped.settled.is_empty() {
+            // A failure here only means the same IDs are judged again on the
+            // next launch, where a file already removed counts as gone.
+            let _ = fs::manifest::forget(&dest_dir, &unshipped.settled);
+        }
 
         let components = fs::scanner::scan_all_sources(&sources, &dest_dir, target_cli);
         let mcp_result = fs::scanner::scan_all_mcp_sources(&sources, target_cli);

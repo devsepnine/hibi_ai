@@ -7,6 +7,13 @@ use crate::target::TargetCli;
 use anyhow::Result;
 use std::process::{Command, Stdio};
 
+/// Strip `\r` bytes so that CRLF and LF files compare as equal.
+/// This avoids false "Modified" status when the same content is checked out
+/// with different git `autocrlf` settings.
+pub(crate) fn normalize_line_endings(content: &[u8]) -> Vec<u8> {
+    content.iter().copied().filter(|&b| b != b'\r').collect()
+}
+
 /// Application version string, derived from Cargo.toml at compile time.
 pub const VERSION: &str = concat!("v", env!("CARGO_PKG_VERSION"));
 

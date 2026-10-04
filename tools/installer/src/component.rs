@@ -15,6 +15,20 @@ pub enum ComponentType {
 }
 
 impl ComponentType {
+    /// Types the scanner copies file by file into `<dest>/<display_name>/`,
+    /// for whichever of them a target installs, so a recorded ID
+    /// `<display_name>/<relative path>` names the same file in the source and
+    /// in the destination. Hooks, the statusline, and config files are placed
+    /// or merged differently.
+    pub const TREE_MIRRORED: &'static [ComponentType] = &[
+        Self::Agents,
+        Self::Commands,
+        Self::Contexts,
+        Self::Rules,
+        Self::Skills,
+        Self::OutputStyles,
+    ];
+
     pub fn display_name(&self) -> &str {
         match self {
             Self::Agents => "agents",

@@ -4,6 +4,9 @@ mod plugin;
 mod process;
 mod renamed;
 mod settings;
+#[cfg(test)]
+mod test_support;
+mod unshipped;
 
 use anyhow::Result;
 use std::path::Path;
@@ -25,6 +28,7 @@ pub use settings::{
     remove_managed_settings_sections, set_output_style, set_statusline, unset_output_style,
     unset_statusline,
 };
+pub use unshipped::auto_cleanup_unshipped_files;
 
 /// Timeout for the pre-flight `--version` probe. Long enough to absorb
 /// a cold Node.js startup on a slow disk, short enough that a hung CLI
