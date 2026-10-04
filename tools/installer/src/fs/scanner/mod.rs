@@ -50,7 +50,6 @@ where
     Ok(merged)
 }
 
-/// Parse a `map_to` string into a ComponentType.
 /// A `*-ko` sibling is the Korean mirror kept for developer readability and is
 /// never installed; the English original is what the model reads.
 fn is_korean_mirror(path: &Path) -> bool {
@@ -59,6 +58,7 @@ fn is_korean_mirror(path: &Path) -> bool {
         .is_some_and(|stem| stem.ends_with("-ko"))
 }
 
+/// Parse a `map_to` string into a ComponentType.
 fn parse_map_to(map_to: &str) -> Option<ComponentType> {
     match map_to.to_lowercase().as_str() {
         "agents" => Some(ComponentType::Agents),
@@ -157,6 +157,8 @@ pub fn scan_all_plugin_sources(sources: &[ResolvedSource]) -> Result<Vec<Plugin>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::component::InstallStatus;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
     fn only_a_ko_suffixed_stem_is_a_korean_mirror() {
@@ -166,8 +168,6 @@ mod tests {
         assert!(!is_korean_mirror(Path::new("skills/kotlin/SKILL.md")));
         assert!(!is_korean_mirror(Path::new("skills/why/ko-notes.md")));
     }
-    use crate::component::InstallStatus;
-    use std::time::{SystemTime, UNIX_EPOCH};
 
     fn unique_dir(label: &str) -> std::path::PathBuf {
         let nanos = SystemTime::now()

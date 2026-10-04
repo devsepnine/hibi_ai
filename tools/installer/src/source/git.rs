@@ -188,13 +188,12 @@ fn sanitize_stderr(stderr: &str) -> String {
         .join("\n")
 }
 
+/// git counts as available once it launches; a probe that outlives its
+/// timeout still launched, so a slow machine is not told git is missing.
 fn git_available() -> bool {
     let mut cmd = Command::new("git");
     cmd.arg("--version");
-    matches!(
-        crate::exec::run_with_timeout(&mut cmd, GIT_PROBE_TIMEOUT_SECS, |_, e| e.into()),
-        Ok(Some(_))
-    )
+    crate::exec::run_with_timeout(&mut cmd, GIT_PROBE_TIMEOUT_SECS, |_, e| e.into()).is_ok()
 }
 
 fn unix_timestamp_now() -> String {

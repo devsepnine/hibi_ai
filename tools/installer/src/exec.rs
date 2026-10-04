@@ -74,6 +74,36 @@ mod tests {
         );
     }
 
+    /// Not a real test: the timeout test below relaunches this binary to
+    /// run only this, as a child that outlives its timeout on any OS.
+    #[test]
+    #[ignore]
+    fn sleeper_for_the_timeout_test() {
+        std::thread::sleep(Duration::from_secs(30));
+    }
+
+    #[test]
+    fn a_command_past_its_timeout_is_killed_and_returns_none() {
+        let mut cmd = Command::new(std::env::current_exe().unwrap());
+        cmd.args([
+            "--ignored",
+            "--exact",
+            "exec::tests::sleeper_for_the_timeout_test",
+        ]);
+
+        let started = std::time::Instant::now();
+        let result = run_with_timeout(&mut cmd, 1, |_, e| e.into()).unwrap();
+
+        assert!(
+            result.is_none(),
+            "a child past its timeout must come back as None"
+        );
+        assert!(
+            started.elapsed() < Duration::from_secs(10),
+            "the child must be killed, not awaited"
+        );
+    }
+
     #[test]
     fn a_launch_failure_goes_through_the_callers_mapping() {
         let mut cmd = Command::new("definitely_not_a_real_program_xyz");
