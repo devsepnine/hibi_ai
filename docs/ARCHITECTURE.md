@@ -10,6 +10,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 1. **Units**에서 지금 있는 unit과 import하려는 unit을 찾는다.
 2. 두 unit 중 하나라도 이름이 나오는 규칙을 모두 확인한다. `MUST` 위반은 결함이다. `SHOULD` 위반은 PR에 이유를 적는다.
 3. **Known violations**에 있는 파일은 선례가 아니다. 그 패턴을 따라 하지 않는다.
+4. `python tools/lint-arch.py`가 `Enforced by`에 이 스크립트가 적힌 규칙 9개를 검사하고, Known violations 표를 허용 목록으로 읽는다. description 규칙 2개와 문장부호 규칙은 `python tools/lint-prose.py`가 검사한다. `arch-home-dir-single-source`, `arch-skill-layout`, `arch-statusline-binaries-rebuilt`, `arch-tests-placement`, `arch-policy-in-skills`, `arch-file-size`, `arch-ko-never-installed`는 리뷰나 테스트로만 확인한다.
 
 ## Units
 
@@ -37,7 +38,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 - **Why**: `fs`→`app` 참조가 `app`↔`fs` 순환을 만든다. 참조 대상은 `TargetCli` 하나뿐이라 그것을 leaf 모듈로 옮기면 해소된다. 2026-10-04 결정, 마이그레이션.
 - **Evidence**: 15개 중 7개 파일 준수, 위반 8개는 모두 `use crate::app::TargetCli` · `grep -rln "crate::app" tools/installer/src/fs`
 - **Exceptions**: none. 위반 8개는 Known violations에 있다
-- **Enforced by**: review
+- **Enforced by**: `tools/lint-arch.py`
 
 ### `arch-fs-no-ui-import`
 
@@ -46,7 +47,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 - **Why**: 코드가 증명함, 위반 0건. 설치 로직은 화면과 무관해야 `--sync`처럼 TUI 없이도 돈다.
 - **Evidence**: 0건 · `grep -rn "crate::ui" tools/installer/src/fs`
 - **Exceptions**: none
-- **Enforced by**: review
+- **Enforced by**: `tools/lint-arch.py`
 
 ### `arch-ui-reads-state-only`
 
@@ -55,7 +56,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 - **Why**: 코드가 증명함, 위반 0건. 렌더링이 부수 효과를 가지면 다시 그릴 때마다 동작이 바뀐다.
 - **Evidence**: `fs` 참조는 상수 `fs::VERSION` 하나뿐, 파일 I/O 0건 · `grep -rn "crate::fs" tools/installer/src/ui | grep -v VERSION` · `grep -rn "std::fs::" tools/installer/src/ui`
 - **Exceptions**: `fs::VERSION` 상수 읽기, 버전 표시용
-- **Enforced by**: review
+- **Enforced by**: `tools/lint-arch.py`
 
 ### `arch-leaf-modules-no-crate-import`
 
@@ -64,7 +65,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 - **Why**: 코드가 증명함, 위반 0건. 이 모듈들은 모든 unit이 가져다 쓰는 바닥이라, 위를 참조하는 순간 순환이 생긴다.
 - **Evidence**: 0 edges · `grep -rnE "crate::(app|ui|cli|fs|loading|tree|process_exec)" tools/installer/src/component.rs tools/installer/src/mcp.rs tools/installer/src/plugin.rs tools/installer/src/theme.rs tools/installer/src/source`
 - **Exceptions**: none
-- **Enforced by**: review
+- **Enforced by**: `tools/lint-arch.py`
 
 ### `arch-process-spawn-in-fs`
 
@@ -73,7 +74,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 - **Why**: 실행 지점을 `fs`로 모아 타임아웃과 에러 처리를 통일한다. `tools/installer/src/source/git.rs`의 직접 실행은 `fs`의 `run_with_timeout`으로 옮길 대상이다. 2026-10-04 결정, 마이그레이션.
 - **Evidence**: 실행 지점 3개 파일, `fs` 밖은 `tools/installer/src/source/git.rs` 하나. `tools/installer/src/fs/installer/process.rs`는 자체 타임아웃으로 실행한다 · `grep -rnE "Command::new|\.spawn\(|\.status\(\)" tools/installer/src | grep -v tests.rs`
 - **Exceptions**: none
-- **Enforced by**: review
+- **Enforced by**: `tools/lint-arch.py`
 
 ### `arch-home-dir-single-source`
 
@@ -91,7 +92,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 - **Why**: 코드가 증명함, 위반 0건. 사용자 설정을 쓰는 곳이 적어야 덮어쓰기 사고를 추적할 수 있다.
 - **Evidence**: 비테스트 쓰기 지점 5곳, 모두 해당 위치 · `grep -rnE "fs::write" tools/installer/src | grep -v unwrap`
 - **Exceptions**: none
-- **Enforced by**: review
+- **Enforced by**: `tools/lint-arch.py`
 
 ### `arch-tests-placement`
 
@@ -118,7 +119,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 - **Why**: 코드가 증명함, path 의존과 참조 0건. 상태줄은 Claude Code가 매번 실행하는 별도 바이너리다.
 - **Evidence**: 0건 · `grep -rn "hibi_ai" tools/statusline` · `grep -n "path" tools/statusline/Cargo.toml`
 - **Exceptions**: none
-- **Enforced by**: review
+- **Enforced by**: `tools/lint-arch.py`
 
 ### `arch-statusline-binaries-rebuilt`
 
@@ -136,7 +137,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 - **Why**: 코드가 증명함, 위반 0건. 미러는 개발자 가독용이다.
 - **Evidence**: 짝 없는 파일 0개 · `for f in $(find src -name '*.md' ! -name '*-ko.md'); do [ -f "${f%.md}-ko.md" ] || echo $f; done`
 - **Exceptions**: none
-- **Enforced by**: review
+- **Enforced by**: `tools/lint-arch.py`
 
 ### `arch-ko-never-installed`
 
@@ -172,7 +173,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 - **Why**: 표준 이름 규칙으로 고정한다. 2026-10-04 결정, 마이그레이션. 이름을 바꾸면 사용자 설치본의 옛 디렉터리를 인스톨러가 정리해야 한다.
 - **Evidence**: `name` 일치 29개 중 29개, kebab-case 29개 중 27개 · `ls src/skills | grep _`
 - **Exceptions**: none
-- **Enforced by**: review
+- **Enforced by**: `tools/lint-arch.py`
 
 ### `arch-description-length`
 
