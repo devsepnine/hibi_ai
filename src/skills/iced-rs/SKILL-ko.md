@@ -1,5 +1,5 @@
 ---
-name: iced_rs
+name: iced-rs
 description: "Rust iced GUI: widgets, Message/update/view, Task/Subscription, compile errors, 0.12→0.14 migration. Use when building iced apps. iced 앱, 러스트 GUI, iced 마이그레이션. NOT egui/Slint/Dioxus/Tauri/ratatui."
 ---
 

@@ -2,6 +2,7 @@ mod mcp;
 mod merge;
 mod plugin;
 mod process;
+mod renamed;
 mod settings;
 
 use anyhow::Result;
@@ -19,6 +20,7 @@ use settings::{
 // Re-export public API
 pub use mcp::{McpInstallConfig, install_mcp_server, remove_mcp_server};
 pub use plugin::{install_plugin, remove_plugin};
+pub use renamed::auto_cleanup_renamed_skills;
 pub use settings::{
     remove_managed_settings_sections, set_output_style, set_statusline, unset_output_style,
     unset_statusline,

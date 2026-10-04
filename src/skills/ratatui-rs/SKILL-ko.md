@@ -1,5 +1,5 @@
 ---
-name: ratatui_rs
+name: ratatui-rs
 description: "Rust TUI: ratatui/crossterm, widgets, List/TableState, cancelable event loops, raw mode/alt screen, 0.28→0.30. Use when building or fixing a Rust TUI. 러스트 TUI, 터미널 UI, 대화형 CLI, 알트 스크린, 이벤트 루프, 작업 취소. NOT GUI, ncurses."
 ---
 

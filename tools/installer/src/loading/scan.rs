@@ -21,7 +21,7 @@ pub(crate) enum RefreshResult {
         components: Vec<component::Component>,
         mcp_servers: Vec<mcp::McpServer>,
         plugins: Vec<plugin::Plugin>,
-        cleaned_hooks: Vec<String>,
+        cleaned_items: Vec<String>,
     },
     /// Refresh limited to filesystem-backed component types — Agents,
     /// Commands, Contexts, Rules, Skills, Hooks, Styles, Statusline,

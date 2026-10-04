@@ -56,6 +56,31 @@ pub fn manifest_path() -> Result<PathBuf> {
     Ok(home.join(".hibi").join("install.json"))
 }
 
+/// Component IDs the last install into `dest_dir` recorded. A missing or
+/// unreadable record, or one written for another target, yields none, so a
+/// caller that deletes recorded files deletes nothing.
+pub fn recorded_component_ids(dest_dir: &Path) -> Vec<String> {
+    manifest_path()
+        .ok()
+        .and_then(|path| fs::read_to_string(path).ok())
+        .map(|text| ids_for_target(&text, dest_dir))
+        .unwrap_or_default()
+}
+
+fn ids_for_target(record: &str, dest_dir: &Path) -> Vec<String> {
+    let Ok(manifest) = serde_json::from_str::<InstallManifest>(record) else {
+        return Vec::new();
+    };
+    let target = dest_dir
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or_default();
+    if manifest.target != target {
+        return Vec::new();
+    }
+    manifest.components
+}
+
 fn is_installed(component: &Component) -> bool {
     // `New` never landed, and `External` is a user's own file that no source
     // produces — claiming either as installed would misreport provenance.
@@ -221,6 +246,19 @@ mod tests {
             .unwrap()
             .as_nanos();
         std::env::temp_dir().join(format!("hibi_manifest_{label}_{nanos}"))
+    }
+
+    #[test]
+    fn recorded_ids_come_back_only_for_the_matching_target() {
+        let record = r#"{"source":"s","version":"v1","target":".claude",
+            "updated_at":"t","components":["skills/iced_rs/SKILL.md"]}"#;
+
+        assert_eq!(
+            ids_for_target(record, Path::new("/home/u/.claude")),
+            vec![String::from("skills/iced_rs/SKILL.md")]
+        );
+        assert!(ids_for_target(record, Path::new("/home/u/.codex")).is_empty());
+        assert!(ids_for_target("not json", Path::new("/home/u/.claude")).is_empty());
     }
 
     #[test]

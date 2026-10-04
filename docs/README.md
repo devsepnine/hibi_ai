@@ -134,8 +134,8 @@ hibi_ai/
 | `web-design-guidelines` | 웹 인터페이스 가이드라인, 접근성 |
 | `backend-patterns` | Node / Express / Next.js 라우트, REST, DB |
 | `rust-best-practices` | 소유권, 에러 처리, async, 테스트 |
-| `ratatui_rs` | Rust TUI, ratatui + crossterm |
-| `iced_rs` | Rust GUI, iced |
+| `ratatui-rs` | Rust TUI, ratatui + crossterm |
+| `iced-rs` | Rust GUI, iced |
 | `clickhouse-io` | ClickHouse 쿼리 최적화·분석 스키마 |
 | `superset` | Apache Superset, MCP 경유 |
 | `deploy-to-vercel` | Vercel 배포 |

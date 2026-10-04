@@ -19,7 +19,11 @@ pub(crate) fn start_loading_thread(app: &App, refresh_tx: &Sender<Result<Refresh
     let target_cli = app.target_cli.unwrap_or(TargetCli::Claude);
 
     thread::spawn(move || {
-        let cleaned = fs::installer::auto_cleanup_deprecated_hooks(&source_dir, &dest_dir);
+        let mut cleaned = fs::installer::auto_cleanup_deprecated_hooks(&source_dir, &dest_dir);
+        cleaned.extend(fs::installer::auto_cleanup_renamed_skills(
+            &dest_dir,
+            &fs::manifest::recorded_component_ids(&dest_dir),
+        ));
 
         let components = fs::scanner::scan_all_sources(&sources, &dest_dir, target_cli);
         let mcp_result = fs::scanner::scan_all_mcp_sources(&sources, target_cli);
@@ -30,7 +34,7 @@ pub(crate) fn start_loading_thread(app: &App, refresh_tx: &Sender<Result<Refresh
                 components: c,
                 mcp_servers: m,
                 plugins: p,
-                cleaned_hooks: cleaned,
+                cleaned_items: cleaned,
             }),
             (Err(e), _, _) | (_, Err(e), _) | (_, _, Err(e)) => Err(e),
         };
@@ -58,9 +62,9 @@ pub(crate) fn handle_loading_view(
             components,
             mcp_servers,
             plugins,
-            cleaned_hooks,
+            cleaned_items,
         })) => {
-            app.finish_loading(components, mcp_servers, plugins, cleaned_hooks);
+            app.finish_loading(components, mcp_servers, plugins, cleaned_items);
         }
         // The refresh channel is shared with start_refresh_thread, but
         // that thread only runs from the Installing view; the Loading

@@ -250,7 +250,7 @@ impl App {
         components: Vec<Component>,
         mcp_servers: Vec<McpServer>,
         plugins: Vec<Plugin>,
-        cleaned_hooks: Vec<String>,
+        cleaned_items: Vec<String>,
     ) {
         self.components = components;
         self.mcp_servers = mcp_servers;
@@ -267,11 +267,11 @@ impl App {
 
         // Switch to list view
         self.current_view = View::List;
-        if !cleaned_hooks.is_empty() {
+        if !cleaned_items.is_empty() {
             self.status_message = Some(format!(
-                "Auto-cleaned {} deprecated hook(s): {}",
-                cleaned_hooks.len(),
-                cleaned_hooks.join(", ")
+                "Auto-cleaned {} outdated item(s): {}",
+                cleaned_items.len(),
+                cleaned_items.join(", ")
             ));
         } else if let Some(cli) = self.target_cli {
             self.status_message = Some(format!("Selected {}", cli.display_name()));

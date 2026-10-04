@@ -109,10 +109,10 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 ### `arch-file-size`
 
 - **Level**: SHOULD
-- **Rule**: Rust 파일은 빈 줄과 주석을 뺀 300줄 이하로 유지한다.
-- **Why**: `coding-standards`의 soft 한도. 현재 모든 파일이 지킨다.
-- **Evidence**: 75개 파일 모두 이하, 최대 `tools/installer/src/fs/manifest.rs` 정확히 300 · `for f in $(find tools -name '*.rs'); do echo "$(grep -vE '^\s*$|^\s*//' $f | wc -l) $f"; done | sort -n | tail -3`
-- **Exceptions**: none
+- **Rule**: Rust 파일의 프로덕션 코드는 빈 줄, 주석, 인라인 `mod tests` 블록을 뺀 300줄 이하로 유지한다. 500줄을 넘으면 결함이다.
+- **Why**: `coding-standards`의 soft 300, hard 500 한도. 테스트는 픽스처처럼 길이에서 빠진다. 2026-10-04 rustfmt 도입으로 줄이 늘어 측정 기준을 프로덕션 코드로 맞췄다.
+- **Evidence**: 300줄 초과 1개, 500줄 초과 0개 · `for f in $(find tools -name '*.rs' -not -path '*/target/*' ! -name tests.rs); do echo "$(awk '/^\s*mod tests\s*\{/{exit} !/^\s*$/ && !/^\s*\/\//{n++} END{print n+0}' $f) $f"; done | sort -n | tail -3`
+- **Exceptions**: 테스트 파일 `tools/installer/src/ui/tests.rs`, `tools/installer/src/cli/tests.rs`
 - **Enforced by**: review
 
 ### `arch-statusline-standalone`
@@ -173,8 +173,8 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 
 - **Level**: MUST
 - **Rule**: skill 디렉터리 이름은 kebab-case이고 frontmatter `name`과 같다.
-- **Why**: 표준 이름 규칙으로 고정한다. 2026-10-04 결정, 마이그레이션. 이름을 바꾸면 사용자 설치본의 옛 디렉터리를 인스톨러가 정리해야 한다.
-- **Evidence**: `name` 일치 29개 중 29개, kebab-case 29개 중 27개 · `ls src/skills | grep _`
+- **Why**: 표준 이름 규칙으로 고정한다. 2026-10-04 결정. `iced_rs`와 `ratatui_rs`를 `iced-rs`, `ratatui-rs`로 바꾸고, 사용자 설치본의 옛 디렉터리는 `tools/installer/src/fs/installer/renamed.rs`가 정리한다.
+- **Evidence**: 위반 0건 · `ls src/skills | grep _`
 - **Exceptions**: none
 - **Enforced by**: `tools/lint-arch.py`
 
@@ -209,13 +209,12 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 
 | Path | Rule | Decision |
 |---|---|---|
+| `tools/installer/src/ui/mod.rs` | `arch-file-size` | accepted, rustfmt로 302줄, hard 500 미만 |
 | `src/skills/composition-patterns/README.md` | `arch-skill-layout` | fix, 내용을 `SKILL.md`나 `src/skills/<name>/references/`로 옮긴다 |
 | `src/skills/dependency-design/README.md` | `arch-skill-layout` | fix |
 | `src/skills/react-best-practices/README.md` | `arch-skill-layout` | fix |
 | `src/skills/react-native-skills/README.md` | `arch-skill-layout` | fix |
 | `src/skills/deploy-to-vercel/resources` | `arch-skill-layout` | fix, 같은 skill의 assets 폴더로 옮긴다 |
-| `src/skills/iced_rs` | `arch-skill-name-kebab` | fix, 인스톨러의 옛 이름 정리와 함께 |
-| `src/skills/ratatui_rs` | `arch-skill-name-kebab` | fix, 인스톨러의 옛 이름 정리와 함께 |
 
 ## Decisions
 
@@ -229,3 +228,6 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 | `2026-10-04` | 테스트가 인라인과 `tests.rs` 분리로 섞여 있다 | Rust 일반 관례: 인라인 기본, 모듈 전체 테스트만 분리 |
 | `2026-10-04` | skill 하위 구조와 이름에 예외가 있다 | 표준으로 고정: 마이그레이션 |
 | `2026-10-04` | 상태줄 바이너리는 수동 빌드 후 커밋된다 | 수동 빌드 유지, 소스 변경 시 바이너리 갱신을 MUST로 |
+| `2026-10-04` | rustfmt를 도입할까 | 도입. installer 크레이트만 먼저 포맷하고, statusline은 바이너리를 다시 빌드할 때 함께 포맷한다 |
+| `2026-10-04` | rustfmt 이후 테스트를 포함해 300줄을 넘는 파일이 생겼다 | 측정을 프로덕션 코드로 바꿈. 테스트는 길이에서 빠진다 |
+| `2026-10-04` | 이름을 바꾼 skill의 옛 디렉터리가 사용자 설치본에 남는다 | 설치 기록에 있는 파일만 지우고 사용자 파일과 그 디렉터리는 남긴다 |
