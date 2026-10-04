@@ -90,7 +90,7 @@ ls .dependency-cruiser.* .eslintrc* eslint.config.* importlinter* .importlinter 
 
 초안은 답변에 보여 준다. 사용자 동의 없이 패키지를 설치하거나, 설정 파일을 추가하거나, 빌드를 바꾸지 않는다. 도구가 이미 설치되어 있으면 초안을 check 모드로 한 번 실행하고 걸린 것을 보고한다. 6단계의 알려진 위반이 정확히 그 목록이어야 한다.
 
-그다음 에이전트가 코드를 쓰기 전에 규칙을 읽게 한다. 프로젝트의 `CLAUDE.md`나 `AGENTS.md`에 한 줄짜리 포인터를 제안하고, 사용자가 동의하면 추가한다:
+그다음 에이전트가 코드를 쓰기 전에 규칙을 읽게 한다. 프로젝트 루트 `CLAUDE.md`에 한 줄 포인터를 추가하고, 파일이 없으면 그 한 줄로 새로 만든다. `AGENTS.md`가 있으면 같은 줄을 거기에도 넣는다. 갱신 시에는 줄을 유지하고, 문서 위치가 바뀐 경우에만 고친다. 변경 사항은 응답에서 알린다:
 
 ```markdown
 - Before adding a module, a file in a new place, or an import across units, check `docs/ARCHITECTURE.md`.

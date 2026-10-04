@@ -5,14 +5,14 @@ Banned outside code: em dash, en dash, a hyphen standing in for a dash, and
 parentheses. Code fences, inline code, markdown link targets, wikilinks, and
 YAML frontmatter keys are syntax, not prose, so they are exempt.
 
-Usage: python tools/lint-prose.py [paths...]   (default: src docs README.md)
+Usage: python tools/lint-prose.py [paths...]   (default: src docs README.md CLAUDE.md)
 Exit status: 0 clean, 1 violations found.
 """
 import re
 import sys
 from pathlib import Path
 
-DEFAULT_ROOTS = ["src", "docs", "README.md"]
+DEFAULT_ROOTS = ["src", "docs", "README.md", "CLAUDE.md"]
 # The skill listing drops a description entirely once the combined budget
 # overflows; docs/ARCHITECTURE.md arch-description-length caps each one.
 MAX_DESCRIPTION = 220

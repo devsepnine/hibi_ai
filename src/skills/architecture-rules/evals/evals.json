@@ -12,7 +12,7 @@
       "id": 2,
       "name": "lint-draft-not-applied",
       "prompt": "Write down the architecture rules for this repo: which packages may import which, where new files go. Ask me about anything the code can't settle.",
-      "expected_output": "For each mechanically checkable MUST rule the reply shows a draft config in the tool the project already uses, or the stack's usual one such as dependency-cruiser, import-linter, or go-arch-lint, and marks the rule 'Enforced by: draft: <tool>'. It does not install packages, add config files, or change the build without agreement. If the tool is installed it runs the draft in check mode and the flagged files equal the Known violations list. It proposes, but does not silently add, a one-line pointer in CLAUDE.md or AGENTS.md.",
+      "expected_output": "For each mechanically checkable MUST rule the reply shows a draft config in the tool the project already uses, or the stack's usual one such as dependency-cruiser, import-linter, or go-arch-lint, and marks the rule 'Enforced by: draft: <tool>'. It does not install packages, add config files, or change the build without agreement. If the tool is installed it runs the draft in check mode and the flagged files equal the Known violations list. It adds a one-line pointer to the project's root CLAUDE.md, creating the file if missing, adds it to AGENTS.md when that exists, and reports the change.",
       "files": []
     },
     {

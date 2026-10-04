@@ -202,7 +202,7 @@ debugging, and create the file with that line when it does not exist. When
 only if the map moved. Report the change in the reply:
 
 ```markdown
-- Vague bug report ("X on the sidebar doesn't work")? Look it up in `docs/FEATURES.md` before searching the code.
+- Vague bug report, such as "X on the sidebar doesn't work"? Look it up in `docs/FEATURES.md` before searching the code.
 ```
 
 Writing the map is a content change, so the post-work review gate in `CLAUDE.md`
