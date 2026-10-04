@@ -95,8 +95,8 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
 
         let mut collected_lines: Vec<Line> = app.env_input_values.iter()
             .map(|(name, value)| {
-                let masked = if value.len() > 4 {
-                    format!("{}...", &value[..4])
+                let masked = if value.chars().count() > 4 {
+                    format!("{}...", value.chars().take(4).collect::<String>())
                 } else {
                     "****".to_string()
                 };

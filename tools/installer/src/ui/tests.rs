@@ -4,8 +4,8 @@ use ratatui::style::{Color, Style};
 use ratatui::Frame;
 
 use super::{
-    confirm_exit, help, layout, list, mcp_list, pane_border_style, pane_title, plugin_list,
-    render_status_bar, tabs, LIST_HELP,
+    confirm_exit, env_input, help, layout, list, mcp_list, pane_border_style, pane_title,
+    plugin_list, render_status_bar, tabs, LIST_HELP,
 };
 use crate::app::test_support::fresh_app;
 use crate::app::{App, FocusArea, View};
@@ -402,3 +402,22 @@ fn the_exit_prompt_names_both_of_its_answers() {
     }
 }
 
+/// A collected env value is shown as its first four characters, so a token
+/// typed in Korean, whose fourth byte sits inside a character, must still
+/// paint instead of taking the installer down mid-dialog.
+#[test]
+fn collected_env_values_mask_multibyte_input_by_character() {
+    let mut app = fresh_app();
+    app.env_input_vars = vec![String::from("API_KEY"), String::from("REGION")];
+    app.env_input_current = 1;
+    app.env_input_values = vec![(String::from("API_KEY"), String::from("한글토큰값"))];
+
+    let buf = paint_at(&app, env_input::render, 80, 30);
+    let painted: String = (0..buf.area.height)
+        .map(|y| row(&buf, y))
+        .collect::<String>()
+        .split_whitespace()
+        .collect();
+
+    assert!(painted.contains("API_KEY=한글토큰..."), "{painted}");
+}
