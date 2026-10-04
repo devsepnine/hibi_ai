@@ -10,6 +10,7 @@ Exit status: 0 clean, 1 new violations or stale entries, 2 unreadable document.
 """
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -112,10 +113,47 @@ def statusline_standalone():
             yield manifest
 
 
+def git(*args):
+    result = subprocess.run(["git", *args], capture_output=True, text=True)
+    return result.stdout.rstrip() if result.returncode == 0 else None
+
+
+def statusline_binaries_rebuilt():
+    """The binaries in src/statusline must be at least as new as the source.
+
+    Uncommitted source edits need uncommitted binaries beside them, and the
+    last commit touching the source must be an ancestor of, or the same as,
+    the last one touching the binaries. Without history, as in a shallow
+    clone, there is nothing to compare and the check passes.
+    """
+    source, binaries = "tools/statusline/src", "src/statusline"
+    pending = git("status", "--porcelain", "--", source, binaries) or ""
+    touched = [line[3:] for line in pending.splitlines()]
+    if any(p.startswith(source) for p in touched) and not any(p.startswith(binaries) for p in touched):
+        yield Path(source)
+        return
+    source_commit = git("log", "-1", "--format=%H", "--", source)
+    binary_commit = git("log", "-1", "--format=%H", "--", binaries)
+    if not source_commit or not binary_commit:
+        return
+    if git("merge-base", "--is-ancestor", source_commit, binary_commit) is None:
+        yield Path(source)
+
+
 def ko_mirror():
     for path in sorted(Path("src").rglob("*.md")):
         if not path.stem.endswith("-ko") and not path.with_name(path.stem + "-ko.md").exists():
             yield path
+
+
+SKILL_LAYOUT = {"SKILL.md", "SKILL-ko.md", "references", "assets", "scripts", "rules", "evals"}
+
+
+def skill_layout():
+    for skill in sorted(p for p in Path("src/skills").iterdir() if p.is_dir()):
+        for entry in sorted(skill.iterdir()):
+            if entry.name not in SKILL_LAYOUT:
+                yield entry
 
 
 def skill_name_kebab():
@@ -137,7 +175,9 @@ CHECKS = {
     "arch-home-dir-single-source": home_dir_single_source,
     "arch-config-writes-in-fs-or-source": config_writes_in_fs_or_source,
     "arch-statusline-standalone": statusline_standalone,
+    "arch-statusline-binaries-rebuilt": statusline_binaries_rebuilt,
     "arch-ko-mirror": ko_mirror,
+    "arch-skill-layout": skill_layout,
     "arch-skill-name-kebab": skill_name_kebab,
 }
 

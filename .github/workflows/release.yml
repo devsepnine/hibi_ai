@@ -30,6 +30,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # lint-arch.py compares the history of the statusline source and its
+          # committed binaries; a shallow clone has no history to compare.
+          fetch-depth: 0
 
       - name: Resolve and verify version
         id: ver
@@ -60,6 +64,13 @@ jobs:
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Check prose, architecture rules, formatting, and tests
+        run: |
+          python3 tools/lint-prose.py
+          python3 tools/lint-arch.py
+          cargo fmt --manifest-path tools/installer/Cargo.toml --check
+          cargo test --manifest-path tools/installer/Cargo.toml
 
       - name: Install Rust cross targets
         run: |

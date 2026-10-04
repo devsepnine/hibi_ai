@@ -10,7 +10,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 1. **Units**에서 지금 있는 unit과 import하려는 unit을 찾는다.
 2. 두 unit 중 하나라도 이름이 나오는 규칙을 모두 확인한다. `MUST` 위반은 결함이다. `SHOULD` 위반은 PR에 이유를 적는다.
 3. **Known violations**에 있는 파일은 선례가 아니다. 그 패턴을 따라 하지 않는다.
-4. `python tools/lint-arch.py`가 `Enforced by`에 이 스크립트가 적힌 규칙 9개를 검사하고, Known violations 표를 허용 목록으로 읽는다. description 규칙 2개와 문장부호 규칙은 `python tools/lint-prose.py`가 검사한다. `arch-home-dir-single-source`, `arch-skill-layout`, `arch-statusline-binaries-rebuilt`, `arch-tests-placement`, `arch-policy-in-skills`, `arch-file-size`, `arch-ko-never-installed`는 리뷰나 테스트로만 확인한다.
+4. `python tools/lint-arch.py`가 `Enforced by`에 이 스크립트가 적힌 규칙을 검사하고, Known violations 표를 허용 목록으로 읽는다. description 규칙 2개와 문장부호 규칙은 `python tools/lint-prose.py`가 검사한다. 릴리즈 워크플로가 두 스크립트와 `cargo fmt --check`, `cargo test`를 빌드 전에 실행한다. `arch-tests-placement`, `arch-policy-in-skills`, `arch-file-size`는 리뷰로, `arch-ko-never-installed`는 테스트로 확인한다.
 
 ## Units
 
@@ -129,9 +129,9 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 - **Level**: MUST
 - **Rule**: `tools/statusline`의 소스를 바꾼 커밋은 `src/statusline`의 바이너리 3개도 `tools/statusline/build.sh`로 다시 빌드해 함께 갱신한다.
 - **Why**: 릴리즈 워크플로는 상태줄을 빌드하지 않고 커밋된 바이너리를 그대로 싣는다. 2026-10-04 결정, 수동 빌드 유지.
-- **Evidence**: 커밋된 바이너리 3개, 워크플로의 statusline 언급 0건 · `git ls-files src/statusline` · `grep -ci statusline .github/workflows/release.yml`
+- **Evidence**: 소스를 마지막으로 바꾼 커밋이 바이너리를 마지막으로 바꾼 커밋과 같거나 그 조상이다 · `python tools/lint-arch.py`
 - **Exceptions**: none
-- **Enforced by**: review
+- **Enforced by**: `tools/lint-arch.py`
 
 ### `arch-ko-mirror`
 
@@ -226,3 +226,4 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 | `2026-10-04` | rustfmt를 도입할까 | 도입. installer 크레이트만 먼저 포맷하고, statusline은 바이너리를 다시 빌드할 때 함께 포맷한다 |
 | `2026-10-04` | rustfmt 이후 테스트를 포함해 300줄을 넘는 파일이 생겼다 | 측정을 프로덕션 코드로 바꿈. 테스트는 길이에서 빠진다 |
 | `2026-10-04` | 이름을 바꾼 skill의 옛 디렉터리가 사용자 설치본에 남는다 | 설치 기록에 있는 파일만 지우고 사용자 파일과 그 디렉터리는 남긴다 |
+| `2026-10-04` | 규칙 검사를 CI에 연결할까 | 릴리즈 워크플로가 빌드 전에 lint 두 개와 fmt, 테스트를 실행한다. 상태줄은 CI 빌드 대신 바이너리 갱신 여부를 검사한다 |
