@@ -33,7 +33,7 @@ export const logger = new Logger()
 
 ## Request-Scoped Logging
 
-Generate a `requestId` at the route boundary and pass it through every log line for that request — this is what makes a structured-log search actually useful.
+Generate a `requestId` at the route boundary and pass it through every log line for that request. This is what makes a structured-log search actually useful.
 
 ```typescript
 export async function GET(request: Request) {
@@ -49,27 +49,27 @@ export async function GET(request: Request) {
 }
 ```
 
-For multi-service traces, propagate the id via header (`x-request-id`) and adopt it if present, else generate.
+For multi-service traces, propagate the id via the `x-request-id` header and adopt it if present, else generate.
 
 ## What NOT to Log
 
 - Secrets: API keys, JWTs, refresh tokens, DB passwords
-- PII: full email (mask to `o***@example.com`), SSN, card numbers, address
-- Request bodies that may carry the above — log only the field names / shape, not values
-- Stack traces from user input (e.g. SQL fragments echoed back)
+- PII: full email, masked to `o***@example.com`, SSN, card numbers, address
+- Request bodies that may carry the above; log only the field names / shape, not values
+- Stack traces from user input, such as SQL fragments echoed back
 
 ## Levels
 
 | Level | Use for |
 |---|---|
-| `info` | Normal flow milestones (request received, job done) |
-| `warn` | Recoverable anomalies (cache miss spike, retry succeeded after N attempts) |
+| `info` | Normal flow milestones, such as request received or job done |
+| `warn` | Recoverable anomalies, such as a cache miss spike or a retry that succeeded after N attempts |
 | `error` | Failed request, unexpected exception, alert-worthy |
 
-Avoid `debug` in production; gate behind env var if needed. Don't add `console.log` — it bypasses the structured pipeline.
+Avoid `debug` in production; gate behind env var if needed. Don't add `console.log`, because it bypasses the structured pipeline.
 
 ## Shipping
 
-- Stdout JSON → log collector (Datadog, Loki, CloudWatch, Logflare)
-- Don't write to files from the app — let the platform handle rotation
+- Stdout JSON → log collector such as Datadog, Loki, CloudWatch, or Logflare
+- Don't write to files from the app; let the platform handle rotation
 - For Next.js on Vercel: `console.log(JSON.stringify(...))` is captured automatically

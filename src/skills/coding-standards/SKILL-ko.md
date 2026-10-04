@@ -1,6 +1,6 @@
 ---
 name: coding-standards
-description: TS/JS/React/Node coding standards — naming, immutability, error handling, comment rules, code smells, file layout. Use when writing or reviewing code. 코딩 표준, 코드 스타일, 주석 규칙, 코드 리뷰, 클린 코드.
+description: "TS/JS/React/Node coding standards: naming, immutability, error handling, comment rules, code smells, file layout. Use when writing or reviewing code. 코딩 표준, 코드 스타일, 주석 규칙, 코드 리뷰, 클린 코드."
 ---
 
 # 코딩 표준 & 모범 사례
@@ -9,11 +9,11 @@ description: TS/JS/React/Node coding standards — naming, immutability, error h
 
 ## 핵심 원칙
 
-- **가독성 우선 — 코드가 곧 명세다** — 코드는 작성보다 읽히는 일이 많다; *무엇*은 이름·타입·구조가 문서화하고, 주석은 *왜*만 담는다 (아래 주석 섹션 참조).
-- **KISS** — 동작하는 가장 단순한 솔루션; 성급한 최적화 금지.
-- **DRY** — 공통 로직 추출; 복사-붙여넣기 금지.
-- **YAGNI** — 추측성 요구를 위해 만들지 말 것; 필요해질 때 리팩토링한다.
-- **SOLID** — SRP / OCP / LSP / ISP / DIP. 모듈당 변경 이유는 하나.
+- **가독성 우선, 코드가 곧 명세다**: 코드는 작성보다 읽히는 일이 많다. *무엇*은 이름·타입·구조가 문서화하고, 주석은 *왜*만 담는다. 아래 주석 섹션을 참조한다.
+- **KISS**: 동작하는 가장 단순한 솔루션; 성급한 최적화 금지.
+- **DRY**: 공통 로직 추출; 복사-붙여넣기 금지.
+- **YAGNI**: 추측성 요구를 위해 만들지 말 것; 필요해질 때 리팩토링한다.
+- **SOLID**: SRP / OCP / LSP / ISP / DIP. 모듈당 변경 이유는 하나.
 
 ## 명명
 
@@ -31,11 +31,11 @@ const MAX_RETRIES = 3
 const DEBOUNCE_DELAY_MS = 500
 ```
 
-파일: `Button.tsx` (PascalCase 컴포넌트), `useAuth.ts` (camelCase + `use` 접두사), `formatDate.ts` (camelCase 유틸), `market.types.ts` (`.types` 접미사).
+파일: PascalCase 컴포넌트는 `Button.tsx`, camelCase에 `use` 접두사를 붙인 훅은 `useAuth.ts`, camelCase 유틸은 `formatDate.ts`, `.types` 접미사는 `market.types.ts`.
 
 ## TypeScript / JavaScript 패턴
 
-### 불변성 (CRITICAL)
+### 불변성: CRITICAL
 ```typescript
 // Always: spread / new object
 const updated = { ...user, name: 'New' }
@@ -47,7 +47,18 @@ items.push(newItem)    // BAD
 ```
 
 ### 타입 안전성
-`any` 회피. 유니언 리터럴 (`'active' | 'closed'`), 경계에는 `unknown` + 내로잉, 재사용 유틸리티에는 제네릭을 사용한다.
+불가능한 상태를 표현할 수 없게 만든다. 런타임 검사가 아니라 컴파일러가 거부해야 한다.
+
+- **optional 필드 묶음 대신 discriminated union**: `{ completed: boolean; completedAt?: Date }`가 아니라 `{ status: 'done'; completedAt: Date } | { status: 'open' }`.
+- 외부 데이터는 **`any`가 아니라 `unknown`**. 내로잉 우선순위: discriminant `switch` > `in` > `typeof`/`instanceof` > type guard. `isX` 같은 guard는 주장을 실제로 검증해야 한다. 거짓 guard는 `as`보다 나쁘다. 안전하다고 말하는 이름 뒤에 버그가 숨기 때문이다.
+- **컴파일러를 침묵시키려는 `as` 금지**: 대신 parse하거나 내로잉한다. `satisfies`는 literal을 넓히지 않고 검사한다.
+- **exhaustive switch**: `default: { const _exhaustive: never = x; throw new Error(...) }`. 새 variant가 추가되면 컴파일이 실패한다.
+- **혼동이 실제 버그가 되는 primitive는 brand**: `type UserId = string & { readonly __brand: 'UserId' }`, 경계에서 한 번 brand한다.
+- **다시 선언하지 말고 도출**: 새 interface를 쓰기 전에 권위 있는 schema나 함수에서 `z.infer`, `Pick`/`Omit`/`ReturnType`/`Awaited`로 도출한다.
+- 재사용 유틸리티에는 제네릭.
+
+### 경계
+요청 body, env, 파일, 서드파티 응답 같은 외부 입력은 들어오는 지점에서 한 번, 이름 있는 도메인 타입으로 parse한다. 그 안쪽에서는 타입을 신뢰한다: 타입상 존재하는 값을 재검증·`?.`·`?? default`로 감싸지 않는다. 이는 shape·타입 검사에만 해당한다. 인가와 출력 인코딩은 그대로 적용한다. `security-review`를 참조한다.
 
 ### Async / Await
 ```typescript
@@ -70,15 +81,15 @@ try {
 ```
 빈 `catch {}`로 조용히 삼키지 말 것. 컨텍스트와 함께 다시 throw하거나 명시적으로 처리한다.
 
-## 코드 스멜 (반드시 수정)
+## 코드 스멜: 반드시 수정
 
 | Smell | Fix |
 |---|---|
-| 함수 > 50 LOC | helper 추출 (함수당 한 가지 일) |
+| 함수가 50 LOC 초과 | helper 추출, 함수당 한 가지 일 |
 | 중첩 > 4단계 | guard clause / 조기 반환 |
 | 매직 넘버 | 명명된 상수 |
-| 긴 파라미터 목록 (> 5) | options 객체 |
-| boolean 플래그 수렁 | 별도 함수로 분리 |
+| 긴 파라미터 목록, 5개 초과 | options 객체 |
+| boolean 플래그 수렁 | 별도 함수로 분리; 상태라면 하나의 union 또는 상태 머신. 함께 동기화해야 하는 두 번째 boolean이 신호 |
 | 죽은 코드 / 주석 처리된 블록 | 삭제 |
 
 ```typescript
@@ -89,22 +100,22 @@ if (!market?.isActive) return
 // ... happy path
 ```
 
-## 주석 (절대 규칙)
+## 주석: 절대 규칙
 
-**코드가 곧 명세다.** *무엇*을 하는지는 이름·타입·구조가 말한다. 주석은 코드가 표현할 수 없는 것 — *왜*: 의도, 제약, 트레이드오프, 불변식, 외부 맥락 — 에만 존재한다. 기본값은 **주석 없음**이며, 모든 주석은 자기 자리를 증명해야 한다. 이 규칙은 모든 코드 편집에 적용된다 — 위반은 실패한 테스트와 동일하게 취급하고, 완료 보고 전에 고친다.
+**코드가 곧 명세다.** *무엇*을 하는지는 이름·타입·구조가 말한다. 주석은 코드가 표현할 수 없는 것, 곧 *왜*인 의도, 제약, 트레이드오프, 불변식, 외부 맥락에만 존재한다. 기본값은 **주석 없음**이며, 모든 주석은 자기 자리를 증명해야 한다. 이 규칙은 모든 코드 편집에 적용된다. 위반은 실패한 테스트와 동일하게 취급하고, 완료 보고 전에 고친다.
 
-**판단 절차 — 주석을 쓰기 전에 반드시 거친다:**
+**판단 절차, 주석을 쓰기 전에 반드시 거친다:**
 1. 코드가 *무엇*을 하는지 설명하려는가? → 쓰지 않는다. 코드가 스스로 말하게 만든다: 이름 변경, 함수/상수 추출, 단순화.
-2. 코드가 표현할 수 없는 것(왜 이 설계인지, 어떤 제약인지, 어떤 트레이드오프인지, 어떤 외부 사실인지)을 담는가? → 두괄식으로 쓴다.
+2. 코드가 표현할 수 없는 것, 곧 왜 이 설계인지, 어떤 제약인지, 어떤 트레이드오프인지, 어떤 외부 사실인지를 담는가? → 두괄식으로 쓴다.
 
-**두괄식으로 쓴다(BLUF).** 첫 줄에 요점을 한 문장으로 못박고, 상세는 필요한 만큼만 뒤에 붙인다. 읽는 사람이 아래 코드를 해석하지 않고 그 한 줄만으로 의도를 파악할 수 있어야 한다.
+**두괄식으로 쓴다, 곧 BLUF.** 첫 줄에 요점을 한 문장으로 못박고, 상세는 필요한 만큼만 뒤에 붙인다. 읽는 사람이 아래 코드를 해석하지 않고 그 한 줄만으로 의도를 파악할 수 있어야 한다.
 
-- **무엇이 아니라 왜** — 비자명한 결정, 트레이드오프, 제약을 남긴다. 코드 나열식 서술 금지: 코드가 이미 말하는 내용을 되풀이하지 않는다.
-- **요약 한 줄 → 상세** — 한 문장 먼저, 필요할 때만 다음 줄에 구체 내용(블록 주석은 빈 줄로 분리, `//` 연속 주석은 그냥 다음 줄에 이어 쓴다). 장문 서술 금지, 결론을 뒤로 미루는 서술 금지.
-- **잡음 제거** — 자명한 주석(`// i 증가`), 변경 이력(`// 2026-01-02 수정`), 주석 처리된 코드, 이모지 금지.
-- **과잉 주석 금지** — 주석 밀도는 품질이 아니다. 줄마다·블록마다 붙는 주석은 정작 중요한 소수의 주석을 묻어버리는 잡음이다. 모든 곳에 주석이 달리면 아무것도 눈에 띄지 않는다.
-- **사실과 일치 — 같은 편집에서** — 코드를 바꾸는 편집이 그 주석도 고치거나 지운다. 낡은 주석은 권위를 갖고 거짓말하기 때문에 없는 것보다 해롭다. 리팩토링 상황은 아래 *주석 유지보수* 참조.
-- **공개 API**: JSDoc/doc 주석 (params, returns, throws, example) — 구현이 아니라 *계약*(입력, 출력, 실패 모드)을 적는다. 판단 절차의 명시적 예외: 계약은 내부의 '무엇'이 아니라 호출부에서 보이지 않는 인터페이스이므로, 선택이 아니라 필수다.
+- **무엇이 아니라 왜**: 비자명한 결정, 트레이드오프, 제약을 남긴다. 코드 나열식 서술 금지: 코드가 이미 말하는 내용을 되풀이하지 않는다.
+- **요약 한 줄 → 상세**: 한 문장 먼저, 필요할 때만 다음 줄에 구체 내용을 적는다. 블록 주석은 빈 줄로 분리하고, `//` 연속 주석은 그냥 다음 줄에 이어 쓴다. 장문 서술 금지, 결론을 뒤로 미루는 서술 금지.
+- **잡음 제거**: `// i 증가` 같은 자명한 주석, `// 2026-01-02 수정` 같은 변경 이력, 주석 처리된 코드, 이모지 금지.
+- **과잉 주석 금지**: 주석 밀도는 품질이 아니다. 줄마다·블록마다 붙는 주석은 정작 중요한 소수의 주석을 묻어버리는 잡음이다. 모든 곳에 주석이 달리면 아무것도 눈에 띄지 않는다.
+- **사실과 일치, 같은 편집에서**: 코드를 바꾸는 편집이 그 주석도 고치거나 지운다. 낡은 주석은 권위를 갖고 거짓말하기 때문에 없는 것보다 해롭다. 리팩토링 상황은 아래 *주석 유지보수*를 참조한다.
+- **공개 API**: JSDoc/doc 주석에 params, returns, throws, example을 적는다. 구현이 아니라 *계약*, 곧 입력, 출력, 실패 모드를 적는다. 판단 절차의 명시적 예외: 계약은 내부의 '무엇'이 아니라 호출부에서 보이지 않는 인터페이스이므로, 선택이 아니라 필수다.
 - **언어**: 파일의 기존 주석 언어를 따른다. 한 파일에 두 언어를 섞지 않는다.
 
 ```typescript
@@ -129,7 +140,7 @@ if (user.role === 'admin' || (market.ownerId === user.id && !market.closed)) {
 if (canModifyMarket(user, market)) {
 ```
 
-모듈/함수 헤더도 같은 규칙 — 첫 줄이 한 문장 계약이다:
+모듈/함수 헤더도 같은 규칙이다. 첫 줄이 한 문장 계약이다:
 
 ```typescript
 /**
@@ -140,11 +151,11 @@ if (canModifyMarket(user, market)) {
  */
 ```
 
-### 주석 유지보수 — 코드를 바꾸는 편집이 그 주석의 주인이다
+### 주석 유지보수: 코드를 바꾸는 편집이 그 주석의 주인이다
 
-주석 결함은 처음부터 틀리게 쓰인 것이 아니라 주변 코드가 나중에 바뀌면서 남겨진 것인 경우가 많다. 코드를 이동·이름 변경·동작 변경하는 모든 편집에서 완료 보고 전에 아래 세 가지를 점검한다. 세 경우 모두 삭제가 유효한 결론이다 — 근거가 더 이상 성립하지 않는 주석은 고쳐 쓰는 것이 아니라 지운다.
+주석 결함은 처음부터 틀리게 쓰인 것이 아니라 주변 코드가 나중에 바뀌면서 남겨진 것인 경우가 많다. 코드를 이동·이름 변경·동작 변경하는 모든 편집에서 완료 보고 전에 아래 세 가지를 점검한다. 세 경우 모두 삭제가 유효한 결론이다. 근거가 더 이상 성립하지 않는 주석은 고쳐 쓰는 것이 아니라 지운다.
 
-**1. 주석은 자신이 설명하는 코드와 함께 이동한다.** 추출·분리·인라인·순서 변경은 주석을 엉뚱한 대상에 붙여둔 채로 남긴다. 추출 후에는 원래 주석의 각 줄이 이제 어느 쪽에 속하는지 판단한다 — 전체를 설명했던 주석이 슬그머니 부분의 doc이 되어서는 안 된다.
+**1. 주석은 자신이 설명하는 코드와 함께 이동한다.** 추출·분리·인라인·순서 변경은 주석을 엉뚱한 대상에 붙여둔 채로 남긴다. 추출 후에는 원래 주석의 각 줄이 이제 어느 쪽에 속하는지 판단한다. 전체를 설명했던 주석이 슬그머니 부분의 doc이 되어서는 안 된다.
 
 ```typescript
 // Bad — cacheKeyFor를 추출하면서 부모의 doc이 자식 위에 남아,
@@ -159,11 +170,11 @@ function cacheKeyFor(marketId: string): string {
 function cacheKeyFor(marketId: string): string {
 ```
 
-**2. diff hunk 밖까지 훑는다.** 이름 변경이나 동작 변경은 diff에 전혀 나타나지 않는 주석 — 호출부, 모듈 헤더, 형제 파일, 문서 — 을 무효화한다. 옛 이름과 옛 동작을 트리 전체에서 grep한다. 편집한 hunk는 결함이 시작되는 지점이고, 끝나는 지점이 아니다.
+**2. diff hunk 밖까지 훑는다.** 이름 변경이나 동작 변경은 diff에 전혀 나타나지 않는 주석, 곧 호출부, 모듈 헤더, 형제 파일, 문서의 주석을 무효화한다. 옛 이름과 옛 동작을 트리 전체에서 grep한다. 편집한 hunk는 결함이 시작되는 지점이고, 끝나는 지점이 아니다.
 
-**3. 주장하는 *왜*를 검증한다.** *왜* 주석은 시스템에 대한 사실을 주장하는 것이고, 검증되지 않은 주장은 그럴듯하게 읽히더라도 결함이다 — 존재하지 않는 제약을 다음 독자가 찾아 헤매게 만든다. 그 주장을 참으로 만드는 코드 경로·설정·외부 근거를 짚는다. 짚을 수 없으면 뒷받침 가능한 더 좁은 주장만 쓴다. "호출자가 non-ASCII 라벨을 넘길 수 있다"는 시그니처에서 확인 가능하다. "사용자 데이터가 처음 도달하는 지점이다"는 모든 호출자를 추적하지 않았다면 추측이다.
+**3. 주장하는 *왜*를 검증한다.** *왜* 주석은 시스템에 대한 사실을 주장하는 것이고, 검증되지 않은 주장은 그럴듯하게 읽히더라도 결함이다. 존재하지 않는 제약을 다음 독자가 찾아 헤매게 만들기 때문이다. 그 주장을 참으로 만드는 코드 경로·설정·외부 근거를 짚는다. 짚을 수 없으면 뒷받침 가능한 더 좁은 주장만 쓴다. "호출자가 non-ASCII 라벨을 넘길 수 있다"는 시그니처에서 확인 가능하다. "사용자 데이터가 처음 도달하는 지점이다"는 모든 호출자를 추적하지 않았다면 추측이다.
 
-## 테스팅 (AAA 패턴)
+## 테스팅: AAA 패턴
 
 ```typescript
 test('returns empty array when no markets match query', () => {
@@ -174,7 +185,7 @@ test('returns empty array when no markets match query', () => {
 
 ## 파일 조직화
 
-작고 집중된 다수의 파일 > 큰 파일 소수. 파일당 soft 300 LOC, hard 500 LOC (`references/code-thresholds.md` 참조). 타입이 아닌 feature/domain 으로 조직한다.
+작고 집중된 다수의 파일 > 큰 파일 소수. 파일당 soft 300 LOC, hard 500 LOC이며 `references/code-thresholds.md`를 참조한다. 타입이 아닌 feature/domain 으로 조직한다.
 
 ```
 src/
@@ -186,20 +197,20 @@ src/
 └── styles/
 ```
 
-## 도메인 특화 — 자매 skill 참조
+## 도메인 특화: 자매 skill 참조
 
 | Concern | Skill |
 |---|---|
-| React 성능 (memo, lazy, bundle, RSC) | `react-best-practices` |
+| React 성능: memo, lazy, bundle, RSC | `react-best-practices` |
 | React 컴포지션 / compound components | `composition-patterns` |
 | React 폼, 에러 바운더리, a11y, 애니메이션 | `references/react-patterns.md` |
-| 전체 코드 리뷰 체크리스트 (SOLID, severity, concurrency, cross-platform) | `references/review-checklist.md` |
-| 공통 TS 패턴 (API 응답, 커스텀 훅, repository, skeleton 프로젝트) | `references/patterns.md` |
-| 코드 임계값 (파일/함수 LOC, 복잡도, 파라미터, 중첩) | `references/code-thresholds.md` |
+| 전체 코드 리뷰 체크리스트: SOLID, severity, concurrency, cross-platform | `references/review-checklist.md` |
+| 공통 TS 패턴: API 응답, 커스텀 훅, repository, skeleton 프로젝트 | `references/patterns.md` |
+| 코드 임계값: 파일/함수 LOC, 복잡도, 파라미터, 중첩 | `references/code-thresholds.md` |
 | Zustand 전역 상태 | `zustand` |
 | REST/Next.js API 설계, 검증, DB 쿼리 | `backend-patterns` |
-| Rust (소유권, 에러, async) | `rust-best-practices` |
-| 보안 (인증, 입력 검증, 시크릿) | `security-review` |
+| Rust: 소유권, 에러, async | `rust-best-practices` |
+| 보안: 인증, 입력 검증, 시크릿 | `security-review` |
 | 테스트 우선 워크플로우 + 커버리지 | `tdd-workflow` |
 | 빌드/타입/테스트 검증 | `verification-loop` |
 | 커밋 & PR 컨벤션 | `commit-rules`, `pull-request` |

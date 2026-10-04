@@ -2,7 +2,7 @@
 
 `SKILL.md`에서 참조하는 3-tier 레이어링에 대한 전체 코드 샘플이다.
 
-## Repository (Supabase)
+## Repository, Supabase
 
 ```typescript
 class SupabaseMarketRepository implements MarketRepository {
@@ -39,7 +39,7 @@ class MarketService {
 }
 ```
 
-## Middleware (Next.js style)
+## Middleware, Next.js style
 
 ```typescript
 export function withAuth(handler: NextApiHandler): NextApiHandler {

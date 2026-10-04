@@ -1,6 +1,6 @@
 # Caching Strategies
 
-## Cache-Aside (default)
+## Cache-Aside, the default
 
 Read path: cache → on miss, DB → backfill → return. Write path: DB → invalidate cache.
 
@@ -18,7 +18,7 @@ async function getMarketWithCache(id: string): Promise<Market> {
 
 ## Caching Repository Wrapper
 
-Decorate any repository with a Redis layer — keeps the cache concern out of business logic.
+Decorate any repository with a Redis layer, which keeps the cache concern out of business logic.
 
 ```typescript
 class CachedMarketRepository implements MarketRepository {
@@ -42,14 +42,14 @@ class CachedMarketRepository implements MarketRepository {
 
 | Data shape | TTL | Notes |
 |---|---|---|
-| Hot read, rare write (config, prices) | 30s–5m | Tolerate small staleness for big QPS win |
-| User profile / session | 5–15m | Invalidate on profile edit |
-| Aggregations (counts, leaderboards) | 1–10m | Recompute lazily |
-| Immutable artifacts (signed URLs) | until expiry | Cache for as long as the resource lives |
+| Hot read, rare write, such as config and prices | 30s to 5m | Tolerate small staleness for big QPS win |
+| User profile / session | 5 to 15m | Invalidate on profile edit |
+| Aggregations such as counts and leaderboards | 1 to 10m | Recompute lazily |
+| Immutable artifacts such as signed URLs | until expiry | Cache for as long as the resource lives |
 
 ## Invalidation Rules
 
-- Always invalidate on `update` / `delete` — don't rely on TTL alone for correctness.
-- Prefer key-based invalidation (`del market:${id}`) over flush patterns.
-- For list caches (`markets:active`), bump a version key on any write so old keys age out.
-- Never cache user-specific data under a shared key — always namespace by `user:${id}:`.
+- Always invalidate on `update` / `delete`, and don't rely on TTL alone for correctness.
+- Prefer key-based invalidation, such as `del market:${id}`, over flush patterns.
+- For list caches such as `markets:active`, bump a version key on any write so old keys age out.
+- Never cache user-specific data under a shared key; always namespace by `user:${id}:`.

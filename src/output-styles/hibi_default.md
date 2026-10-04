@@ -76,6 +76,8 @@ Use this format for ongoing work:
 
 ### Verification
 - Test pass / fail
+- Real-artifact check (what was run, what was observed)
+- Label each claim: measured / inferred / guess
 - Items to confirm
 ```
 

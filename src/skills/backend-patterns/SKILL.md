@@ -1,6 +1,6 @@
 ---
 name: backend-patterns
-description: Backend and API patterns for Node, Express, and Next.js routes — REST design, DB optimization, server-side structure. Use when writing server code or designing APIs. 백엔드 패턴, 서버 아키텍처, API 설계, DB 최적화.
+description: "Backend and API patterns for Node, Express, and Next.js routes: REST design, DB optimization, server-side structure. Use when writing server code or designing APIs. 백엔드 패턴, 서버 아키텍처, API 설계, DB 최적화."
 ---
 
 # Backend Development Patterns
@@ -14,7 +14,7 @@ Scalable server-side patterns for Node.js / Express / Next.js API routes.
 | Designing REST endpoints, resource layout | API Design |
 | Repository, service, middleware structure | Layering |
 | Slow queries, N+1, transactions | Database |
-| Adding cache layer (Redis, in-memory) | Caching → `references/cache.md` |
+| Adding cache layer, such as Redis or in-memory | Caching → `references/cache.md` |
 | Centralized errors, retries | Errors → `references/error-handling.md` |
 | JWT auth, RBAC, rate limit | Security |
 | Background jobs, queues | Async |
@@ -33,17 +33,14 @@ PATCH  /api/markets/:id       # partial update
 DELETE /api/markets/:id       # delete
 ```
 
-Rules: resource-based URLs (no verbs), plural nouns, `?key=value` for filter/sort/page, standard status codes (200/201/400/401/403/404/409/429/500).
+Rules: resource-based URLs with no verbs, plural nouns, `?key=value` for filter/sort/page, standard status codes 200/201/400/401/403/404/409/429/500.
 
 ### Response Envelope
 
 ```typescript
-type ApiResponse<T> = {
-  success: boolean
-  data?: T
-  error?: string
-  meta?: { total: number; page: number; limit: number }
-}
+type ApiResponse<T> =
+  | { success: true; data: T; meta?: { total: number; page: number; limit: number } }
+  | { success: false; error: string; details?: unknown }
 ```
 
 ## Layering
@@ -77,11 +74,11 @@ export const withAuth = (handler) => async (req, res) => {
 ## Database
 
 ### Optimization Checklist
-- Select only needed columns (never `SELECT *` on hot paths)
+- Select only needed columns; never `SELECT *` on hot paths
 - Add indexes for filter/sort/join columns
 - Paginate everything that can grow unbounded
-- Avoid N+1: batch-fetch related data, build a Map for O(1) lookup
-- Use DB-side transactions (RPC / stored proc) for multi-write atomicity
+- Avoid N+1: batch-fetch related data, build a Map for `O(1)` lookup
+- Use DB-side transactions, meaning RPC or stored proc, for multi-write atomicity
 
 ### N+1 Fix Pattern
 
@@ -96,7 +93,7 @@ markets.forEach(m => { m.creator = map.get(m.creator_id) })
 ```
 
 ### Transactions
-Wrap multi-table writes in a DB function (Supabase RPC / Postgres `plpgsql` / Prisma `$transaction`). Rollback on any failure. See `references/repo.md` for a Supabase RPC example.
+Wrap multi-table writes in a DB function such as Supabase RPC, Postgres `plpgsql`, or Prisma `$transaction`. Rollback on any failure. See `references/repo.md` for a Supabase RPC example.
 
 ## Caching
 
@@ -129,11 +126,11 @@ try { return NextResponse.json({ success: true, data: await fetchData() }) }
 catch (e) { return errorHandler(e, request) }
 ```
 
-Centralized handler (Zod errors, unknown errors), `fetchWithRetry` (1s/2s/4s backoff) → `references/error-handling.md`.
+Centralized handler covering Zod errors and unknown errors, plus `fetchWithRetry` with 1s/2s/4s backoff → `references/error-handling.md`.
 
 ## Security
 
-### Auth (JWT)
+### Auth: JWT
 ```typescript
 export async function requireAuth(request: Request) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '')
@@ -146,27 +143,27 @@ export async function requireAuth(request: Request) {
 Map roles → permissions, gate handlers via `requirePermission('delete')`. One source of truth for the role table.
 
 ### Rate Limiting
-- Per identifier (user id / IP), sliding window
+- Per identifier, meaning user id or IP, sliding window
 - Reject with 429 + `Retry-After` when exceeded
 - Use Redis for multi-instance deployments; in-memory only for single-process dev
 
 ```typescript
 const allowed = await limiter.checkLimit(ip, 100, 60_000) // 100 req/min
-if (!allowed) return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
+if (!allowed) return NextResponse.json({ success: false, error: 'Rate limited' }, { status: 429 })
 ```
 
 ## Async Work
 
-Offload long tasks (>200ms) to a queue; respond immediately. Single-process queue is fine for dev / low volume; production needs Redis-backed (BullMQ) or external (SQS, Cloud Tasks).
+Offload long tasks over 200ms to a queue; respond immediately. Single-process queue is fine for dev / low volume; production needs Redis-backed BullMQ or an external queue such as SQS or Cloud Tasks.
 
 ```typescript
 await indexQueue.add({ marketId })
-return NextResponse.json({ success: true, message: 'Job queued' })
+return NextResponse.json({ success: true, data: { queued: true } })
 ```
 
 ## Logging
 
-Always JSON-structured, always include `requestId` (UUID per request) for tracing. Log levels: `info` / `warn` / `error`. Never log secrets, tokens, or full PII.
+Always JSON-structured, always include `requestId`, a UUID per request, for tracing. Log levels: `info` / `warn` / `error`. Never log secrets, tokens, or full PII.
 
 ```typescript
 logger.info('Fetching markets', { requestId, method, path })
@@ -181,4 +178,4 @@ Full `Logger` class, request-id middleware, log-shipping notes → `references/l
 - Express guide: https://expressjs.com/en/guide/routing.html
 - Next.js Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
 
-Pick the smallest pattern that fits. Avoid premature middleware / queue / cache layers — add them when a real bottleneck appears.
+Pick the smallest pattern that fits. Avoid premature middleware / queue / cache layers, and add them when a real bottleneck appears.

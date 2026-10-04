@@ -1,6 +1,6 @@
 ---
 name: coding-standards
-description: TS/JS/React/Node coding standards — naming, immutability, error handling, comment rules, code smells, file layout. Use when writing or reviewing code. 코딩 표준, 코드 스타일, 주석 규칙, 코드 리뷰, 클린 코드.
+description: "TS/JS/React/Node coding standards: naming, immutability, error handling, comment rules, code smells, file layout. Use when writing or reviewing code. 코딩 표준, 코드 스타일, 주석 규칙, 코드 리뷰, 클린 코드."
 ---
 
 # Coding Standards & Best Practices
@@ -9,11 +9,11 @@ Universal coding standards. Language/framework specifics delegate to sibling ski
 
 ## Core Principles
 
-- **Readability first — code is the spec** — code is read more than written; names, types, and structure document the *what*, comments carry only the *why* (see Comments below).
-- **KISS** — simplest solution that works; no premature optimization.
-- **DRY** — extract shared logic; no copy-paste.
-- **YAGNI** — don't build for speculative needs; refactor when required.
-- **SOLID** — SRP / OCP / LSP / ISP / DIP. One reason to change per module.
+- **Readability first, code is the spec**: code is read more than written; names, types, and structure document the *what*, comments carry only the *why*. See Comments below.
+- **KISS**: simplest solution that works; no premature optimization.
+- **DRY**: extract shared logic; no copy-paste.
+- **YAGNI**: don't build for speculative needs; refactor when required.
+- **SOLID**: SRP / OCP / LSP / ISP / DIP. One reason to change per module.
 
 ## Naming
 
@@ -31,11 +31,11 @@ const MAX_RETRIES = 3
 const DEBOUNCE_DELAY_MS = 500
 ```
 
-Files: `Button.tsx` (PascalCase components), `useAuth.ts` (camelCase + `use` prefix), `formatDate.ts` (camelCase utils), `market.types.ts` (`.types` suffix).
+Files: `Button.tsx` for PascalCase components, `useAuth.ts` for camelCase with a `use` prefix, `formatDate.ts` for camelCase utils, `market.types.ts` for the `.types` suffix.
 
 ## TypeScript / JavaScript Patterns
 
-### Immutability (CRITICAL)
+### Immutability: CRITICAL
 ```typescript
 // Always: spread / new object
 const updated = { ...user, name: 'New' }
@@ -47,7 +47,18 @@ items.push(newItem)    // BAD
 ```
 
 ### Type Safety
-Avoid `any`. Use union literals (`'active' | 'closed'`), `unknown` + narrowing for boundaries, generics for reusable utilities.
+Make illegal states unrepresentable. The compiler, not a runtime check, should reject them.
+
+- **Discriminated unions over optional-field bags**: `{ status: 'done'; completedAt: Date } | { status: 'open' }`, not `{ completed: boolean; completedAt?: Date }`.
+- **`unknown`, never `any`**, for external data. Narrow by discriminant `switch` > `in` > `typeof`/`instanceof` > type guard. A guard such as `isX` must verify its claim. A lying guard is worse than `as`, because the bug hides behind a name that says it is safe.
+- **No `as` to silence the compiler**: parse or narrow instead. `satisfies` checks a literal without widening it.
+- **Exhaustive switches**: `default: { const _exhaustive: never = x; throw new Error(...) }` so a new variant fails to compile.
+- **Brand primitives whose mix-up is a real bug**: `type UserId = string & { readonly __brand: 'UserId' }`, branded once at the boundary.
+- **Derive, don't redeclare**: `z.infer`, `Pick`/`Omit`/`ReturnType`/`Awaited` from the authoritative schema or function before writing a new interface.
+- Generics for reusable utilities.
+
+### Boundaries
+Parse external input such as request bodies, env, files, and third-party responses into a named domain type once, where it enters. Inside, trust the type: no re-validation, `?.`, or `?? default` guarding a value the type says exists. This covers shape and type checks only. Authorization and output encoding still apply, see `security-review`.
 
 ### Async / Await
 ```typescript
@@ -70,15 +81,15 @@ try {
 ```
 Never silently swallow with empty `catch {}`. Re-throw with context or handle explicitly.
 
-## Code Smells (must fix)
+## Code Smells: must fix
 
 | Smell | Fix |
 |---|---|
-| Function > 50 LOC | Extract helpers (one job per function) |
+| Function > 50 LOC | Extract helpers, one job per function |
 | Nesting > 4 levels | Guard clauses / early returns |
 | Magic numbers | Named constants |
-| Long parameter list (> 5) | Options object |
-| Boolean-flag soup | Split into separate functions |
+| Long parameter list, more than 5 | Options object |
+| Boolean-flag soup | Split into separate functions; for state, use one union or state machine. A second boolean that must stay in sync is the signal |
 | Dead code / commented blocks | Delete |
 
 ```typescript
@@ -89,22 +100,22 @@ if (!market?.isActive) return
 // ... happy path
 ```
 
-## Comments (NON-NEGOTIABLE)
+## Comments: NON-NEGOTIABLE
 
-**Code is the spec.** Names, types, and structure express *what* the code does; a comment exists only for what code cannot say — the *why*: intent, constraints, tradeoffs, invariants, external context. The default is **no comment**, and every comment must earn its place. These rules bind every code edit — treat a violation like a failing test: fix it before reporting completion.
+**Code is the spec.** Names, types, and structure express *what* the code does; a comment exists only for what code cannot say, the *why*: intent, constraints, tradeoffs, invariants, external context. The default is **no comment**, and every comment must earn its place. These rules bind every code edit. Treat a violation like a failing test: fix it before reporting completion.
 
-**Decision procedure — run it before writing any comment:**
+**Decision procedure, to run before writing any comment:**
 1. Would it explain *what* the code does? → Don't write it. Make the code say it instead: rename, extract a function/constant, simplify.
-2. Does it carry something code cannot express (why this design, which constraint, what tradeoff, which external fact)? → Write it, conclusion first.
+2. Does it carry something code cannot express, such as why this design, which constraint, what tradeoff, or which external fact? → Write it, conclusion first.
 
-**Lead with the conclusion (BLUF).** The first line states the point in one sentence; detail follows only if it earns its place. A reader must get the intent from that line alone, without decoding the code under it.
+**Lead with the conclusion, known as BLUF.** The first line states the point in one sentence; detail follows only if it earns its place. A reader must get the intent from that line alone, without decoding the code under it.
 
-- **Why, not what** — non-obvious decisions, tradeoffs, constraints. No code narration: never restate what the code already says.
-- **Summary line first, detail after** — one sentence; add specifics on the following lines only when needed (in block comments, separate them with a blank line; in `//` runs, just continue on the next line). No wall of prose, no multi-line build-up to the point.
-- **Cut the noise** — no obvious comments (`// increment i`), no change logs (`// fixed 2026-01-02`), no commented-out code, no emojis.
-- **No over-commenting** — comment density is not quality. A comment on every line or block is noise that buries the few comments that matter; if everything is annotated, nothing stands out.
-- **Keep it true, in the same edit** — the edit that changes code updates or deletes its comments; a stale comment is worse than no comment because it lies with authority. See *Comment maintenance* below for the refactor cases.
-- **Public APIs**: JSDoc/doc comment (params, returns, throws, example) — document the *contract* (inputs, outputs, failure modes), not the implementation. Explicit exception to the decision procedure: the contract is not internal *what* — it is the interface a caller cannot see from the call site, so documenting it is required, not optional.
+- **Why, not what**: non-obvious decisions, tradeoffs, constraints. No code narration: never restate what the code already says.
+- **Summary line first, detail after**: one sentence; add specifics on the following lines only when needed. In block comments, separate them with a blank line; in `//` runs, just continue on the next line. No wall of prose, no multi-line build-up to the point.
+- **Cut the noise**: no obvious comments like `// increment i`, no change logs like `// fixed 2026-01-02`, no commented-out code, no emojis.
+- **No over-commenting**: comment density is not quality. A comment on every line or block is noise that buries the few comments that matter; if everything is annotated, nothing stands out.
+- **Keep it true, in the same edit**: the edit that changes code updates or deletes its comments; a stale comment is worse than no comment because it lies with authority. See *Comment maintenance* below for the refactor cases.
+- **Public APIs**: JSDoc/doc comment with params, returns, throws, and an example. Document the *contract*, meaning inputs, outputs, and failure modes, not the implementation. This is an explicit exception to the decision procedure: the contract is not internal *what*. It is the interface a caller cannot see from the call site, so documenting it is required, not optional.
 - **Language**: follow the file's existing comment language; never mix two in one file.
 
 ```typescript
@@ -129,7 +140,7 @@ if (user.role === 'admin' || (market.ownerId === user.id && !market.closed)) {
 if (canModifyMarket(user, market)) {
 ```
 
-Same rule scales to module/function headers — first line is the one-sentence contract:
+The same rule scales to module/function headers. The first line is the one-sentence contract:
 
 ```typescript
 /**
@@ -140,11 +151,11 @@ Same rule scales to module/function headers — first line is the one-sentence c
  */
 ```
 
-### Comment maintenance — the edit that changes code owns its comments
+### Comment maintenance: the edit that changes code owns its comments
 
 A comment defect is often not written wrong; it is left behind by a later change to the code around it. Run these three checks on every edit that moves, renames, or changes behaviour, before reporting completion. Deleting is a valid outcome for all three: a comment whose reason no longer holds is removed, not reworded.
 
-**1. Move the comment with the code it describes.** Extracting, splitting, inlining, or reordering leaves comments attached to the wrong subject. After an extraction, decide for each line of the original comment which side it now belongs to — a comment that described the whole must not silently become the doc of the part.
+**1. Move the comment with the code it describes.** Extracting, splitting, inlining, or reordering leaves comments attached to the wrong subject. After an extraction, decide for each line of the original comment which side it now belongs to. A comment that described the whole must not silently become the doc of the part.
 
 ```typescript
 // Bad — extracting cacheKeyFor left the parent's doc stranded above the child,
@@ -159,11 +170,11 @@ function cacheKeyFor(marketId: string): string {
 function cacheKeyFor(marketId: string): string {
 ```
 
-**2. Sweep past the diff hunk.** A rename or behaviour change invalidates comments the diff never shows — at call sites, in module headers, in sibling files, in docs. Grep the old name and the old behaviour across the tree: the hunk you edited is where the defect starts, not where it ends.
+**2. Sweep past the diff hunk.** A rename or behaviour change invalidates comments the diff never shows, at call sites, in module headers, in sibling files, and in docs. Grep the old name and the old behaviour across the tree: the hunk you edited is where the defect starts, not where it ends.
 
-**3. Verify the *why* you claim.** A *why* comment asserts a fact about the system, and an unverifiable one is a defect even when it reads well — it sends the next reader hunting a constraint that does not exist. Point at the code path, config, or external source that makes the claim true; if you cannot, state the narrower claim you can support. "Callers may pass a non-ASCII label" is checkable at the signature. "This is the first place user data arrives" is a guess unless you traced every caller.
+**3. Verify the *why* you claim.** A *why* comment asserts a fact about the system, and an unverifiable one is a defect even when it reads well, because it sends the next reader hunting a constraint that does not exist. Point at the code path, config, or external source that makes the claim true; if you cannot, state the narrower claim you can support. "Callers may pass a non-ASCII label" is checkable at the signature. "This is the first place user data arrives" is a guess unless you traced every caller.
 
-## Testing (AAA pattern)
+## Testing: AAA pattern
 
 ```typescript
 test('returns empty array when no markets match query', () => {
@@ -174,7 +185,7 @@ Descriptive names that read as specifications. No `test('works')`. See `tdd-work
 
 ## File Organization
 
-Many small focused files > few large files. Soft 300 LOC, hard 500 LOC per file (see `references/code-thresholds.md`). Organize by feature/domain, not by type.
+Many small focused files > few large files. Soft 300 LOC, hard 500 LOC per file; see `references/code-thresholds.md`. Organize by feature/domain, not by type.
 
 ```
 src/
@@ -186,20 +197,20 @@ src/
 └── styles/
 ```
 
-## Domain-Specific — see sibling skills
+## Domain-Specific: see sibling skills
 
 | Concern | Skill |
 |---|---|
-| React performance (memo, lazy, bundle, RSC) | `react-best-practices` |
+| React performance: memo, lazy, bundle, RSC | `react-best-practices` |
 | React composition / compound components | `composition-patterns` |
 | React forms, error boundaries, a11y, animations | `references/react-patterns.md` |
-| Full code-review checklist (SOLID, severity, concurrency, cross-platform) | `references/review-checklist.md` |
-| Common TS patterns (API response, custom hooks, repository, skeleton projects) | `references/patterns.md` |
-| Code thresholds (file/function LOC, complexity, params, nesting) | `references/code-thresholds.md` |
+| Full code-review checklist: SOLID, severity, concurrency, cross-platform | `references/review-checklist.md` |
+| Common TS patterns: API response, custom hooks, repository, skeleton projects | `references/patterns.md` |
+| Code thresholds: file/function LOC, complexity, params, nesting | `references/code-thresholds.md` |
 | Zustand global state | `zustand` |
 | REST/Next.js API design, validation, DB queries | `backend-patterns` |
-| Rust (ownership, errors, async) | `rust-best-practices` |
-| Security (auth, input validation, secrets) | `security-review` |
+| Rust: ownership, errors, async | `rust-best-practices` |
+| Security: auth, input validation, secrets | `security-review` |
 | Test-first workflow + coverage | `tdd-workflow` |
 | Build/type/test verification | `verification-loop` |
 | Commit & PR conventions | `commit-rules`, `pull-request` |

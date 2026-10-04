@@ -3,7 +3,7 @@
 React 개발 시 자주 사용되는 보완 패턴 모음. 컴포지션·성능·상태관리는 별도 전문 스킬을 우선 참조하세요:
 
 - 컴포지션/Compound Components → `composition-patterns`
-- 성능 최적화 (memo, lazy, bundle) → `react-best-practices`
+- 성능 최적화는 memo, lazy, bundle 포함 → `react-best-practices`
 - 전역 상태 관리 → `zustand`
 
 ## Form Handling Patterns
@@ -128,7 +128,7 @@ export class ErrorBoundary extends React.Component<
 </ErrorBoundary>
 ```
 
-## Animation Patterns (Framer Motion)
+## Animation Patterns: Framer Motion
 
 ```typescript
 import { motion, AnimatePresence } from 'framer-motion'

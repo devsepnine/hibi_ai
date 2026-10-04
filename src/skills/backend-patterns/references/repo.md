@@ -2,7 +2,7 @@
 
 Full code samples for the three-tier layering referenced in `SKILL.md`.
 
-## Repository (Supabase)
+## Repository, Supabase
 
 ```typescript
 class SupabaseMarketRepository implements MarketRepository {
@@ -39,7 +39,7 @@ class MarketService {
 }
 ```
 
-## Middleware (Next.js style)
+## Middleware, Next.js style
 
 ```typescript
 export function withAuth(handler: NextApiHandler): NextApiHandler {

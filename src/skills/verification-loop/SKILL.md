@@ -7,6 +7,8 @@ description: Build, type, test, and security verification loop. Use before repor
 
 A comprehensive verification system for Claude Code sessions.
 
+Phases 1 to 6 are proxies: a green build, type check, and test suite say the code is consistent, not that the change does what was asked. Phase 7 checks the real artifact. Only a run that includes Phase 7 may report `Overall: READY`; a partial scope such as `/verify quick`, `pre-commit`, or Continuous Mode reports `Overall: PARTIAL`, and Phase 7 runs once, at completion.
+
 ## When to Use
 
 Invoke this skill:
@@ -84,6 +86,24 @@ Review each changed file for:
 - Missing error handling
 - Potential edge cases
 
+### Phase 7: Observe the Real Artifact
+
+Exercise the changed behavior directly and read the result:
+
+| Change | Check |
+|--------|-------|
+| CLI | Run the real command on a real input |
+| UI | Walk the changed flow in the running app, using `/e2e`, the `run` skill, or browser automation |
+| Parser / migration | Replay a saved real input and diff the output |
+| Storage / config | Read back the value that was written |
+| Performance | Compare before and after measurements on the same harness |
+| Docs only | Re-read the diff as its reader would; run evals only when behavior-bearing text changed, such as skill, agent, or command prompts |
+
+- Read the actual value, not a cached or derived representation such as a file mtime, an agent's self-report, or an old screenshot.
+- When a check fails, suspect the observation method before the system.
+- Prefer a script that re-runs the comparison over a one-time look; keep its output as the evidence.
+- Never hand the user a check you could have run. If it truly cannot run here, for example with no device or no credentials, mark it `INCONCLUSIVE` and say what would settle it. `INCONCLUSIVE`, or a check run in a different environment than the one changed, is `NOT READY`.
+
 ## Output Format
 
 After running all phases, produce a verification report:
@@ -98,13 +118,16 @@ Lint:      [PASS/FAIL] (X warnings)
 Tests:     [PASS/FAIL] (X/Y passed, Z% coverage)
 Security:  [PASS/FAIL] (X issues)
 Diff:      [X files changed]
+Artifact:  [PASS/FAIL/INCONCLUSIVE] (what was run, what was observed)
 
-Overall:   [READY/NOT READY] for PR
+Overall:   [READY/NOT READY/PARTIAL] for PR
 
 Issues to Fix:
 1. ...
 2. ...
 ```
+
+Label every claim in the report and the completion message as **measured**, meaning you ran it and saw the output, **inferred**, meaning it follows from something measured, or **guess**. Report inferred claims as inferred; only measured claims can carry the verdict.
 
 ## Continuous Mode
 

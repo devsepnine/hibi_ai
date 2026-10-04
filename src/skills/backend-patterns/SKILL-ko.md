@@ -1,6 +1,6 @@
 ---
 name: backend-patterns
-description: Backend and API patterns for Node, Express, and Next.js routes — REST design, DB optimization, server-side structure. Use when writing server code or designing APIs. 백엔드 패턴, 서버 아키텍처, API 설계, DB 최적화.
+description: "Backend and API patterns for Node, Express, and Next.js routes: REST design, DB optimization, server-side structure. Use when writing server code or designing APIs. 백엔드 패턴, 서버 아키텍처, API 설계, DB 최적화."
 ---
 
 # 백엔드 개발 패턴
@@ -14,7 +14,7 @@ Node.js / Express / Next.js API 라우트를 위한 확장 가능한 서버 사�
 | REST 엔드포인트 설계, 리소스 레이아웃 | API Design |
 | Repository, service, middleware 구조 | Layering |
 | 느린 쿼리, N+1, 트랜잭션 | Database |
-| 캐시 레이어 추가 (Redis, in-memory) | Caching → `references/cache.md` |
+| 캐시 레이어 추가, 예를 들어 Redis나 in-memory | Caching → `references/cache.md` |
 | 중앙 집중식 에러, 재시도 | Errors → `references/error-handling.md` |
 | JWT 인증, RBAC, rate limit | Security |
 | 백그라운드 작업, 큐 | Async |
@@ -33,17 +33,14 @@ PATCH  /api/markets/:id       # partial update
 DELETE /api/markets/:id       # delete
 ```
 
-규칙: 리소스 기반 URL (동사 금지), 복수 명사, 필터/정렬/페이지에 `?key=value` 사용, 표준 상태 코드 (200/201/400/401/403/404/409/429/500) 사용.
+규칙: 리소스 기반 URL로 동사 금지, 복수 명사, 필터/정렬/페이지에 `?key=value` 사용, 표준 상태 코드 200/201/400/401/403/404/409/429/500 사용.
 
-### 응답 봉투 (Response Envelope)
+### 응답 봉투, 곧 Response Envelope
 
 ```typescript
-type ApiResponse<T> = {
-  success: boolean
-  data?: T
-  error?: string
-  meta?: { total: number; page: number; limit: number }
-}
+type ApiResponse<T> =
+  | { success: true; data: T; meta?: { total: number; page: number; limit: number } }
+  | { success: false; error: string; details?: unknown }
 ```
 
 ## 레이어링
@@ -77,11 +74,11 @@ export const withAuth = (handler) => async (req, res) => {
 ## 데이터베이스
 
 ### 최적화 체크리스트
-- 필요한 컬럼만 SELECT (핫 패스에서 절대 `SELECT *` 금지)
+- 필요한 컬럼만 SELECT; 핫 패스에서 절대 `SELECT *` 금지
 - 필터/정렬/조인 컬럼에 인덱스 추가
 - 무한정 커질 수 있는 모든 것은 페이지네이션
-- N+1 회피: 관련 데이터를 일괄 조회하고 O(1) 룩업을 위해 Map 구성
-- 다중 쓰기 원자성을 위해 DB 측 트랜잭션 (RPC / stored proc) 사용
+- N+1 회피: 관련 데이터를 일괄 조회하고 `O(1)` 룩업을 위해 Map 구성
+- 다중 쓰기 원자성을 위해 DB 측 트랜잭션, 곧 RPC나 stored proc 사용
 
 ### N+1 수정 패턴
 
@@ -96,7 +93,7 @@ markets.forEach(m => { m.creator = map.get(m.creator_id) })
 ```
 
 ### 트랜잭션
-다중 테이블 쓰기는 DB 함수 (Supabase RPC / Postgres `plpgsql` / Prisma `$transaction`) 로 감싼다. 어떤 실패에도 롤백한다. Supabase RPC 예제는 `references/repo.md` 참조.
+다중 테이블 쓰기는 Supabase RPC, Postgres `plpgsql`, Prisma `$transaction` 같은 DB 함수로 감싼다. 어떤 실패에도 롤백한다. Supabase RPC 예제는 `references/repo.md` 참조.
 
 ## 캐싱
 
@@ -129,11 +126,11 @@ try { return NextResponse.json({ success: true, data: await fetchData() }) }
 catch (e) { return errorHandler(e, request) }
 ```
 
-중앙 핸들러 (Zod 에러, unknown 에러), `fetchWithRetry` (1s/2s/4s 백오프) → `references/error-handling.md`.
+Zod 에러와 unknown 에러를 다루는 중앙 핸들러, 그리고 1s/2s/4s 백오프의 `fetchWithRetry` → `references/error-handling.md`.
 
 ## 보안
 
-### 인증 (JWT)
+### 인증: JWT
 ```typescript
 export async function requireAuth(request: Request) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '')
@@ -146,27 +143,27 @@ export async function requireAuth(request: Request) {
 역할 → 권한 매핑, `requirePermission('delete')` 로 핸들러 게이팅. 역할 테이블은 단일 진실 공급원으로 둔다.
 
 ### Rate Limiting
-- 식별자별 (user id / IP), 슬라이딩 윈도우
+- 식별자별, 곧 user id나 IP, 슬라이딩 윈도우
 - 초과 시 429 + `Retry-After` 로 거절
 - 다중 인스턴스 배포에는 Redis 사용; 단일 프로세스 dev에서만 in-memory 허용
 
 ```typescript
 const allowed = await limiter.checkLimit(ip, 100, 60_000) // 100 req/min
-if (!allowed) return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
+if (!allowed) return NextResponse.json({ success: false, error: 'Rate limited' }, { status: 429 })
 ```
 
 ## 비동기 작업
 
-긴 작업 (>200ms) 은 큐로 위임하고 즉시 응답한다. 단일 프로세스 큐는 dev / 저용량에는 OK; 프로덕션은 Redis 기반 (BullMQ) 또는 외부 (SQS, Cloud Tasks) 가 필요하다.
+200ms를 넘는 긴 작업은 큐로 위임하고 즉시 응답한다. 단일 프로세스 큐는 dev / 저용량에는 OK; 프로덕션은 Redis 기반 BullMQ 또는 SQS, Cloud Tasks 같은 외부 큐가 필요하다.
 
 ```typescript
 await indexQueue.add({ marketId })
-return NextResponse.json({ success: true, message: 'Job queued' })
+return NextResponse.json({ success: true, data: { queued: true } })
 ```
 
 ## 로깅
 
-항상 JSON 구조화, 추적을 위해 항상 `requestId` (요청당 UUID) 포함. 로그 레벨: `info` / `warn` / `error`. 시크릿, 토큰, 또는 전체 PII를 로깅하지 말 것.
+항상 JSON 구조화, 추적을 위해 항상 요청당 UUID인 `requestId` 포함. 로그 레벨: `info` / `warn` / `error`. 시크릿, 토큰, 또는 전체 PII를 로깅하지 말 것.
 
 ```typescript
 logger.info('Fetching markets', { requestId, method, path })
@@ -181,4 +178,4 @@ logger.error('Failed', err, { requestId })
 - Express guide: https://expressjs.com/en/guide/routing.html
 - Next.js Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
 
-요구사항에 맞는 가장 작은 패턴을 선택한다. 미들웨어 / 큐 / 캐시 레이어를 성급하게 추가하지 말 것 — 실제 병목이 나타나면 추가한다.
+요구사항에 맞는 가장 작은 패턴을 선택한다. 미들웨어 / 큐 / 캐시 레이어를 성급하게 추가하지 말고, 실제 병목이 나타나면 추가한다.

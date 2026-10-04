@@ -3,21 +3,21 @@
 > `coding-standards` skill의 참조 문서. SOLID, Clean Code, Functionality,
 > Consistency + security/testing/performance를 강조한다.
 
-리뷰 우선순위 (집행 가중치 순): **SOLID → Clean Code → Functionality → Consistency**, 그다음 Security / Testing / Performance / Documentation. 후순위 카테고리에서 좋은 점수를 받아도 4대 우선순위 중 하나라도 실패하는 변경은 수정 요청해야 한다.
+리뷰 우선순위는 집행 가중치 순으로 **SOLID → Clean Code → Functionality → Consistency**이고, 그다음 Security / Testing / Performance / Documentation이다. 후순위 카테고리에서 좋은 점수를 받아도 4대 우선순위 중 하나라도 실패하는 변경은 수정 요청해야 한다.
 
 ## 심각도 범례
 
 작성자가 머지 차단 사유와 후속 작업 가능 사유를 알 수 있도록 모든 발견에 아래 라벨 중 하나를 태그한다.
 
-- **Blocker** — 머지 전 수정 필수. SOLID 위반, 보안 이슈, 깨진 기능, 데이터 race, 리소스 누수, 하드 한도 초과.
-- **Major** — 이번 PR에서 수정. Clean Code 위반, Consistency 위반, 신규 코드의 누락된 테스트, 계획 없는 소프트 한도 초과.
-- **Minor** — 후속 작업 허용. 문서 다듬기, 명명 취향, 성능 마이크로 최적화, 비필수 리팩토링.
+- **Blocker**: 머지 전 수정 필수. SOLID 위반, 보안 이슈, 깨진 기능, 데이터 race, 리소스 누수, 하드 한도 초과.
+- **Major**: 이번 PR에서 수정. Clean Code 위반, Consistency 위반, 신규 코드의 누락된 테스트, 계획 없는 소프트 한도 초과.
+- **Minor**: 후속 작업 허용. 문서 다듬기, 명명 취향, 성능 마이크로 최적화, 비필수 리팩토링.
 
-확신이 없으면 위로 (Major → Blocker) 기본값을 잡는다.
+확신이 없으면 Major에서 Blocker로, 위로 기본값을 잡는다.
 
 ## 코드 품질
 
-### 크기 한도 (soft/hard 단계는 `code-thresholds.md` 참고)
+### 크기 한도: soft/hard 단계는 `code-thresholds.md` 참고
 - [ ] File size ≤ 300 LOC soft / ≤ 500 LOC hard
 - [ ] Function size ≤ 50 LOC soft / ≤ 80 LOC hard
 - [ ] Parameters ≤ 5 soft / ≤ 7 hard
@@ -28,30 +28,30 @@
 ### SOLID Principles
 - [ ] **S**ingle Responsibility: 각 module/class/function은 정확히 한 가지 이유로 변경된다
 - [ ] **O**pen/Closed: 안정된 기존 코드를 수정하지 않고 동작을 확장한다
-- [ ] **L**iskov Substitution: 서브타입은 슈퍼타입의 계약을 지킨다 (예상치 못한 오버라이드 없음)
+- [ ] **L**iskov Substitution: 서브타입은 슈퍼타입의 계약을 지키며, 예상치 못한 오버라이드가 없다
 - [ ] **I**nterface Segregation: 호출자는 절대 사용하지 않는 메서드에 의존하지 않는다
-- [ ] **D**ependency Inversion: 상위 모듈은 구체 구현이 아닌 추상(trait/interface)에 의존한다
+- [ ] **D**ependency Inversion: 상위 모듈은 구체 구현이 아닌 trait이나 interface 같은 추상에 의존한다
 
 ### Clean Code
-- [ ] 의도를 드러내는 이름 (`data`, `tmp`, 인덱스 외 단일 문자 루프 회피)
+- [ ] 의도를 드러내는 이름; `data`, `tmp`, 인덱스 외 단일 문자 루프는 피한다
 - [ ] 각 함수는 한 가지 일을 한 추상화 수준에서 수행한다
-- [ ] Side effect (I/O, 네트워크, 공유 상태 mutation)는 경계 레이어로 격리된다
+- [ ] I/O, 네트워크, 공유 상태 mutation 같은 side effect는 경계 레이어로 격리된다
 - [ ] 깊은 중첩보다 guard clause 선호
-- [ ] 상수 심볼화 (매직 넘버/문자열 없음, 하드코딩된 경로 없음)
+- [ ] 상수 심볼화: 매직 넘버/문자열 없음, 하드코딩된 경로 없음
 - [ ] Input → Processing → Return으로 구조화된 코드
-- [ ] 코드가 곧 명세다: 코드가 이미 말하는 내용을 되풀이하는 주석 없음 — 그런 주석은 리팩토링(이름 변경/추출)으로 대체되었고, 남은 주석은 *왜*만 담는다
-- [ ] 주석이 두괄식 (요점 한 문장 → 왜) 이고, 비자명한 의도를 설명하며, 현재 동작과 일치한다
-- [ ] 과잉 주석 없음: 의미 없거나 과도한 주석은 잡음으로 지적한다 — 주석 밀도는 품질이 아니다
+- [ ] 코드가 곧 명세다: 코드가 이미 말하는 내용을 되풀이하는 주석 없음. 그런 주석은 이름 변경이나 추출 같은 리팩토링으로 대체되었고, 남은 주석은 *왜*만 담는다
+- [ ] 주석이 두괄식으로 요점 한 문장 → 왜 순서이고, 비자명한 의도를 설명하며, 현재 동작과 일치한다
+- [ ] 과잉 주석 없음: 의미 없거나 과도한 주석은 잡음으로 지적한다. 주석 밀도는 품질이 아니다
 - [ ] 주석이 자신이 설명하는 코드와 함께 이동했다: 추출/분리/이름 변경 후 엉뚱한 선언에 남은 doc 없고, 한 선언에 doc 블록이 두 개 쌓여 있지 않다
 - [ ] diff hunk 밖의 주석도 여전히 성립한다: 이름이 바뀐 심볼과 변경된 동작이 호출부·모듈 헤더·형제 파일·문서에서 옛 상태로 설명되고 있지 않다
-- [ ] 모든 *왜* 주석의 주장이 짚을 수 있는 코드 경로·설정·외부 근거에 기반한다 — 근거 없는 이유는 그 위의 코드가 옳더라도 결함이다
+- [ ] 모든 *왜* 주석의 주장이 짚을 수 있는 코드 경로·설정·외부 근거에 기반한다. 근거 없는 이유는 그 위의 코드가 옳더라도 결함이다
 - [ ] dead code 없음, 주석 처리된 블록 없음, 티켓 없는 `TODO` 없음
 
 ## 기능성 리뷰
 
 - [ ] 요구사항을 end-to-end로 정확히 구현
-- [ ] Edge case 처리됨 (empty, null, max, concurrent, partial failure)
-- [ ] 에러 처리가 구체적이고 실행 가능 (컨텍스트를 삼키는 catch-all 없음)
+- [ ] Edge case 처리됨: empty, null, max, concurrent, partial failure
+- [ ] 에러 처리가 구체적이고 실행 가능; 컨텍스트를 삼키는 catch-all 없음
 - [ ] 무관한 모듈에 의도하지 않은 side effect 없음
 - [ ] 리팩토링 시 이전 버전 대비 동작 동등성 검증됨
 
@@ -59,46 +59,46 @@
 
 이 프로젝트는 Rust 스레드 + `mpsc` 채널 + 자식 프로세스를 사용한다. 승인 전에 모든 동시성 접점을 검토한다.
 
-- [ ] 채널 라이프사이클 명시적 — `Sender`/`Receiver` drop 지점 식별, 종료 후 dangling producer 없음
-- [ ] `cancel_rx` 협력적 취소 점검이 긴 단계 사이에 배치됨 (`source::sync_all_sources` 패턴 참고)
-- [ ] `JoinHandle` 처리 명시적 — `join()`을 호출하거나, 의도적으로 detach하면서 그 이유를 한 줄 주석으로 명시
+- [ ] 채널 라이프사이클 명시적: `Sender`/`Receiver` drop 지점 식별, 종료 후 dangling producer 없음
+- [ ] `cancel_rx` 협력적 취소 점검이 긴 단계 사이에 배치됨. `source::sync_all_sources` 패턴 참고
+- [ ] `JoinHandle` 처리 명시적: `join()`을 호출하거나, 의도적으로 detach하면서 그 이유를 한 줄 주석으로 명시
 - [ ] `Arc<Mutex<...>>` 스코프가 필요 이상으로 넓지 않음; 잠금은 critical section 동안만 보유
-- [ ] 파일 핸들 / temp dir이 Drop-guard 사용 (정리를 직접 소유하고 프로세스 종료에 의존하지 않음)
-- [ ] 자식 프로세스의 라이프타임이 한정됨 — cancel 경로에서 timeout 또는 명시적 kill; 고아 좀비 없음
-- [ ] 파이프를 읽는 spawned thread는 자식이 kill되면 자연스럽게 exit (자식 사망 후 blocking read 없음)
+- [ ] 파일 핸들 / temp dir이 Drop-guard 사용; 정리를 직접 소유하고 프로세스 종료에 의존하지 않음
+- [ ] 자식 프로세스의 라이프타임이 한정됨: cancel 경로에서 timeout 또는 명시적 kill; 고아 좀비 없음
+- [ ] 파이프를 읽는 spawned thread는 자식이 kill되면 자연스럽게 exit하며, 자식 사망 후 blocking read 없음
 - [ ] TUI tick과 background thread 간 공유 상태는 raw mutable reference가 아닌 채널을 통한다
 
-## 에러 처리 (Rust)
+## 에러 처리: Rust
 
 - [ ] `unwrap` / `expect`는 invariant가 지역적으로 증명 가능한 곳에서만; panic 메시지는 invariant를 명시
 - [ ] 호출 경계에 `anyhow::Context` 부착되어 체인이 stack trace가 아닌 narrative로 읽힘
 - [ ] 커스텀 에러 타입은 `thiserror`로 명시적 variant 사용; match granularity를 잃는 `Box<dyn Error>` 회피
-- [ ] `Result`가 실제로 처리됨 — 외부 상태를 만지는 fallible call에 silent `let _ =` 없음
-- [ ] TUI 코드는 절대 `eprintln!`을 호출하지 않음 (alternate screen 손상); 에러는 `status_message` 또는 typed channel을 통해 표면화
-- [ ] 민감 데이터 (토큰, 자격 증명)는 표시 또는 로깅 전 에러 메시지에서 스크럽됨 (`sanitize_stderr` 패턴)
+- [ ] `Result`가 실제로 처리됨: 외부 상태를 만지는 fallible call에 silent `let _ =` 없음
+- [ ] TUI 코드는 절대 `eprintln!`을 호출하지 않음. alternate screen이 손상되기 때문이다; 에러는 `status_message` 또는 typed channel을 통해 표면화
+- [ ] 토큰, 자격 증명 같은 민감 데이터는 표시 또는 로깅 전 에러 메시지에서 스크럽됨. `sanitize_stderr` 패턴 참고
 
 ## 일관성 리뷰
 
-- [ ] 프로젝트 코딩 컨벤션 준수 (naming, formatting, error pattern)
-- [ ] 인접 코드와 동일한 솔루션 패턴 사용 (한 문제에 두 가지 방식 없음)
+- [ ] 프로젝트 코딩 컨벤션 준수: naming, formatting, error pattern
+- [ ] 인접 코드와 동일한 솔루션 패턴 사용; 한 문제에 두 가지 방식 없음
 - [ ] 로깅 스타일, correlation ID, error 메시지 형태가 주변 모듈과 일치
-- [ ] Naming convention (snake_case / camelCase / PascalCase)이 언어 관용구와 프로젝트 표준에 부합
-- [ ] API / response 형태가 기존 스키마와 일치 (임시 필드 없음)
-- [ ] 의존성 추가가 기존 스택에 부합 (같은 일을 하는 중복 라이브러리 없음)
+- [ ] `snake_case` / `camelCase` / `PascalCase` 같은 naming convention이 언어 관용구와 프로젝트 표준에 부합
+- [ ] API / response 형태가 기존 스키마와 일치; 임시 필드 없음
+- [ ] 의존성 추가가 기존 스택에 부합; 같은 일을 하는 중복 라이브러리 없음
 - [ ] 문서 톤과 구조가 주변 문서와 일치
 
 ## 크로스 플랫폼 고려사항
 
-이 프로젝트는 macOS, Linux, Windows에 배포된다 (Homebrew + Scoop + source). 경로, 명령어, 또는 file I/O를 다루는 변경은 세 플랫폼 모두에 대해 검토되어야 한다.
+이 프로젝트는 Homebrew, Scoop, source를 통해 macOS, Linux, Windows에 배포된다. 경로, 명령어, 또는 file I/O를 다루는 변경은 세 플랫폼 모두에 대해 검토되어야 한다.
 
-- [ ] 경로 결합은 `Path::join` / `PathBuf` 사용 — 하드코딩된 `/` 또는 `\` 구분자 없음; 문자열 결합 없음
-- [ ] `canonicalize()` 사용은 symlink를 포함할 수 있는 경로 비교 시 (예: macOS `/tmp` → `/private/tmp`)
-- [ ] MSYS / Cygwin path 형태 (`/c/Users/...`)는 Windows에서 표시 또는 file op 전에 `normalize_git_path`로 정규화
-- [ ] Shell 명령은 `Command::new("tool")`로 직접 호출 — **never** `cmd /c ...` (Windows에서 shell injection 위험)
-- [ ] 사용자 제공 명령 문자열은 `is_safe_command`를 통과 (Unix `&|><;`와 Windows `%^!` 메타문자 차단)
-- [ ] Unix에서 실행 파일 생성 시 파일 권한이 명시적으로 설정됨 (`PermissionsExt::set_mode`); Windows는 안전하게 무시
-- [ ] 비교 시 line ending 허용 (`normalize_line_endings`로 `\r` 제거하여 CRLF vs LF가 "Modified" 상태를 뒤집지 않음)
-- [ ] Hook/statusline 경로는 `dest_dir.file_name()`에서 파생 — `~/.claude`와 `~/.codex` 타겟 모두 지원
+- [ ] 경로 결합은 `Path::join` / `PathBuf` 사용; 하드코딩된 `/` 또는 `\` 구분자 없음; 문자열 결합 없음
+- [ ] `canonicalize()` 사용은 symlink를 포함할 수 있는 경로 비교 시, 예를 들어 macOS `/tmp` → `/private/tmp`
+- [ ] MSYS / Cygwin path 형태인 `/c/Users/...`는 Windows에서 표시 또는 file op 전에 `normalize_git_path`로 정규화
+- [ ] Shell 명령은 `Command::new("tool")`로 직접 호출; **never** `cmd /c ...`. Windows에서 shell injection 위험이 있기 때문이다
+- [ ] 사용자 제공 명령 문자열은 `is_safe_command`를 통과; Unix `&|><;`와 Windows `%^!` 메타문자를 차단
+- [ ] Unix에서 실행 파일 생성 시 파일 권한이 `PermissionsExt::set_mode`로 명시적으로 설정됨; Windows는 안전하게 무시
+- [ ] 비교 시 line ending 허용: `normalize_line_endings`로 `\r` 제거하여 CRLF vs LF가 "Modified" 상태를 뒤집지 않음
+- [ ] Hook/statusline 경로는 `dest_dir.file_name()`에서 파생; `~/.claude`와 `~/.codex` 타겟 모두 지원
 
 ## 보안 리뷰
 

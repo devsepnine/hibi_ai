@@ -4,7 +4,7 @@
 
 ## 임계값 한도
 
-| Metric | Soft (target) | Hard (block) | Why | On Violation |
+| Metric | Soft target | Hard block | Why | On Violation |
 |--------|---------------|--------------|-----|--------------|
 | File Length | ≤ 300 LOC | ≤ 500 LOC | 단일 책임, 한눈에 파악 | 관심사별로 모듈 분리 |
 | Function Length | ≤ 50 LOC | ≤ 80 LOC | 테스트, 명명, 재사용 용이 | 헬퍼 추출 |
@@ -12,39 +12,39 @@
 | Cyclomatic Complexity | ≤ 10 | ≤ 15 | 분기 폭발이 테스트 가능 케이스를 제한 | early return, 전략 분리 |
 | Nesting Depth | ≤ 4 | ≤ 6 | 선형 읽기 흐름 | guard clause, 함수 추출 |
 
-**Soft** (warning): PR 리뷰에서 논의하고, 가능하면 리팩토링한다.
-**Hard** (error): 머지 전에 반드시 리팩토링하거나 예외를 문서화해야 한다.
+**Soft** warning: PR 리뷰에서 논의하고, 가능하면 리팩토링한다.
+**Hard** error: 머지 전에 반드시 리팩토링하거나 예외를 문서화해야 한다.
 
 ## 함수 크기 > 파일 크기
 
 작고 응집된 함수들로 구성된 500 LOC 파일이 200 LOC짜리 단일 함수를 가진 250 LOC 파일보다 더 건강하다. 우선순위:
 
-1. **함수 길이** — 복잡도의 가장 강한 신호
-2. **순환 복잡도(Cyclomatic complexity)** — 테스트 부담을 예측
-3. **중첩 깊이(Nesting depth)** — 독자의 인지 부하를 예측
-4. **파일 길이** — 마지막. 응집된 모듈을 분리하면 지역성을 해칠 수 있다
+1. **함수 길이**: 복잡도의 가장 강한 신호
+2. **순환 복잡도, 곧 Cyclomatic complexity**: 테스트 부담을 예측
+3. **중첩 깊이, 곧 Nesting depth**: 독자의 인지 부하를 예측
+4. **파일 길이**: 마지막. 응집된 모듈을 분리하면 지역성을 해칠 수 있다
 
 ## 측정 규칙
 
 - **LOC**: 빈 줄과 주석 전용 줄은 제외한다.
 - **Parameters**: positional + named + optional 합산. 구조 분해된 객체는 1개로 센다.
 - **Cyclomatic Complexity**: `if`, `else if`, `match/case` arm, `&&`/`||`, `?:`, loop, `catch` 각각 +1.
-- **Nesting Depth**: 함수 본문 내부의 중괄호 깊이(제어 블록, 클로저).
+- **Nesting Depth**: 함수 본문 내부의 중괄호 깊이이며, 제어 블록과 클로저를 포함한다.
 
 ## 허용되는 예외
 
 예외에는 사유를 명시한 파일 최상단 주석이 필요하다. 명시적으로 면제되지 않는 한 Hard 한계는 여전히 적용된다.
 
-- 자동 생성 코드(protobuf, OpenAPI, codegen stub) — 모두 면제
-- 테스트 픽스처 / 데이터 테이블 — File LOC 면제, 함수는 여전히 적용
-- 타입 정의 파일(types.rs, d.ts) — File LOC Hard 한계를 800으로 상향
-- 불가피한 분기 맵(상태 머신, 라우트 테이블) — Complexity 면제
-- 일회성 마이그레이션 스크립트 — 모두 면제
+- 자동 생성 코드인 protobuf, OpenAPI, codegen stub: 모두 면제
+- 테스트 픽스처 / 데이터 테이블: File LOC 면제, 함수는 여전히 적용
+- 타입 정의 파일인 types.rs, d.ts: File LOC Hard 한계를 800으로 상향
+- 불가피한 분기 맵인 상태 머신, 라우트 테이블: Complexity 면제
+- 일회성 마이그레이션 스크립트: 모두 면제
 
 ## 강제 도구
 
 - **Rust**: `cargo clippy -- -W clippy::cognitive_complexity -W clippy::too_many_arguments`, `tokei`
-- **TypeScript**: ESLint `max-lines` (warn:300, error:500), `max-lines-per-function`, `complexity`, `max-params`
+- **TypeScript**: ESLint `max-lines`는 warn 300, error 500, 그리고 `max-lines-per-function`, `complexity`, `max-params`
 - **Python**: `radon cc`, `flake8 --max-complexity=10`
 
 ## 리팩토링 트리거
@@ -53,6 +53,6 @@
 
 ## 관련 규칙
 
-- `coding-standards` skill — 일반 코딩 스타일과 파일 구성
-- `pull-request` skill — 이 임계값을 포함한 PR 체크리스트
-- `tdd-workflow` skill — TDD 및 리뷰 워크플로우
+- `coding-standards` skill: 일반 코딩 스타일과 파일 구성
+- `pull-request` skill: 이 임계값을 포함한 PR 체크리스트
+- `tdd-workflow` skill: TDD 및 리뷰 워크플로우

@@ -1,6 +1,6 @@
-# CLAUDE.md — Orchestration Flow
+# CLAUDE.md: Orchestration Flow
 
-Defines always-on workflow and decision-making procedures. Detailed, situational policies live in **Skills** (loaded on demand) — see the policy-routing table at the bottom.
+Defines always-on workflow and decision-making procedures. Detailed, situational policies live in **Skills**, which load on demand; see the policy-routing table at the bottom.
 
 ## Pre-work checklist
 
@@ -9,71 +9,72 @@ Defines always-on workflow and decision-making procedures. Detailed, situational
 - **Stay in scope**: do not change anything outside the requested area
 - **Simple requests**: execute immediately. Only complex requests warrant a planning step.
 
-## Thinking and response language policy (CRITICAL)
+## CRITICAL: Thinking and response language policy
 
-- **Thinking step**: reason in English — more precise reasoning
-- **Output**: respond in Korean — user readability first
-- **Code, commands, technical terms, error messages**: keep in original (English)
+- **Thinking step**: reason in English for more precise reasoning
+- **Output**: respond in Korean, user readability first
+- **Code, commands, technical terms, error messages**: keep in original English
 
 ## Workflow orchestration
 
 ### 1. Plan-mode default
 - Tasks with 3+ steps or architectural decisions → enter plan mode
 - If things drift from intent, STOP immediately and re-plan
-- Reduce ambiguity by writing a detailed spec up front (Q&A first)
-- For complex/unclear problems, draft a **Problem 1-Pager** first: Background / Problem / Goal / Non-goals / Constraints — request an interview if any item is ambiguous
+- After two failed fixes that share an assumption, stop fixing: write the assumption down and test it before a third attempt
+- Reduce ambiguity by writing a detailed spec up front, with Q&A first
+- For complex/unclear problems, draft a **Problem 1-Pager** first: Background / Problem / Goal / Non-goals / Constraints. Request an interview if any item is ambiguous
 
 ### 2. Subagent strategy
-- Use subagents to keep the main context clean — but Opus 5 already delegates readily, so don't reinforce it: skip delegation for work finishable directly in a few tool calls
-- Delegate research, exploration, and parallel analysis to subagents; once delegated, commit — don't re-derive the subagent's findings
-- One task per subagent (Anthropic guide: low effort + explicit checklist)
-- After synthesizing team results, ask teammates that are no longer needed to shut down — idle teammates stay alive (addressable, no token cost) until the lead session ends
+- Use subagents to keep the main context clean, but Opus 5 already delegates readily, so don't reinforce it: skip delegation for work finishable directly in a few tool calls
+- Delegate research, exploration, and parallel analysis to subagents; once delegated, stay committed to the result and don't re-derive the subagent's findings
+- One task per subagent, per the Anthropic guide: low effort + explicit checklist
+- After synthesizing team results, ask teammates that are no longer needed to shut down. Idle teammates stay alive, addressable at no token cost, until the lead session ends
 
 ### 3. Self-improvement loop
 - On every user correction, record the pattern in `MEMORY.md`
-- Write a rule that prevents the same mistake — apply it immediately
+- Prevent the same mistake structurally first, with a lint, hook, type, test, or script check; write a prose rule only for judgment calls; apply the fix immediately
 - Review relevant lessons at the start of each session
-- When a lesson generalizes past this project, surface a proposal to promote it into the distributed config and run the `/upstream-pr` command — it loads the `pull-request` skill, which owns this path — once the user agrees; what is personal stays in `MEMORY.md`
+- When a lesson generalizes past this project, surface a proposal to promote it into the distributed config and, once the user agrees, run the `/upstream-pr` command, which loads the `pull-request` skill that owns this path; what is personal stays in `MEMORY.md`
 
 ### 4. Verify before completion
 - Never mark work complete without proof it works
 - Ask: "Would a senior engineer approve this?"
-- Run tests, check logs, prove correctness
-- **Mandatory post-work review**: after any code/content change and before reporting completion, review the diff — run the `code-reviewer` agent (or `/code-review`) on the changed files; for dependency/coupling/module/monorepo changes also apply the `dependency-design` skill. Apply or explicitly defer each finding. Skip only for pure conversation or trivial non-code edits.
+- Check the real artifact, not a proxy: run the feature, read back the value, as in `verification-loop` Phase 7
+- **Mandatory post-work review**: after any code/content change and before reporting completion, review the diff. Run the `code-reviewer` agent or `/code-review` on the changed files; for dependency/coupling/module/monorepo changes also apply the `dependency-design` skill. Apply or explicitly defer each finding. Skip only for pure conversation or trivial non-code edits.
 
-### 5. Pursue elegance (with balance)
+### 5. Pursue elegance, with balance
 - For non-obvious changes ask: "Is there a more elegant approach?"
 - If the fix feels temporary: "Implement the obvious, clear solution given everything I now know"
-- Skip this step for simple, clear changes — no over-engineering
+- Skip this step for simple, clear changes. No over-engineering
 - **Judgment criterion**: "Will I understand this code three months from now?"
-- **Refactor signal**: same pattern repeated 3 times (Rule of Three)
+- **Refactor signal**: same pattern repeated 3 times, the Rule of Three
 
 ### 6. Autonomous bug fixes
-- When you receive a bug report, just fix it — do not ask for step-by-step instructions
-- Track logs, errors, and failing tests yourself
-- **Root-cause first**: do not patch symptoms
+- When you receive a bug report, just fix it. Do not ask for step-by-step instructions
+- Reproduce it yourself first, then instrument with logs or a probe instead of guessing; track errors and failing tests yourself
+- **Root-cause first**: do not patch symptoms. A guard that silences the crash is a symptom fix
 - **Prevent recurrence**: check whether the same class of bug exists elsewhere
 
 ### 7. Parallel execution principle
-- Independent work always runs in parallel (multiple `Agent` calls in a single message)
+- Independent work always runs in parallel, with multiple `Agent` calls in a single message
 - Never run 3 unrelated analyses sequentially when there are no dependencies
 
-### 8. Git and change safety (CRITICAL)
-- **Forbidden**: `commit`, `push`, `gh pr create`, or branch-strategy changes the user did not explicitly request — the bar is in "Absolute commit and push rules" below
+### 8. CRITICAL: Git and change safety
+- **Forbidden**: `commit`, `push`, `gh pr create`, or branch-strategy changes the user did not explicitly request. The bar is in "Absolute commit and push rules" below
 - **Protect existing changes**: never silently undo user changes
 - **Detect unexpected changes**: stop and confirm if you find changes you did not make
 - **Destructive commands**: `reset --hard`, `rm -rf`, `push --force` require explicit approval
 
-### 9. Assurance level & traceability (DO-178C) — always-on
-- **Classify first**: at task start, assign a criticality tier (A–E) by worst-case blast radius. This is the master dial — it scales the rigor of the gates below; it does NOT add a parallel process.
-  - A (Catastrophic): auth, payments, crypto, data migration/deletion, anything irreversible
-  - B (Hazardous): core business logic, public API contracts, persistent state
-  - C (Major): internal features, dashboards, non-critical endpoints · D (Minor): logging, copy, styling · E (No effect): throwaway scripts, spikes
-- **Tier dials existing gates** (no new SSOT): coverage → `tdd-workflow`; verification depth → the post-work review gate + `verification-loop`; coupling → `dependency-design`; security sign-off → `security-review`. A/B raise to max; D/E may waive.
-- **Bidirectional traceability (A/B)**: every requirement (Problem 1-Pager / eval / ticket) maps to code and a test; every changed function traces back to a requirement. Flag orphan code and untested requirements.
-- **Independent verification (A/B)**: implementer ≠ sole verifier — the mandatory post-work `code-reviewer` review gate already enforces this; for A-tier also run the `assurance-auditor` agent and require human review.
-- **Derived-requirement feedback**: when you add behavior the spec didn't ask for (retry, cache, error code, default), surface it to the spec owner — don't embed it silently.
-- Full method: `do-178c` skill (`/do-178c`).
+### 9. Assurance level & traceability for DO-178C, always-on
+- **Classify first**: at task start, assign a criticality tier from A to E by worst-case blast radius. This is the master dial. It scales the rigor of the gates below; it does NOT add a parallel process.
+  - A, Catastrophic: auth, payments, crypto, data migration/deletion, anything irreversible
+  - B, Hazardous: core business logic, public API contracts, persistent state
+  - C, Major: internal features, dashboards, non-critical endpoints · D, Minor: logging, copy, styling · E, No effect: throwaway scripts, spikes
+- **Tier dials existing gates** with no new SSOT: coverage → `tdd-workflow`; verification depth → the post-work review gate + `verification-loop`; coupling → `dependency-design`; security sign-off → `security-review`. A/B raise to max; D/E may waive.
+- **Bidirectional traceability for A/B**: every requirement, whether Problem 1-Pager, eval, or ticket, maps to code and a test; every changed function traces back to a requirement. Flag orphan code and untested requirements.
+- **Independent verification for A/B**: implementer ≠ sole verifier. The mandatory post-work `code-reviewer` review gate already enforces this; for A-tier also run the `assurance-auditor` agent and require human review.
+- **Derived-requirement feedback**: when you add behavior the spec didn't ask for, such as retry, cache, error code, or default, surface it to the spec owner; don't embed it silently.
+- Full method: the `do-178c` skill, or `/do-178c`.
 
 ## Effort × model policy
 
@@ -81,48 +82,48 @@ Per the Anthropic Opus 5 guide.
 
 | Effort | Model | Use cases |
 |---|---|---|
-| `low` | `claude-haiku-4-5` | Single-tool checklist, narrow scope (subagents, classification, quick lookups) |
-| `medium` | `claude-sonnet-5` | Balanced — tool calls with some reasoning |
+| `low` | `claude-haiku-4-5` | Single-tool checklist, narrow scope such as subagents, classification, quick lookups |
+| `medium` | `claude-sonnet-5` | Balanced: tool calls with some reasoning |
 | `high` | `claude-sonnet-5` | Complex reasoning, careful judgment |
-| `xhigh` | `claude-opus-5` | Coding, exploration, multi-step (repeated tool calls, deep search) |
-| `max` | `claude-fable-5` | True frontier only — hardest long-horizon work (premium $10/$50 pricing, opt-in; not for typical workloads) |
+| `xhigh` | `claude-opus-5` | Coding, exploration, multi-step work such as repeated tool calls and deep search |
+| `max` | `claude-fable-5` | True frontier only: hardest long-horizon work. Premium $10/$50 pricing, opt-in; not for typical workloads |
 
-**Core principle**: *"Don't prompt around — raise the effort."* Opus 5 strictly respects effort. At lower effort it scopes to what was asked and nothing more — and `low`/`medium` on Opus 5 punch well above their weight, so sweep down where evals hold.
+**Core principle**: *"Don't prompt around. Raise the effort."* Opus 5 strictly respects effort. At lower effort it scopes to what was asked and nothing more, and `low`/`medium` on Opus 5 punch well above their weight, so sweep down where evals hold.
 
-**Model selection**: Haiku 4.5 for frequent lightweight workers; Sonnet 5 for main dev/tool-heavy work; Opus 5 for deep reasoning and long (30min+) agent tasks; Fable 5 only when explicitly chosen for the hardest frontier work (not the default upgrade path).
+**Model selection**: Haiku 4.5 for frequent lightweight workers; Sonnet 5 for main dev/tool-heavy work; Opus 5 for deep reasoning and long agent tasks of 30min+; Fable 5 only when explicitly chosen for the hardest frontier work, not the default upgrade path.
 
 **Tool usage at low effort**: combine calls, use fewer of them, act directly → terse confirmation.
 **Tool usage at high effort**: explain the plan before acting, more calls, detailed summaries.
 
 ## Agent routing
 
-Agents are isolated workers (own context window, scoped tools) — use them to keep the main context clean and to parallelize. Subagents default to **`low`/`medium` effort with explicit checklists**; raise to `xhigh` only for agentic exploration (multi-step search, repeated tool calls).
+Agents are isolated workers with their own context window and scoped tools. Use them to keep the main context clean and to parallelize. Subagents default to **`low`/`medium` effort with explicit checklists**; raise to `xhigh` only for agentic exploration such as multi-step search and repeated tool calls.
 
 | Trigger | Agent | Effort / Model |
 |---|---|---|
 | Complex feature / refactor planning | the built-in `Plan` agent | high / sonnet-5 |
 | Architectural decision | `architect` | xhigh / opus-5 |
-| New feature or bug fix (tests first) | `tdd-guide` | medium / sonnet-5 |
-| Right after writing code; also pre-commit security checks (secrets, injection, auth) via the `security-review` skill | `code-reviewer` | medium / sonnet-5 |
+| New feature or bug fix, tests first | `tdd-guide` | medium / sonnet-5 |
+| Right after writing code; also pre-commit security checks for secrets, injection, and auth via the `security-review` skill | `code-reviewer` | medium / sonnet-5 |
 | Build / type failure | `build-error-resolver` | medium / sonnet-5 |
 | Critical user flows | `e2e-runner` | xhigh / sonnet-5 |
 | Dead code cleanup | `refactor-cleaner` | xhigh / sonnet-5 |
 | Documentation | `doc-updater` | xhigh / opus-5 |
-| Independent assurance / traceability audit (A/B-tier) | `assurance-auditor` | high / sonnet-5 |
+| Independent assurance / traceability audit for A/B-tier | `assurance-auditor` | high / sonnet-5 |
 
-**Parallel execution**: launch independent agents in a single message (multiple `Agent` calls). Never run unrelated analyses sequentially.
-**Multi-perspective analysis**: for complex problems, split into focused subagents (factual / senior-engineer / security / consistency / redundancy), one scope each.
+**Parallel execution**: launch independent agents in a single message, with multiple `Agent` calls. Never run unrelated analyses sequentially.
+**Multi-perspective analysis**: for complex problems, split into focused subagents, such as factual / senior-engineer / security / consistency / redundancy, one scope each.
 
 ## Completion report format
 
 1. **What changed**: file paths with line numbers
 2. **Why it changed**: rationale
-3. **Verification**: how you proved it works (test / build results)
+3. **Verification**: how you proved it works, including test / build results and the real-artifact check. Label each claim measured / inferred / guess; an inferred or guessed claim goes under Next steps as unverified, never as done
 4. **Next steps**: numbered follow-ups when natural
 
 **Example:**
 ```
-Changed: src/auth/login.ts:42-58 — login validation logic
+Changed: src/auth/login.ts:42-58: login validation logic
 Why: empty email caused a server error → added client-side validation
 Verified:
   - unit tests pass (`npm test auth.test.ts`)
@@ -143,43 +144,45 @@ Next:
 - **Names over abstraction**: intention-revealing names; avoid premature abstraction.
 - **Code is the spec**: names, types, and structure carry the *what*; comments exist only for the *why* code cannot express. Non-negotiables in "Absolute comment rules" below; full rules in `coding-standards`.
 
-## Absolute commit and push rules (always apply — skill carries the rest)
+## Absolute commit and push rules
 
-Even before the `commit-rules` or `pull-request` skill loads, these are non-negotiable:
+These always apply, and the skill carries the rest. Even before the `commit-rules` or `pull-request` skill loads, these are non-negotiable:
 - **`commit`, `push`, and `gh pr create` run ONLY on an explicit request for that specific commit, push, or PR.** Finishing the work, a green gate, or it being the obvious next step is not a request. Without one: leave the tree as it is, report what is ready, and ask.
-- **These three have NO standing authorization.** An earlier "just handle it" / "알아서 해줘", an approval that covered a previous commit or push, an accepted plan, and a permission mode that would auto-approve the command are each NOT the request — permission to write code is never permission to publish it. Doing it "because the user would obviously want it" is the exact failure this rule exists to stop.
-- A slash command the user just typed is a request scoped to that turn and to exactly what the command names, nothing past it: `/commit` authorizes that commit; neither `/pull-request` nor `/upstream-pr` authorizes the `push` or `gh pr create`, which need their own go-ahead — see the `pull-request` skill.
-- **NO emojis, NO generation markers** (`Co-Authored-By`, "Generated with Claude Code", etc.)
-- Format: `<type>: [<ticket>] <title>`, or `<type>: <title>` when branch and history yield no ticket — full convention in the `commit-rules` skill.
+- **These three have NO standing authorization.** An earlier "just handle it" / "알아서 해줘", an approval that covered a previous commit or push, an accepted plan, and a permission mode that would auto-approve the command are each NOT the request. Permission to write code is never permission to publish it. Doing it "because the user would obviously want it" is the exact failure this rule exists to stop.
+- A slash command the user just typed is a request scoped to that turn and to exactly what the command names, nothing past it: `/commit` authorizes that commit; neither `/pull-request` nor `/upstream-pr` authorizes the `push` or `gh pr create`, which need their own go-ahead; see the `pull-request` skill.
+- **NO emojis, NO generation markers** such as `Co-Authored-By` and "Generated with Claude Code"
+- Format: `<type>: [<ticket>] <title>`, or `<type>: <title>` when branch and history yield no ticket. Full convention in the `commit-rules` skill.
 
-## Absolute comment rules (always apply — skill carries the rest)
+## Absolute comment rules
 
-**Code is the spec.** Names, types, and structure express *what* the code does; a comment exists only for what code cannot say — the *why*: intent, constraints, tradeoffs, invariants, external context. Even before the `coding-standards` skill loads, these are non-negotiable on any code you write or edit:
+**Code is the spec.** Names, types, and structure express *what* the code does; a comment exists only for what code cannot say, the *why*: intent, constraints, tradeoffs, invariants, external context. These always apply, and the skill carries the rest. Even before the `coding-standards` skill loads, these are non-negotiable on any code you write or edit:
 
-- **A comment that explains *what* → refactor instead** (rename, extract function/constant). Restating the code is a defect, not documentation.
-- **No over-commenting**: the default is no comment — meaningless comments are noise that buries the few that matter.
-- **NEVER**: code narration, stale comments, commented-out code, change-log comments (`// fixed 2026-01-02`), emojis.
-- **Comments follow the code they describe**: an extract/split/rename moves the comment with it and re-reads what is left behind — never leave a doc on the wrong declaration or two doc blocks stacked on one. Then grep the old name across the tree: the stale comment is often in a file the diff never showed.
-- **Claim only what you can verify**: a *why* comment asserts a fact about the system. Point at the code path, config, or external source that makes it true, or state the narrower claim you can support — an invented rationale is a defect even when the code is right.
-- **Language**: match the target file's existing comment language (the response-language policy governs replies, not comments in code).
-- **Self-check before reporting completion**: every comment you added or touched — plus the ones your change invalidated elsewhere — passes these rules and the skill's full Comments section (conclusion-first/BLUF, same-edit updates, comment maintenance) — treat a violation like a failing test.
+- **A comment that explains *what* → refactor instead**: rename, extract function/constant. Restating the code is a defect, not documentation.
+- **No over-commenting**: the default is no comment. Meaningless comments are noise that buries the few that matter.
+- **NEVER**: code narration, stale comments, commented-out code, change-log comments such as `// fixed 2026-01-02`, emojis.
+- **Comments follow the code they describe**: an extract/split/rename moves the comment with it and re-reads what is left behind. Never leave a doc on the wrong declaration or two doc blocks stacked on one. Then grep the old name across the tree: the stale comment is often in a file the diff never showed.
+- **Claim only what you can verify**: a *why* comment asserts a fact about the system. Point at the code path, config, or external source that makes it true, or state the narrower claim you can support. An invented rationale is a defect even when the code is right.
+- **Language**: match the target file's existing comment language. The response-language policy governs replies, not comments in code.
+- **Self-check before reporting completion**: every comment you added or touched, plus the ones your change invalidated elsewhere, passes these rules and the skill's full Comments section, which covers conclusion-first/BLUF, same-edit updates, and comment maintenance. Treat a violation like a failing test.
 
-## Policy routing (DRY — each policy has ONE source of truth)
+## Policy routing
 
-Detailed policies are **Skills**: their content loads only when triggered, keeping always-on context lean. Invoke the skill (or its `/command`) when the situation matches.
+Each policy has ONE source of truth, following DRY. Detailed policies are **Skills**: their content loads only when triggered, keeping always-on context lean. Invoke the skill, or its `/command`, when the situation matches.
 
-| Policy | Source of truth (SSOT) | How to load |
+| Policy | Source of truth, SSOT | How to load |
 |---|---|---|
 | Commit convention | `commit-rules` skill | `/commit` or trigger on git commit |
 | PR guidelines · upstream config contribution | `pull-request` skill | `/pull-request`, `/upstream-pr`, or trigger on PR work |
 | Security rules / OWASP | `security-review` skill | `/security-review` or trigger on auth/input/secrets |
 | Testing & TDD | `tdd-workflow` skill | `/tdd` or trigger on new feature/bugfix |
 | Coding style / clean code | `coding-standards` skill | trigger on code review/writing |
+| Pre-merge blast radius of a diff | `blast-radius` skill | `/blast-radius` or trigger on what a change could break; design-time coupling stays in `dependency-design` |
+| Prose style: docs, no dashes or parentheses | `technical-writing` skill | trigger on writing or reviewing docs; `python tools/lint-prose.py` enforces the punctuation |
 | Dependency / coupling design | `dependency-design` skill | `/deps` or trigger on module/coupling/dependency/monorepo design |
 | Build & type errors | `verification-loop` skill | `/verify`, `/build-fix` |
-| Assurance level / traceability (safety-critical) | `do-178c` skill | `/do-178c` or trigger on safety-critical / high-blast-radius / assurance-level / traceability work |
+| Assurance level / traceability for safety-critical work | `do-178c` skill | `/do-178c` or trigger on safety-critical / high-blast-radius / assurance-level / traceability work |
 
-On-demand references (in the `coding-standards` skill, read when relevant):
-- **Code thresholds (LOC, complexity)**: `references/code-thresholds.md`
-- **Review checklist (SOLID, severity, concurrency, cross-platform)**: `references/review-checklist.md`
+On-demand references in the `coding-standards` skill, read when relevant:
+- **Code thresholds, LOC and complexity**: `references/code-thresholds.md`
+- **Review checklist, covering SOLID, severity, concurrency, cross-platform**: `references/review-checklist.md`
 - **Common TS patterns**: `references/patterns.md`

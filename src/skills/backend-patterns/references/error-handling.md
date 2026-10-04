@@ -15,7 +15,7 @@ class ApiError extends Error {
 }
 ```
 
-`isOperational = true` marks expected errors (validation, not-found). `false` means a bug — log loudly, alert, do not swallow.
+`isOperational = true` marks expected errors such as validation and not-found. `false` means a bug: log loudly, alert, do not swallow.
 
 ## Centralized Handler
 
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
 
 ## Retry with Exponential Backoff
 
-Only retry **idempotent** operations (GET, PUT, DELETE). Never retry POST without an idempotency key.
+Only retry **idempotent** operations: GET, PUT, DELETE. Never retry POST without an idempotency key.
 
 ```typescript
 async function fetchWithRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
@@ -75,7 +75,7 @@ async function fetchWithRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<
 
 ## Anti-Patterns
 
-- `try { ... } catch (e) {}` — silent swallow. Always log or rethrow.
-- Returning `null` to mean "error" — caller can't distinguish "not found" from "DB down".
-- Throwing strings (`throw 'oops'`) — stack trace is useless. Always `throw new Error(...)` or a subclass.
-- Catching `Error` and re-throwing without context — wrap with `new ApiError(500, 'Failed in X', { cause: e })`.
+- `try { ... } catch (e) {}`: silent swallow. Always log or rethrow.
+- Returning `null` to mean "error": caller can't distinguish "not found" from "DB down".
+- Throwing strings, like `throw 'oops'`: stack trace is useless. Always `throw new Error(...)` or a subclass.
+- Catching `Error` and re-throwing without context: wrap with `new ApiError(500, 'Failed in X', { cause: e })`.

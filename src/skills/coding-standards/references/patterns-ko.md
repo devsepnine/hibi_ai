@@ -3,16 +3,9 @@
 ## API 응답 형식
 
 ```typescript
-interface ApiResponse<T> {
-  success: boolean
-  data?: T
-  error?: string
-  meta?: {
-    total: number
-    page: number
-    limit: number
-  }
-}
+type ApiResponse<T> =
+  | { success: true; data: T; meta?: { total: number; page: number; limit: number } }
+  | { success: false; error: string; details?: unknown }
 ```
 
 ## Custom Hooks 패턴

@@ -15,7 +15,7 @@ class ApiError extends Error {
 }
 ```
 
-`isOperational = true`는 예상된 에러(validation, not-found)를 표시한다. `false`는 버그를 의미한다 — 큰 소리로 로깅하고 알림을 보내며, 절대 삼키지 않는다.
+`isOperational = true`는 validation, not-found 같은 예상된 에러를 표시한다. `false`는 버그를 의미한다. 큰 소리로 로깅하고 알림을 보내며, 절대 삼키지 않는다.
 
 ## Centralized Handler
 
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
 
 ## Retry with Exponential Backoff
 
-**idempotent**한 작업(GET, PUT, DELETE)만 재시도한다. idempotency key 없이 POST를 재시도하지 않는다.
+**idempotent**한 작업인 GET, PUT, DELETE만 재시도한다. idempotency key 없이 POST를 재시도하지 않는다.
 
 ```typescript
 async function fetchWithRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
@@ -75,7 +75,7 @@ async function fetchWithRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<
 
 ## Anti-Patterns
 
-- `try { ... } catch (e) {}` — 조용한 삼키기. 항상 로깅하거나 다시 throw한다.
-- `null`을 "에러"의 의미로 반환 — 호출자가 "not found"와 "DB down"을 구분할 수 없다.
-- 문자열을 throw (`throw 'oops'`) — 스택 트레이스가 무용지물이 된다. 항상 `throw new Error(...)` 또는 서브클래스를 사용한다.
-- `Error`를 catch하고 컨텍스트 없이 다시 throw — `new ApiError(500, 'Failed in X', { cause: e })`로 감싼다.
+- `try { ... } catch (e) {}`: 조용한 삼키기. 항상 로깅하거나 다시 throw한다.
+- `null`을 "에러"의 의미로 반환: 호출자가 "not found"와 "DB down"을 구분할 수 없다.
+- `throw 'oops'` 같은 문자열 throw: 스택 트레이스가 무용지물이 된다. 항상 `throw new Error(...)` 또는 서브클래스를 사용한다.
+- `Error`를 catch하고 컨텍스트 없이 다시 throw: `new ApiError(500, 'Failed in X', { cause: e })`로 감싼다.
