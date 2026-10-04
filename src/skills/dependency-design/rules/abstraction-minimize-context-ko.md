@@ -41,6 +41,6 @@ interface PriceCalculator {
 const total = calculator.total(cart, region)
 ```
 
-어떤 지식을 공개할지(general 대 domain-specific)의 선택은 `abstraction-encapsulate-knowledge`에서 다룬다.
+어떤 지식을 공개할지의 선택은 general 지식과 domain-specific 지식을 비교하는 `abstraction-encapsulate-knowledge`에서 다룬다.
 
 Reference: [Abstraction and Module Boundaries](../references/abstraction.md)

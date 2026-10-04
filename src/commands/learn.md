@@ -1,11 +1,11 @@
 ---
-description: Extract reusable patterns from the current session into a new skill — its description, trigger vocabulary, and progressive-disclosure body. NOT for writing a note about what you learned — 학습 노트 작성은 obsidian-notes.
+description: Turn a reusable pattern from this session into a check, a skill edit, or a new skill with a working description. NOT for writing a note about what you learned. 학습 노트 작성은 obsidian-notes.
 allowed-tools: Read, Grep, Write
 model: haiku
 effort: low
 ---
 
-# /learn - Extract Reusable Patterns
+# /learn: Extract Reusable Patterns
 
 Analyze the current session and extract any patterns worth saving as skills.
 
@@ -41,30 +41,30 @@ Look for:
 ## Output Format
 
 Write a real skill: `~/.claude/skills/<kebab-case-name>/SKILL.md`. A flat file
-without frontmatter never loads, so a pattern saved that way is lost work — the
+without frontmatter never loads, so a pattern saved that way is lost work. The
 directory plus frontmatter is what makes it discoverable.
 
 `description` is the only field that decides whether the skill ever triggers, and it
 competes for a fixed budget: every installed skill's `name` + `description` has to fit in
-about 8,000 characters combined (1% of the context window). Over budget, the skills that
-do not fit lose their description **entirely** and collapse to a bare name — they stop
+about 8,000 characters combined, which is 1% of the context window. Over budget, the skills that
+do not fit lose their description **entirely** and collapse to a bare name, so they stop
 auto-triggering at all. So:
 
 - **Target under 200 characters**, hard ceiling 220. Prose you don't write here is trigger
   reliability for every other skill.
-- **`when_to_use:` saves nothing** — it is concatenated onto `description` inside the same
+- **`when_to_use:` saves nothing**: it is concatenated onto `description` inside the same
   budget. `keywords:` is accepted by the schema but ignored; it does nothing.
-- **Keep the Korean.** A Hangul syllable costs one character (`코드리뷰` 4 vs `code review`
-  11) and it is what the user actually types; a terse English-imperative description
+- **Keep the Korean.** A Hangul syllable costs one character, so `코드리뷰` is 4 against 11 for `code review`,
+  and it is what the user actually types; a terse English-imperative description
   measurably fails Korean queries.
 
-Four parts, in this order — the fourth only when a sibling skill is genuinely confusable:
+Four parts, in this order, with the fourth only when a sibling skill is genuinely confusable:
 
 ```
 <what it does: compressed noun phrase> Use when <trigger condition>. <한국어 트리거 어휘>. NOT for <confusable skill>.
 ```
 
-Replace every `<...>` in the template — a placeholder left in the file loads fine and
+Replace every `<...>` in the template. A placeholder left in the file loads fine and
 silently never matches.
 
 ```markdown
@@ -76,7 +76,7 @@ description: <what it does> Use when <trigger condition>. <한국어 트리거 �
 # <Descriptive Pattern Name>
 
 ## Problem
-<the failure this prevents, specifically — what went wrong and how it looked>
+<the failure this prevents, specifically: what went wrong and how it looked>
 
 ## Solution
 <the pattern, stated so it can be applied without re-deriving it>
@@ -92,14 +92,18 @@ description: <what it does> Use when <trigger condition>. <한국어 트리거 �
 
 1. Review the session for extractable patterns
 2. Identify the most valuable/reusable insight
-3. Draft the skill file
-4. Ask user to confirm before saving
-5. Save to `~/.claude/skills/<name>/SKILL.md`
-6. If the pattern would help users beyond this machine, propose it — and run the `/upstream-pr` command (it loads the `pull-request` skill) only once the user agrees — it ships as `src/skills/<name>/SKILL.md` with a `-ko.md` twin
+3. Route it before creating anything:
+   - If a lint, hook, type, test, or script check would enforce it, propose that instead of prose.
+   - If an existing skill already owns the topic, propose an edit to it: a one-line fix, a new section, or a description tune.
+   - Draft a new skill only when no skill owns the topic.
+4. Show the user each candidate as accepted, rejected, or backlog, with one line on why
+5. Draft the skill file or the edit, and ask the user to confirm before saving
+6. Save to `~/.claude/skills/<name>/SKILL.md`
+7. If the pattern would help users beyond this machine, propose it, and run the `/upstream-pr` command only once the user agrees; that command loads the `pull-request` skill. It ships as `src/skills/<name>/SKILL.md` with a `-ko.md` twin
 
 ## Notes
 
-- Don't extract trivial fixes (typos, simple syntax errors)
-- Don't extract one-time issues (specific API outages, etc.)
+- Don't extract trivial fixes such as typos and simple syntax errors
+- Don't extract one-time issues such as specific API outages
 - Focus on patterns that will save time in future sessions
-- Keep skills focused - one pattern per skill
+- Keep skills focused: one pattern per skill

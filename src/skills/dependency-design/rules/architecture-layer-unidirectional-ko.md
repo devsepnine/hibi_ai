@@ -13,16 +13,16 @@ tags: architecture, layer
 
 레이어 관점은 의도적으로 골라야 한다. 흔히 쓰이는 관점은 세 가지이며, 이들을 일관성 없이 섞는 것이 바로 N:N 엉킴을 만든다.
 
-- **Lifecycle** — 객체가 얼마나 오래 사는가.
+- **Lifecycle**: 객체가 얼마나 오래 사는가.
   - `presentation`: 필요할 때 생성되고 상호작용 처리가 끝나면 파기된다.
   - `application`: request에서 response까지 살아 있다가 폐기된다.
   - `business`: 상대적으로 long-term으로 유지되는, 상태 없는 invariant.
   - `data-access`: 상대적으로 long-term으로 유지되며 영속 상태만 소유한다.
-- **Functional role** — 각 레이어가 맡는 역할.
-  - `interface` (presentation): 최초 이벤트를 발생시키고 결과를 수령한다.
-  - `orchestrator` (application): 기능을 모아 중계하여 동작시킨다.
-  - `provider` (business + data-access): 실제 기능을 제공하는 레이어.
-- **Domain role** — 지식이 얼마나 일반적인가.
+- **Functional role**: 각 레이어가 맡는 역할.
+  - `interface`, 즉 presentation: 최초 이벤트를 발생시키고 결과를 수령한다.
+  - `orchestrator`, 즉 application: 기능을 모아 중계하여 동작시킨다.
+  - `provider`, 즉 business와 data-access: 실제 기능을 제공하는 레이어.
+- **Domain role**: 지식이 얼마나 일반적인가.
   - `domain`: 도메인별 상호작용을 담당한다.
   - `function`: 도메인이 재사용하는 중립적인 기능.
   - `foundation`: function 레이어가 동작할 수 있는 기반 기능.

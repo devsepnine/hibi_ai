@@ -17,16 +17,16 @@ This reframes the central design question: is the code structured so it can be
 *partially owned by purpose*? A change is cheap when the agent can load one
 isolated module, understand it in full, and edit it. A change is expensive when
 touching one file forces it to pull in a web of cyclically coupled files just to
-form a correct mental model — and the relevant context may not even fit.
+form a correct mental model, and the relevant context may not even fit.
 
 The optimal target, in order of preference:
 
-1. Per-instruction fully isolated modules — a feature or fix lives in a module
+1. Per-instruction fully isolated modules: a feature or fix lives in a module
    that can be loaded and edited on its own.
-2. When connection is unavoidable, a graph of unidirectional dependencies — so
+2. When connection is unavoidable, a graph of unidirectional dependencies, so
    the agent traverses dependencies one direction only and the closure stays
    bounded.
-3. Load only what the task needs — the minimal closure stays small enough to fit
+3. Load only what the task needs: the minimal closure stays small enough to fit
    the context window.
 
 Cyclic coupling defeats all three: there is no minimal closure, so the agent
@@ -82,7 +82,7 @@ export function outstandingBalance(openInvoices: InvoiceLine[][]): number {
 ```
 
 The corrected version lets an agent load `invoice.ts` by itself to change billing
-math, with a minimal, bounded context — exactly the partial ownership AI relies
+math, with a minimal, bounded context. This is exactly the partial ownership AI relies
 on.
 
 Reference: [Dependency direction](../references/monorepo.md), [Isolation by responsibility](../references/complexity.md)

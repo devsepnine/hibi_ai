@@ -9,8 +9,8 @@ tags: abstraction, consistency, module
 
 The only thing that justifies splitting code into a module is abstraction: a
 module hides detail behind a single, coherent viewpoint. If the criterion or the
-level of that abstraction is inconsistent — high-level orchestration sitting next
-to low-level byte fiddling, or a domain API that also speaks raw HTTP — the split
+level of that abstraction is inconsistent, such as high-level orchestration sitting next
+to low-level byte fiddling or a domain API that also speaks raw HTTP, the split
 buys nothing. A caller now has to reason about two altitudes at once, so the
 module is harder to understand than the flat code it replaced.
 

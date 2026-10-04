@@ -9,14 +9,14 @@ tags: architecture, layer
 
 A layer separates the system by a single abstraction viewpoint. Because every
 layer sits above or below another, layering always introduces functional
-coupling — an upper layer cannot do its job without the layer beneath it. That is
+coupling: an upper layer cannot do its job without the layer beneath it. That is
 not a defect; it is the deal a layer makes. Layering is most effective in a
 **fixed domain** that maps onto a traditional org structure, where the
 viewpoint is stable and the boundaries rarely move.
 
 The strength of layering is that one-way dependency is trivial to enforce: each
 layer is only allowed to point downward. The recurring failure mode is **N:N
-mapping** — when concerns are not assigned to a layer cleanly, every upper module
+mapping**. When concerns are not assigned to a layer cleanly, every upper module
 ends up touching every lower module, and the layer boundary stops carrying any
 meaning. Keep the mapping narrow: a layer should depend on the layer directly
 below it, not reach across or skip levels.
@@ -24,16 +24,16 @@ below it, not reach across or skip levels.
 Pick the layer viewpoint deliberately. There are three common ones, and mixing
 them inconsistently is what creates the N:N tangle:
 
-- **Lifecycle** — how long an object lives.
+- **Lifecycle**: how long an object lives.
   - `presentation`: created on demand, destroyed once the interaction is handled.
   - `application`: lives from request to response, then is discarded.
   - `business`: relatively long-lived, stateless invariants.
   - `data-access`: relatively long-lived, owns only persistent state.
-- **Functional role** — what part each layer plays.
-  - `interface` (presentation): raises the initial event and receives the result.
-  - `orchestrator` (application): gathers and relays features to drive them.
-  - `provider` (business + data-access): the real feature-providing layers.
-- **Domain role** — how general the knowledge is.
+- **Functional role**: what part each layer plays.
+  - `interface`, meaning presentation: raises the initial event and receives the result.
+  - `orchestrator`, meaning application: gathers and relays features to drive them.
+  - `provider`, meaning business and data-access: the real feature-providing layers.
+- **Domain role**: how general the knowledge is.
   - `domain`: handles per-domain interaction.
   - `function`: neutral capability the domain reuses.
   - `foundation`: base capability that the function layer runs on.

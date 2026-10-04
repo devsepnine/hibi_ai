@@ -8,14 +8,14 @@ tags: abstraction, encapsulation, contract
 ## Classify Domain-Specific vs General Knowledge, Share via Contract
 
 Every module owns a slice of domain knowledge that blends two kinds: **general**
-knowledge (broadly applicable, stable) and **domain-specific** knowledge (peculiar
-to this problem). The two pull in opposite directions when published. Publishing
+knowledge, which is broadly applicable and stable, and **domain-specific** knowledge,
+which is peculiar to this problem. The two pull in opposite directions when published. Publishing
 general knowledge raises reuse and compatibility; publishing domain-specific
 knowledge raises clarity and reliability. Decide deliberately which kind a given
 boundary should expose, then abstract it before publishing.
 
 How you share that knowledge decides the coupling. **Model coupling** reuses data
-that was published for another purpose — most often a persistence row or DTO — as
+that was published for another purpose, most often a persistence row or DTO, as
 a second module's input. It looks convenient but binds every consumer to the
 shape of someone else's internals, so a storage change ripples outward. **Contract
 coupling** publishes data made only for the interaction. Prefer a purpose-built
@@ -60,7 +60,7 @@ function sendWelcome(evt: WelcomeRequested) {
 }
 ```
 
-For broader coupling levels (intrusive, functional, model, contract) and how to
+For broader coupling levels such as intrusive, functional, model, and contract, and how to
 move toward looser ones, see the `backend-patterns` skill.
 
 Reference: [Abstraction and Module Boundaries](../references/abstraction.md)

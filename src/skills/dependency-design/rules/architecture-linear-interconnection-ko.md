@@ -11,7 +11,7 @@ tags: architecture, interconnection, pipeline
 
 세 가지 제약이 interconnection 복잡성을 통제한다.
 
-- **연결을 linear하게 만들라.** linear interconnection은 시간적 개념이다. 연결이 정해진 순서(sequential / pipelined)로 일어난다. 순서는 인과관계를 담으므로, 전체 흐름을 머릿속에 담지 않고도 한 단계씩 추론할 수 있다. 이것이 부분 분석과 부분 수정을 가능하게 하는 pipelining 전략이다.
+- **연결을 linear하게 만들라.** linear interconnection은 시간적 개념이다. 연결이 정해진 순서, 즉 sequential 또는 pipelined로 일어난다. 순서는 인과관계를 담으므로, 전체 흐름을 머릿속에 담지 않고도 한 단계씩 추론할 수 있다. 이것이 부분 분석과 부분 수정을 가능하게 하는 pipelining 전략이다.
 - **연결을 unidirectional하게 유지하라.** 연결은 request -> response 한 방향이지, 양방향으로 수다스럽게 주고받는 대화가 아니다. request를 보내려면 대상을 알아야 하므로, 방향은 곧 dependency 방향과 같으며 one-way 방향은 인과적 순서도 확정한다. 단일 간선만으로는 양방향이 아니어도 큰 순환을 통해 간접적으로 양방향이 되는 경우를 경계하라.
 - **메시지를 제약하라.** 연결을 가로지르는 메시지의 schema를 좁혀, 잘못된 입력이 퍼지기 전에 경계에서 차단되게 하라. 느슨한 payload는 검증을 하류로 밀어내고, 그곳에서는 이미 여파가 넓어져 있다.
 

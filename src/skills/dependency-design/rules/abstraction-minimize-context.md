@@ -7,10 +7,10 @@ tags: abstraction, interface
 
 ## Minimize Context: Publish Abstracted, Not Concrete, Knowledge
 
-A module is three kinds of knowledge: the **interface** (what it publishes for
-interaction), the **implementation** (the real knowledge it hides), and the
-**context** (the assumptions it does not implement and silently requires of its
-surroundings). Context is the dangerous part — it is unwritten, uncompiled, and
+A module is three kinds of knowledge: the **interface**, which is what it publishes for
+interaction, the **implementation**, which is the real knowledge it hides, and the
+**context**, which is the assumptions it does not implement and silently requires of its
+surroundings. Context is the dangerous part. It is unwritten, uncompiled, and
 unchecked, so the caller can violate it without any error until runtime.
 
 When the interface exposes concrete types and concrete assumptions, callers must
@@ -50,7 +50,7 @@ interface PriceCalculator {
 const total = calculator.total(cart, region)
 ```
 
-The choice of *which* knowledge to publish (general vs domain-specific) is covered
-by `abstraction-encapsulate-knowledge`.
+The choice of *which* knowledge to publish is covered
+by `abstraction-encapsulate-knowledge`, which compares general and domain-specific knowledge.
 
 Reference: [Abstraction and Module Boundaries](../references/abstraction.md)

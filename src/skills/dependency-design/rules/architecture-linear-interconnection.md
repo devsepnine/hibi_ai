@@ -11,15 +11,15 @@ A system is **components + interconnections + purpose**. A component is modular,
 so the blast radius of a change is bounded inside it. Interconnection complexity
 is different: it is not contained by a module boundary, so its ripple spreads
 across everything it touches. That is why connection design needs its own
-discipline — you cannot rely on encapsulation to absorb it.
+discipline, because you cannot rely on encapsulation to absorb it.
 
 Three constraints keep interconnection complexity in check:
 
 - **Make connections linear.** Linear interconnection is a temporal idea: the
-  connection happens in a definite order (sequential / pipelined). Order encodes
+  connection happens in a definite order, either sequential or pipelined. Order encodes
   causality, so you can reason about one stage at a time without holding the
   whole flow in your head. This is what makes partial analysis and partial
-  edits possible — the pipelining strategy.
+  edits possible, which is the pipelining strategy.
 - **Keep connections unidirectional.** A connection is request -> response one
   way, not a two-way chatty conversation. To send a request you must know the
   target, so direction is the same thing as dependency direction; one-way

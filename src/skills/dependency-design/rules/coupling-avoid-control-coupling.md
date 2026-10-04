@@ -5,7 +5,7 @@ impactDescription: control flags let a caller steer the callee's internal branch
 tags: coupling, control, api-design
 ---
 
-## Avoid Control Coupling (Flag Arguments Leaking Internal Structure)
+## Avoid Control Coupling: Flag Arguments Leaking Internal Structure
 
 Control coupling occurs when a caller passes a flag or mode argument whose only job is to select which internal branch of the callee runs. The flag leaks the callee's internal structure into the call site: the caller now has to know the callee's branches to call it correctly, and every new branch forces a new flag. Among classic coupling types, this is the most severe modern threat, because the resulting dependency is the most complex and the hardest to dissolve. Indirect leakage of hidden knowledge through flags is, in practice, worse than direct leakage.
 

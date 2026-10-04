@@ -10,13 +10,13 @@ tags: testing, complexity, cynefin
 The Cynefin framework sorts a change by how well you understand its impact, and each
 band gets a different strategy:
 
-- **Clear** — you are certain the change has no ripple; edit safely within the protocol.
-- **Complicated** — the ripple is compile-visible; the type system flags every caller, so agree with the affected parties, then edit.
-- **Complex** — the ripple is *runtime* coupling the compiler cannot catch (events, shared state, ordering, side effects). You only know what broke by running the code.
-- **Chaotic** — the coupling is uncontrolled; there is no reliable way to predict impact at all.
+- **Clear**: you are certain the change has no ripple; edit safely within the protocol.
+- **Complicated**: the ripple is compile-visible; the type system flags every caller, so agree with the affected parties, then edit.
+- **Complex**: the ripple is *runtime* coupling the compiler cannot catch, such as events, shared state, ordering, and side effects. You only know what broke by running the code.
+- **Chaotic**: the coupling is uncontrolled; there is no reliable way to predict impact at all.
 
 The trap is treating complex code as if it were clear. When the impact lives at runtime,
-editing without a test and "letting QA find it later" is not a strategy — it is operating
+editing without a test and "letting QA find it later" is not a strategy. It is operating
 in the chaotic band by choice. The discipline that keeps a change *complex* rather than
 *chaotic* is a safety net: before you touch runtime-coupled logic, add or confirm a
 characterization test that pins the current behavior. Then refactor against it. A failing
@@ -25,8 +25,8 @@ a week from now.
 
 So the rule for complex code is: pin behavior first, change second. If existing tests
 already cover the path, run them and confirm green. If they do not, write a
-characterization test that captures whatever the code does today — even if that behavior
-is ugly — and only then make your edit.
+characterization test that captures whatever the code does today, even if that behavior
+is ugly, and only then make your edit.
 
 **Incorrect:**
 
@@ -72,7 +72,7 @@ function applyLoyaltyBonus(order: Order): Order {
 }
 ```
 
-For the broader test discipline (characterization tests, coverage targets, what to
-assert), see the `tdd-workflow` and `coding-standards` skills.
+For the broader test discipline, including characterization tests, coverage targets, and what to
+assert, see the `tdd-workflow` and `coding-standards` skills.
 
 Reference: [Complexity strategy ladder](../references/complexity.md)

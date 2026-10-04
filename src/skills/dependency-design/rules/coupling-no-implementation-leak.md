@@ -7,7 +7,7 @@ tags: coupling, encapsulation
 
 ## Do Not Leak Implementation Knowledge Through the Interface
 
-Contents coupling (also called implementation-knowledge coupling) occurs when a consumer depends on another module's concrete internals: a private field, an underscore-prefixed property, an internal data shape, or a body that was never meant to be part of the contract. Any refactor of those internals breaks the consumer, so the implementation freezes in place. This is direct leakage of hidden knowledge.
+Contents coupling, also called implementation-knowledge coupling, occurs when a consumer depends on another module's concrete internals: a private field, an underscore-prefixed property, an internal data shape, or a body that was never meant to be part of the contract. Any refactor of those internals breaks the consumer, so the implementation freezes in place. This is direct leakage of hidden knowledge.
 
 Depend on an abstract interface instead, and let the owner decide what to expose. The trade-off to balance is interactivity versus leakage: expose enough behavior to be useful, but never the raw internal structure. Reflection and dependency injection technically reach into internals, but they are acceptable only inside a rule-controlled environment such as a DI framework, where the access is governed rather than ad hoc.
 

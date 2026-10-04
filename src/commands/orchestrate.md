@@ -16,9 +16,11 @@ Sequential agent workflow. Usage: `/orchestrate [workflow-type] [task-descriptio
 |------|-------------|----------|
 | `feature` | the built-in `Plan` agent -> tdd-guide -> code-reviewer | Full feature build |
 | `bugfix` | the built-in `Explore` agent -> tdd-guide -> code-reviewer | Bug investigation + fix |
-| `refactor` | architect -> code-reviewer -> tdd-guide | Safe refactoring |
+| `refactor` | tdd-guide -> architect -> code-reviewer | Safe refactoring; tdd-guide pins behavior first |
 | `security` | code-reviewer -> architect | Security audit |
 | `custom` | user-defined CSV list | Ad-hoc sequence |
+
+Within a chain, `bugfix` follows the steps in `/bugfix` and `refactor` the steps in `/refactor`; the chain decides who does each step, the command decides what each step must prove.
 
 ## Execution Loop
 
@@ -32,11 +34,11 @@ For each agent in chain:
 
 ```markdown
 ## HANDOFF: [prev-agent] -> [next-agent]
-### Context        — what was done
-### Findings       — discoveries / decisions
-### Files Modified — list of touched files
-### Open Questions — unresolved items
-### Recommendations — suggested next steps
+### Context:         what was done
+### Findings:        discoveries / decisions
+### Files Modified: list of touched files
+### Open Questions: unresolved items
+### Recommendations: suggested next steps
 ```
 
 ## Agent Responsibilities
@@ -47,7 +49,7 @@ For each agent in chain:
 | architect | requirements / plan | design decisions, structure |
 | the built-in `Explore` agent | bug report | repro steps, root cause |
 | tdd-guide | plan / handoff | tests-first, then minimal impl |
-| code-reviewer | impl | quality issues, suggestions, security vuln scan (defers deep OWASP/CWE analysis to the `security-review` skill) |
+| code-reviewer | impl | quality issues, suggestions, security vuln scan, deferring deep OWASP/CWE analysis to the `security-review` skill |
 
 ## Final Report
 
@@ -56,18 +58,18 @@ ORCHESTRATION REPORT
 Workflow: <type> | Task: <desc>
 Chain: <agent -> agent -> ...>
 
-SUMMARY        — one paragraph
-AGENT OUTPUTS  — per-agent summary
-FILES CHANGED  — list
-TEST RESULTS   — pass/fail
-SECURITY       — findings
-RECOMMENDATION — SHIP / NEEDS WORK / BLOCKED
+SUMMARY:         one paragraph
+AGENT OUTPUTS:   per-agent summary
+FILES CHANGED:   list
+TEST RESULTS:    pass/fail
+SECURITY:        findings
+RECOMMENDATION: SHIP / NEEDS WORK / BLOCKED
 ```
 
 ## Parallel Phase
 
 For independent checks, fan out simultaneously then merge:
-- code-reviewer (quality + security) + architect (design) -> single merged report
+- code-reviewer for quality and security + architect for design -> single merged report
 
 ## Examples
 
@@ -81,6 +83,6 @@ For independent checks, fan out simultaneously then merge:
 
 - Start with the built-in `Plan` agent for complex features; `architect` for design-heavy work
 - Always include `code-reviewer` before merge
-- Lean on `code-reviewer` for auth, payment, PII paths (it covers security review via the `security-review` skill)
-- Keep handoffs concise — only what the next agent needs
-- Run verification (build/tests) between agents on risky transitions
+- Lean on `code-reviewer` for auth, payment, PII paths, since it covers security review via the `security-review` skill
+- Keep handoffs concise: only what the next agent needs
+- Run verification, such as build and tests, between agents on risky transitions

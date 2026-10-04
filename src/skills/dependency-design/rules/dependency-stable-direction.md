@@ -5,7 +5,7 @@ impactDescription: pointing dependencies from volatile to stable code keeps chur
 tags: dependency, ddd, stability
 ---
 
-## Depend in the Direction of Stability (DDD Subdomains)
+## Depend in the Direction of Stability: DDD Subdomains
 
 Dependencies should point toward stability: a module that changes often should
 depend on a module that changes rarely, never the reverse. If a stable module
@@ -14,17 +14,17 @@ along with it, and the stability you paid for is lost.
 
 DDD distillation gives a practical map of where each kind of code sits:
 
-- **Core subdomain** — your competitive advantage, Cynefin *complex* or above.
+- **Core subdomain**: your competitive advantage, Cynefin *complex* or above.
   It changes frequently, so it is correct for the Core domain module to depend
   *outward* on the more stable subdomains.
-- **Generic subdomain** — solid, infrastructure-like code, *complicated* or
+- **Generic subdomain**: solid, infrastructure-like code, *complicated* or
   below, managed on a regular tech-debt cadence. Aim for `model`-level coupling
   or stronger in its relationships.
-- **Supporting subdomain** — *clear* complexity, almost never changing. A stable
+- **Supporting subdomain**: *clear* complexity, almost never changing. A stable
   solution where `contract` coupling is the ideal.
 
 So the volatile Core points at the stable Generic and Supporting subdomains. A
-utility (Generic/Supporting) must stay domain-agnostic — the moment it imports a
+utility in the Generic or Supporting subdomain must stay domain-agnostic. The moment it imports a
 fast-changing domain type, it inherits that domain's change-rate.
 
 **Incorrect:**

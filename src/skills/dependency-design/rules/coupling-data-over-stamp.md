@@ -5,11 +5,11 @@ impactDescription: passing whole structures and chaining through them couples ca
 tags: coupling, interface
 ---
 
-## Pass Only the Data Needed (Data over Stamp), Avoid Train-Wreck Bridges
+## Pass Only the Data Needed, Data over Stamp, Avoid Train-Wreck Bridges
 
 Stamp coupling is passing a whole structure when the callee needs only one field of it: the callee is now coupled to a shape it never uses, and any change to that shape ripples outward. Prefer data coupling, where you pass only the value actually required.
 
-In modern code the milder form of stamp coupling is no longer treated as leakage. Exposing an immutable value object (a record-style structure) is closer to a design decision than a defect. The real danger is the train-wreck bridge: a chain like `a.b.c.d` that reaches across several objects and couples the caller to the entire intermediate structure. Each link is a separate thing that can change. Let the owner of the value expose it directly instead of forcing callers to navigate the graph.
+In modern code the milder form of stamp coupling is no longer treated as leakage. Exposing an immutable value object, a record-style structure, is closer to a design decision than a defect. The real danger is the train-wreck bridge: a chain like `a.b.c.d` that reaches across several objects and couples the caller to the entire intermediate structure. Each link is a separate thing that can change. Let the owner of the value expose it directly instead of forcing callers to navigate the graph.
 
 **Incorrect:**
 

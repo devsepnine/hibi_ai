@@ -5,7 +5,7 @@ impactDescription: control flags let a caller steer the callee's internal branch
 tags: coupling, control, api-design
 ---
 
-## Avoid Control Coupling (Flag Arguments Leaking Internal Structure)
+## Avoid Control Coupling: Flag Arguments Leaking Internal Structure
 
 Control coupling은 호출자가 오직 피호출자의 어떤 내부 분기를 실행할지 고르기 위한 flag나 mode 인자를 넘길 때 발생한다. 이 flag는 피호출자의 내부 구조를 호출 지점으로 유출시킨다. 즉, 호출자가 올바르게 호출하려면 피호출자의 분기들을 알아야 하고, 분기가 하나 늘 때마다 새로운 flag가 강요된다. 고전적인 결합 유형 중에서 이것이 가장 심각한 현대적 위협이다. 그 결과 생기는 의존성이 가장 복잡하고 해소하기 가장 어렵기 때문이다. 실제로 flag를 통한 은닉 지식의 간접 누출은 직접 누출보다 더 나쁘다.
 

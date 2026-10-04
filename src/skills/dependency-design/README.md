@@ -4,30 +4,30 @@ Dependency, coupling, and abstraction decisions that keep software modifiable an
 
 A vendored rule set. `SKILL.md` is the entry point; the rules themselves live
 in `rules/`, one file per rule. The upstream compiled output `AGENTS.md` is not
-vendored — `rules/` is the source and `SKILL.md` the index.
+vendored. `rules/` is the source and `SKILL.md` the index.
 
 ## Structure
 
-- `SKILL.md` / `SKILL-ko.md` — entry point: when to apply, rule index by category
-- `rules/` — one file per rule
-  - `_sections.md` — section order, filename prefix, impact level, description
-  - `_template.md` — rule file template (frontmatter shape, Incorrect/Correct format)
-  - `<prefix>-<topic>.md` — the rules
-- `references/` — deep-dive methodology, read on demand (complexity, coupling models, abstraction, AI ownership, monorepo)
-- `evals/` — `evals.json` scores output quality; `trigger-eval.json` scores whether the description fires at all
+- `SKILL.md` / `SKILL-ko.md`: entry point: when to apply, rule index by category
+- `rules/`: one file per rule
+  - `_sections.md`: section order, filename prefix, impact level, description
+  - `_template.md`: rule file template, with frontmatter shape and Incorrect/Correct format
+  - `<prefix>-<topic>.md`: the rules
+- `references/`: deep-dive methodology, read on demand, covering complexity, coupling models, abstraction, AI ownership, and monorepo
+- `evals/`: `evals.json` scores output quality; `trigger-eval.json` scores whether the description fires at all
 
 ## Impact levels
 
-- `CRITICAL` — foundational dependency-direction / coupling rules; violation produces unmaintainable, non-isolatable code
-- `HIGH` — significant modifiability or AI-ownability gains (abstraction consistency, one-way layering)
-- `MEDIUM` — good practices that reduce ripple and clarify boundaries
+- `CRITICAL`: foundational dependency-direction / coupling rules; violation produces unmaintainable, non-isolatable code
+- `HIGH`: significant modifiability or AI-ownability gains, such as abstraction consistency and one-way layering
+- `MEDIUM`: good practices that reduce ripple and clarify boundaries
 
 ## Adding a rule
 
 1. Copy `rules/_template.md` to `rules/<prefix>-<topic>.md`.
 2. Use a prefix declared in `rules/_sections.md`; add the section there first if none fits.
-3. Add it to the rule index in `SKILL.md` and `SKILL-ko.md` — there is no build step, so this is manual.
+3. Add it to the rule index in `SKILL.md` and `SKILL-ko.md`. There is no build step, so this is manual.
 
 In the `-ko` files, keep each rule's `title` and `impactDescription`, and the
-section titles, in English — translate only the body prose. `SKILL.md` indexes
+section titles, in English, and translate only the body prose. `SKILL.md` indexes
 rules by those English titles, so translating one desynchronizes the index.

@@ -10,19 +10,19 @@ tags: architecture, monorepo, turborepo
 A Turborepo monorepo is a compound layering applied at the workspace level. Each
 workspace folder plays one role, and dependencies flow in one direction only:
 
-1. **`apps/*`** — orchestrators that wire `packages` features together, and each
-   app is an independently buildable/deployable unit (an application). The rule:
+1. **`apps/*`**: orchestrators that wire `packages` features together, and each
+   app is an independently buildable/deployable unit, an application. The rule:
    `app -> packages` is always one-way. An app never imports from another app.
-2. **`packages/<domain>*`** — the domain layer: business-logic (the domain's
-   invariants) and data-access (the domain's long-term state).
-3. **`packages/lib*`** — the foundation layer: pure capability that
+2. **`packages/<domain>*`**: the domain layer, holding business-logic for the domain's
+   invariants and data-access for the domain's long-term state.
+3. **`packages/lib*`**: the foundation layer, pure capability that
    business-logic and data-access depend on. `packages/domain -> packages/lib` is
    one-way.
 
 The discouraged edge is **`packages/lib -> packages/lib`**. A foundation package
-should not depend on another foundation package — if `lib2` is general enough to
+should not depend on another foundation package. If `lib2` is general enough to
 be a shared dependency of `lib1`, it does not belong in `packages` at all; it
-belongs in `node_modules` (publish it, or treat it as a third-party dep). Keeping
+belongs in `node_modules`, so publish it or treat it as a third-party dep. Keeping
 `lib` packages leaf-level keeps the foundation flat and acyclic.
 
 Split each domain package into three sub-areas so front and server share exactly
@@ -102,7 +102,7 @@ import { renderPdf } from "../../pdfServer/src/render"   // app -> app: forbidde
 }
 ```
 
-For how to structure the components *inside* an app or package — context,
-compound components, and prop boundaries — see the `composition-patterns` skill.
+For how to structure the components *inside* an app or package, including context,
+compound components, and prop boundaries, see the `composition-patterns` skill.
 
 Reference: [Layered and Turbo Monorepo Architecture](../references/monorepo.md)

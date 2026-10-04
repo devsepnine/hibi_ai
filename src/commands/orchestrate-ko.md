@@ -16,9 +16,11 @@ effort: xhigh
 |------|-------------|----------|
 | `feature` | the built-in `Plan` agent -> tdd-guide -> code-reviewer | 전체 피처 빌드 |
 | `bugfix` | the built-in `Explore` agent -> tdd-guide -> code-reviewer | 버그 조사 + 수정 |
-| `refactor` | architect -> code-reviewer -> tdd-guide | 안전한 리팩토링 |
+| `refactor` | tdd-guide -> architect -> code-reviewer | 안전한 리팩토링. tdd-guide가 먼저 동작을 고정 |
 | `security` | code-reviewer -> architect | 보안 감사 |
 | `custom` | user-defined CSV list | 임시 시퀀스 |
+
+체인 안에서 `bugfix`는 `/bugfix`의 단계를, `refactor`는 `/refactor`의 단계를 따른다. 체인은 각 단계를 누가 할지 정하고, 커맨드는 각 단계가 무엇을 증명해야 하는지 정한다.
 
 ## Execution Loop
 
@@ -32,11 +34,11 @@ effort: xhigh
 
 ```markdown
 ## HANDOFF: [prev-agent] -> [next-agent]
-### Context        — what was done
-### Findings       — discoveries / decisions
-### Files Modified — list of touched files
-### Open Questions — unresolved items
-### Recommendations — suggested next steps
+### Context:         what was done
+### Findings:        discoveries / decisions
+### Files Modified: list of touched files
+### Open Questions: unresolved items
+### Recommendations: suggested next steps
 ```
 
 ## Agent Responsibilities
@@ -47,7 +49,7 @@ effort: xhigh
 | architect | requirements / plan | 설계 결정, 구조 |
 | the built-in `Explore` agent | bug report | 재현 단계, 근본 원인 |
 | tdd-guide | plan / handoff | 테스트 우선, 그 다음 최소 구현 |
-| code-reviewer | impl | 품질 이슈, 제안, 보안 취약점 스캔 (심층 OWASP/CWE 분석은 `security-review` skill 에 위임) |
+| code-reviewer | impl | 품질 이슈, 제안, 보안 취약점 스캔, 심층 OWASP/CWE 분석은 `security-review` skill 에 위임 |
 
 ## Final Report
 
@@ -56,18 +58,18 @@ ORCHESTRATION REPORT
 Workflow: <type> | Task: <desc>
 Chain: <agent -> agent -> ...>
 
-SUMMARY        — one paragraph
-AGENT OUTPUTS  — per-agent summary
-FILES CHANGED  — list
-TEST RESULTS   — pass/fail
-SECURITY       — findings
-RECOMMENDATION — SHIP / NEEDS WORK / BLOCKED
+SUMMARY:         one paragraph
+AGENT OUTPUTS:   per-agent summary
+FILES CHANGED:   list
+TEST RESULTS:    pass/fail
+SECURITY:        findings
+RECOMMENDATION: SHIP / NEEDS WORK / BLOCKED
 ```
 
 ## Parallel Phase
 
 독립적인 검사의 경우 동시에 fan out 후 병합한다:
-- code-reviewer (quality + security) + architect (design) -> 단일 병합 보고서
+- code-reviewer는 품질과 보안, architect는 설계 -> 단일 병합 보고서
 
 ## Examples
 
@@ -81,6 +83,6 @@ RECOMMENDATION — SHIP / NEEDS WORK / BLOCKED
 
 - 복잡한 피처는 built-in `Plan` 에이전트로 시작; 설계 중심 작업은 `architect`로 시작한다
 - 머지 전 항상 `code-reviewer`를 포함한다
-- auth, payment, PII 경로에는 `code-reviewer`를 사용한다 (`security-review` skill 을 통해 보안 검토를 담당)
-- 핸드오프는 간결하게 유지한다 — 다음 에이전트가 필요한 것만
-- 위험한 전환 사이에는 검증(빌드/테스트)을 실행한다
+- auth, payment, PII 경로에는 `code-reviewer`를 사용한다. 이는 `security-review` skill 을 통해 보안 검토를 담당한다
+- 핸드오프는 다음 에이전트가 필요한 것만 담아 간결하게 유지한다
+- 위험한 전환 사이에는 빌드나 테스트 같은 검증을 실행한다

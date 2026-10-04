@@ -5,9 +5,9 @@ impactDescription: co-locating different change-rates couples their lifecycles a
 tags: dependency, srp, change-rate
 ---
 
-## Isolate Modules by Responsibility (Change-Rate)
+## Isolate Modules by Responsibility by Change-Rate
 
-A module's responsibility is best defined as *the reason it changes* — and the
+A module's responsibility is best defined as *the reason it changes*, and the
 reason it changes shows up empirically as its change-rate. Volatile business
 rules change weekly; infrastructure adapters change rarely. When you co-locate
 two things with different change-rates, you couple their lifecycles: every edit

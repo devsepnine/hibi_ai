@@ -8,10 +8,10 @@ tags: dependency, cycle, graph
 ## Keep Dependencies Unidirectional and Acyclic
 
 A dependency graph models how change in one module ripples into others. When two
-modules depend on each other, or a longer loop closes back on itself
-(`A -> B -> C -> A`), the ripple is no longer predictable: a change to any node
+modules depend on each other, or a longer loop such as
+`A -> B -> C -> A` closes back on itself, the ripple is no longer predictable: a change to any node
 in the cycle can propagate all the way around and back. Indirect cycles spanning
-many modules are just as harmful as direct ones — the loop count does not soften
+many modules are just as harmful as direct ones. The loop count does not soften
 the coupling, it hides it.
 
 Cycles also destroy causal order. A unidirectional edge encodes "this is built
@@ -20,8 +20,8 @@ such ordering, so initialization order, build order, and the mental model all
 become ambiguous.
 
 When two modules genuinely need to share something, extract that shared concern
-into a lower-level module that both depend on. The dependency still flows one way
-— both modules point down at the shared module, and the shared module points at
+into a lower-level module that both depend on. The dependency still flows one way,
+since both modules point down at the shared module and the shared module points at
 neither.
 
 **Incorrect:**
