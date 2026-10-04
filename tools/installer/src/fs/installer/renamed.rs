@@ -32,8 +32,9 @@ pub fn auto_cleanup_renamed_skills(
         if !is_real_dir(&old_dir) || !source_dir.join("skills").join(new).is_dir() {
             continue;
         }
-        let (mut removed, mut failed, mut kept) = (0, 0, 0);
-        for file in files_under(&old_dir) {
+        let (files, links) = entries_under(&old_dir);
+        let (mut removed, mut failed, mut kept) = (0, 0, links);
+        for file in files {
             let id = file
                 .strip_prefix(dest_dir)
                 .map(|relative| relative.to_string_lossy().replace('\\', "/"));
@@ -68,25 +69,29 @@ fn is_real_dir(path: &Path) -> bool {
     std::fs::symlink_metadata(path).is_ok_and(|meta| meta.is_dir())
 }
 
-fn files_under(dir: &Path) -> Vec<PathBuf> {
-    let mut files = Vec::new();
+/// Regular files under `dir`, and the number of links skipped on the way.
+/// A link is never descended into and never offered for deletion, because
+/// removing it could reach whatever the user linked in.
+fn entries_under(dir: &Path) -> (Vec<PathBuf>, usize) {
+    let (mut files, mut links) = (Vec::new(), 0);
     let Ok(entries) = std::fs::read_dir(dir) else {
-        return files;
+        return (files, links);
     };
     for entry in entries.filter_map(|e| e.ok()) {
         let Ok(kind) = entry.file_type() else {
             continue;
         };
         if kind.is_symlink() {
-            continue;
-        }
-        if kind.is_dir() {
-            files.extend(files_under(&entry.path()));
+            links += 1;
+        } else if kind.is_dir() {
+            let (nested, nested_links) = entries_under(&entry.path());
+            files.extend(nested);
+            links += nested_links;
         } else {
             files.push(entry.path());
         }
     }
-    files
+    (files, links)
 }
 
 /// Depth-first, so a directory empties before its parent is tried.
@@ -151,6 +156,50 @@ mod tests {
             .arg(native(target))
             .output()
             .is_ok_and(|out| out.status.success())
+    }
+
+    /// Make `file` impossible to delete while the returned guard lives:
+    /// Windows refuses to delete a file another handle holds without
+    /// delete sharing, and Unix refuses to unlink from a read-only directory.
+    #[cfg(windows)]
+    fn make_undeletable(file: &Path) -> std::fs::File {
+        use std::os::windows::fs::OpenOptionsExt;
+        std::fs::OpenOptions::new()
+            .read(true)
+            .share_mode(0)
+            .open(file)
+            .unwrap()
+    }
+
+    #[cfg(unix)]
+    fn make_undeletable(file: &Path) -> std::fs::Permissions {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = file.parent().unwrap();
+        let before = std::fs::metadata(dir).unwrap().permissions();
+        std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o555)).unwrap();
+        before
+    }
+
+    #[test]
+    fn a_file_that_cannot_be_removed_is_reported() {
+        let (source, dest) = (source_with_new_names(), unique_dir("locked"));
+        put(&dest, "skills/iced_rs/SKILL.md");
+        put(&dest, "skills/iced_rs/references/locked.md");
+        let _guard = make_undeletable(&dest.join("skills/iced_rs/references/locked.md"));
+        let ids = vec![
+            String::from("skills/iced_rs/SKILL.md"),
+            String::from("skills/iced_rs/references/locked.md"),
+        ];
+
+        let report = auto_cleanup_renamed_skills(&source, &dest, &ids);
+
+        assert_eq!(
+            report,
+            vec![String::from(
+                "skills/iced_rs: kept 0 file(s) not installed by hibi, 1 could not be removed"
+            )]
+        );
+        assert!(dest.join("skills/iced_rs/references/locked.md").exists());
     }
 
     #[test]
@@ -252,11 +301,18 @@ mod tests {
             String::from("skills/iced_rs/references/widgets.md"),
         ];
 
-        auto_cleanup_renamed_skills(&source, &dest, &ids);
+        let report = auto_cleanup_renamed_skills(&source, &dest, &ids);
 
         assert!(
             outside.join("widgets.md").exists(),
             "a file behind a link must survive"
+        );
+        assert_eq!(
+            report,
+            vec![String::from(
+                "skills/iced_rs: kept 1 file(s) not installed by hibi, 0 could not be removed"
+            )],
+            "the skipped link is counted as kept"
         );
     }
 
