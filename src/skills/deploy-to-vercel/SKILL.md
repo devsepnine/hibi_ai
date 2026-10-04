@@ -164,7 +164,7 @@ The Vercel CLI isn't set up at all.
 **When to use:** Last resort when the CLI can't be installed or authenticated in the claude.ai sandbox. This requires no authentication, it returns a **Preview URL**, live site, and a **Claim URL**, transfer to your Vercel account.
 
 ```bash
-bash /mnt/skills/user/deploy-to-vercel/resources/deploy.sh [path]
+bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh [path]
 ```
 
 **Arguments:**
@@ -173,13 +173,13 @@ bash /mnt/skills/user/deploy-to-vercel/resources/deploy.sh [path]
 **Examples:**
 ```bash
 # Deploy current directory
-bash /mnt/skills/user/deploy-to-vercel/resources/deploy.sh
+bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh
 
 # Deploy specific project
-bash /mnt/skills/user/deploy-to-vercel/resources/deploy.sh /path/to/project
+bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh /path/to/project
 
 # Deploy existing tarball
-bash /mnt/skills/user/deploy-to-vercel/resources/deploy.sh /path/to/project.tgz
+bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh /path/to/project.tgz
 ```
 
 The script auto-detects the framework from `package.json`, packages the project, excluding `node_modules`, `.git`, `.env`, uploads it, and waits for the build to complete.
@@ -207,13 +207,13 @@ The script auto-detects the framework from `package.json`, packages the project,
    skill_dir="<path-to-skill>"
 
    # Deploy current directory
-   bash "$skill_dir/resources/deploy-codex.sh"
+   bash "$skill_dir/scripts/deploy-codex.sh"
 
    # Deploy specific project
-   bash "$skill_dir/resources/deploy-codex.sh" /path/to/project
+   bash "$skill_dir/scripts/deploy-codex.sh" /path/to/project
 
    # Deploy existing tarball
-   bash "$skill_dir/resources/deploy-codex.sh" /path/to/project.tgz
+   bash "$skill_dir/scripts/deploy-codex.sh" /path/to/project.tgz
    ```
 
 The script handles framework detection, packaging, and deployment. It waits for the build to complete and returns JSON with `previewUrl` and `claimUrl`.
@@ -232,7 +232,7 @@ You have full shell access. Do NOT use the `/mnt/skills/` path. Follow the decis
 
 For the no-auth fallback, run the deploy script from the skill's installed location:
 ```bash
-bash ~/.claude/skills/deploy-to-vercel/resources/deploy.sh [path]
+bash ~/.claude/skills/deploy-to-vercel/scripts/deploy.sh [path]
 ```
 The path may vary depending on where the user installed the skill.
 

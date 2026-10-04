@@ -164,10 +164,10 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 
 - **Level**: MUST
 - **Rule**: skill 디렉터리에는 `SKILL.md`, 각 마크다운의 `-ko.md` 미러, 하위 폴더 `src/skills/<name>/references/`, `src/skills/<name>/assets/`, `src/skills/<name>/scripts/`, `src/skills/<name>/rules/`, `src/skills/<name>/evals/`만 둔다.
-- **Why**: 표준 skill 구조로 고정한다. 2026-10-04 결정, 마이그레이션.
-- **Evidence**: 29개 중 24개 준수 · `ls src/skills/*/`
+- **Why**: 표준 skill 구조로 고정한다. 2026-10-04 결정. 셸 스크립트는 `scripts/`로, 규칙 묶음의 유지보수 안내는 `rules/_README.md`로 옮겼다.
+- **Evidence**: 위반 0건 · `python tools/lint-arch.py`
 - **Exceptions**: none
-- **Enforced by**: review
+- **Enforced by**: `tools/lint-arch.py`
 
 ### `arch-skill-name-kebab`
 
@@ -210,11 +210,6 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 | Path | Rule | Decision |
 |---|---|---|
 | `tools/installer/src/ui/mod.rs` | `arch-file-size` | accepted, rustfmt로 302줄, hard 500 미만 |
-| `src/skills/composition-patterns/README.md` | `arch-skill-layout` | fix, 내용을 `SKILL.md`나 `src/skills/<name>/references/`로 옮긴다 |
-| `src/skills/dependency-design/README.md` | `arch-skill-layout` | fix |
-| `src/skills/react-best-practices/README.md` | `arch-skill-layout` | fix |
-| `src/skills/react-native-skills/README.md` | `arch-skill-layout` | fix |
-| `src/skills/deploy-to-vercel/resources` | `arch-skill-layout` | fix, 같은 skill의 assets 폴더로 옮긴다 |
 
 ## Decisions
 
@@ -226,7 +221,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 | `2026-10-04` | git만 프로세스를 `run_with_timeout` 밖에서 직접 실행한다 | 공용 실행기로 통일. leaf 규칙 때문에 위치는 `fs`가 아니라 leaf `exec`, 완료 |
 | `2026-10-04` | `home_dir()` 호출이 6개 파일에 흩어져 있다 | 접근 지점 하나로 모은다. 위치는 leaf 모듈 `paths`, 완료 |
 | `2026-10-04` | 테스트가 인라인과 `tests.rs` 분리로 섞여 있다 | Rust 일반 관례: 인라인 기본, 모듈 전체 테스트만 분리 |
-| `2026-10-04` | skill 하위 구조와 이름에 예외가 있다 | 표준으로 고정: 마이그레이션 |
+| `2026-10-04` | skill 하위 구조와 이름에 예외가 있다 | 표준으로 고정, 완료 |
 | `2026-10-04` | 상태줄 바이너리는 수동 빌드 후 커밋된다 | 수동 빌드 유지, 소스 변경 시 바이너리 갱신을 MUST로 |
 | `2026-10-04` | rustfmt를 도입할까 | 도입. installer 크레이트만 먼저 포맷하고, statusline은 바이너리를 다시 빌드할 때 함께 포맷한다 |
 | `2026-10-04` | rustfmt 이후 테스트를 포함해 300줄을 넘는 파일이 생겼다 | 측정을 프로덕션 코드로 바꿈. 테스트는 길이에서 빠진다 |

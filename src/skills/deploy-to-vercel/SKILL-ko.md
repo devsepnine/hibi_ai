@@ -164,7 +164,7 @@ Vercel CLI가 전혀 설정되지 않은 상태.
 **사용 시점:** claude.ai sandbox에서 CLI를 설치하거나 인증할 수 없을 때의 최후의 수단. 인증이 필요하지 않다, **Preview URL**, 라이브 사이트, 과 **Claim URL**, Vercel 계정으로 이전, 을 반환한다.
 
 ```bash
-bash /mnt/skills/user/deploy-to-vercel/resources/deploy.sh [path]
+bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh [path]
 ```
 
 **Arguments:**
@@ -173,13 +173,13 @@ bash /mnt/skills/user/deploy-to-vercel/resources/deploy.sh [path]
 **Examples:**
 ```bash
 # Deploy current directory
-bash /mnt/skills/user/deploy-to-vercel/resources/deploy.sh
+bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh
 
 # Deploy specific project
-bash /mnt/skills/user/deploy-to-vercel/resources/deploy.sh /path/to/project
+bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh /path/to/project
 
 # Deploy existing tarball
-bash /mnt/skills/user/deploy-to-vercel/resources/deploy.sh /path/to/project.tgz
+bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh /path/to/project.tgz
 ```
 
 스크립트는 `package.json`에서 프레임워크를 자동 감지하고, 프로젝트를 패키징하고, `node_modules`, `.git`, `.env` 제외, 업로드하고, 빌드 완료를 기다린다.
@@ -207,13 +207,13 @@ bash /mnt/skills/user/deploy-to-vercel/resources/deploy.sh /path/to/project.tgz
    skill_dir="<path-to-skill>"
 
    # Deploy current directory
-   bash "$skill_dir/resources/deploy-codex.sh"
+   bash "$skill_dir/scripts/deploy-codex.sh"
 
    # Deploy specific project
-   bash "$skill_dir/resources/deploy-codex.sh" /path/to/project
+   bash "$skill_dir/scripts/deploy-codex.sh" /path/to/project
 
    # Deploy existing tarball
-   bash "$skill_dir/resources/deploy-codex.sh" /path/to/project.tgz
+   bash "$skill_dir/scripts/deploy-codex.sh" /path/to/project.tgz
    ```
 
 스크립트가 프레임워크 감지, 패키징, 배포를 처리한다. 빌드 완료를 기다리고 `previewUrl`과 `claimUrl`이 포함된 JSON을 반환한다.
@@ -232,7 +232,7 @@ bash /mnt/skills/user/deploy-to-vercel/resources/deploy.sh /path/to/project.tgz
 
 no-auth fallback은 skill의 설치 위치에서 deploy 스크립트를 실행한다:
 ```bash
-bash ~/.claude/skills/deploy-to-vercel/resources/deploy.sh [path]
+bash ~/.claude/skills/deploy-to-vercel/scripts/deploy.sh [path]
 ```
 경로는 사용자가 skill을 어디에 설치했는지에 따라 달라질 수 있다.
 
