@@ -1,6 +1,6 @@
 # hibi-ai 문서 인덱스
 
-> 마지막 업데이트: 2026-10-04 · 버전 v1.19.0
+> 마지막 업데이트: 2026-10-04 · 버전 v1.20.0
 
 컴포넌트 목록은 중복하지 않는다. 이 문서는 "무엇이 어디에 있는가"만 다루고, 실제 목록은 [README.md](README.md)가 SSOT다.
 
@@ -12,6 +12,10 @@
   - 프로젝트 구조 / 주요 컴포넌트인 에이전트·커맨드·스킬·MCP·플러그인 / 빌드·릴리즈 / 설치·사용법 / 멀티소스 / 최근 변경사항
 - **[RUNBOOK.md](RUNBOOK.md)**: 운영 가이드
   - 릴리즈 절차는 자동과 수동 / 릴리즈 후 검증 / 문제 해결 / 롤백 / 긴급 대응 / 유지보수 체크리스트
+- **[FEATURES.md](FEATURES.md)**: 기능맵
+  - 모호한 제보를 화면 위치, 사용자 표현, 실제 UI 문구로 코드에 연결한다. 화면별 항목은 [features/](features/) 아래에 있다
+- **[ARCHITECTURE.md](ARCHITECTURE.md)**: 아키텍처 규칙
+  - 파일, 모듈, import를 추가하기 전에 확인할 규칙 19개와 Known violations, Decisions. 기계적 규칙은 `python tools/lint-arch.py`가 검사한다
 
 ### 저장소 루트
 
@@ -28,8 +32,8 @@
 | 컴포넌트 | 경로 | 목록 |
 |---|---|---|
 | 에이전트 | `src/agents/<name>.md` | [README 에이전트 표](README.md#에이전트-8개) |
-| 슬래시 커맨드 | `src/commands/<name>.md` | [README 커맨드 표](README.md#슬래시-커맨드-26개) |
-| 스킬 | `src/skills/<name>/SKILL.md` | [README 스킬 표](README.md#스킬-28개) |
+| 슬래시 커맨드 | `src/commands/<name>.md` | [README 커맨드 표](README.md#슬래시-커맨드-27개) |
+| 스킬 | `src/skills/<name>/SKILL.md` | [README 스킬 표](README.md#스킬-29개) |
 | 훅 | `src/hooks/<name>/hook.yaml` | 전부 `deprecated: true`이며 인스톨러가 자동 제거 |
 | MCP 서버 | `src/mcps/mcps.yaml` | 단일 파일 |
 | 플러그인 | `src/plugins/plugins.yaml` | 단일 파일 |
@@ -51,6 +55,7 @@
 | 보안 / OWASP | `security-review` | `/security-review` 또는 인증·입력·시크릿 작업 시 트리거 |
 | 테스트 & TDD | `tdd-workflow` | `/tdd` 또는 기능 추가·버그 수정 |
 | 코딩 스타일 | `coding-standards` | 코드 작성·리뷰 시 |
+| 아키텍처 규칙 | `architecture-rules` | `/architecture-rules` 또는 코드베이스 규칙 문서화 시 트리거 |
 | 산문 문체 | `technical-writing` | 문서 작성·리뷰 시 트리거. 구두점은 `python tools/lint-prose.py`가 강제 |
 | 의존성·결합도 | `dependency-design` | `/deps` 또는 모듈·모노레포 설계 |
 | 빌드·타입 에러 | `verification-loop` | `/verify`, `/build-fix` |
@@ -64,14 +69,14 @@
 
 ### 인스톨러 소스 `tools/installer/src/`
 
-전체 63 파일, 11,714줄. 테스트·공백을 포함한 raw 라인 수다.
+전체 63 파일, 11,786줄. 테스트·공백을 포함한 raw 라인 수다.
 
 | 모듈 | 파일 / LOC | 내용 |
 |---|---|---|
 | `app/` | 10 / 1,925 | 앱 상태. `mod.rs`는 App, 나머지는 `types.rs`, `navigation.rs`, `selection.rs`, `processing.rs`, `input.rs`, `settings.rs`, `sources.rs`, `source_wizard.rs`, `test_support.rs`이며 `test_support.rs`는 테스트용 App·MCP·플러그인 픽스처다 |
-| `ui/` | 17 / 2,722 | 렌더링. 리스트, diff, 탭, MCP/플러그인 목록, 소스 위저드, 로딩 화면, `help.rs`, `confirm_exit.rs`, `layout.rs`, `tests.rs`가 있다. `help.rs`는 `?` 키바인딩 오버레이로 전체 키 목록의 SSOT이고, `confirm_exit.rs`는 `Esc` 이탈 확인 프롬프트, `layout.rs`는 오버레이 중앙 배치 헬퍼, `tests.rs`는 판 테두리·타이틀·상태바·오버레이 렌더 검증이다 |
+| `ui/` | 17 / 2,744 | 렌더링. 리스트, diff, 탭, MCP/플러그인 목록, 소스 위저드, 로딩 화면, `help.rs`, `confirm_exit.rs`, `layout.rs`, `tests.rs`가 있다. `help.rs`는 `?` 키바인딩 오버레이로 전체 키 목록의 SSOT이고, `confirm_exit.rs`는 `Esc` 이탈 확인 프롬프트, `layout.rs`는 오버레이 중앙 배치 헬퍼, `tests.rs`는 판 테두리·타이틀·상태바·오버레이 렌더 검증이다 |
 | `fs/scanner/` | 6 / 1,300 | 컴포넌트 스캔: `mod.rs`, `components.rs`, `validation.rs`, `external.rs`, `mcp.rs`, `plugin.rs` |
-| `fs/installer/` | 6 / 1,080 | 설치·제거: `mod.rs`, `process.rs`, `settings.rs`, `merge.rs`, `mcp.rs`, `plugin.rs`. `process.rs`는 spawn/cancel을 맡는다 |
+| `fs/installer/` | 6 / 1,130 | 설치·제거: `mod.rs`, `process.rs`, `settings.rs`, `merge.rs`, `mcp.rs`, `plugin.rs`. `process.rs`는 spawn/cancel을 맡는다 |
 | `fs/` 직속 | 3 / 862 | `mod.rs`, `diff.rs`, `manifest.rs`이며 `manifest.rs`는 install.json을 다룬다 |
 | `source/` | 3 / 895 | `mod.rs`는 find/sync/resolve, `git.rs`, `config.rs`는 sources.yaml을 다룬다 |
 | `loading/` | 6 / 684 | 배경 스레드를 기다리는 세 화면: `channels.rs`는 채널 소유, `scan.rs`는 refresh 페이로드, 나머지는 `initial_load.rs`, `install.rs`, `preflight.rs` |
@@ -79,7 +84,7 @@
 | `cli/` | 2 / 513 | `mod.rs`는 키 디스패치와 `--sync`, `tests.rs`는 패인 digit·`?` 오버레이·`Esc` 이탈 확인 키 라우팅 검증 |
 | 루트 직속 | 6 / 1,147 | `main.rs`는 114줄로 터미널 셋업과 이벤트 루프, 나머지는 `component.rs`, `mcp.rs`, `plugin.rs`, `process_exec.rs`, `theme.rs` |
 
-테스트: `cargo test --manifest-path tools/installer/Cargo.toml`. 133 tests.
+테스트: `cargo test --manifest-path tools/installer/Cargo.toml`. 137 tests.
 
 파일 길이 임계값은 `coding-standards` 스킬의 `references/code-thresholds.md`가 SSOT다. soft 300줄, hard 500줄이며 공백·주석 전용 줄만 제외한다. `#[cfg(test)]` 블록은 제외 대상이 아니고, 면제는 top-of-file 주석으로 사유를 밝힌 경우만 인정된다. 이 기준으로 **soft·hard 초과 모두 0개다.** 직전까지 초과했던 `loading.rs`는 456줄, `tree.rs`는 337줄이었고 각각 `loading/`·`tree/` 디렉터리 모듈로 분리했다. 302까지 올라간 `cli.rs`는 254줄의 `cli/mod.rs`와 119줄의 `cli/tests.rs`로 나눴다. 최댓값은 `fs/manifest.rs` 300으로 soft 한도와 같다. 위 표의 LOC은 raw 라인 수이므로 임계값 판정에 그대로 쓰지 않는다.
 
@@ -90,7 +95,8 @@
 - `package.sh`: 릴리즈 아카이브와 nfpm으로 만드는 Linux `.deb`/`.rpm`/`.apk`, 그리고 `checksums.txt`. `VERSION` 상수가 릴리즈 워크플로의 검증 기준이다
 - `nfpm.yaml`: Linux 패키지 정의. `/usr/bin/hibi`와 `/usr/share/hibi` 레이아웃이며 `VERSION`은 환경 변수로 주입한다
 - `install.sh`: Linux curl|sh 인스톨러. 체크섬 검증 후 `~/.local` 또는 `HIBI_PREFIX`에 설치한다
-- `tools/lint-prose.py`: 산문의 em dash, en dash, 대시로 쓰인 하이픈, 괄호와 frontmatter `description`의 따옴표 없는 `: `를 잡는다. 인자가 없으면 `src`, `docs`, `README.md`를 검사하고, 코드 펜스·인라인 코드·링크 대상은 제외한다. 위반이 있으면 exit 1이며 릴리즈 전에 실행한다
+- `tools/lint-prose.py`: 산문의 em dash, en dash, 대시로 쓰인 하이픈, 괄호와 frontmatter `description`의 따옴표 없는 `: `를 잡는다. 220자를 넘는 `description`도 잡는다. 인자가 없으면 `src`, `docs`, `README.md`를 검사하고, 코드 펜스·인라인 코드·링크 대상은 제외한다. 위반이 있으면 exit 1이며 릴리즈 전에 실행한다
+- `tools/lint-arch.py`: `docs/ARCHITECTURE.md`의 기계적 `MUST` 규칙 9개를 검사한다. Known violations 표를 허용 목록으로 읽고, 더는 위반하지 않는 행은 stale로 보고한다. 새 위반이나 stale 행이 있으면 exit 1이며 릴리즈 전에 실행한다
 - `.github/workflows/release.yml`: 태그 `v*.*.*` 푸시로 트리거된다. 태그, `package.sh` VERSION, `Cargo.toml` version이 같은지 검증한 뒤 빌드·패키징·GitHub Release를 발행한다
 
 ### 설정 파일
@@ -146,6 +152,7 @@ A: 개발자 가독용 미러다. 인스톨러 스캐너가 stem이 `-ko`로 끝
 
 ## 문서 업데이트 이력
 
+- **2026-10-04**: v1.20.0 반영. `architecture-rules` 스킬과 `/architecture-rules` 커맨드 추가로 커맨드 26 → 27, 스킬 28 → 29. README 앵커 `#슬래시-커맨드-27개`, `#스킬-29개`를 헤딩과 함께 갱신. 문서 목록에 `FEATURES.md`·`ARCHITECTURE.md`를, 정책 표에 `architecture-rules` 행을, 개발 스크립트에 `tools/lint-arch.py`를 추가. 인스톨러 LOC과 테스트 수 133 → 137을 현행화
 - **2026-10-04**: `blast-radius`·`technical-writing`·`why` 스킬과 `/blast-radius`·`/bugfix`·`/refactor`·`/perf` 커맨드 추가 반영. 커맨드 22 → 26, 스킬 25 → 28. README 앵커 `#슬래시-커맨드-26개`, `#스킬-28개`를 헤딩과 함께 갱신. 정책 표에 `technical-writing` 행을, 개발 스크립트에 `tools/lint-prose.py`를 추가
 - **2026-10-04**: `feature-map` 스킬 및 `/feature-map` 커맨드 추가 반영. 커맨드 21 → 22, 스킬 24 → 25. README 커맨드·스킬 표 앵커 `#슬래시-커맨드-22개`, `#스킬-25개`를 헤딩과 함께 갱신
 - **2026-09-18**: 커밋 권한 규칙이 `push`·`gh pr create`까지 덮도록 강화된 것을 반영했다. `src/CLAUDE.md`의 절대 규칙 섹션 제목이 "Absolute commit and push rules"로 바뀌었다

@@ -1,6 +1,6 @@
 # hibi-ai 프로젝트 문서
 
-> 마지막 업데이트: 2026-10-04 · 버전 v1.19.0
+> 마지막 업데이트: 2026-10-04 · 버전 v1.20.0
 
 ## 개요
 
@@ -15,8 +15,8 @@ hibi-ai는 Claude Code와 Codex CLI를 위한 TUI, 즉 터미널 사용자 인�
 hibi_ai/
 ├── src/                    # 배포되는 설정 원본 (Git 관리)
 │   ├── agents/             # 에이전트 정의 8개 (+ -ko 미러)
-│   ├── commands/           # 슬래시 커맨드 26개 (+ -ko 미러)
-│   ├── skills/             # 스킬 28개 (+ 각 SKILL-ko.md)
+│   ├── commands/           # 슬래시 커맨드 27개 (+ -ko 미러)
+│   ├── skills/             # 스킬 29개 (+ 각 SKILL-ko.md)
 │   ├── hooks/              # 라이프사이클 훅 5개 — 전부 deprecated
 │   ├── mcps/mcps.yaml      # MCP 서버 정의 21개
 │   ├── plugins/plugins.yaml# 플러그인 마켓플레이스 4개 / 플러그인 28개
@@ -28,8 +28,9 @@ hibi_ai/
 ├── tools/
 │   ├── installer/          # TUI 인스톨러 (Rust, 모듈 표는 INDEX.md)
 │   ├── statusline/         # 상태 표시줄 소스 (Rust)
-│   └── lint-prose.py       # 산문 구두점 린트 (src, docs, README.md)
-├── docs/                   # 이 문서 디렉터리 (README / INDEX / RUNBOOK)
+│   ├── lint-prose.py       # 산문 구두점 린트 (src, docs, README.md)
+│   └── lint-arch.py        # 아키텍처 규칙 린트 (docs/ARCHITECTURE.md)
+├── docs/                   # 이 문서 디렉터리 (README / INDEX / RUNBOOK / FEATURES / ARCHITECTURE)
 ├── .github/workflows/      # release.yml — 태그 푸시로 릴리즈 자동화
 ├── package.sh              # 릴리즈 패키징
 ├── nfpm.yaml               # Linux 패키지 정의 (deb/rpm/apk)
@@ -59,7 +60,7 @@ hibi_ai/
 
 라우팅 표는 `src/CLAUDE.md`의 "Agent routing" 섹션이 SSOT다.
 
-### 슬래시 커맨드 26개
+### 슬래시 커맨드 27개
 
 | 커맨드 | 용도 |
 |---|---|
@@ -80,6 +81,7 @@ hibi_ai/
 | `/build-fix` | 타입·빌드 에러 반복 수정 |
 | `/refactor-clean` | 데드 코드 탐지 후 안전 제거 |
 | `/deps` | 의존성 방향·결합도 감사 |
+| `/architecture-rules` | 코드에서 아키텍처 규칙 `docs/ARCHITECTURE.md` 작성·갱신. 회색 지대는 Q&A, 기계적 규칙은 lint 초안 |
 | `/do-178c` | 보증 티어 A부터 E까지 분류 및 rigor 적용 |
 | `/qa-handoff` | git 이력 → 비개발자용 QA 인수 문서 |
 | `/feature-map` | 증상→코드 기능맵 `docs/FEATURES.md` 작성·갱신 |
@@ -90,7 +92,7 @@ hibi_ai/
 | `/update-codemaps` | 아키텍처 코드맵 생성 |
 | `/checkpoint` | 워크플로 체크포인트 저장·검증, 재개 노트를 남기는 일시정지와 재개, 장시간 무인 실행 규칙 |
 
-### 스킬 28개
+### 스킬 29개
 
 트리거될 때만 로드된다. 설명은 스킬 목록 문자 예산인 200K 윈도우 기준 8,000자를 공유하므로 각 `description`을 220자 이하로 유지한다. 예산을 넘으면 초과한 스킬의 설명이 **통째로** 사라져 자동 트리거가 불가능해진다. 예산에 계상되는 값은 `description` 합계가 아니라 목록 항목 합계이고, 스킬명 + 4 + `description`에 항목 구분자를 포함한다. 현재값은 `python3 src/skills/eval-harness/scripts/skill_budget.py src/skills` 로 측정한다.
 
@@ -103,6 +105,7 @@ hibi_ai/
 | `security-review` | 인증·입력·시크릿·결제·OWASP 체크리스트 |
 | `tdd-workflow` | red/green/refactor, 커버리지 80%+, 단언 강도 |
 | `coding-standards` | TS/JS/React/Node 표준, 타입 안전·경계 파싱, 주석 규칙, 코드 스멜 |
+| `architecture-rules` | 레이어·import 방향·배치 규칙을 코드에서 근거와 함께 도출, 회색 지대 Q&A, lint 초안 |
 | `technical-writing` | 문서당 Diátaxis 모드 하나, 쉬운 직설 문장, AI 문체 삭제 목록, 산문의 대시·괄호 금지 |
 | `dependency-design` | 단방향 의존성, 책임 격리, 모노레포 구조 |
 | `verification-loop` | 빌드·타입·테스트·보안 검증 루프, 실제 산출물 확인 |
@@ -137,7 +140,7 @@ hibi_ai/
 | `superset` | Apache Superset, MCP 경유 |
 | `deploy-to-vercel` | Vercel 배포 |
 
-스킬별 부가 자산은 다음과 같다. 점진적 공개용 `references/` 13개는 `backend-patterns`, `coding-standards`, `dependency-design`, `do-178c`, `iced_rs`, `obsidian-notes`, `pull-request`, `ratatui_rs`, `rust-best-practices`, `svelte-5`, `technical-writing`, `why`, `zustand`에 있다. 벤더링된 상류 규칙 `rules/` 4개는 `composition-patterns`, `dependency-design`, `react-best-practices`, `react-native-skills`에 있다. 평가 세트 `evals/` 13개는 `blast-radius`, `dependency-design`, `do-178c`, `feature-map`, `iced_rs`, `obsidian-notes`, `pull-request`, `qa-handoff`, `ratatui_rs`, `svelte-5`, `technical-writing`, `why`, `zustand`에 있다. `evals/`에는 두 종류가 들어간다. `evals.json`은 출력 품질 평가로 `prompt` + `expected_output`을 담고, `trigger-eval.json`은 설명이 실제로 발화하는지 보는 트리거 회귀 세트로 `query` + `should_trigger`를 담으며 `trigger_eval.py --eval-set`이 소비한다.
+스킬별 부가 자산은 다음과 같다. 점진적 공개용 `references/` 13개는 `backend-patterns`, `coding-standards`, `dependency-design`, `do-178c`, `iced_rs`, `obsidian-notes`, `pull-request`, `ratatui_rs`, `rust-best-practices`, `svelte-5`, `technical-writing`, `why`, `zustand`에 있다. 벤더링된 상류 규칙 `rules/` 4개는 `composition-patterns`, `dependency-design`, `react-best-practices`, `react-native-skills`에 있다. 평가 세트 `evals/` 14개는 `architecture-rules`, `blast-radius`, `dependency-design`, `do-178c`, `feature-map`, `iced_rs`, `obsidian-notes`, `pull-request`, `qa-handoff`, `ratatui_rs`, `svelte-5`, `technical-writing`, `why`, `zustand`에 있다. `evals/`에는 두 종류가 들어간다. `evals.json`은 출력 품질 평가로 `prompt` + `expected_output`을 담고, `trigger-eval.json`은 설명이 실제로 발화하는지 보는 트리거 회귀 세트로 `query` + `should_trigger`를 담으며 `trigger_eval.py --eval-set`이 소비한다.
 
 ### 훅: 활성 없음
 
@@ -187,7 +190,7 @@ cd tools/statusline && ./build.sh
 ### 테스트
 
 ```bash
-cargo test --manifest-path tools/installer/Cargo.toml   # 133 tests
+cargo test --manifest-path tools/installer/Cargo.toml   # 137 tests
 ```
 
 ### 릴리즈: GitHub Actions 자동화, v1.13부터
@@ -336,6 +339,16 @@ bundled (최저) → sources.yaml 첫 번째 → ... → sources.yaml 마지막 
 `components`는 번들 소스에서 온 것만 나열하고, 추가 소스는 `other_sources`에 분리된다. `pull-request` 스킬이 이 파일로 클론 없이 상류 저장소를 찾는다. hibi 자신의 디렉터리만 쓰고 `~/.claude` 트리는 건드리지 않는다.
 
 ## 최근 변경사항
+
+### 2026-10-04, v1.20.0
+
+- `architecture-rules` 스킬과 `/architecture-rules` 커맨드를 추가하고 정책 라우팅 표에 올렸다. 스킬은 28 → 29, 커맨드는 26 → 27. 기존 코드베이스의 import 그래프, 배치, 이름에서 규칙을 찾고 규칙마다 개수와 측정 명령을 붙인다. 패턴이 섞였거나 의도를 코드로 알 수 없는 회색 지대는 근거와 권장 답을 보여 주고 묻는다. 결과물은 `docs/ARCHITECTURE.md`다. 기계적인 `MUST` 규칙은 lint 설정 초안으로 내고 사용자가 동의해야 적용한다. 결합이 건강한지는 계속 `dependency-design`이 판단한다
+- 이 저장소의 `docs/ARCHITECTURE.md`를 추가했다. 인스톨러와 상태 표시줄 크레이트, 배포 설정에 대한 규칙 19개가 각각 수준, 근거와 측정 명령, 예외, 강제 수단을 갖는다. 남은 마이그레이션은 Known violations 표에 있다. `TargetCli`를 `app` 밖으로 옮기기, git 실행을 `fs`로 모으기, 홈 디렉터리 접근 지점 하나로 모으기, 스킬 구조와 이름 정리가 그 내용이다
+- `tools/lint-arch.py`를 추가했다. `docs/ARCHITECTURE.md`의 기계적 `MUST` 규칙 9개를 검사하고 Known violations 표를 허용 목록으로 읽는다. 표에 있지만 더는 위반하지 않는 행은 stale로 보고하므로 수정이 진행될수록 표가 줄어든다. 새 위반이나 stale 행이 있으면 exit 1이다
+- `tools/lint-prose.py`가 220자를 넘는 `description`을 실패로 처리한다. folded와 block 값도 재고, 짝이 맞는 따옴표만 벗긴 뒤 잰다. 한도를 넘던 `blast-radius`, `technical-writing`, `qa-handoff` 스킬과 `assurance-auditor` 에이전트의 설명을 트리거 어휘를 유지한 채 줄였다
+- 기능맵 `docs/FEATURES.md`를 추가했다. 인스톨러 TUI, 상태 표시줄, 배포, 설정 동작을 화면 위치, 사용자 표현, 실제 UI 문구로 찾는다. 화면별 항목은 `docs/features/` 아래에 나눴다
+- MCP env 입력 대화상자가 수집한 값을 가릴 때 앞 4바이트를 잘라서, 한국어처럼 다중 바이트 문자로 시작하는 값에서 `byte index 4 is not a char boundary`로 패닉했다. 앞 4문자를 쓰도록 고쳤고 ASCII 값은 이전과 같게 보인다
+- 설치 때 상태 표시줄 자동 등록이 `statusLine`을 파일 이름 문자열로 써서, `{type, command}` 객체를 읽는 Statusline 탭이 새 설치에서 `[No default set]`를 보였다. 자동 등록도 `set_statusline`을 거쳐 같은 객체 형태로 쓴다. 옛 설치가 남긴 객체가 아닌 값은 교체하고, 사용자가 이미 설정한 객체는 유지한다
 
 ### 2026-10-04, v1.19.0
 
