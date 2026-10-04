@@ -70,22 +70,22 @@
 
 ### 인스톨러 소스 `tools/installer/src/`
 
-전체 67 파일, 12,978줄. 테스트·공백을 포함한 raw 라인 수다.
+전체 69 파일, 13,922줄. 테스트·공백을 포함한 raw 라인 수다.
 
 | 모듈 | 파일 / LOC | 내용 |
 |---|---|---|
 | `app/` | 10 / 1,970 | 앱 상태. `mod.rs`는 App, 나머지는 `types.rs`, `navigation.rs`, `selection.rs`, `processing.rs`, `input.rs`, `settings.rs`, `sources.rs`, `source_wizard.rs`, `test_support.rs`이며 `test_support.rs`는 테스트용 App·MCP·플러그인 픽스처다 |
 | `ui/` | 17 / 2,958 | 렌더링. 리스트, diff, 탭, MCP/플러그인 목록, 소스 위저드, 로딩 화면, `help.rs`, `confirm_exit.rs`, `layout.rs`, `tests.rs`가 있다. `help.rs`는 `?` 키바인딩 오버레이로 전체 키 목록의 SSOT이고, `confirm_exit.rs`는 `Esc` 이탈 확인 프롬프트, `layout.rs`는 오버레이 중앙 배치 헬퍼, `tests.rs`는 판 테두리·타이틀·상태바·오버레이 렌더 검증이다 |
-| `fs/scanner/` | 6 / 1,395 | 컴포넌트 스캔: `mod.rs`, `components.rs`, `validation.rs`, `external.rs`, `mcp.rs`, `plugin.rs` |
-| `fs/installer/` | 7 / 1,512 | 설치·제거: `mod.rs`, `process.rs`, `settings.rs`, `merge.rs`, `mcp.rs`, `plugin.rs`, `renamed.rs`. `process.rs`는 spawn/cancel을 맡고, `renamed.rs`는 이름을 바꾼 스킬의 옛 디렉터리에서 설치 기록에 있는 파일만 지운다 |
-| `fs/` 직속 | 3 / 922 | `mod.rs`, `diff.rs`, `manifest.rs`이며 `manifest.rs`는 install.json을 다룬다 |
+| `fs/scanner/` | 6 / 1,390 | 컴포넌트 스캔: `mod.rs`, `components.rs`, `validation.rs`, `external.rs`, `mcp.rs`, `plugin.rs` |
+| `fs/installer/` | 9 / 2,034 | 설치·제거: `mod.rs`, `process.rs`, `settings.rs`, `merge.rs`, `mcp.rs`, `plugin.rs`, `renamed.rs`, `unshipped.rs`, `test_support.rs`. `process.rs`는 spawn/cancel을 맡고, `renamed.rs`는 이름을 바꾼 스킬의 옛 디렉터리에서 설치 기록에 있는 파일만 지운다. `unshipped.rs`는 번들 소스가 더는 내보내지 않는 기록된 파일을 기록된 해시와 같을 때만 지우고, `test_support.rs`는 두 정리 모듈이 함께 쓰는 테스트 픽스처다 |
+| `fs/` 직속 | 3 / 1,326 | `mod.rs`, `diff.rs`, `manifest.rs`이며 `manifest.rs`는 install.json과 그 안의 파일 해시를 다룬다. 스캐너와 해시가 함께 쓰는 줄바꿈 정규화 `normalize_line_endings`는 `mod.rs`에 있다 |
 | `source/` | 3 / 898 | `mod.rs`는 find/sync/resolve, `git.rs`, `config.rs`는 sources.yaml을 다룬다 |
-| `loading/` | 6 / 745 | 배경 스레드를 기다리는 세 화면: `channels.rs`는 채널 소유, `scan.rs`는 refresh 페이로드, 나머지는 `initial_load.rs`, `install.rs`, `preflight.rs` |
+| `loading/` | 6 / 754 | 배경 스레드를 기다리는 세 화면: `channels.rs`는 채널 소유, `scan.rs`는 refresh 페이로드, 나머지는 `initial_load.rs`, `install.rs`, `preflight.rs` |
 | `tree/` | 4 / 622 | 접히는 폴더 트리: `mod.rs`는 `TreeNode`·`TreeView`, `build.rs`는 경로→노드, `navigate.rs`는 커서·펼침, `selection.rs`는 폴더 단위 선택 |
 | `cli/` | 2 / 571 | `mod.rs`는 키 디스패치와 `--sync`, `tests.rs`는 패인 digit·`?` 오버레이·`Esc` 이탈 확인 키 라우팅 검증 |
-| 루트 직속 | 9 / 1,385 | `main.rs`는 125줄로 터미널 셋업과 이벤트 루프다. `target.rs`는 대상 CLI `TargetCli`와 설정 디렉터리, `paths.rs`는 홈 디렉터리를 얻는 유일한 지점, `exec.rs`는 `fs`와 `source`가 함께 쓰는 짧은 외부 명령 실행기다. 나머지는 `component.rs`, `mcp.rs`, `plugin.rs`, `process_exec.rs`, `theme.rs` |
+| 루트 직속 | 9 / 1,399 | `main.rs`는 125줄로 터미널 셋업과 이벤트 루프다. `target.rs`는 대상 CLI `TargetCli`와 설정 디렉터리, `paths.rs`는 홈 디렉터리를 얻는 유일한 지점, `exec.rs`는 `fs`와 `source`가 함께 쓰는 짧은 외부 명령 실행기다. 나머지는 `component.rs`, `mcp.rs`, `plugin.rs`, `process_exec.rs`, `theme.rs` |
 
-테스트: `cargo test --manifest-path tools/installer/Cargo.toml`. 151 tests. ignore로 표시된 1개는 타임아웃 테스트가 자식 프로세스로 띄우는 도우미다.
+테스트: `cargo test --manifest-path tools/installer/Cargo.toml`. Windows에서 잰 수로 177 tests. ignore로 표시된 1개는 타임아웃 테스트가 자식 프로세스로 띄우는 도우미다.
 
 파일 길이 한도는 `coding-standards` 스킬의 `references/code-thresholds.md`가 정한 soft 300줄, hard 500줄이다. 이 저장소에서 재는 방법은 [ARCHITECTURE.md](ARCHITECTURE.md)의 `arch-file-size`가 정한다. 빈 줄, 주석, 인라인 `mod tests` 블록을 뺀 프로덕션 코드만 세고, rustfmt 도입으로 줄이 늘어 2026-10-04에 이 기준으로 바꿨다. 이 기준으로 soft 초과는 302줄인 `ui/mod.rs` 하나이며 Known violations에 올라 있고, hard 초과는 0개다. 직전까지 초과했던 `loading.rs` 456줄, `tree.rs` 337줄, `cli.rs` 302줄은 각각 `loading/`, `tree/`, `cli/` 디렉터리 모듈로 분리했다. 위 표의 LOC은 raw 라인 수이므로 임계값 판정에 그대로 쓰지 않는다.
 
@@ -154,6 +154,7 @@ A: 개발자 가독용 미러다. 인스톨러 스캐너가 stem이 `-ko`로 끝
 
 ## 문서 업데이트 이력
 
+- **2026-10-04**: 미출시 변경 반영. 인스톨러 모듈 표에 `fs/installer/unshipped.rs`, `fs/installer/test_support.rs`를 넣고, `normalize_line_endings`가 `fs/mod.rs`로 옮겨 간 것과 `manifest.rs`의 파일 해시를 적었다. 파일 수 67 → 69, LOC과 테스트 수 151 → 177을 현행화
 - **2026-10-04**: v1.21.0 반영. `how` 스킬과 `/review-panel` 커맨드 추가로 커맨드 27 → 28, 스킬 29 → 30. README 앵커 `#슬래시-커맨드-28개`, `#스킬-30개`를 헤딩과 함께 갱신. 저장소 루트 목록에 개발용 `CLAUDE.md`를 추가. 인스톨러 모듈 표에 `target.rs`, `paths.rs`, `exec.rs`, `fs/installer/renamed.rs`를 넣고 LOC과 테스트 수 137 → 151을 현행화. 파일 길이 판정을 `arch-file-size` 기준으로 맞췄다
 - **2026-10-04**: v1.20.0 반영. `architecture-rules` 스킬과 `/architecture-rules` 커맨드 추가로 커맨드 26 → 27, 스킬 28 → 29. README 앵커 `#슬래시-커맨드-27개`, `#스킬-29개`를 헤딩과 함께 갱신. 문서 목록에 `FEATURES.md`·`ARCHITECTURE.md`를, 정책 표에 `architecture-rules` 행을, 개발 스크립트에 `tools/lint-arch.py`를 추가. 인스톨러 LOC과 테스트 수 133 → 137을 현행화
 - **2026-10-04**: `blast-radius`·`technical-writing`·`why` 스킬과 `/blast-radius`·`/bugfix`·`/refactor`·`/perf` 커맨드 추가 반영. 커맨드 22 → 26, 스킬 25 → 28. README 앵커 `#슬래시-커맨드-26개`, `#스킬-28개`를 헤딩과 함께 갱신. 정책 표에 `technical-writing` 행을, 개발 스크립트에 `tools/lint-prose.py`를 추가

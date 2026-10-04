@@ -219,19 +219,21 @@
 
 ### `install-manifest`: ~/.hibi/install.json 출처 기록
 
-- **위치**: 화면에는 없다. 컴포넌트 설치 · 제거 뒤 진행 로그에 실패 경고만 뜬다
-- **별칭**: install.json, 매니페스트, 출처, 어디서 설치했는지, 업스트림, 버전
-- **UI 문구**: `"[WARN] Install manifest not written: {}"`, `"Failed to replace {}"`, `"Failed to create {}"`
+- **위치**: 전용 화면은 없다. 컴포넌트 설치 · 제거 뒤 진행 로그에 실패 경고만 뜨고, 시작할 때 기록으로 정리한 결과는 목록 화면 상태 바의 `Auto-cleaned` 메시지에 붙는다
+- **별칭**: install.json, 매니페스트, 출처, 어디서 설치했는지, 업스트림, 버전, 해시, Auto-cleaned, no longer shipped, unverified, 업그레이드 뒤 옛 파일이 안 지워짐, 파일이 저절로 사라짐
+- **UI 문구**: `"[WARN] Install manifest not written: {}"`, `"Failed to replace {}"`, `"Failed to create {}"`, `"Auto-cleaned {} outdated item(s): {}"`, `"{removed} file(s) no longer shipped"`, `"{failed} file(s) no longer shipped could not be removed"`, `"kept {edited} edited file(s) no longer shipped"`, `"kept {unverified} unverified file(s) no longer shipped"`
 - **컨트롤**: 없음
 - **코드 경로**:
-  - 상태 / 핸들러: `tools/installer/src/loading/scan.rs` → `start_refresh_thread` 의 Components 범위에서만 쓴다
-  - 데이터: 쓰기 `tools/installer/src/fs/manifest.rs` → `write`, 경로 `tools/installer/src/fs/manifest.rs` → `manifest_path`, 필드는 `tools/installer/src/fs/manifest.rs` → `InstallManifest`
-  - 데이터: 읽기는 코드가 아니라 모델이 한다, `src/commands/upstream-pr.md` 와 `src/skills/pull-request/references/upstream-config.md` 가 이 파일에서 업스트림 URL 과 버전을 읽으라고 지시한다
-- **테스트**: `tools/installer/src/fs/manifest.rs`, `tools/installer/src/loading/scan.rs`
+  - 상태 / 핸들러: 기록 전체는 `tools/installer/src/loading/scan.rs` → `start_refresh_thread` 의 Components 범위에서만 다시 쓴다
+  - 상태 / 핸들러: 시작할 때 `tools/installer/src/loading/initial_load.rs` → `start_loading_thread` 가 기록을 읽어 이름을 바꾼 스킬과 더는 출시되지 않는 파일을 정리하고, 판정한 ID 를 `tools/installer/src/fs/manifest.rs` → `forget` 으로 기록에서 지운다
+  - 데이터: 쓰기 `tools/installer/src/fs/manifest.rs` → `write`, 경로 `tools/installer/src/fs/manifest.rs` → `manifest_path`, 필드는 `tools/installer/src/fs/manifest.rs` → `InstallManifest`, 파일 해시는 `tools/installer/src/fs/manifest.rs` → `hashes_for`
+  - 데이터: 코드의 읽기는 `tools/installer/src/fs/manifest.rs` → `recorded_install` 이고, 더는 출시되지 않는 파일의 판정은 `tools/installer/src/fs/installer/unshipped.rs` → `auto_cleanup_unshipped_files` 다. 업스트림 URL 과 버전은 모델이 읽는다, `src/commands/upstream-pr.md` 와 `src/skills/pull-request/references/upstream-config.md` 가 이 파일에서 읽으라고 지시한다
+- **테스트**: `tools/installer/src/fs/manifest.rs`, `tools/installer/src/fs/installer/unshipped.rs`, `tools/installer/src/loading/scan.rs`
 - **함정**: MCP 나 플러그인만 설치했는데 install.json 이 그대로임 → 매니페스트는 파일 기반 컴포넌트만 기록하고 그 새로고침에서만 쓴다, 근거: `tools/installer/src/fs/manifest.rs` → `InstallManifest`
-- **함정**: 처음 실행하고 아무것도 설치하지 않으면 install.json 이 없음 → 첫 로딩 스캔은 매니페스트를 쓰지 않는다, 근거: `tools/installer/src/loading/initial_load.rs` → `start_loading_thread`
-- **공유 의존**: `tools/installer/src/fs/mod.rs` → `VERSION`
-- **관련**: `release-workflow`, `commit-push-gating`
+- **함정**: 처음 실행하고 아무것도 설치하지 않으면 install.json 이 없음 → 첫 로딩은 `write` 를 부르지 않고 `forget` 은 있는 기록만 고친다, 근거: `tools/installer/src/loading/initial_load.rs` → `start_loading_thread`, `tools/installer/src/fs/manifest.rs` → `forget_in`
+- **함정**: 업그레이드한 뒤 빠진 옛 파일이 지워지지 않고 `kept N unverified file(s) no longer shipped` 만 뜸 → 해시가 없는 옛 기록의 파일과 링크를 지나는 경로는 확인할 수 없어 남기고, 판정한 ID 는 기록에서 지워져 다음 실행에도 다시 보지 않는다, 근거: `tools/installer/src/fs/installer/unshipped.rs` → `judge`, `tools/installer/src/fs/installer/unshipped.rs` → `auto_cleanup_unshipped_files`
+- **공유 의존**: `tools/installer/src/fs/mod.rs` → `VERSION`, `tools/installer/src/fs/mod.rs` → `normalize_line_endings`, sha2 크레이트
+- **관련**: `release-workflow`, `commit-push-gating`, `startup-loading`
 
 ### `theme-toggle`: Mocha · Latte 테마 전환
 

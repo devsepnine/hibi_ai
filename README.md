@@ -120,7 +120,7 @@ in `~/.hibi/install.json`:
   "version": "v1.16.0",
   "target": ".claude",
   "updated_at": "2026-08-06T05:41:00Z",
-  "components": ["agents/architect", "commands/qa-handoff", "skills/qa-handoff"]
+  "components": ["agents/architect.md", "commands/qa-handoff.md", "skills/qa-handoff/SKILL.md"]
 }
 ```
 
@@ -131,8 +131,17 @@ read as the origin of a component that came from somewhere else.
 This exists so an installed config can name its own origin. The version maps to
 a release tag, so the exact source tree is recoverable, and the upstream is where
 improvements go back. The `pull-request` skill reads this file to find the
-repository without needing a clone. Only hibi's own directory is written; the
-agent-owned `~/.claude` tree is left alone.
+repository without needing a clone. The record lives in hibi's own directory,
+so no bookkeeping file is added to the agent-owned `~/.claude` tree.
+
+Since v1.22.0, the record also holds `hashes`: the SHA-256 of each bundled agent,
+command, context, rule, skill, and output-style file as hibi wrote it, line
+endings normalized, keyed by the same IDs. A file you edited gets no hash, and
+an older record without `hashes` still reads. At startup hibi uses them to
+remove recorded files the bundled source no longer ships, but only when a file
+still matches its hash. A file you edited, one without a hash, and anything the
+record does not list stay where they are, and the status bar says what was
+removed or kept.
 
 ## Components
 

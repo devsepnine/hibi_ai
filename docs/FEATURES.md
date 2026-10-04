@@ -47,7 +47,8 @@
 | Claude 선택, Codex 선택, 대상 선택, 첫 화면 | `cli-picker` |
 | 로딩, 로딩 안 끝남, 멈춤, 스피너, Scanning | `startup-loading`, `install-progress` |
 | 시작했더니 에러 없이 첫 화면으로 돌아감, 경고가 안 보임 | `startup-loading` |
-| 훅이 사라짐, 훅 자동 삭제, Auto-cleaned, 훅 탭이 비어 있음, 훅 설치 안 됨 | `startup-loading`, `component-list`, `component-lookup` |
+| 훅이 사라짐, 훅 자동 삭제, 훅 탭이 비어 있음, 훅 설치 안 됨 | `startup-loading`, `component-list`, `component-lookup` |
+| Auto-cleaned, outdated item `(ambiguous)` | `startup-loading`, `install-manifest` |
 | Cannot find source directory, 바이너리 옮겼더니 실행 안 됨 | `startup-loading`, `install-script` |
 | --version, 버전 확인, -v, --help, 도움말 옵션 | `cli-flags` |
 | 버전 `(ambiguous)` | `cli-flags`, `status-bar`, `release-workflow`, `install-manifest` |
@@ -78,7 +79,8 @@
 | 플러그인, plugin, 마켓플레이스, marketplace | `plugin-list` |
 | 진행률, 로그, Progress, 설치 중, 취소 `(ambiguous)` | `install-progress`, `source-sync`, `mcp-env-input` |
 | CLI not found, claude 못 찾음, PATH | `install-progress`, `mcp-list` |
-| install.json, 매니페스트, 어디서 설치했는지, 출처, 업스트림 | `install-manifest` |
+| install.json, 매니페스트, 어디서 설치했는지, 출처, 업스트림, 해시 | `install-manifest` |
+| no longer shipped, unverified, 업그레이드 뒤 옛 파일이 안 지워짐, 파일이 저절로 사라짐 | `install-manifest` |
 | 테마, 다크모드, 라이트모드, Mocha, Latte, 색 | `theme-toggle` |
 | 라이트 테마에서 제목이 안 보임 `(ambiguous)` | `sources-screen`, `theme-toggle` |
 | 소스, sources, sources.yaml, 소스 관리, 소스 삭제, bundled 수정 안 됨 | `sources-screen` |

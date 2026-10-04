@@ -335,13 +335,43 @@ bundled (최저) → sources.yaml 첫 번째 → ... → sources.yaml 마지막 
   "version": "v1.16.0",
   "target": ".claude",
   "updated_at": "2026-09-09T00:00:00Z",
-  "components": ["agents/architect", "commands/qa-handoff", "skills/qa-handoff"]
+  "components": ["agents/architect.md", "commands/qa-handoff.md", "skills/qa-handoff/SKILL.md"]
 }
 ```
 
-`components`는 번들 소스에서 온 것만 나열하고, 추가 소스는 `other_sources`에 분리된다. `pull-request` 스킬이 이 파일로 클론 없이 상류 저장소를 찾는다. hibi 자신의 디렉터리만 쓰고 `~/.claude` 트리는 건드리지 않는다.
+`components`의 ID는 타입 디렉터리 이름 뒤에 그 안의 상대 경로를 붙인 것이다. 번들 소스에서 온 것만 나열하고, 추가 소스는 `other_sources`에 분리된다. `pull-request` 스킬이 이 파일로 클론 없이 상류 저장소를 찾는다. 기록은 hibi 자신의 디렉터리에만 쓴다.
+
+v1.22.0부터 기록에 `hashes`가 더 붙는다. hibi가 쓴 그대로의 파일 내용을 줄바꿈만 LF로 맞춰 잰 SHA-256이고, 키는 컴포넌트 ID다.
+
+```json
+{
+  "hashes": {
+    "agents/architect.md": "<SHA-256 hex>",
+    "skills/qa-handoff/SKILL.md": "<SHA-256 hex>"
+  }
+}
+```
+
+- 번들 소스의 `agents`, `commands`, `contexts`, `rules`, `skills`, `output-styles` 파일만 담는다. 훅, 상태 표시줄, config 파일은 담지 않는다
+- 스캔에서 소스와 같았던 파일은 설치본이 아니라 소스를 해시한다. 스캔 뒤에 사용자가 저장한 수정을 hibi가 쓴 것으로 기록하지 않기 위해서다
+- 소스와 달랐던 파일은 같은 대상의 이전 기록에 있던 해시와 아직 같을 때만 그 해시를 유지한다. 옛 hibi가 기록한 내용 그대로라는 뜻이다. 그 밖의 파일은 해시가 없다
+- `hashes`가 없는 옛 기록도 그대로 읽힌다
+
+인스톨러는 시작할 때 이름을 바꾼 스킬을 정리한 다음 `fs/installer/unshipped.rs`로 기록에는 있지만 번들 소스가 더는 내보내지 않는 파일을 판정한다.
+
+- 기록된 해시와 같으면 지운다. 그래서 비게 된 상위 디렉터리도 지우되 타입 디렉터리는 남긴다
+- 해시가 다르면 사용자가 고친 파일로 보고 남긴다
+- 해시가 없거나, 경로가 링크를 지나거나, 일반 파일이 아니면 확인할 수 없는 파일로 남긴다
+- 기록에 없는 파일은 건드리지 않는다. 소스에 그 타입 디렉터리가 없으면 그 타입의 파일은 판정하지 않는다
+- 판정한 ID는 `manifest::forget`이 install.json에서 지우므로 같은 알림은 한 번만 뜬다. 지우지 못한 파일은 기록에 남아 다음 실행에 다시 시도한다
+
+결과는 목록 화면 상태 바의 `Auto-cleaned N outdated item(s)` 뒤에 `N file(s) no longer shipped`, `N file(s) no longer shipped could not be removed`, `kept N edited file(s) no longer shipped`, `kept N unverified file(s) no longer shipped`로 붙는다.
 
 ## 최근 변경사항
+
+### 미출시
+
+- 인스톨러가 번들 소스에서 빠진 파일을 정리한다. `~/.hibi/install.json`에 hibi가 쓴 파일마다 SHA-256을 남기는 `hashes`를 더했고, 시작할 때 `fs/installer/unshipped.rs`가 기록에는 있지만 소스가 더는 내보내지 않는 파일을 그 해시와 대조한다. 같으면 지우고, 사용자가 고쳤거나 확인할 수 없는 파일은 남긴 채 상태 바에 알린다. 기록에 없는 파일은 건드리지 않고, 판정한 ID는 기록에서 지워 알림이 한 번만 뜬다. 해시는 새 직접 의존성 `sha2`로 잰다
 
 ### 2026-10-04, v1.21.0
 

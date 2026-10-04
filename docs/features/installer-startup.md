@@ -11,7 +11,7 @@
   - 상태 / 핸들러: `tools/installer/src/cli/mod.rs` → `handle_cli_selection`, `tools/installer/src/cli/mod.rs` → `confirm_cli_selection`
   - 상태 / 핸들러: `tools/installer/src/app/mod.rs` → `select_cli` 가 탭 목록과 대상 디렉터리를 정하고 Loading 으로 넘긴다
   - 상태 / 핸들러: `tools/installer/src/app/types.rs` → `for_cli` 가 Codex 에 Skills · Config · MCP 세 탭만 준다
-  - 데이터: 대상 디렉터리는 `tools/installer/src/app/types.rs` → `get_dest_dir` 가 ~/.claude 또는 ~/.codex 로 정한다
+  - 데이터: 대상 디렉터리는 `tools/installer/src/target.rs` → `get_dest_dir` 가 ~/.claude 또는 ~/.codex 로 정한다
 - **테스트**: `tools/installer/src/app/navigation.rs`
 - **함정**: 목록에서 돌아와 다시 고른 뒤 Space 가 아무것도 체크하지 않음 → 재스캔 결과가 짧아 커서 인덱스가 범위를 벗어남, `select_cli` 에서 세 인덱스를 0으로 되돌려 막는다, 근거: `tools/installer/src/app/mod.rs` → `select_cli`
 - **공유 의존**: `tools/installer/src/theme.rs`
@@ -21,7 +21,7 @@
 
 - **위치**: 화면 가운데 스피너 상자, 제목 `Config Installer`
 - **별칭**: 로딩, 스피너, 멈춤, Scanning, 시작이 느림
-- **UI 문구**: `"Loading..."`, `"Scanning components"`, `"Loading {} configuration..."`, `"Loading...  [q] Quit"`, `"Error loading: {}"`, `"Loading failed"`, `"Unexpected refresh payload during load"`, `"Auto-cleaned {} deprecated hook(s): {}"`, `"Selected {}"`, `"Removed orphaned bundled cache (~/.hibi/cache/bundled)"`, `"Failed to clean bundled cache: {}"`, `"Cannot find source directory"`
+- **UI 문구**: `"Loading..."`, `"Scanning components"`, `"Loading {} configuration..."`, `"Loading...  [q] Quit"`, `"Error loading: {}"`, `"Loading failed"`, `"Unexpected refresh payload during load"`, `"Auto-cleaned {} outdated item(s): {}"`, `"Selected {}"`, `"Removed orphaned bundled cache (~/.hibi/cache/bundled)"`, `"Failed to clean bundled cache: {}"`, `"Cannot find source directory"`
 - **컨트롤**: 로딩 중 q 만 받는다, `handle_loading_view` 에서 `should_quit`
 - **코드 경로**:
   - UI: `tools/installer/src/main.rs` → `main` 이 `App::new` 를 백그라운드 스레드로 돌리며 `tools/installer/src/ui/loading_screen.rs` → `draw` 를 그린다
