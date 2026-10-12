@@ -1,6 +1,6 @@
 # hibi-ai repository
 
-Instructions for working on this repository. They are not shipped: the installer ships what is under `src/`, and `src/CLAUDE.md` is the always-on file users receive.
+Instructions for agents working on this repository. Codex and Claude Code both read this file; Claude Code falls back to it because the root has no `CLAUDE.md`. They are not shipped: the installer ships what is under `src/`, and `src/CLAUDE.md` and `src/AGENTS.md` are the always-on files users receive.
 
 ## Before you change code
 

@@ -20,7 +20,7 @@
 ### 저장소 루트
 
 - **[../README.md](../README.md)**: 프로젝트 소개. 영문, 배포 대상 사용자용
-- **[../CLAUDE.md](../CLAUDE.md)**: 이 저장소를 개발할 때 읽는 지침이며 배포되지 않는다. 기능맵과 아키텍처 규칙을 가리키는 줄, `-ko.md` 미러 규칙, 커밋 전에 돌릴 검사 네 개를 담는다
+- **[../AGENTS.md](../AGENTS.md)**: 이 저장소를 개발할 때 Codex와 Claude Code가 함께 읽는 지침이며 배포되지 않는다. 루트에 `CLAUDE.md`가 없으므로 Claude Code도 이 파일을 읽는다. 기능맵과 아키텍처 규칙을 가리키는 줄, `-ko.md` 미러 규칙, 커밋 전에 돌릴 검사 네 개를 담는다
 - **[../LICENSE](../LICENSE)**: MIT License
 
 루트에 `AGENTS.md`는 없다. 사용자에게 배포되는 항상-로드 지침 두 파일은 설정의 일부이므로 `src/` 아래에 있다:
@@ -96,7 +96,7 @@
 - `package.sh`: 릴리즈 아카이브와 nfpm으로 만드는 Linux `.deb`/`.rpm`/`.apk`, 그리고 `checksums.txt`. `VERSION` 상수가 릴리즈 워크플로의 검증 기준이다
 - `nfpm.yaml`: Linux 패키지 정의. `/usr/bin/hibi`와 `/usr/share/hibi` 레이아웃이며 `VERSION`은 환경 변수로 주입한다
 - `install.sh`: Linux curl|sh 인스톨러. 체크섬 검증 후 `~/.local` 또는 `HIBI_PREFIX`에 설치한다
-- `tools/lint-prose.py`: 산문의 em dash, en dash, 대시로 쓰인 하이픈, 괄호와 frontmatter `description`의 따옴표 없는 `: `를 잡는다. 220자를 넘는 `description`도 잡는다. 인자가 없으면 `src`, `docs`, `README.md`, `CLAUDE.md`를 검사하고, 코드 펜스·인라인 코드·링크 대상은 제외한다. 위반이 있으면 exit 1이며 릴리즈 워크플로가 빌드 전에 실행한다
+- `tools/lint-prose.py`: 산문의 em dash, en dash, 대시로 쓰인 하이픈, 괄호와 frontmatter `description`의 따옴표 없는 `: `를 잡는다. 220자를 넘는 `description`도 잡는다. 인자가 없으면 `src`, `docs`, `README.md`, `AGENTS.md`를 검사하고, 코드 펜스·인라인 코드·링크 대상은 제외한다. 위반이 있으면 exit 1이며 릴리즈 워크플로가 빌드 전에 실행한다
 - `tools/lint-arch.py`: `docs/ARCHITECTURE.md`의 기계적 `MUST` 규칙 12개를 검사한다. Known violations 표를 허용 목록으로 읽고, 더는 위반하지 않는 행은 stale로 보고한다. 새 위반이나 stale 행이 있으면 exit 1이며 릴리즈 워크플로가 빌드 전에 실행한다
 - `.github/workflows/release.yml`: 태그 `v*.*.*` 푸시로 트리거된다. 태그, `package.sh` VERSION, `Cargo.toml` version이 같은지 검증하고, 두 린트와 `cargo fmt --check`, `cargo test`를 통과하면 빌드·패키징·GitHub Release를 발행한다. `lint-arch.py`가 커밋 이력을 비교하므로 checkout은 전체 이력을 받는다
 
@@ -124,7 +124,7 @@
 1. `src/CLAUDE.md`의 워크플로·코드 품질 규칙 숙지
 2. 컴포넌트 추가 시 해당 디렉터리의 기존 파일을 형식 기준으로 삼는다. 스킬을 추가하면 `description`이 목록 예산 8,000자를 공유하므로 220자 이하로 유지한다
 3. `-ko.md` 미러를 함께 갱신한다. frontmatter는 원본과 바이트 단위로 동일하게 둔다
-4. 커밋 전 루트 [CLAUDE.md](../CLAUDE.md)의 검사 네 개를 실행한다. 릴리즈 워크플로도 빌드 전에 같은 검사를 돌린다
+4. 커밋 전 루트 [AGENTS.md](../AGENTS.md)의 검사 네 개를 실행한다. 릴리즈 워크플로도 빌드 전에 같은 검사를 돌린다
 5. PR 전 `/pull-request`로 제목 형식·템플릿·PR 전 체크리스트를 확인한다
 
 ## 자주 묻는 질문

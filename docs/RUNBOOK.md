@@ -28,10 +28,10 @@ cargo update -w --manifest-path tools/installer/Cargo.toml
 
 ### 2. 로컬 검증
 
-릴리즈 워크플로가 빌드 전에 돌리는 검사 네 개를 먼저 로컬에서 통과시킨다. 같은 목록이 루트 `CLAUDE.md`에 있다.
+릴리즈 워크플로가 빌드 전에 돌리는 검사 네 개를 먼저 로컬에서 통과시킨다. 같은 목록이 루트 `AGENTS.md`에 있다.
 
 ```bash
-# 산문 구두점 린트: src, docs, README.md, CLAUDE.md. 위반 시 exit 1
+# 산문 구두점 린트: src, docs, README.md, AGENTS.md. 위반 시 exit 1
 python tools/lint-prose.py
 
 # 아키텍처 규칙 린트: docs/ARCHITECTURE.md의 기계적 MUST 규칙. 새 위반이나 stale 행이면 exit 1

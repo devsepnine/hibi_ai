@@ -28,11 +28,11 @@ hibi_ai/
 ├── tools/
 │   ├── installer/          # TUI 인스톨러 (Rust, 모듈 표는 INDEX.md)
 │   ├── statusline/         # 상태 표시줄 소스 (Rust)
-│   ├── lint-prose.py       # 산문 구두점 린트 (src, docs, README.md, CLAUDE.md)
+│   ├── lint-prose.py       # 산문 구두점 린트 (src, docs, README.md, AGENTS.md)
 │   └── lint-arch.py        # 아키텍처 규칙 린트 (docs/ARCHITECTURE.md)
 ├── docs/                   # 이 문서 디렉터리 (README / INDEX / RUNBOOK / FEATURES / ARCHITECTURE)
 ├── .github/workflows/      # release.yml — 태그 푸시로 검사 후 릴리즈 자동화
-├── CLAUDE.md               # 이 저장소 개발용 지침 (배포되지 않음)
+├── AGENTS.md               # 이 저장소 개발용 지침, Codex와 Claude Code 공용 (배포되지 않음)
 ├── package.sh              # 릴리즈 패키징
 ├── nfpm.yaml               # Linux 패키지 정의 (deb/rpm/apk)
 ├── install.sh              # Linux curl|sh 인스톨러
