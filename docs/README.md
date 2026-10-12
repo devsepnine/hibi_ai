@@ -1,6 +1,6 @@
 # hibi-ai 프로젝트 문서
 
-> 마지막 업데이트: 2026-10-04 · 버전 v1.22.0
+> 마지막 업데이트: 2026-10-12 · 버전 v1.23.0
 
 ## 개요
 
@@ -368,6 +368,11 @@ v1.22.0부터 기록에 `hashes`가 더 붙는다. hibi가 쓴 그대로의 파�
 결과는 목록 화면 상태 바의 `Auto-cleaned N outdated item(s)` 뒤에 `N file(s) no longer shipped`, `N file(s) no longer shipped could not be removed`, `kept N edited file(s) no longer shipped`, `kept N unverified file(s) no longer shipped`로 붙는다.
 
 ## 최근 변경사항
+
+### 2026-10-12, v1.23.0
+
+- `feature-map`과 `architecture-rules`가 포인터 줄을 프로젝트 루트 `AGENTS.md` 한 곳에만 쓴다. 파일이 없으면 만들고, `CLAUDE.md`는 새로 만들지 않는다. Claude Code는 루트에 `CLAUDE.md`가 없을 때 `AGENTS.md`를 읽기 때문이다. 루트 `CLAUDE.md`가 이미 있으면 `@AGENTS.md` 한 줄을 덧붙이고, 이전 실행이 남긴 포인터 줄을 지운다. 두 스킬에 이 경우를 다루는 eval을 하나씩 더했다
+- 이 저장소의 개발용 지침을 루트 `AGENTS.md` 하나로 합치고 루트 `CLAUDE.md`를 지웠다. Codex와 Claude Code가 같은 파일을 읽는다. `lint-prose.py`의 기본 검사 대상도 `CLAUDE.md` 대신 `AGENTS.md`가 됐다. 배포되는 `src/CLAUDE.md`는 그대로다. 사용자 레벨 `~/.claude/`에는 이 대체 동작이 없다
 
 ### 2026-10-04, v1.22.0
 
