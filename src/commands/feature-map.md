@@ -15,8 +15,8 @@ entries whose files changed.
 
 How to invoke: run once to bootstrap, then after features ship or UI copy
 changes. The output is `docs/FEATURES.md`, split into `docs/features/` when it
-grows. The lookup pointer goes into the project's root `CLAUDE.md`, created if
-missing, and into `AGENTS.md` when it exists.
+grows. The lookup pointer goes into the project's root `AGENTS.md`, created if
+missing; a root `CLAUDE.md` that already exists imports it with an `@AGENTS.md` line.
 
 Non-negotiable: every path comes from a file read in this run, every literal UI
 string greps in the source, and every pitfall cites its evidence. No guesses.

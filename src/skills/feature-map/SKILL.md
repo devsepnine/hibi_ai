@@ -196,12 +196,18 @@ grep -hE '^- \*\*(Pitfalls|함정)\*\*:' $MAP | grep -vE ': none$|: [^→]+ → 
   cannot tell which one to trust.
 
 Then make sure an AI finds the map when a report comes in. Add a one-line
-pointer to the project's root `CLAUDE.md`, under whichever section covers
-debugging, and create the file with that line when it does not exist. When
-`AGENTS.md` exists, add the same line there. Insert only that line and leave the
-rest of each file as it was; this write is part of the skill's output. When the
-line is already there, change it only if the map moved. Report the change in the
-reply:
+pointer to the project's root `AGENTS.md`, under whichever section covers
+debugging, and create the file with that line when it does not exist. `AGENTS.md`
+is the one place the pointer lives. Codex reads it directly, and Claude Code
+reads it on its own when the root has no `CLAUDE.md`, so do not create one. When
+a root `CLAUDE.md` exists, Claude Code reads that file instead, so make it import
+the pointer: append an `@AGENTS.md` line unless it already imports `@AGENTS.md`
+or is a symlink to it. Then remove the pointer line an earlier run may have left
+in `CLAUDE.md`, because the import now delivers it. Change only these lines and
+leave the rest of each file as it was; these writes are part of the skill's
+output. When `AGENTS.md` already has the pointer, change it only if the map
+moved. Report the change
+in the reply:
 
 ```markdown
 - Vague bug report, such as "X on the sidebar doesn't work"? Look it up in `docs/FEATURES.md` before searching the code.

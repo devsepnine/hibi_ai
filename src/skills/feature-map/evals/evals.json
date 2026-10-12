@@ -5,7 +5,7 @@
       "id": 1,
       "name": "bootstrap-map-for-vague-reports",
       "prompt": "우리 웹앱 기능맵 좀 만들어줘. 운영팀에서 '사이드바에 뭐가 잘 안돼요', '입금 문구가 잘 입력이 안돼요' 이런 식으로 말하는데, 그때 AI가 바로 어디 코드인지 찾을 수 있으면 좋겠어.",
-      "expected_output": "A new docs/FEATURES.md following assets/feature-map-template-ko.md: header with the verified short SHA and date, a Premises line for facts common to every entry (e.g. no server), and a Note line when another FEATURES.md exists; a lookup protocol section first; a screen index mapping regions (e.g. the sidebar) to feature IDs; an alias index that keeps Korean/English and colloquial terms (입금, deposit, 충전, 입금 문구) marks collisions as (ambiguous), and records plausibly-requested but absent features as → 없음 rows; when the user's example features do not exist, the report says so instead of forcing a mapping; and per-feature entries with location, aliases, literal UI strings copied verbatim with i18n keys, controls with their handlers, a code path with only the hops that exist (persistent state with both write and read sites), tests (or explicit none), and pitfalls written as symptom → cause, each citing a commit or a `path` → `symbol` code source. Features are discovered from routes, layouts, nav config, and i18n files rather than the directory tree. Every path exists and every literal string greps in the source. The assistant adds a one-line lookup pointer to the project's root CLAUDE.md, creating it if missing, adds it to AGENTS.md when that exists, reports the change, and does not commit.",
+      "expected_output": "A new docs/FEATURES.md following assets/feature-map-template-ko.md: header with the verified short SHA and date, a Premises line for facts common to every entry (e.g. no server), and a Note line when another FEATURES.md exists; a lookup protocol section first; a screen index mapping regions (e.g. the sidebar) to feature IDs; an alias index that keeps Korean/English and colloquial terms (입금, deposit, 충전, 입금 문구) marks collisions as (ambiguous), and records plausibly-requested but absent features as → 없음 rows; when the user's example features do not exist, the report says so instead of forcing a mapping; and per-feature entries with location, aliases, literal UI strings copied verbatim with i18n keys, controls with their handlers, a code path with only the hops that exist (persistent state with both write and read sites), tests (or explicit none), and pitfalls written as symptom → cause, each citing a commit or a `path` → `symbol` code source. Features are discovered from routes, layouts, nav config, and i18n files rather than the directory tree. Every path exists and every literal string greps in the source. The assistant adds a one-line lookup pointer to the project's root AGENTS.md, creating it if missing, does not create CLAUDE.md, makes an existing root CLAUDE.md import it with an @AGENTS.md line instead of copying the pointer, reports the change, and does not commit.",
       "files": []
     },
     {
@@ -20,6 +20,13 @@
       "name": "no-invented-pitfalls-and-split",
       "prompt": "기능이 40개 넘는 큰 프로젝트인데 기능맵 만들어줘. 자주 터지는 부분도 같이 적어줘.",
       "expected_output": "Because the single-file map would pass ~500 lines, docs/FEATURES.md holds only the header, lookup protocol, screen and alias indexes, and an ID | purpose | file list, while entries move to docs/features/<screen>.md grouped one file per screen or route; entry files carry no Verified-at line. Pitfalls are written as symptom → cause and appear only where a fix commit (found by subject, then opened with git show) or a cited code statement (`path` → `symbol`) supports them; features without evidence say pitfalls: none rather than a plausible guess. Features without tests say tests: none.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "pointer-migrates-from-legacy-claude-md",
+      "prompt": "기능맵 다시 만들어줘. 예전에 만든 맵 포인터가 루트 CLAUDE.md에 들어 있고 AGENTS.md는 아직 없어.",
+      "expected_output": "Besides the map, the assistant creates the root AGENTS.md with the one-line lookup pointer to docs/FEATURES.md. Because a root CLAUDE.md already exists, Claude Code reads it instead of AGENTS.md, so the assistant appends an @AGENTS.md line to it and then removes the old pointer line from CLAUDE.md, leaving every other line of CLAUDE.md unchanged. The pointer exists only in AGENTS.md afterwards. It does not delete CLAUDE.md, reports the changes to both files, and does not commit.",
       "files": []
     }
   ]

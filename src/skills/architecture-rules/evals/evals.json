@@ -12,7 +12,7 @@
       "id": 2,
       "name": "lint-draft-not-applied",
       "prompt": "Write down the architecture rules for this repo: which packages may import which, where new files go. Ask me about anything the code can't settle.",
-      "expected_output": "For each mechanically checkable MUST rule the reply shows a draft config in the tool the project already uses, or the stack's usual one such as dependency-cruiser, import-linter, or go-arch-lint, and marks the rule 'Enforced by: draft: <tool>'. It does not install packages, add config files, or change the build without agreement. If the tool is installed it runs the draft in check mode and the flagged files equal the Known violations list. It adds a one-line pointer to the project's root CLAUDE.md, creating the file if missing, adds it to AGENTS.md when that exists, and reports the change.",
+      "expected_output": "For each mechanically checkable MUST rule the reply shows a draft config in the tool the project already uses, or the stack's usual one such as dependency-cruiser, import-linter, or go-arch-lint, and marks the rule 'Enforced by: draft: <tool>'. It does not install packages, add config files, or change the build without agreement. If the tool is installed it runs the draft in check mode and the flagged files equal the Known violations list. It adds a one-line pointer to the project's root AGENTS.md, creating the file if missing, does not create CLAUDE.md, makes an existing root CLAUDE.md import it with an @AGENTS.md line instead of copying the pointer, and reports the change.",
       "files": []
     },
     {
@@ -20,6 +20,13 @@
       "name": "update-from-sha",
       "prompt": "docs/ARCHITECTURE.md 작성한 지 좀 됐는데 그 사이 모듈이 늘었어. 규칙 최신화해줘.",
       "expected_output": "The assistant reads the recorded SHA, diffs from it, and reruns each rule's evidence command. Rules whose counts did not move are left unchanged. Each new counter-example becomes a question about fixing it, allowing an exception, or relaxing the rule, never a silent edit. New units go through the mining and Q&A steps for their rules only. The report lists rules added, changed, and removed, and the header SHA moves to HEAD. If the SHA is unreachable it says so and remeasures every rule.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "pointer-without-creating-claude-md",
+      "prompt": "Document the architecture rules for this repo. It has an AGENTS.md for Codex and no CLAUDE.md.",
+      "expected_output": "The assistant adds the one-line pointer to docs/ARCHITECTURE.md into the existing root AGENTS.md and leaves the rest of that file as it was. It does not create a root CLAUDE.md, because Claude Code reads AGENTS.md when CLAUDE.md is absent and a new CLAUDE.md would stop that. It reports the AGENTS.md change.",
       "files": []
     }
   ]
