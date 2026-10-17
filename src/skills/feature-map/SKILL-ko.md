@@ -150,15 +150,18 @@ Enter를 처리". 증상으로 표현할 수 없는 사실, 예를 들어 "렌�
 
 ### 6. 검증하고, 연결한다
 
-보고 전에 아래 네 가지 검사를 돌리고, 이어지는 점검 항목을 확인한다. `SRC` 에는
-코드나 locale 카탈로그가 있는 루트를 전부 넣는다. 예: `src`, `public/locales`.
-검사 대상 문구가 들어 있는 `docs/` 는 절대 넣지 않는다:
+보고 전에 아래 네 가지 검사를 돌리고, 이어지는 점검 항목을 확인한다. 검사는
+호출한 셸과 상관없이 `bash` 에서 돈다. zsh는 따옴표 없는 `$MAP`, `$SRC` 를 한
+단어로 두기 때문에 모든 검사가 아무것도 출력하지 않고, 그게 통과처럼 보인다.
+블록 안의 `SRC=` 줄에 코드나 locale 카탈로그가 있는 루트를 전부 넣는다. 예:
+`src`, `public/locales`. 검사 대상 문구가 들어 있는 `docs/` 는 절대 넣지 않는다:
 
 ```bash
+bash <<'EOF'
 MAP="docs/FEATURES.md $(ls docs/features/*.md 2>/dev/null)"; SRC="src"
 
 # 경로가 전부 존재하는지 — 저장소 루트 기준, `/` 포함. `/` 로 시작하는 라우트 URL은 제외
-grep -ohE '`[^`/ ][^` ]*/[^` ]*\.[A-Za-z0-9]{1,5}`' $MAP | tr -d '`' | sort -u \
+grep -ohE '`[^`/ ][^` ]*/[^` ]*\.[A-Za-z0-9]{1,10}`' $MAP | tr -d '`' | sort -u \
   | while read -r p; do test -e "$p" || echo "MISSING $p"; done
 
 # 실제 UI 문구와 컨트롤 라벨이 전부 소스에서 grep되는지
@@ -166,11 +169,12 @@ grep -hE '^- \*\*(UI strings|Controls|UI 문구|컨트롤)\*\*' $MAP | grep -oE 
   | while IFS= read -r s; do grep -rqF -- "$s" $SRC || echo "MISSING-STRING $s"; done
 
 # 인용한 심볼이 해당 파일에 있는지 — `path` → `symbol` 형식
-grep -ohE '`[^`/ ][^` ]*/[^` ]*\.[A-Za-z0-9]{1,5}` → `[A-Za-z_$][A-Za-z0-9_$]*`' $MAP | tr -d '`' | sort -u \
+grep -ohE '`[^`/ ][^` ]*/[^` ]*\.[A-Za-z0-9]{1,10}` → `[A-Za-z_$][A-Za-z0-9_$]*`' $MAP | tr -d '`' | sort -u \
   | while read -r p _ sym; do grep -qF -- "$sym" "$p" 2>/dev/null || echo "MISSING-SYMBOL $p → $sym"; done
 
 # 함정마다 원인이 있는지, `근거:` 앞에 `증상 → 원인`
 grep -hE '^- \*\*(Pitfalls|함정)\*\*:' $MAP | grep -vE ': none$|: [^→]+ → .+, (source|근거): ' | sed 's/^/NO-CAUSE /'
+EOF
 ```
 
 - 안 걸리는 문구는 바꿔 쓴 것이거나 낡은 것이다. 남겨두지 말고 고친다.

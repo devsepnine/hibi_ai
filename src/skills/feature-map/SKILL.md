@@ -161,14 +161,18 @@ wrong path with the authority of documentation behind it.
 ### 6. Verify, then wire it in
 
 Before reporting, run the four checks below, then the review bullets after
-them. Set `SRC` to every root that holds code or locale catalogs, such as `src` and
-`public/locales`. Never use `docs/`, which contains the strings being checked:
+them. They run under `bash` whatever shell calls them, because zsh keeps an
+unquoted `$MAP` or `$SRC` as one word and every check then prints nothing,
+which reads as a pass. Edit the `SRC=` line inside the block to list every
+root that holds code or locale catalogs, such as `src` and `public/locales`.
+Never use `docs/`, which contains the strings being checked:
 
 ```bash
+bash <<'EOF'
 MAP="docs/FEATURES.md $(ls docs/features/*.md 2>/dev/null)"; SRC="src"
 
 # every path exists — repo-relative, contains `/`; route URLs start with `/` and are skipped
-grep -ohE '`[^`/ ][^` ]*/[^` ]*\.[A-Za-z0-9]{1,5}`' $MAP | tr -d '`' | sort -u \
+grep -ohE '`[^`/ ][^` ]*/[^` ]*\.[A-Za-z0-9]{1,10}`' $MAP | tr -d '`' | sort -u \
   | while read -r p; do test -e "$p" || echo "MISSING $p"; done
 
 # every literal UI string and control label greps in the source
@@ -176,11 +180,12 @@ grep -hE '^- \*\*(UI strings|Controls|UI 문구|컨트롤)\*\*' $MAP | grep -oE 
   | while IFS= read -r s; do grep -rqF -- "$s" $SRC || echo "MISSING-STRING $s"; done
 
 # every cited symbol exists in its file — written as `path` → `symbol`
-grep -ohE '`[^`/ ][^` ]*/[^` ]*\.[A-Za-z0-9]{1,5}` → `[A-Za-z_$][A-Za-z0-9_$]*`' $MAP | tr -d '`' | sort -u \
+grep -ohE '`[^`/ ][^` ]*/[^` ]*\.[A-Za-z0-9]{1,10}` → `[A-Za-z_$][A-Za-z0-9_$]*`' $MAP | tr -d '`' | sort -u \
   | while read -r p _ sym; do grep -qF -- "$sym" "$p" 2>/dev/null || echo "MISSING-SYMBOL $p → $sym"; done
 
 # every pitfall states a cause: `symptom → cause` before the `source:` part
 grep -hE '^- \*\*(Pitfalls|함정)\*\*:' $MAP | grep -vE ': none$|: [^→]+ → .+, (source|근거): ' | sed 's/^/NO-CAUSE /'
+EOF
 ```
 
 - A missing string is paraphrased or stale: fix it, do not keep it.

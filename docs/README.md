@@ -1,6 +1,6 @@
 # hibi-ai 프로젝트 문서
 
-> 마지막 업데이트: 2026-10-12 · 버전 v1.23.0
+> 마지막 업데이트: 2026-10-17 · 버전 v1.23.1
 
 ## 개요
 
@@ -368,6 +368,11 @@ v1.22.0부터 기록에 `hashes`가 더 붙는다. hibi가 쓴 그대로의 파�
 결과는 목록 화면 상태 바의 `Auto-cleaned N outdated item(s)` 뒤에 `N file(s) no longer shipped`, `N file(s) no longer shipped could not be removed`, `kept N edited file(s) no longer shipped`, `kept N unverified file(s) no longer shipped`로 붙는다.
 
 ## 최근 변경사항
+
+### 2026-10-17, v1.23.1
+
+- `feature-map` 6단계 검사가 zsh에서 아무것도 보고하지 않던 문제를 고쳤다. zsh는 따옴표 없는 `$MAP`, `$SRC`를 단어로 나누지 않아 `grep`이 실패했고, 네 검사가 모두 빈 출력으로 끝나 통과처럼 보였다. 검사 블록을 `bash <<'EOF'`로 감싸 호출한 셸과 상관없이 bash에서 돈다
+- 같은 검사가 확장자를 다섯 글자까지만 잡아 `.svelte`, `.coffee` 경로를 건너뛰던 것을 열 글자로 넓혔다
 
 ### 2026-10-12, v1.23.0
 
