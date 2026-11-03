@@ -21,6 +21,13 @@
       "prompt": "이 null 체크 왜 들어갔는지 설계 의도 찾아줘. 지워도 되는지 판단하고 싶어.",
       "expected_output": "When git, PRs, and any connected trackers give no reason, the answer says so under What we don't know, listing the commits read and the search terms used, and offers competing readings as Speculative rather than inventing a rationale. It checks error tracking when available because the target is a defensive guard, and it does not recommend deleting the check without the Risk line spelling out what breaks if the forgotten reason still holds.",
       "files": []
+    },
+    {
+      "id": 4,
+      "name": "regression-identity-before-cause",
+      "prompt": "PP-11119는 중복 출금 오류를 고쳤는데 같은 Unknown Error 화면이 다시 떴어. 원래 오류는 20-002-4060006이고 이번 응답은 20-005-4000008 Client-Device-Info is required야. 왜 회귀했는지 조사해줘.",
+      "expected_output": "Before explaining a cause, the assistant compares the old and new error signatures, failure stages, and violated expected behavior. It concludes that the same screen alone does not establish a regression because the codes and stages differ. If Unknown Error is the documented outcome for an unhandled auth-requirement failure, it classifies the new report as misfiled and says the original fix is not implicated. It may identify missing client device information as a separate anomaly, but it does not call that anomaly a defect without a source stating which contract it violates.",
+      "files": []
     }
   ]
 }

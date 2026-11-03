@@ -1,6 +1,6 @@
 ---
 name: why
-description: "Design archaeology: why code is shaped this way, traced through git, PRs, tickets, and docs, with confidence tiers. Use when asked why something was built so or what a change must keep. 왜 이렇게 만들었지, 설계 의도, 히스토리 추적."
+description: "Design archaeology and regression identity: trace why code exists or whether a fixed bug truly recurred through git, PRs, tickets, docs, and runtime evidence. 설계 의도, 재현, 회귀 원인, 히스토리 추적."
 ---
 
 # Why
@@ -13,7 +13,21 @@ This skill answers why. For how code behaves at runtime, read the code or use th
 
 The target is a chunk of code, a pattern, a constant, or a named decision. The question is a rationale, a trade-off, a motivating edge case, an external constraint, or a history sweep. If the target is vague, take the best reading from the conversation, state it in one line so the user can redirect, and proceed.
 
-## Step 2. Build the code anchor
+## Step 2. Prove a reported regression is the same failure
+
+When the user asks why a fixed bug recurred, identify the old and new failures before explaining either one. Compare three facts:
+
+| Fact | What must match |
+|---|---|
+| Error signature | Status, error code, exception, or stable message |
+| Failure stage | The same request, handler, or call chain step |
+| Violated behavior | The same expected behavior from a ticket, spec, test, or product decision |
+
+Call the new case a regression only when all three facts match, or when direct evidence explains a changed signature or stage while preserving the same violated behavior. The same visible screen or user symptom does not prove a regression. An unexplained mismatch means the cases are related at most. If the current result satisfies its documented contract, classify the report as misfiled instead of inventing a defect.
+
+Keep a separate anomaly separate. Missing input, a new upstream response, or a suspicious configuration may explain the screen without being a bug. Call it a defect only when a source establishes which expectation it violates.
+
+## Step 3. Build the code anchor
 
 Before fanning out, collect the file paths and line ranges, the key symbols, the commits that touched the target, and the PR and ticket numbers they mention:
 
@@ -27,7 +41,7 @@ gh pr view <n> --json title,body,comments,reviews,closingIssuesReferences
 
 Trace back past the latest commit. The current shape is usually several earlier decisions stacked up, and the newest commit is rarely the one that explains it.
 
-## Step 3. Fan out one investigator per evidence source
+## Step 4. Fan out one investigator per evidence source
 
 Source control is always available. For the rest, check which MCP servers this session actually has, and map each to one category:
 
@@ -44,7 +58,7 @@ Launch every matching investigator in one message, one `Agent` per source, each 
 
 When the PR body already answers the question completely, say so and answer inline after checking the other sources would add nothing.
 
-## Step 4. Synthesize
+## Step 5. Synthesize
 
 Merge the findings. Keep each claim in its tier and do not upgrade an inference to a fact while summarizing. Where sources disagree, keep both readings as competing hypotheses.
 
@@ -52,6 +66,7 @@ Merge the findings. Keep each claim in its tier and do not upgrade an inference 
 
 ```
 The question:        <restated in one line>
+Failure identity:    <confirmed regression, related failure, or misfiled report; omit for non-regression questions>
 The code:            <file:line ranges and symbols>
 What we found:       <Direct and Supported claims, each with its source>
 What we can infer:   <Inferred claims, with the chain of reasoning>

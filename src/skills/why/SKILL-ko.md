@@ -1,6 +1,6 @@
 ---
 name: why
-description: "Design archaeology: why code is shaped this way, traced through git, PRs, tickets, and docs, with confidence tiers. Use when asked why something was built so or what a change must keep. 왜 이렇게 만들었지, 설계 의도, 히스토리 추적."
+description: "Design archaeology and regression identity: trace why code exists or whether a fixed bug truly recurred through git, PRs, tickets, docs, and runtime evidence. 설계 의도, 재현, 회귀 원인, 히스토리 추적."
 ---
 
 # Why
@@ -13,7 +13,21 @@ description: "Design archaeology: why code is shaped this way, traced through gi
 
 대상은 코드 덩어리, 패턴, 상수, 또는 이름 붙은 결정이다. 질문은 근거, 트레이드오프, 동기가 된 엣지 케이스, 외부 제약, 또는 히스토리 전수 조사다. 대상이 모호하면 대화에서 가장 그럴듯한 해석을 골라 한 줄로 밝혀 사용자가 방향을 바꿀 수 있게 하고 진행한다.
 
-## Step 2. 코드 앵커를 만든다
+## Step 2. 재현 사례가 같은 실패인지 증명한다
+
+사용자가 수정된 버그가 왜 다시 발생했는지 물으면 원 사례와 새 사례의 정체부터 확인한다. 다음 세 가지 사실을 비교한다:
+
+| 사실 | 확인할 항목 |
+|---|---|
+| Error signature | status, error code, exception, 안정적인 message |
+| Failure stage | 같은 request, handler, call chain 단계 |
+| Violated behavior | 티켓, spec, test, product decision에 적힌 같은 expected behavior |
+
+세 가지가 모두 같을 때만 새 사례를 regression이라고 부른다. signature나 stage가 달라도 direct evidence가 그 차이를 설명하고 같은 violated behavior임을 증명하면 regression으로 볼 수 있다. 같은 화면이나 사용자 증상만으로는 regression을 증명할 수 없다. 설명되지 않은 차이가 있으면 두 사례는 많아야 related다. 현재 결과가 문서화된 contract를 만족하면 결함을 만들지 말고 잘못 등록된 report로 분류한다.
+
+별도 anomaly는 따로 둔다. 누락된 입력, 새로운 upstream response, 의심스러운 config가 화면을 설명할 수는 있지만 곧바로 bug가 되지는 않는다. 어떤 expectation을 위반하는지 source가 확인할 때만 defect라고 부른다.
+
+## Step 3. 코드 앵커를 만든다
 
 분산하기 전에 파일 경로와 줄 범위, 핵심 심볼, 대상을 건드린 커밋, 그 커밋들이 언급하는 PR과 티켓 번호를 모은다:
 
@@ -27,7 +41,7 @@ gh pr view <n> --json title,body,comments,reviews,closingIssuesReferences
 
 최신 커밋에서 멈추지 말고 더 거슬러 올라간다. 현재 모양은 보통 이전 결정 여럿이 쌓인 결과이고, 가장 최근 커밋이 그것을 설명하는 경우는 드물다.
 
-## Step 3. 증거 출처마다 조사자 하나씩 분산한다
+## Step 4. 증거 출처마다 조사자 하나씩 분산한다
 
 소스 컨트롤은 항상 쓸 수 있다. 나머지는 이 세션에 실제로 있는 MCP 서버를 확인해 각각을 카테고리 하나에 대응시킨다:
 
@@ -44,7 +58,7 @@ gh pr view <n> --json title,body,comments,reviews,closingIssuesReferences
 
 PR 본문이 이미 질문에 완전히 답하면 그렇게 밝히고, 다른 출처가 더할 것이 없음을 확인한 뒤 바로 답한다.
 
-## Step 4. 종합한다
+## Step 5. 종합한다
 
 발견을 합친다. 각 주장은 자기 티어에 두고, 요약하면서 추론을 사실로 올리지 않는다. 출처끼리 엇갈리면 두 해석을 경쟁 가설로 함께 둔다.
 
@@ -52,6 +66,7 @@ PR 본문이 이미 질문에 완전히 답하면 그렇게 밝히고, 다른 �
 
 ```
 The question:        <restated in one line>
+Failure identity:    <confirmed regression, related failure, or misfiled report; non-regression 질문이면 생략>
 The code:            <file:line ranges and symbols>
 What we found:       <Direct and Supported claims, each with its source>
 What we can infer:   <Inferred claims, with the chain of reasoning>
