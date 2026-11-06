@@ -12,14 +12,13 @@ knows the product, not the codebase.
 ## Why this shape
 
 QA loses time on two failures: not knowing which changes are observable, and
-not knowing how to reproduce them. So the document separates **user-visible
-changes** from **internal changes that need no verification**, and every
-checklist item carries preconditions, steps, and an expected result. A change
-nobody can observe from outside belongs in the no-verification list, because
-putting it in the checklist burns a tester's afternoon for nothing.
+not knowing how to reproduce them. Compare the previous and current behavior,
+then give QA the setup, reproduction steps, and expected result for each check.
+Omit internal changes with no observable effect. A separate list of work QA
+does not need to check adds reading without helping them test.
 
-Traceability runs the other way too: each item cites its commits, so a
-developer can answer "why is this item here?" without re-reading the range.
+Keep commit evidence in a short reference at the end when needed. Do not repeat
+hashes in the summary, change table, or checklist. QA should not need to read code.
 
 ## Workflow
 
@@ -43,6 +42,7 @@ Then resolve the range. Ask only when it is genuinely ambiguous; otherwise take
 the default and state which one you used.
 
 - An explicit range from the user, such as `v1.14.0..HEAD`, a branch, or "last week", wins. Read relative phrases as rolling days: "last week" is the last 7 days, not the calendar week. State that interpretation in the document.
+- For the feature or ticket just completed in the conversation, use its known commits rather than expanding to a whole release.
 - Default: `<newest reachable tag>..HEAD`.
 - No tags: take the smaller of the two candidate windows by counting both.
 
@@ -76,8 +76,8 @@ now experience differently?** One sentence, in product vocabulary.
 |---|---|---|
 | `fix: resolve CLI program via PATHEXT` | "resolve_cli_program now walks PATH itself" | "On Windows, MCP servers installed through npm now appear in the list. Before, the list came up empty." |
 
-When the honest answer is "nothing visible", it is an internal change: list it
-under internal changes with one clause saying why it is invisible.
+When the honest answer is "nothing visible", omit it from the QA document.
+Keep refactoring and test maintenance in the development record.
 
 One exception outweighs that rule. Changes to authentication, authorization, or
 data integrity are invisible on the happy path **by design**, since nothing looks
@@ -85,20 +85,45 @@ different when they work. They belong in the checklist as negative-path items
 such as "with an expired token the request is rejected", because what must be verified
 is what no longer happens.
 
-### 4. Write the checklist so it can be run
+### 4. Connect API changes to the product
 
-Each item needs preconditions such as account, data, and environment, then numbered steps, then an
-expected result. Mark priority as must-pass, which blocks the release, or secondary.
+When this work changes an API contract or consumes a changed contract, include
+**API changes** after the before/after comparison. In Korean use **API 변경사항**.
+Name the endpoint when known, then list the changed field, what changed, and
+the screen or behavior that uses it. Exact API field names belong in this section;
+pair each with a plain description so QA can connect a response to the screen.
+For example, a new reward quantity combines with the unit value to display the
+bonus amount in a selection list. Link the contract or related backend ticket.
+Distinguish a planned API change from one verified in a real response. Do not
+invent a previous field or imply that adding a consumer deploys the provider.
+Omit the section when there is no relevant API change. Do not paste full schemas
+or turn the QA checklist into code inspection.
+
+### 5. Write the checklist so it can be run
+
+Frame the checklist as areas the developer would like QA to check, not release gates.
+Use **Setup**, **Reproduction steps**, and **Expected result** for each item.
+In Korean, use **전제**, **재현 절차**, and **기대 결과** exactly.
+Include only account, data, or environment details needed to reproduce the behavior.
+Number the actions. Do not label items required, secondary, must-pass, or release-blocking.
 Order items by user flow rather than commit order, because testers move through
 screens, not through git history.
 
-### 5. Name the regression risks
+### 6. Name the regression risks
 
-Changes to shared modules, config or settings files, migrations, and
-platform-specific paths put untouched features at risk. Say which features and
-why, so the regression budget goes where the change actually reaches.
+Name the existing feature to recheck and the behavior that should remain unchanged.
+Explain the user impact, not the dependency graph. For example, ask QA to confirm
+that existing bonuses still show the same names and amounts.
 
-### 6. Flag what you could not determine
+### 7. Explain automated verification in product terms
+
+Start with the behavior exercised and the observed result. Add test counts or
+coverage briefly afterward. State whether tests used sample responses or a live
+service, and distinguish feature coverage from whole-application coverage.
+Name the remaining manual or integration checks. Do not turn a local pass into
+a claim of deployment, full E2E coverage, or production readiness.
+
+### 8. Flag what you could not determine
 
 Unknowns go in the open-questions section together with the question to ask the
 developer. Never close a gap with a plausible guess, because a wrong expected result
@@ -109,7 +134,7 @@ Name who to ask: `git log --format='%an' -1 <sha>` gives the author of the
 commit the question came from, so QA is not left guessing which developer owns
 it in a range several people touched.
 
-### 7. Choose the destination
+### 9. Choose the destination
 
 Read what kind of ask it is first. Signals that the result will be shared or
 kept: the whole team should see it, someone will refer back to it, it goes to
@@ -124,6 +149,7 @@ path is noise when someone wants an answer now.
 - Save as Markdown in the repo, default `docs/handoff/<YYYY-MM-DD>-<range-slug>.md`. Slugify the range first by stripping slashes and spaces, for example `feature/foo..HEAD` → `feature-foo-HEAD`, or a branch name quietly creates a subdirectory.
 - Print in the conversation only, for pasting into Slack or Confluence
 - Publish to Confluence through the Atlassian MCP, which needs a space and parent page
+- Update the requested Jira description. Read its title, assignee, and current body first. For "my ticket", locate the user's implementation ticket rather than assuming the parent epic. Ask only if the target remains ambiguous. Preserve unrelated content and read the saved description back.
 
 Writing the file into the repo is a content change, so the post-work review gate
 in `CLAUDE.md` applies to it like any other.
@@ -132,6 +158,10 @@ in `CLAUDE.md` applies to it like any other.
 
 Use `assets/handoff-template.md` as the skeleton. Keep the section order: QA
 reads top to bottom and stops once they have what they need.
+Use these Korean section names: 전체 요약, 기존과 달라진 변경사항, API 변경사항 when relevant, QA 체크리스트,
+회귀 주의 영역, 자동 검증 결과, 용어 설명, 개발자 확인 사항.
+Do not include a default deployment prerequisites section. Put essential setup
+in the relevant checklist item and unresolved questions in developer follow-up.
 
 ## Writing rules
 
@@ -140,6 +170,9 @@ reads top to bottom and stops once they have what they need.
 - **One change, one row**: never collapse three commits into "various improvements".
 - **No hedging**: "needs confirmation" is honest; "probably fine" is not.
 - **Summary fits one screen**: detail belongs in the checklist, not the summary.
+- **Before and after**: describe each observable change with the previous and current behavior. Keep internal implementation details out of the comparison.
+- **Glossary stays precise**: include only terms needed to understand this handoff. Explain each in one short sentence using everyday words. Distinguish similar terms without defining one unfamiliar term through another. Omit code symbols and irrelevant implementation terms.
+- **Developer follow-up stays actionable**: keep unresolved questions, name who can answer, and say which QA check needs the answer. Do not add a generic deployment checklist.
 
 ## Related
 

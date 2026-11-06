@@ -1,48 +1,54 @@
 # <Scope> QA Handoff: <YYYY-MM-DD>
 
-Range: `<v1.14.0..HEAD>` · Commits: `<N>` · Prepared by: `<name>`
-Build / version to test: `<1.14.1-rc3 on staging>` · Range interpretation: `<last 7 days, rolling>`
-
-## At a glance
+## Overall summary
 
 - **What changed**: <one sentence a non-developer can repeat in a standup>
 - **Affected areas**: <screens / features / platforms>
-- **Deploy notes**: <migration, config change, feature flag, or "none">
 - **Test focus**: <the one or two things most worth checking>
 
-## What changed, in plain language
+## Changes from previous behavior
 
-| # | Change | What the user experiences | Commits |
-|---|---|---|---|
-| 1 | <change> | <observable difference, before → after> | `abc1234` |
+| Area | Before | After |
+|---|---|---|
+| <screen or feature> | <previous behavior> | <current behavior> |
 
-## Internal changes with no verification needed
+<!-- Omit this section if this work does not change or consume a changed API contract. -->
+## API changes
 
-- <change>: <why it is invisible from outside>, commit `abc1234`
+API: `<endpoint>` · Contract: <specification or backend ticket link>
+
+| Changed field | What changed | Screen or behavior using it |
+|---|---|---|
+| `<field>` | <plain description of the new or changed value> | <what the product does with this value> |
 
 ## QA checklist
 
-- [ ] **1. <title>**: priority must-pass
-  - Preconditions: <account / data / environment / OS>
-  - Steps: 1. <action> 2. <action>
-  - Expected: <observable result>
-- [ ] **2. <title>**: priority secondary
-  - Preconditions: <...>
-  - Steps: 1. <...>
-  - Expected: <...>
+- [ ] **1. <behavior to check>**
+  - **Setup**: <only the account, data, or environment needed to reproduce>
+  - **Reproduction steps**: 1. <action> 2. <action>
+  - **Expected result**: <what QA should see or be able to do>
 
 ## Regression watch
 
-| Area | Why it is at risk | Suggested check |
-|---|---|---|
-| <untouched feature> | <shared module / config / migration it depends on> | <shortest check that would catch a break> |
+| Existing feature | What to recheck |
+|---|---|
+| <feature that could be affected> | <behavior that should remain unchanged> |
+
+## Automated verification results
+
+- **Verified behavior**: <what was exercised and what happened>
+- **Results**: <test counts and coverage, with the scope of each number>
+- **Still to check**: <what sample responses or local execution did not verify>
 
 ## Glossary
 
 | Term | Means |
 |---|---|
-| <technical term that could not be avoided> | <plain-language meaning> |
+| <term needed to understand this document> | <one short sentence that distinguishes it from similar terms> |
 
-## Open questions for the developer
+## Developer follow-up
 
-- <question>. Ask: `<commit author>` · blocks: <which checklist item cannot be judged without it>
+- **<question to resolve>**: <who can answer and which QA check needs the answer>
+
+<!-- Include this reference only when traceability is needed. Do not repeat it in QA items. -->
+Reference: `<commit range or issue link>` · Prepared by: `<name>`
