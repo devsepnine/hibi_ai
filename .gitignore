@@ -23,6 +23,8 @@ release/
 Thumbs.db
 
 # Skill evaluation artifacts (reproducible)
+/skill-evaluations/
+# Legacy location; keep generated files out of version control.
 src/skills/*/workspace/
 
 # Python
