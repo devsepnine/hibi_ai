@@ -21,6 +21,15 @@ API: `<endpoint>` · Contract: <specification or backend ticket link>
 |---|---|---|
 | `<field>` | <plain description of the new or changed value> | <what the product does with this value> |
 
+<!-- Omit this section when no translation keys or values changed. -->
+## Translation changes
+
+Source: <resource or sheet link> · Resource update: <status> · Sheet registration: <status and evidence> · Screen verification: <status>
+
+| Key | Change | Language | Previous copy | New copy | Screen |
+|---|---|---|---|---|---|
+| `<exact key>` | <added / changed / removed> | <language> | <exact copy or absent> | <exact copy or absent> | <where it appears> |
+
 ## QA checklist
 
 - [ ] **1. <behavior to check>**

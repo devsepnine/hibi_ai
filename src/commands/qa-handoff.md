@@ -17,6 +17,7 @@ halves: a summary in product vocabulary, and a checklist each item of which has
 setup, reproduction steps, and an expected result. Compare previous and current
 behavior, omit internal maintenance, and do not assign checklist priorities.
 When an API contract changes, explain which values changed and where the product uses them.
+When translations change, include exact keys, language-specific copy, screen usage, and verified update status.
 
 How to invoke: run after a feature or release branch is done, or whenever
 someone asks what changed and what should be tested. Ask where the output goes,

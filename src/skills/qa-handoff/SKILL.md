@@ -99,7 +99,23 @@ invent a previous field or imply that adding a consumer deploys the provider.
 Omit the section when there is no relevant API change. Do not paste full schemas
 or turn the QA checklist into code inspection.
 
-### 5. Write the checklist so it can be run
+### 5. Include translation keys and copy
+
+When translation keys or their values change, include **Translation changes**
+before the QA checklist. In Korean use **번역 변경사항**. List the exact key,
+change type, language, previous copy, new copy, and screen where it appears.
+Use one row per key and language so the table can be copied into a translation sheet.
+For an added key mark the previous copy as absent; for a removed key mark the new copy
+as absent. Preserve placeholders, capitalization, and punctuation exactly.
+Read values from the changed resources or the provided translation sheet, and link
+the source when available. Do not invent translations for missing languages.
+Distinguish source-resource changes, sheet registration, and actual screen verification;
+report unverified stages as unverified, and attribute user-reported sheet updates.
+Add relevant language-switching and placeholder checks in product terms to the QA
+checklist. Keep technical keys in this table rather than requiring QA to inspect code.
+Omit the section when there are no relevant translation changes.
+
+### 6. Write the checklist so it can be run
 
 Frame the checklist as areas the developer would like QA to check, not release gates.
 Use **Setup**, **Reproduction steps**, and **Expected result** for each item.
@@ -109,13 +125,13 @@ Number the actions. Do not label items required, secondary, must-pass, or releas
 Order items by user flow rather than commit order, because testers move through
 screens, not through git history.
 
-### 6. Name the regression risks
+### 7. Name the regression risks
 
 Name the existing feature to recheck and the behavior that should remain unchanged.
 Explain the user impact, not the dependency graph. For example, ask QA to confirm
 that existing bonuses still show the same names and amounts.
 
-### 7. Explain automated verification in product terms
+### 8. Explain automated verification in product terms
 
 Start with the behavior exercised and the observed result. Add test counts or
 coverage briefly afterward. State whether tests used sample responses or a live
@@ -123,7 +139,7 @@ service, and distinguish feature coverage from whole-application coverage.
 Name the remaining manual or integration checks. Do not turn a local pass into
 a claim of deployment, full E2E coverage, or production readiness.
 
-### 8. Flag what you could not determine
+### 9. Flag what you could not determine
 
 Unknowns go in the open-questions section together with the question to ask the
 developer. Never close a gap with a plausible guess, because a wrong expected result
@@ -134,7 +150,7 @@ Name who to ask: `git log --format='%an' -1 <sha>` gives the author of the
 commit the question came from, so QA is not left guessing which developer owns
 it in a range several people touched.
 
-### 9. Choose the destination
+### 10. Choose the destination
 
 Read what kind of ask it is first. Signals that the result will be shared or
 kept: the whole team should see it, someone will refer back to it, it goes to
@@ -158,7 +174,7 @@ in `CLAUDE.md` applies to it like any other.
 
 Use `assets/handoff-template.md` as the skeleton. Keep the section order: QA
 reads top to bottom and stops once they have what they need.
-Use these Korean section names: 전체 요약, 기존과 달라진 변경사항, API 변경사항 when relevant, QA 체크리스트,
+Use these Korean section names: 전체 요약, 기존과 달라진 변경사항, API 변경사항 and 번역 변경사항 when relevant, QA 체크리스트,
 회귀 주의 영역, 자동 검증 결과, 용어 설명, 개발자 확인 사항.
 Do not include a default deployment prerequisites section. Put essential setup
 in the relevant checklist item and unresolved questions in developer follow-up.

@@ -28,6 +28,13 @@
       "prompt": "이번 보너스 문구 변경을 내 FE 티켓의 QA handoff에 업데이트해줘. 상위 에픽 말고 내 구현 티켓이야. API 스펙에는 구간형 여부와 보상 개당 금액, 수량이 추가됐고 기존 보상 종류와 통화도 이제 문구 생성에 사용해. 실제 서버 연동은 아직이고 샘플 응답으로 화면 테스트만 통과했어. QA가 API의 어떤 변경이 어느 화면에 쓰이는지 알 수 있게 해줘.",
       "expected_output": "Read the implementation ticket title, assignee, and description before editing; do not substitute its parent epic. Preserve unrelated content and read back the saved description. Include API 변경사항 after 기존과 달라진 변경사항, with verified field names, plain meanings, and the consuming screen behavior. Distinguish added range flag, unit value, and quantity from existing reward type and currency now used by the consumer. Explain that unit value times quantity supplies the displayed reward amount. Link the known contract without inventing an endpoint or field name. State that backend integration remains unverified and sample-response tests do not prove deployment. Use 전제, 재현 절차, 기대 결과 without priority labels, internal maintenance lists, or a deployment prerequisites section.",
       "files": []
+    },
+    {
+      "id": 5,
+      "name": "translation-copy-and-verification-status",
+      "prompt": "이번 변경의 QA handoff를 대화창에 작성해줘. 영어 리소스에 BonusFreeSpin=Free Spin을 추가했고 BonusLimit은 Up to {amount}에서 up to {amount}로 바꿨어. 둘 다 보너스 선택 목록에 사용돼. 번역 시트에는 내가 추가했지만 실제 화면 반영은 아직 확인하지 않았어. 한국어 번역은 아직 없어.",
+      "expected_output": "Include 번역 변경사항 before QA 체크리스트. Use one row per key and language: BonusFreeSpin, added, English, absent, Free Spin, bonus selection list; BonusLimit, changed, English, Up to {amount}, up to {amount}, bonus selection list. Preserve case and {amount} exactly. Do not invent Korean translations. Distinguish provided English resource changes from user-reported sheet registration and unverified screen behavior. Include observable language and amount-substitution checks without asking QA to inspect code. Do not publish externally or claim deployment. Omit unrelated API changes.",
+      "files": []
     }
   ]
 }
