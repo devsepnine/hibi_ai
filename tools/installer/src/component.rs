@@ -1,6 +1,16 @@
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 
+pub fn statusline_binary_name() -> &'static str {
+    if cfg!(windows) {
+        "statusline.exe"
+    } else if cfg!(target_os = "macos") {
+        "statusline_macos"
+    } else {
+        "statusline_linux"
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ComponentType {
     Agents,

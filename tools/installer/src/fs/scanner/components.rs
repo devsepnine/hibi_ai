@@ -2,7 +2,9 @@ use anyhow::Result;
 use std::path::Path;
 use walkdir::WalkDir;
 
-use crate::component::{Component, ComponentType, HookConfig, InstallStatus};
+use crate::component::{
+    Component, ComponentType, HookConfig, InstallStatus, statusline_binary_name,
+};
 use crate::target::TargetCli;
 
 /// Scan all files in a directory as a single component type (for `map_to` sources).
@@ -145,13 +147,7 @@ fn scan_statusline(
         return Ok(());
     }
 
-    let binary_name = if cfg!(windows) {
-        "statusline.exe"
-    } else if cfg!(target_os = "macos") {
-        "statusline_macos"
-    } else {
-        "statusline_linux"
-    };
+    let binary_name = statusline_binary_name();
 
     let binary_path = statusline_dir.join(binary_name);
     if !binary_path.exists() {
@@ -317,6 +313,45 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("hibi_test_{label}_{nanos}"));
         std::fs::create_dir_all(&dir).unwrap();
         dir
+    }
+
+    #[test]
+    fn fresh_statusline_scan_installs_only_the_native_binary() {
+        let source = unique_test_dir("native_statusline_source");
+        let dest = unique_test_dir("native_statusline_dest");
+        std::fs::create_dir_all(source.join("statusline")).unwrap();
+        for name in ["statusline_macos", "statusline_linux", "statusline.exe"] {
+            std::fs::write(source.join("statusline").join(name), name).unwrap();
+        }
+        let expected = if cfg!(windows) {
+            "statusline.exe"
+        } else if cfg!(target_os = "macos") {
+            "statusline_macos"
+        } else {
+            "statusline_linux"
+        };
+        let mut components = Vec::new();
+        scan_statusline(&source, &dest, &mut components).unwrap();
+        assert_eq!(components.len(), 1);
+        assert_eq!(components[0].name, expected);
+        assert_eq!(components[0].status, InstallStatus::New);
+        crate::fs::installer::install_component(&components[0], &source, &dest).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(dest.join("statusline").join(expected)).unwrap(),
+            expected
+        );
+        let settings: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(dest.join("settings.json")).unwrap())
+                .unwrap();
+        assert_eq!(settings["statusLine"]["type"], "command");
+        assert!(
+            settings["statusLine"]["command"]
+                .as_str()
+                .unwrap()
+                .ends_with(&format!("/statusline/{expected}"))
+        );
+        std::fs::remove_dir_all(source).unwrap();
+        std::fs::remove_dir_all(dest).unwrap();
     }
 
     #[test]

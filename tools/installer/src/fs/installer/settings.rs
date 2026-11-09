@@ -47,10 +47,18 @@ pub fn set_output_style(dest_dir: &Path, style_name: &str) -> Result<()> {
 
 pub fn set_statusline(dest_dir: &Path, script_name: &str) -> Result<()> {
     let mut settings = read_settings(dest_dir)?;
+    settings["statusLine"] = serde_json::json!({
+        "type": "command",
+        "command": statusline_command(dest_dir, script_name)
+    });
 
+    write_settings(dest_dir, &settings)
+}
+
+fn statusline_command(dest_dir: &Path, script_name: &str) -> String {
     // Windows: convert to MSYS-style path for Git Bash compatibility
     // macOS/Linux: use ~ shorthand derived from dest_dir
-    let statusline_command = if cfg!(windows) {
+    if cfg!(windows) {
         let abs_path = dest_dir.join("statusline").join(script_name);
         let unix_path = to_msys_path(&abs_path);
         format!("cat | {}", unix_path)
@@ -60,13 +68,32 @@ pub fn set_statusline(dest_dir: &Path, script_name: &str) -> Result<()> {
             .map(|n| n.to_string_lossy().to_string())
             .unwrap_or_else(|| ".claude".to_string());
         format!("~/{}/statusline/{}", dir_name, script_name)
-    };
-    settings["statusLine"] = serde_json::json!({
-        "type": "command",
-        "command": statusline_command
-    });
+    }
+}
 
-    write_settings(dest_dir, &settings)
+pub(super) fn repair_bundled_statusline(
+    settings: &mut Value,
+    dest_dir: &Path,
+    script_name: &str,
+) -> bool {
+    const BUNDLED_NAMES: [&str; 3] = ["statusline_macos", "statusline_linux", "statusline.exe"];
+    if !BUNDLED_NAMES.contains(&script_name) || settings["statusLine"]["type"] != "command" {
+        return false;
+    }
+    let Some(command) = settings["statusLine"]["command"].as_str() else {
+        return false;
+    };
+    let expected = statusline_command(dest_dir, script_name);
+    if command == expected
+        || !BUNDLED_NAMES
+            .iter()
+            .any(|name| command == statusline_command(dest_dir, name))
+    {
+        return false;
+    }
+    // Match complete installer-generated commands so custom scripts and arguments survive.
+    settings["statusLine"]["command"] = Value::String(expected);
+    true
 }
 
 pub fn unset_output_style(dest_dir: &Path) -> Result<()> {
@@ -257,17 +284,19 @@ pub(super) fn register_output_style_in_settings(dest_dir: &Path, style_name: &st
     Ok(())
 }
 
-/// Auto-register a statusline in settings.json if no statusline is currently set
+/// Preserve custom commands while repairing a bundled command from another platform.
 pub(super) fn register_statusline_in_settings(
     dest_dir: &Path,
     statusline_name: &str,
 ) -> Result<()> {
-    let settings = read_settings(dest_dir)?;
+    let mut settings = read_settings(dest_dir)?;
 
     // Earlier installers wrote a bare string here, and `read_current_settings`
     // only reads an object's `command`, so a string counts as unset and is replaced.
     if !settings.get("statusLine").is_some_and(Value::is_object) {
         set_statusline(dest_dir, statusline_name)?;
+    } else if repair_bundled_statusline(&mut settings, dest_dir, statusline_name) {
+        write_settings(dest_dir, &settings)?;
     }
 
     Ok(())
@@ -411,5 +440,95 @@ mod tests {
         assert_eq!(v["statusLine"]["command"], "~/bin/my-line", "{v}");
 
         let _ = std::fs::remove_dir_all(&dest);
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn linux_registration_repairs_the_bundled_macos_command() {
+        let root = unique_dest("linux_statusline");
+        let dest = root.join(".claude");
+        std::fs::create_dir_all(&dest).unwrap();
+        std::fs::write(dest.join("settings.json"), r#"{"statusLine":{"type":"command","command":"~/.claude/statusline/statusline_macos","padding":2},"theme":"dark"}"#).unwrap();
+
+        register_statusline_in_settings(&dest, "statusline_linux").unwrap();
+
+        assert_eq!(
+            read_settings(&dest).unwrap(),
+            serde_json::json!({
+                "statusLine": {"type": "command", "command": "~/.claude/statusline/statusline_linux", "padding": 2},
+                "theme": "dark"
+            })
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn registration_preserves_custom_commands_with_bundled_names() {
+        let dest = unique_dest("custom_statusline");
+        for command in [
+            "~/bin/statusline_macos",
+            "~/.claude/statusline/statusline_macos --custom",
+            "echo statusline_macos",
+        ] {
+            let settings =
+                serde_json::json!({"statusLine": {"type": "command", "command": command}});
+            write_settings(&dest, &settings).unwrap();
+            register_statusline_in_settings(&dest, "statusline_linux").unwrap();
+            assert_eq!(read_settings(&dest).unwrap(), settings);
+        }
+        std::fs::remove_dir_all(dest).unwrap();
+    }
+
+    #[test]
+    fn bundled_repair_leaves_unrelated_or_current_settings_intact() {
+        let dest = Path::new(".claude");
+        for (settings, script) in [
+            (
+                serde_json::json!({"statusLine": {"type": "command", "command": "~/.claude/statusline/statusline_macos"}}),
+                "custom.sh",
+            ),
+            (
+                serde_json::json!({"statusLine": {"type": "custom", "command": "~/.claude/statusline/statusline_macos"}}),
+                "statusline_linux",
+            ),
+            (
+                serde_json::json!({"statusLine": {"type": "command"}}),
+                "statusline_linux",
+            ),
+            (
+                serde_json::json!({"statusLine": {"type": "command", "command": statusline_command(dest, "statusline_linux")}}),
+                "statusline_linux",
+            ),
+        ] {
+            let mut result = settings.clone();
+            assert!(!repair_bundled_statusline(&mut result, dest, script));
+            assert_eq!(result, settings);
+        }
+        let mut foreign = serde_json::json!({"statusLine": {"type": "command", "command": statusline_command(dest, "statusline_macos")}});
+        assert!(repair_bundled_statusline(
+            &mut foreign,
+            dest,
+            "statusline_linux"
+        ));
+        assert_eq!(
+            foreign["statusLine"]["command"],
+            statusline_command(dest, "statusline_linux")
+        );
+    }
+
+    #[test]
+    fn registration_rejects_invalid_json_without_overwriting_it() {
+        let dest = unique_dest("invalid_statusline_json");
+        std::fs::write(dest.join("settings.json"), "{invalid").unwrap();
+        let error = register_statusline_in_settings(&dest, "statusline_linux").unwrap_err();
+        assert!(
+            error.to_string().contains("key must be a string"),
+            "{error}"
+        );
+        assert_eq!(
+            std::fs::read_to_string(dest.join("settings.json")).unwrap(),
+            "{invalid"
+        );
+        std::fs::remove_dir_all(dest).unwrap();
     }
 }
