@@ -58,6 +58,8 @@ All four must pass equally. See the `coding-standards` skill → `references/rev
 
 ## 5. Tool usage rules
 
+- Before running code, builds, tests, or development servers, discover `rundebugconfig` MCP tools and confirm the connection with `list_configurations` when available.
+- When connected, prefer matching saved configurations and session tools over direct shell execution. Follow the `verification-loop` skill's execution setup for selection, permissions, fallback, and result checks.
 - Prefer `rg` / `rg --files` for search.
 - Run independent lookups and analyses in parallel.
 - Prefer patch-based edits for single-file changes.

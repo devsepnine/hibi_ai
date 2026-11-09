@@ -8,6 +8,8 @@ Defines always-on workflow and decision-making procedures. Detailed, situational
 - **Understand file structure**: read related code and dependencies
 - **Stay in scope**: do not change anything outside the requested area
 - **Simple requests**: execute immediately. Only complex requests warrant a planning step.
+- **Execution tools**: before running code, builds, tests, or development servers, discover `rundebugconfig` MCP tools and confirm the connection with `list_configurations` when available.
+- **Prefer saved runs**: when connected, prefer matching saved configurations and session tools over direct shell execution. Follow the `verification-loop` skill's execution setup for selection, permissions, fallback, and result checks.
 
 ## CRITICAL: Thinking and response language policy
 

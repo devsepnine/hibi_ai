@@ -17,6 +17,18 @@ Invoke this skill:
 - When you want to ensure quality gates pass
 - After refactoring
 
+## Execution setup
+
+Before running code, builds, tests, or development servers:
+
+1. Discover `rundebugconfig` MCP tools. If available, call `list_configurations` to confirm the connection and find settings for the current project.
+2. When connected, inspect a candidate with `get_configuration` to confirm its directory and command match the task. Check `list_sessions` before starting another run. Use an existing relevant session for logs or a running server.
+3. Prefer `run_configuration` for a matching saved configuration when the tool is available. Read `read_session_output` and `list_sessions` for output, final status, and exit code. A returned session ID proves only that a session exists. For a server, check readiness and the requested behavior.
+4. Missing tools can reflect the app's permission tier. Use the available read tools even when execution tools are absent. Do not bypass an explicit permission denial with shell execution.
+5. If the MCP is unavailable, no configuration matches, or execution tools are absent, state the limitation and use an otherwise permitted shell command. Do not create or rewrite saved configurations just to run a check. If a start request has an uncertain outcome, check sessions before retrying or falling back to avoid duplicate processes.
+
+The commands below describe what to verify. Apply this execution setup before choosing how to run them.
+
 ## Verification Phases
 
 ### Phase 1: Build Verification
