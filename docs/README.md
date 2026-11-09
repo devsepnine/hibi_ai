@@ -1,6 +1,6 @@
 # hibi-ai 프로젝트 문서
 
-> 마지막 업데이트: 2026-10-17 · 버전 v1.23.1
+> 마지막 업데이트: 2026-11-09 · 버전 v1.24.0
 
 ## 개요
 
@@ -368,6 +368,12 @@ v1.22.0부터 기록에 `hashes`가 더 붙는다. hibi가 쓴 그대로의 파�
 결과는 목록 화면 상태 바의 `Auto-cleaned N outdated item(s)` 뒤에 `N file(s) no longer shipped`, `N file(s) no longer shipped could not be removed`, `kept N edited file(s) no longer shipped`, `kept N unverified file(s) no longer shipped`로 붙는다.
 
 ## 최근 변경사항
+
+### 2026-11-09, v1.24.0
+
+- 파일 목록에서 `f`로 전체, 변경된 파일, 외부 파일, 미설치 파일을 전환한다. `a`는 필터에 맞는 파일만 선택하며 설치와 제거도 현재 필터 범위에 적용한다
+- statusline 설치와 설정 병합에서 다른 운영체제의 기본 명령을 현재 플랫폼에 맞게 보정한다. 사용자 정의 경로와 인수가 있는 명령은 유지한다
+- macOS와 Fedora에서 필터 선택, 실제 파일 설치와 제거, 설치 순서별 statusline 등록을 검증했다
 
 ### 2026-11-09, v1.23.4
 
