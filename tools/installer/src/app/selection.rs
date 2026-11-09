@@ -61,7 +61,7 @@ impl App {
         } else if let Some(comp_type) = self.tab.to_component_type() {
             for c in &mut self.components {
                 if c.component_type == comp_type {
-                    c.selected = true;
+                    c.selected = self.component_filter.matches(&c.status);
                 }
             }
         }

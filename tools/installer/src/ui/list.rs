@@ -3,7 +3,7 @@ use ratatui::{
     layout::Rect,
     style::{Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, ListState},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
 };
 
 use super::{pane_border_style, pane_title};
@@ -12,6 +12,14 @@ use crate::component::InstallStatus;
 use crate::tree::TreeNode;
 
 pub fn render(f: &mut Frame, app: &App, area: Rect) {
+    if app.current_components().is_empty() {
+        let message = format!(
+            "No {} files. Press f to change filter.",
+            app.component_filter.display()
+        );
+        f.render_widget(Paragraph::new(message).block(list_block(app)), area);
+        return;
+    }
     // Use tree-based rendering for component tabs
     if let Some(tree) = app.get_tree_view() {
         render_tree(f, app, tree, area);
@@ -21,18 +29,10 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
     }
 }
 
-fn render_tree(f: &mut Frame, app: &App, tree: &crate::tree::TreeView, area: Rect) {
-    let items: Vec<ListItem> = tree
-        .visible_indices
-        .iter()
-        .map(|&node_idx| {
-            let node = &tree.nodes[node_idx];
-            render_tree_node(app, tree, node, node_idx)
-        })
-        .collect();
-
-    // Show current default status in title
-    let mut title = format!(" {} ", app.tab.display_name());
+fn list_block(app: &App) -> Block<'static> {
+    let components = app.current_components();
+    let selected = components.iter().filter(|(_, c)| c.selected).count();
+    let mut title = app.tab.display_name().to_string();
     if app.tab == Tab::OutputStyles {
         if let Some(ref style) = app.current_output_style {
             title = format!("{} [Default: {}] ", title.trim(), style);
@@ -47,15 +47,35 @@ fn render_tree(f: &mut Frame, app: &App, tree: &crate::tree::TreeView, area: Rec
         }
     }
 
+    title = format!(
+        "{} | Filter: {} | Files: {} | Selected: {}",
+        title.trim(),
+        app.component_filter.display(),
+        components.len(),
+        selected
+    );
+
+    Block::default()
+        .borders(Borders::ALL)
+        .border_style(pane_border_style(app, FocusArea::Content))
+        .title(pane_title(FocusArea::Content, &title))
+        .title_bottom(" [f] Filter  [a] Select only shown  [n] Clear tab ")
+        .title_style(Style::default().fg(app.theme.text_primary()))
+        .style(Style::default().bg(app.theme.bg_primary()))
+}
+
+fn render_tree(f: &mut Frame, app: &App, tree: &crate::tree::TreeView, area: Rect) {
+    let items: Vec<ListItem> = tree
+        .visible_indices
+        .iter()
+        .map(|&node_idx| {
+            let node = &tree.nodes[node_idx];
+            render_tree_node(app, tree, node, node_idx)
+        })
+        .collect();
+
     let list = List::new(items)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(pane_border_style(app, FocusArea::Content))
-                .title(pane_title(FocusArea::Content, &title))
-                .title_style(Style::default().fg(app.theme.text_primary()))
-                .style(Style::default().bg(app.theme.bg_primary())),
-        )
+        .block(list_block(app))
         .style(
             Style::default()
                 .fg(app.theme.text_primary())
@@ -270,30 +290,8 @@ fn render_flat(f: &mut Frame, app: &App, area: Rect) {
         })
         .collect();
 
-    // Show current default status in title
-    let mut title = format!(" {} ", app.tab.display_name());
-    if app.tab == Tab::OutputStyles {
-        if let Some(ref style) = app.current_output_style {
-            title = format!("{} [Default: {}] ", title.trim(), style);
-        } else {
-            title = format!("{} [No default set] ", title.trim());
-        }
-    } else if app.tab == Tab::Statusline {
-        if let Some(ref statusline) = app.current_statusline {
-            title = format!("{} [Default: {}] ", title.trim(), statusline);
-        } else {
-            title = format!("{} [No default set] ", title.trim());
-        }
-    }
-
     let list = List::new(items)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(pane_border_style(app, FocusArea::Content))
-                .title(pane_title(FocusArea::Content, &title))
-                .title_style(Style::default().fg(app.theme.text_primary())),
-        )
+        .block(list_block(app))
         .highlight_style(
             Style::default()
                 .bg(app.theme.selection_bg())

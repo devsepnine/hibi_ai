@@ -1,7 +1,7 @@
 use anyhow::Result;
 
+use super::App;
 use super::types::{Tab, View};
-use super::{App, build_tree_views};
 use crate::component::Component;
 use crate::mcp::McpServer;
 use crate::plugin::Plugin;
@@ -30,17 +30,12 @@ impl App {
                 .filter(|(_, p)| p.selected)
                 .map(|(i, _)| i)
                 .collect()
-        } else if let Some(comp_type) = self.tab.to_component_type() {
-            self.components
-                .iter()
-                .enumerate()
-                .filter(|(_, c)| {
-                    c.selected && c.component_type == comp_type && c.is_install_eligible()
-                })
+        } else {
+            self.current_components()
+                .into_iter()
+                .filter(|(_, c)| c.selected && c.is_install_eligible())
                 .map(|(i, _)| i)
                 .collect()
-        } else {
-            Vec::new()
         };
 
         if indices.is_empty() {
@@ -80,15 +75,12 @@ impl App {
                 .filter(|(_, p)| p.selected)
                 .map(|(i, _)| i)
                 .collect()
-        } else if let Some(comp_type) = self.tab.to_component_type() {
-            self.components
-                .iter()
-                .enumerate()
-                .filter(|(_, c)| c.selected && c.component_type == comp_type)
+        } else {
+            self.current_components()
+                .into_iter()
+                .filter(|(_, c)| c.selected)
                 .map(|(i, _)| i)
                 .collect()
-        } else {
-            Vec::new()
         };
 
         if indices.is_empty() {
@@ -212,7 +204,7 @@ impl App {
     /// data are untouched, so we skip both.
     pub fn apply_components_refresh(&mut self, components: Vec<Component>) {
         self.components = components;
-        self.tree_views = build_tree_views(&self.components);
+        self.rebuild_tree_views();
         self.finish_refresh_status();
     }
 

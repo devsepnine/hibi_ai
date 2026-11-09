@@ -51,6 +51,7 @@ pub(crate) fn fresh_app() -> App {
         should_quit: false,
         theme: crate::theme::Theme::default(),
         components: Vec::new(),
+        component_filter: super::ComponentFilter::default(),
         list_index: 0,
         tree_views: std::collections::HashMap::new(),
         mcp_servers: Vec::new(),

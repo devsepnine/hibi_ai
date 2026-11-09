@@ -1,3 +1,4 @@
+mod filter;
 mod input;
 mod navigation;
 mod processing;
@@ -10,13 +11,14 @@ pub(crate) mod test_support;
 mod types;
 
 pub use crate::target::TargetCli;
+pub use filter::ComponentFilter;
 pub use types::{FocusArea, SyncStatus, Tab, View};
 
 use anyhow::Result;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use crate::component::{Component, ComponentType};
+use crate::component::Component;
 use crate::mcp::{McpScope, McpServer};
 use crate::plugin::Plugin;
 use crate::source::{ResolvedSource, SourceEntry, SourceKind};
@@ -36,6 +38,7 @@ pub struct App {
     pub theme: Theme,
 
     pub components: Vec<Component>,
+    pub component_filter: ComponentFilter,
     pub list_index: usize, // Index within current tab's filtered list (legacy, for MCP/Plugins)
     pub tree_views: HashMap<Tab, TreeView>, // Tree views for component tabs
 
@@ -172,6 +175,7 @@ impl App {
             should_quit: false,
             theme: Theme::default(),
             components: Vec::new(),
+            component_filter: ComponentFilter::default(),
             list_index: 0,
             tree_views: HashMap::new(),
             mcp_servers: Vec::new(),
@@ -230,6 +234,7 @@ impl App {
 
         // Switch to first available tab
         self.tab = self.available_tabs.first().copied().unwrap_or(Tab::Skills);
+        self.component_filter = ComponentFilter::default();
 
         // These three index into lists the scan below is about to replace, and a
         // shorter result leaves them past the end. ratatui clamps the highlight
@@ -263,7 +268,7 @@ impl App {
         self.current_statusline = current_statusline;
 
         // Build tree views
-        self.tree_views = build_tree_views(&self.components);
+        self.rebuild_tree_views();
 
         // Switch to list view
         self.current_view = View::List;
@@ -281,47 +286,4 @@ impl App {
     pub fn has_multiple_sources(&self) -> bool {
         self.sources.len() > 1
     }
-
-    /// Get components filtered by current tab
-    pub fn current_components(&self) -> Vec<(usize, &Component)> {
-        if let Some(comp_type) = self.tab.to_component_type() {
-            self.components
-                .iter()
-                .enumerate()
-                .filter(|(_, c)| c.component_type == comp_type)
-                .collect()
-        } else {
-            Vec::new()
-        }
-    }
-}
-
-pub(crate) fn build_tree_views(components: &[Component]) -> HashMap<Tab, TreeView> {
-    let mut tree_views = HashMap::new();
-
-    // Build tree view for each component-based tab
-    let component_tabs = [
-        (Tab::Agents, ComponentType::Agents),
-        (Tab::Commands, ComponentType::Commands),
-        (Tab::Contexts, ComponentType::Contexts),
-        (Tab::Rules, ComponentType::Rules),
-        (Tab::Skills, ComponentType::Skills),
-        (Tab::Hooks, ComponentType::Hooks),
-        (Tab::OutputStyles, ComponentType::OutputStyles),
-        (Tab::Statusline, ComponentType::Statusline),
-        (Tab::Config, ComponentType::ConfigFile),
-    ];
-
-    for (tab, comp_type) in component_tabs {
-        let filtered: Vec<(usize, &Component)> = components
-            .iter()
-            .enumerate()
-            .filter(|(_, c)| c.component_type == comp_type)
-            .collect();
-
-        let tree = TreeView::build_from_components(components, &filtered);
-        tree_views.insert(tab, tree);
-    }
-
-    tree_views
 }

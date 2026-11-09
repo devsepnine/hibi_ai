@@ -150,6 +150,7 @@ fn handle_content_focus_keys(app: &mut App, key: KeyCode) -> Result<()> {
         KeyCode::Char(' ') => app.toggle_selected(),
         KeyCode::Char('a') => app.select_all(),
         KeyCode::Char('n') => app.deselect_all(),
+        KeyCode::Char('f') => app.cycle_component_filter(),
         KeyCode::Enter => handle_enter(app)?,
         KeyCode::Char('d') => app.show_diff()?,
         KeyCode::Char('i') => app.install_selected()?,

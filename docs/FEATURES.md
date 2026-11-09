@@ -59,10 +59,12 @@
 | Space 안 먹힘, 체크가 안 됨 | `component-list`, `cli-picker` |
 | 에이전트, 커맨드, 스킬, Styles, Config 탭 | `component-list` |
 | modified, installed, new, external, managed, 상태 표시 | `component-list` |
+| 상태 필터, 수정 파일만, 외부 파일만, 미설치 파일만, 필터 결과만 선택 | `component-list` |
 | 바꾼 적 없는데 modified, 줄바꿈 CRLF | `component-list` |
 | 하단 바, 상태 바, 상태 메시지, 메시지가 잘림 | `status-bar` |
 | 상태줄, 상태표시줄, statusline `(ambiguous)` | `statusline-render`, `default-style-statusline`, `status-bar`, `settings-merge` |
 | 상태줄이 안 나옴, 상태줄 빈칸 | `statusline-render`, `default-style-statusline` |
+| Fedora statusline, Linux에 macOS 경로 등록, statusline_macos | `default-style-statusline` |
 | 단축키, 키 목록, 키바인딩, 도움말, ?, 키가 안 보임 | `help-overlay`, `status-bar` |
 | 종료, 나가기, quit, q 안 먹힘 `(ambiguous)` | `help-overlay`, `install-progress`, `sources-screen`, `exit-confirm` |
 | Esc, 뒤로가기, 선택 날아감, 확인 창 `(ambiguous)` | `exit-confirm`, `tab-bar`, `install-progress` |
@@ -99,7 +101,7 @@
 | 스킬이 안 뜸, 스킬 트리거, description, 예산, /learn | `skill-triggering` |
 | 대시, 괄호, 줄표, lint-prose, 문체 린트 | `prose-lint` |
 | 커맨드 파일 어디, 스킬 파일 위치, 에이전트 정의, -ko 파일, 한국어 미러 | `component-lookup` |
-| 목록 검색, 필터, 찾기 | → 없음; 가장 가까운 기능: `component-list` |
+| 파일명 검색, 찾기 | → 없음; 가장 가까운 기능: `component-list` |
 | 마우스 클릭, 스크롤 휠 | → 없음; 가장 가까운 기능: `help-overlay` |
 | 테마 기억, 테마 저장 | → 없음; 가장 가까운 기능: `theme-toggle` |
 | MCP diff, 플러그인 diff | → 없음; 가장 가까운 기능: `diff-view` |

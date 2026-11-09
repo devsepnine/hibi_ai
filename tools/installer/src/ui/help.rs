@@ -14,10 +14,8 @@ type Binding = (&'static str, &'static str);
 
 /// Every key the List view answers, grouped by the pane that answers it.
 ///
-/// This is where a new binding gets documented, and `cli::handle_list_input` is
-/// the only other place one may appear. The status bar deliberately lists none
-/// of them: it used to, and at 80 columns the line ran off the right edge and
-/// took `[q] Quit` with it. A scrollable box has no edge to fall off.
+/// The status bar leaves room for messages; this scrollable box holds the full
+/// reference alongside the compact filter hints on the file list's border.
 const SECTIONS: [(&str, &[Binding]); 4] = [
     (
         "Panes",
@@ -42,11 +40,12 @@ const SECTIONS: [(&str, &[Binding]); 4] = [
             ("h / \u{2190}", "collapse folder, or parent"),
             ("l / \u{2192}", "expand folder"),
             ("Space", "toggle selection"),
-            ("a / n", "select all / none"),
+            ("a / n", "select only shown / clear tab"),
+            ("f", "file filter: All/Modified/External/New"),
             ("Enter", "expand folder, or diff file"),
             ("d", "diff against installed"),
-            ("i", "install selected"),
-            ("r", "remove selected"),
+            ("i", "install selected in filter"),
+            ("r", "remove selected in filter"),
             ("s / u", "set / unset default"),
             ("o", "MCP scope (user / project)"),
             ("Esc", "back to the CLI picker"),

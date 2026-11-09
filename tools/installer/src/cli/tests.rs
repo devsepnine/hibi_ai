@@ -2,6 +2,329 @@ use super::*;
 use crate::app::FocusArea;
 use crate::app::test_support::fresh_app;
 
+mod status_filter {
+    use super::*;
+    use crate::app::{Tab, TargetCli, View};
+    use crate::component::{ComponentType, InstallStatus};
+    use crate::tree::{TreeNode, test_support::make_component};
+
+    fn fixture() -> App {
+        let mut app = fresh_app();
+        for (name, status) in [
+            ("group/changed.md", InstallStatus::Modified),
+            ("group/new.md", InstallStatus::New),
+            ("group/local.md", InstallStatus::External),
+            ("installed.md", InstallStatus::Unchanged),
+            ("managed.md", InstallStatus::Managed),
+        ] {
+            let mut component = make_component(name);
+            component.status = status;
+            component.selected = true;
+            app.components.push(component);
+        }
+        let mut config = make_component("config.md");
+        config.component_type = ComponentType::ConfigFile;
+        app.components.push(config);
+        app.available_tabs = vec![Tab::Skills, Tab::Config, Tab::McpServers, Tab::Plugins];
+        app
+    }
+
+    fn press(app: &mut App, key: char) {
+        handle_list_input(app, KeyCode::Char(key)).unwrap();
+    }
+
+    fn listed(app: &App) -> Vec<&str> {
+        app.current_components()
+            .iter()
+            .map(|(_, c)| c.name.as_str())
+            .collect()
+    }
+
+    fn selected(app: &App) -> Vec<&str> {
+        app.components
+            .iter()
+            .filter(|c| c.selected)
+            .map(|c| c.name.as_str())
+            .collect()
+    }
+
+    #[test]
+    fn cycles_file_statuses_and_restores_the_full_list() {
+        let mut app = fixture();
+        press(&mut app, 'f');
+        assert_eq!(listed(&app), ["group/changed.md"]);
+        let tree = app.get_tree_view().unwrap();
+        assert_eq!(tree.visible_indices.len(), 2);
+        assert!(matches!(
+            tree.nodes[tree.visible_indices[0]],
+            TreeNode::Folder { .. }
+        ));
+        press(&mut app, 'f');
+        assert_eq!(listed(&app), ["group/local.md"]);
+        press(&mut app, 'f');
+        assert_eq!(listed(&app), ["group/new.md"]);
+        press(&mut app, 'f');
+        assert_eq!(
+            listed(&app),
+            [
+                "group/changed.md",
+                "group/new.md",
+                "group/local.md",
+                "installed.md",
+                "managed.md"
+            ]
+        );
+    }
+
+    #[test]
+    fn select_all_replaces_only_the_current_tabs_selection() {
+        let mut app = fixture();
+        press(&mut app, 'f');
+        press(&mut app, 'a');
+        assert_eq!(selected(&app), ["group/changed.md", "config.md"]);
+        press(&mut app, 'f');
+        press(&mut app, 'a');
+        assert_eq!(selected(&app), ["group/local.md", "config.md"]);
+        press(&mut app, 'n');
+        assert_eq!(selected(&app), ["config.md"]);
+    }
+
+    #[test]
+    fn new_filter_selects_and_installs_only_uninstalled_files() {
+        let mut app = fixture();
+        for _ in 0..3 {
+            press(&mut app, 'f');
+        }
+        press(&mut app, 'a');
+        assert_eq!(selected(&app), ["group/new.md", "config.md"]);
+        press(&mut app, 'i');
+        assert_eq!(app.processing_queue, [1]);
+        assert_eq!(app.current_view, View::Installing);
+    }
+
+    #[test]
+    fn folder_selection_does_not_toggle_hidden_descendants() {
+        let mut app = fixture();
+        press(&mut app, 'f');
+        press(&mut app, ' ');
+        assert_eq!(
+            selected(&app),
+            [
+                "group/new.md",
+                "group/local.md",
+                "installed.md",
+                "managed.md",
+                "config.md"
+            ]
+        );
+        press(&mut app, ' ');
+        assert_eq!(
+            selected(&app),
+            [
+                "group/changed.md",
+                "group/new.md",
+                "group/local.md",
+                "installed.md",
+                "managed.md",
+                "config.md"
+            ]
+        );
+    }
+
+    #[test]
+    fn queues_exclude_selected_files_hidden_by_the_filter() {
+        for key in ['i', 'r'] {
+            let mut app = fixture();
+            press(&mut app, 'f');
+            press(&mut app, key);
+            assert_eq!(app.processing_queue, [0]);
+            assert_eq!(app.current_view, View::Installing);
+        }
+        let mut app = fixture();
+        press(&mut app, 'f');
+        press(&mut app, 'f');
+        press(&mut app, 'i');
+        assert_eq!(app.current_view, View::List);
+        assert_eq!(app.status_message.as_deref(), Some("No items selected"));
+        press(&mut app, 'r');
+        assert_eq!(app.processing_queue, [2]);
+    }
+
+    #[test]
+    fn empty_filter_has_no_cursor_or_processing_target() {
+        let mut app = fixture();
+        app.components[0].status = InstallStatus::Unchanged;
+        app.list_index = 4;
+        press(&mut app, 'f');
+        assert_eq!(listed(&app), Vec::<&str>::new());
+        for key in ['j', 'k', ' ', 'i', 'r'] {
+            press(&mut app, key);
+        }
+        assert_eq!(app.selected_component_index(), None);
+        assert_eq!(app.current_view, View::List);
+        assert!(app.processing_queue.is_empty());
+        press(&mut app, 'f');
+        press(&mut app, 'j');
+        assert_eq!(app.selected_component_index(), Some(2));
+    }
+
+    #[test]
+    fn filter_survives_tab_switches_and_status_refresh() {
+        let mut app = fixture();
+        press(&mut app, 'f');
+        app.next_tab();
+        assert_eq!(listed(&app), Vec::<&str>::new());
+        app.prev_tab();
+        assert_eq!(listed(&app), ["group/changed.md"]);
+        let mut refreshed = app.components.clone();
+        refreshed[0].status = InstallStatus::Unchanged;
+        refreshed[1].status = InstallStatus::Modified;
+        app.apply_components_refresh(refreshed);
+        assert_eq!(listed(&app), ["group/new.md"]);
+        app.next_item();
+        assert_eq!(app.selected_component_index(), Some(1));
+        app.select_cli(TargetCli::Codex).unwrap();
+        assert_eq!(listed(&app).len(), 5);
+    }
+
+    #[test]
+    fn non_file_tabs_ignore_filter_and_keep_bulk_selection() {
+        let mut app = fixture();
+        app.mcp_servers
+            .push(crate::app::test_support::make_mcp_server());
+        app.plugins.push(crate::app::test_support::make_plugin());
+        for tab in [Tab::McpServers, Tab::Plugins] {
+            app.tab = tab;
+            press(&mut app, 'f');
+            press(&mut app, 'a');
+        }
+        assert!(app.mcp_servers[0].selected);
+        assert!(app.plugins[0].selected);
+        app.tab = Tab::Skills;
+        assert_eq!(listed(&app).len(), 5);
+        app.focus = FocusArea::Tabs;
+        press(&mut app, 'f');
+        assert_eq!(listed(&app).len(), 5);
+    }
+
+    struct DiskFixture(std::path::PathBuf);
+
+    impl Drop for DiskFixture {
+        fn drop(&mut self) {
+            std::fs::remove_dir_all(&self.0).unwrap();
+        }
+    }
+
+    fn disk_fixture(cli: TargetCli) -> (DiskFixture, App) {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let fixture = DiskFixture(std::env::temp_dir().join(format!("hibi_filter_{stamp}")));
+        let mut app = fresh_app();
+        app.target_cli = Some(cli);
+        app.available_tabs = Tab::for_cli(cli);
+        app.source_dir = fixture.0.join("source");
+        app.dest_dir = fixture.0.join("dest");
+        for dir in [&app.source_dir, &app.dest_dir] {
+            std::fs::create_dir_all(dir.join("skills/demo")).unwrap();
+        }
+        for (name, content) in [
+            ("changed.md", "updated"),
+            ("new.md", "new"),
+            ("same.md", "same"),
+        ] {
+            std::fs::write(app.source_dir.join("skills/demo").join(name), content).unwrap();
+        }
+        for (name, content) in [
+            ("changed.md", "original"),
+            ("local.md", "local"),
+            ("same.md", "same"),
+        ] {
+            std::fs::write(app.dest_dir.join("skills/demo").join(name), content).unwrap();
+        }
+        let sources = [crate::source::ResolvedSource::bundled(&app.source_dir)];
+        let components =
+            crate::fs::scanner::scan_all_sources(&sources, &app.dest_dir, cli).unwrap();
+        app.finish_loading(components, vec![], vec![], vec![]);
+        (fixture, app)
+    }
+
+    fn execute_queue(app: &App) -> Vec<String> {
+        app.processing_queue
+            .iter()
+            .map(|&index| {
+                let (_tx, rx) = std::sync::mpsc::channel();
+                crate::process_exec::execute(
+                    crate::process_exec::prepare(app, index).unwrap(),
+                    app.is_removing,
+                    app.target_cli.unwrap(),
+                    rx,
+                )
+                .unwrap()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn filtered_keys_render_and_process_real_files_for_both_clis() {
+        for cli in [TargetCli::Claude, TargetCli::Codex] {
+            let (_fixture, mut app) = disk_fixture(cli);
+            let dest = app.dest_dir.join("skills/demo");
+            for (name, action, log) in [
+                ("changed.md", 'i', "[OK] Installed demo/changed.md"),
+                ("local.md", 'r', "[OK] Removed demo/local.md"),
+                ("new.md", 'i', "[OK] Installed demo/new.md"),
+            ] {
+                press(&mut app, 'f');
+                press(&mut app, 'a');
+                let mut terminal =
+                    ratatui::Terminal::new(ratatui::backend::TestBackend::new(100, 24)).unwrap();
+                terminal.draw(|f| crate::ui::draw(f, &app)).unwrap();
+                let screen: String = terminal
+                    .backend()
+                    .buffer()
+                    .content()
+                    .iter()
+                    .map(|cell| cell.symbol())
+                    .collect();
+                assert!(screen.contains(name), "{screen}");
+                assert!(!screen.contains("same.md"), "{screen}");
+                press(&mut app, action);
+                assert_eq!(execute_queue(&app), [log]);
+                assert_eq!(
+                    std::fs::read_to_string(dest.join("same.md")).unwrap(),
+                    "same"
+                );
+                app.current_view = View::List;
+            }
+            assert_eq!(
+                std::fs::read_to_string(dest.join("changed.md")).unwrap(),
+                "updated"
+            );
+            assert_eq!(std::fs::read_to_string(dest.join("new.md")).unwrap(), "new");
+            assert!(!dest.join("local.md").exists());
+        }
+    }
+
+    #[test]
+    fn filtered_install_reports_a_missing_source_without_overwriting_destination() {
+        let (_fixture, mut app) = disk_fixture(TargetCli::Codex);
+        press(&mut app, 'f');
+        press(&mut app, 'a');
+        std::fs::remove_file(app.source_dir.join("skills/demo/changed.md")).unwrap();
+        press(&mut app, 'i');
+        let logs = execute_queue(&app);
+        assert_eq!(logs.len(), 1);
+        assert!(logs[0].starts_with("[ERR] demo/changed.md:"), "{logs:?}");
+        assert_eq!(
+            std::fs::read_to_string(app.dest_dir.join("skills/demo/changed.md")).unwrap(),
+            "original"
+        );
+        assert!(!app.dest_dir.join("skills/demo/new.md").exists());
+    }
+}
+
 /// A view that takes typed text, and the buffer its keystrokes land in.
 type EntryCase = (app::View, fn(&App) -> &str);
 

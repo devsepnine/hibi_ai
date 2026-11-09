@@ -25,15 +25,19 @@
 
 - **위치**: 본문 pane, 테두리 제목 `[2]-Agents` 처럼 현재 탭 이름. MCP · Plugins 탭은 별도 목록이다
 - **별칭**: 목록, 체크박스, 전체 선택, 폴더 펼치기, 에이전트, 커맨드, 스킬, modified, external
+- **상태 필터**: 본문에서 `f`로 `All → Modified → External → New → All` 순서로 전환한다. `New`는 미설치 파일이다. 파일 탭 사이에 필터가 유지되고 CLI를 다시 선택하면 `All`로 초기화된다. MCP와 Plugins에는 적용하지 않는다
+- **필터 선택**: `a`는 현재 탭에서 필터에 맞는 파일만 선택하고 나머지 선택을 해제한다. `n`은 현재 탭의 선택을 모두 해제한다. 폴더 선택과 `i`, `r`도 필터에 맞는 파일만 대상으로 한다. 접힌 폴더 안의 일치 파일도 포함한다
+- **필터 표시**: 제목에 `Filter:`, `Files:`, `Selected:`를 표시한다. 결과가 없으면 `Press f to change filter.`로 안내한다. 필터 전환 자체는 체크 상태를 바꾸지 않는다
 - **UI 문구**: `"[x]"`, `"[-]"`, `"[ ]"`, `"new"`, `"modified"`, `"installed"`, `"managed"`, `"external"`, `"[DEPRECATED]"`, `"[{}]"`, `"No items selected"`
-- **컨트롤**: `"move the cursor"` → `next_item`, `"collapse folder, or parent"` → `handle_folder_collapse`, `"expand folder"` → `expand_folder`, `"toggle selection"` → `toggle_selected`, `"select all / none"` → `select_all`, `"expand folder, or diff file"` → `handle_enter`, `"install selected"` → `install_selected`, `"remove selected"` → `remove_selected`
+- **컨트롤**: `"move the cursor"` → `next_item`, `"collapse folder, or parent"` → `handle_folder_collapse`, `"expand folder"` → `expand_folder`, `"toggle selection"` → `toggle_selected`, `"select only shown / clear tab"` → `select_all`, `"file filter: All/Modified/External/New"` → `cycle_component_filter`, `"expand folder, or diff file"` → `handle_enter`, `"install selected in filter"` → `install_selected`, `"remove selected in filter"` → `remove_selected`
 - **코드 경로**:
   - UI: `tools/installer/src/ui/list.rs` → `render_tree_node`
   - 상태 / 핸들러: `tools/installer/src/cli/mod.rs` → `handle_content_focus_keys`
+  - 상태 필터: `tools/installer/src/app/filter.rs` → `current_components`, `rebuild_tree_views`. 표시와 설치·제거 대기열에 같은 필터를 적용한다
   - 상태 / 핸들러: `tools/installer/src/app/selection.rs` → `toggle_selected`, 폴더면 하위 전체를 뒤집는다
   - 상태 / 핸들러: `tools/installer/src/tree/build.rs` → `build_from_components`, 이동은 `tools/installer/src/tree/navigate.rs`
   - 데이터: 스캔은 `tools/installer/src/fs/scanner/mod.rs` → `scan_all_sources`, 상태 판정은 `tools/installer/src/fs/scanner/components.rs` → `determine_status`, 소스 없는 설치본은 `tools/installer/src/fs/scanner/external.rs` → `scan_externals`
-- **테스트**: `tools/installer/src/fs/scanner/components.rs`, `tools/installer/src/fs/scanner/external.rs`, `tools/installer/src/fs/scanner/mod.rs`, `tools/installer/src/tree/build.rs`, `tools/installer/src/tree/navigate.rs`, `tools/installer/src/tree/selection.rs`, `tools/installer/src/component.rs`
+- **테스트**: `tools/installer/src/cli/tests.rs` → `status_filter`, `tools/installer/src/ui/tests.rs`, `tools/installer/src/fs/scanner/components.rs`, `tools/installer/src/fs/scanner/external.rs`, `tools/installer/src/fs/scanner/mod.rs`, `tools/installer/src/tree/build.rs`, `tools/installer/src/tree/navigate.rs`, `tools/installer/src/tree/selection.rs`, `tools/installer/src/component.rs`
 - **함정**: 고친 적 없는 파일이 modified 로 보임 → CRLF 와 LF 차이를 변경으로 셌다, 지금은 비교 전에 `\r` 을 지운다, 근거: `87aaf93`
 - **함정**: 화면을 열면 new · modified 항목이 이미 체크돼 있어 i 한 번에 덮어씀 → installed 와 external 만 빼고 기본 선택된다, 근거: `tools/installer/src/component.rs` → `new`
 - **함정**: external 항목을 체크하고 i 를 눌러도 설치 안 됨 → 소스가 없는 설치본은 제거만 가능하다, 근거: `tools/installer/src/component.rs` → `is_install_eligible`
@@ -121,6 +125,8 @@
   - 데이터: 쓰기 `tools/installer/src/fs/installer/settings.rs` → `set_output_style`, `tools/installer/src/fs/installer/settings.rs` → `set_statusline`, 읽기 `tools/installer/src/app/settings.rs` → `read_current_settings`, 키는 settings.json 의 `outputStyle` 과 `statusLine.command`
 - **테스트**: `tools/installer/src/fs/installer/settings.rs`
 - **함정**: Windows 에서 상태줄이 비어 있음 → stdin 파이프 문제로 명령을 `cat | /c/...` 형태로 쓰며 Git Bash 가 필요하다, 근거: `5c584c7`
+- **플랫폼 보정**: statusline 설치와 설정 병합은 hibi가 생성하는 다른 OS의 기본 명령을 현재 설치된 바이너리 경로로 보정한다. `repair_bundled_statusline`은 전체 명령이 일치할 때만 바꾸므로 사용자 정의 경로와 인수가 붙은 명령은 유지한다. 설정을 먼저 설치하면 statusline 설치 시 보정하고, statusline을 먼저 설치하면 설정 병합 시 보정한다
+- **회귀 테스트**: `tools/installer/src/fs/installer/merge.rs` → `fresh_statusline_and_config_install_use_native_command_in_either_order`, `tools/installer/src/fs/installer/settings.rs` → `linux_registration_repairs_the_bundled_macos_command`, `tools/installer/src/fs/scanner/components.rs` → `fresh_statusline_scan_installs_only_the_native_binary`
 - **함정**: 스타일을 설치해도 기본값이 안 바뀜 → 자동 등록은 `outputStyle` 이 비어 있을 때만 한다, 근거: `tools/installer/src/fs/installer/settings.rs` → `register_output_style_in_settings`
 - **함정**: settings.json 이 깨진 JSON 이면 s 를 누르는 순간 인스톨러가 꺼짐 → 파싱 실패가 `?` 로 `run_app` 까지 올라간다, 근거: `tools/installer/src/fs/installer/settings.rs` → `read_settings`
 - **공유 의존**: `tools/installer/src/fs/installer/settings.rs`

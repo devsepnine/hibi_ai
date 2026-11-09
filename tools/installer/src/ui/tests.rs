@@ -78,6 +78,75 @@ fn title_row(app: &App, render: PaneRenderer) -> String {
 
 fn no_setup(_: &mut App) {}
 
+#[test]
+fn filter_summary_keeps_the_statusline_default_visible_at_80_columns() {
+    let mut app = fresh_app();
+    app.tab = crate::app::Tab::Statusline;
+    app.current_statusline = Some("statusline_linux".into());
+    let buf = paint_at(&app, list::render, 80, 10);
+    let title = row(&buf, 0);
+    assert!(title.contains("[Default: statusline_linux]"), "{title}");
+    assert!(title.contains("Filter: All"), "{title}");
+}
+
+#[test]
+fn list_labels_the_filter_count_and_bulk_selection_scope() {
+    use crate::component::InstallStatus;
+    let mut app = fresh_app();
+    for (name, status) in [
+        ("changed.md", InstallStatus::Modified),
+        ("local.md", InstallStatus::External),
+        ("new.md", InstallStatus::New),
+    ] {
+        let mut component = crate::tree::test_support::make_component(name);
+        component.status = status;
+        app.components.push(component);
+    }
+    for (label, name) in [
+        ("All", "changed.md"),
+        ("Modified", "changed.md"),
+        ("External", "local.md"),
+        ("New", "new.md"),
+    ] {
+        let buf = paint_at(&app, list::render, 100, 10);
+        let screen: String = (0..10).map(|y| row(&buf, y)).collect();
+        assert!(screen.contains(&format!("Filter: {label}")), "{screen}");
+        assert!(screen.contains(name), "{screen}");
+        assert!(screen.contains("[f] Filter"), "{screen}");
+        assert!(screen.contains("[a] Select only shown"), "{screen}");
+        assert!(
+            screen.contains(if label == "All" {
+                "Files: 3"
+            } else {
+                "Files: 1"
+            }),
+            "{screen}"
+        );
+        app.cycle_component_filter();
+    }
+}
+
+#[test]
+fn empty_filter_explains_how_to_show_other_files() {
+    let mut app = fresh_app();
+    app.components
+        .push(crate::tree::test_support::make_component("new.md"));
+    app.cycle_component_filter();
+    for use_tree in [true, false] {
+        if !use_tree {
+            app.tree_views.clear();
+        }
+        let buf = paint_at(&app, list::render, 80, 10);
+        let screen: String = (0..10).map(|y| row(&buf, y)).collect();
+        assert!(
+            screen.contains("No Modified files. Press f to change filter."),
+            "{screen}"
+        );
+        assert!(screen.contains("Files: 0"), "{screen}");
+        assert!(!screen.contains("new.md"), "{screen}");
+    }
+}
+
 /// Give `list::render` a tree so it takes its `render_tree` branch; with
 /// `tree_views` empty it falls through to `render_flat` instead.
 fn with_tree(app: &mut App) {
@@ -299,9 +368,6 @@ fn help_key_before(rows: &[String], desc: &str) -> char {
         .unwrap_or_else(|| panic!("no key painted before {desc:?}: {row}"))
 }
 
-/// The overlay is the only documentation these keys have — `a` and `n` were
-/// never listed anywhere before it — so a binding missing here is a binding the
-/// user cannot discover at all.
 #[test]
 fn the_overlay_documents_the_keys_the_status_bar_no_longer_lists() {
     let rows = help_rows(&fresh_app(), 80, 40);
@@ -309,7 +375,8 @@ fn the_overlay_documents_the_keys_the_status_bar_no_longer_lists() {
         "toggle between panes",
         "next tab",
         "toggle selection",
-        "select all / none",
+        "select only shown / clear tab",
+        "file filter: All/Modified/External/New",
         "diff against installed",
         "install selected",
         "remove selected",

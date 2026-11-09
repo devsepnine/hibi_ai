@@ -4,7 +4,7 @@ use std::thread;
 use anyhow::Result;
 use crossterm::event::KeyCode;
 
-use super::{App, SyncStatus, View, build_tree_views};
+use super::{App, SyncStatus, View};
 use crate::component::Component;
 use crate::fs::scanner;
 use crate::mcp::McpServer;
@@ -289,7 +289,7 @@ impl App {
                     self.components = rescan.components;
                     self.mcp_servers = rescan.mcp_servers;
                     self.plugins = rescan.plugins;
-                    self.tree_views = build_tree_views(&self.components);
+                    self.rebuild_tree_views();
                 }
 
                 self.current_view = View::Sources;
