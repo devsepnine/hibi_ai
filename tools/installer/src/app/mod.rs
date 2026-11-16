@@ -9,13 +9,15 @@ pub mod sources;
 #[cfg(test)]
 pub(crate) mod test_support;
 mod types;
+mod visibility;
 
 pub use crate::target::TargetCli;
 pub use filter::ComponentFilter;
 pub use types::{FocusArea, SyncStatus, Tab, View};
+pub use visibility::HideConfirmation;
 
 use anyhow::Result;
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::path::PathBuf;
 
 use crate::component::Component;
@@ -39,6 +41,10 @@ pub struct App {
 
     pub components: Vec<Component>,
     pub component_filter: ComponentFilter,
+    pub hidden_folders: BTreeSet<PathBuf>,
+    pub show_hidden: bool,
+    pub visibility_path: PathBuf,
+    pub hide_confirmation: Option<HideConfirmation>,
     pub list_index: usize, // Index within current tab's filtered list (legacy, for MCP/Plugins)
     pub tree_views: HashMap<Tab, TreeView>, // Tree views for component tabs
 
@@ -112,6 +118,7 @@ struct InitData {
     source_auto_update: bool,
     dest_dir: PathBuf,
     default_project: String,
+    visibility_path: PathBuf,
 }
 
 fn load_init_data() -> Result<InitData> {
@@ -144,6 +151,9 @@ fn load_init_data() -> Result<InitData> {
         source_auto_update,
         dest_dir,
         default_project,
+        visibility_path: crate::paths::require_home_dir()?
+            .join(".hibi")
+            .join("visibility.json"),
     })
 }
 
@@ -164,7 +174,6 @@ fn collect_startup_warnings() -> Vec<String> {
 impl App {
     pub fn new() -> Result<Self> {
         let d = load_init_data()?;
-
         Ok(Self {
             target_cli: None,
             available_tabs: Vec::new(), // Will be set after CLI selection
@@ -176,6 +185,10 @@ impl App {
             theme: Theme::default(),
             components: Vec::new(),
             component_filter: ComponentFilter::default(),
+            hidden_folders: BTreeSet::new(),
+            show_hidden: false,
+            visibility_path: d.visibility_path,
+            hide_confirmation: None,
             list_index: 0,
             tree_views: HashMap::new(),
             mcp_servers: Vec::new(),
@@ -267,6 +280,8 @@ impl App {
         self.current_output_style = current_output_style;
         self.current_statusline = current_statusline;
 
+        let visibility_warning = self.load_folder_visibility();
+
         // Build tree views
         self.rebuild_tree_views();
 
@@ -280,6 +295,13 @@ impl App {
             ));
         } else if let Some(cli) = self.target_cli {
             self.status_message = Some(format!("Selected {}", cli.display_name()));
+        }
+        if let Some(warning) = visibility_warning {
+            let message = self.status_message.get_or_insert_with(String::new);
+            if !message.is_empty() {
+                message.push_str("; ");
+            }
+            message.push_str(&warning);
         }
     }
 

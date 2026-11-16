@@ -116,6 +116,7 @@ pub enum View {
     /// back, so leaving with a selection throws it away, and leaving without
     /// one costs nothing worth a keystroke to confirm.
     ConfirmExit,
+    ConfirmHide,
     EnvInput,
     ProjectPath,
     Preflighting,

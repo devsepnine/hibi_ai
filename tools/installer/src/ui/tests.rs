@@ -113,7 +113,8 @@ fn list_labels_the_filter_count_and_bulk_selection_scope() {
         assert!(screen.contains(&format!("Filter: {label}")), "{screen}");
         assert!(screen.contains(name), "{screen}");
         assert!(screen.contains("[f] Filter"), "{screen}");
-        assert!(screen.contains("[a] Select only shown"), "{screen}");
+        assert!(screen.contains("[a] Toggle all"), "{screen}");
+        assert!(screen.contains("[E] Fold all"), "{screen}");
         assert!(
             screen.contains(if label == "All" {
                 "Files: 3"
@@ -212,7 +213,7 @@ fn content_renderers_paint_the_focus_border() {
 /// modal takes keys. `View::Diff` replaces the pane outright and borders it
 /// plainly, so there the stale cue would sit on the tab bar instead — same
 /// lie about which pane the next keystroke reaches, so the same expectation.
-/// `View::Help` and `View::ConfirmExit` keep the list visible behind their box,
+/// `View::Help`, `View::ConfirmExit`, and `View::ConfirmHide` keep the list behind their box,
 /// and `Help` is the sharpest case: the box teaches `1`/`2` while itself
 /// answering neither.
 #[test]
@@ -223,6 +224,7 @@ fn a_modal_view_leaves_both_panes_plain() {
         View::Diff,
         View::Help,
         View::ConfirmExit,
+        View::ConfirmHide,
     ] {
         for (name, render, setup) in CASES {
             let mut app = fresh_app();
@@ -370,13 +372,17 @@ fn help_key_before(rows: &[String], desc: &str) -> char {
 
 #[test]
 fn the_overlay_documents_the_keys_the_status_bar_no_longer_lists() {
-    let rows = help_rows(&fresh_app(), 80, 40);
+    let rows = help_rows(&fresh_app(), 80, 50);
     for desc in [
         "toggle between panes",
         "next tab",
         "toggle selection",
-        "select only shown / clear tab",
+        "toggle all shown selections",
+        "toggle all folders open / closed",
         "file filter: All/Modified/External/New",
+        "hide / unhide external folder",
+        "hide checked external folders",
+        "show / conceal hidden folders",
         "diff against installed",
         "install selected",
         "remove selected",
@@ -473,7 +479,7 @@ fn the_overlay_caps_its_height_at_80_percent_and_pads_no_taller_terminal() {
     }
 
     // Past the height where 80% clears the table, the box stops growing.
-    assert_eq!(help::box_height(40), help::box_height(60));
+    assert_eq!(help::box_height(50), help::box_height(60));
 }
 
 /// The prompt has to name both answers on screen: it is reached by a key that

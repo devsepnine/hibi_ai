@@ -194,6 +194,20 @@ impl App {
         }
     }
 
+    pub fn toggle_all_folders(&mut self) {
+        if let Some(tree) = self.tree_views.get_mut(&self.tab) {
+            if tree
+                .nodes
+                .iter()
+                .any(|node| node.is_folder() && !node.is_expanded())
+            {
+                tree.expand_all();
+            } else {
+                tree.collapse_all();
+            }
+        }
+    }
+
     /// Collapse current folder
     pub fn collapse_folder(&mut self) {
         if let Some(tree) = self.tree_views.get_mut(&self.tab) {

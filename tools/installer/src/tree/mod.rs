@@ -15,7 +15,6 @@ mod selection;
 pub enum TreeNode {
     Folder {
         name: String,
-        #[allow(dead_code)]
         path: String,
         expanded: bool,
         children: Vec<usize>, // Indices into TreeView.nodes

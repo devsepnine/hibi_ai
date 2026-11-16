@@ -2,6 +2,168 @@ use super::*;
 use crate::app::FocusArea;
 use crate::app::test_support::fresh_app;
 
+#[path = "visibility/tests.rs"]
+mod folder_visibility;
+
+mod tree_controls {
+    use super::*;
+    use crate::tree::{TreeNode, test_support::make_component};
+
+    fn press(app: &mut App, character: char) {
+        let (tx, _rx) = std::sync::mpsc::channel();
+        dispatch_key(app, KeyCode::Char(character), &tx).unwrap();
+    }
+
+    #[test]
+    fn collapse_and_expand_all_preserve_selection_and_follow_the_current_branch() {
+        let mut app = fresh_app();
+        app.finish_loading(
+            vec![
+                make_component("first/deep/one.md"),
+                make_component("second/two.md"),
+                make_component("root.md"),
+            ],
+            vec![],
+            vec![],
+            vec![],
+        );
+        let tree = app.tree_views.get_mut(&app.tab).unwrap();
+        tree.cursor = tree
+            .visible_indices
+            .iter()
+            .position(|&index| {
+                matches!(
+                    tree.nodes[index],
+                    TreeNode::File {
+                        component_idx: 1,
+                        ..
+                    }
+                )
+            })
+            .unwrap();
+        press(&mut app, 'E');
+        let tree = app.get_tree_view().unwrap();
+        assert_eq!(tree.visible_indices.len(), 3);
+        let current = tree.current_node_idx().unwrap();
+        assert!(
+            matches!(&tree.nodes[current], TreeNode::Folder { path, expanded: false, .. } if path == "second")
+        );
+        press(&mut app, 'E');
+        let tree = app.get_tree_view().unwrap();
+        assert_eq!(tree.visible_indices.len(), 6);
+        assert!(
+            tree.nodes
+                .iter()
+                .filter(|node| node.is_folder())
+                .all(|node| node.is_expanded())
+        );
+        assert!(
+            matches!(&tree.nodes[tree.current_node_idx().unwrap()], TreeNode::Folder { path, .. } if path == "second")
+        );
+        assert_eq!(
+            app.components
+                .iter()
+                .map(|c| c.selected)
+                .collect::<Vec<_>>(),
+            [true, true, true]
+        );
+        press(&mut app, 'h');
+        assert_eq!(app.get_tree_view().unwrap().visible_indices.len(), 5);
+        press(&mut app, 'E');
+        assert_eq!(app.get_tree_view().unwrap().visible_indices.len(), 6);
+    }
+
+    #[test]
+    fn bulk_selection_toggles_files_mcp_and_plugins() {
+        let mut app = fresh_app();
+        app.finish_loading(
+            vec![make_component("one.md"), make_component("two.md")],
+            vec![],
+            vec![],
+            vec![],
+        );
+        press(&mut app, 'a');
+        assert_eq!(
+            app.components
+                .iter()
+                .map(|c| c.selected)
+                .collect::<Vec<_>>(),
+            [false, false]
+        );
+        press(&mut app, 'a');
+        assert_eq!(
+            app.components
+                .iter()
+                .map(|c| c.selected)
+                .collect::<Vec<_>>(),
+            [true, true]
+        );
+        press(&mut app, ' ');
+        assert_eq!(
+            app.components
+                .iter()
+                .map(|c| c.selected)
+                .collect::<Vec<_>>(),
+            [false, true]
+        );
+        press(&mut app, 'a');
+        assert_eq!(
+            app.components
+                .iter()
+                .map(|c| c.selected)
+                .collect::<Vec<_>>(),
+            [true, true]
+        );
+        app.mcp_servers
+            .push(crate::app::test_support::make_mcp_server());
+        app.tab = crate::app::Tab::McpServers;
+        press(&mut app, 'a');
+        assert!(app.mcp_servers[0].selected);
+        press(&mut app, 'a');
+        assert!(!app.mcp_servers[0].selected);
+        app.plugins.push(crate::app::test_support::make_plugin());
+        app.tab = crate::app::Tab::Plugins;
+        press(&mut app, 'a');
+        assert!(app.plugins[0].selected);
+        press(&mut app, 'a');
+        assert!(!app.plugins[0].selected);
+        assert_eq!(
+            app.components
+                .iter()
+                .map(|c| c.selected)
+                .collect::<Vec<_>>(),
+            [true, true]
+        );
+    }
+
+    #[test]
+    fn all_folder_keys_are_safe_for_empty_trees_and_ignore_other_panes() {
+        let mut app = fresh_app();
+        app.finish_loading(
+            vec![make_component("folder/file.md")],
+            vec![],
+            vec![],
+            vec![],
+        );
+        app.focus = FocusArea::Tabs;
+        press(&mut app, 'E');
+        assert_eq!(app.get_tree_view().unwrap().visible_indices.len(), 2);
+        app.focus = FocusArea::Content;
+        press(&mut app, 'f');
+        assert!(app.get_tree_view().unwrap().visible_indices.is_empty());
+        for key in ['E', 'E'] {
+            press(&mut app, key);
+        }
+        assert_eq!(app.get_tree_view().unwrap().cursor, 0);
+        app.tab = crate::app::Tab::McpServers;
+        for key in ['E', 'E'] {
+            press(&mut app, key);
+        }
+        assert!(app.components[0].selected);
+        assert_eq!(app.current_view, crate::app::View::List);
+    }
+}
+
 mod status_filter {
     use super::*;
     use crate::app::{Tab, TargetCli, View};
@@ -77,21 +239,23 @@ mod status_filter {
     }
 
     #[test]
-    fn select_all_replaces_only_the_current_tabs_selection() {
+    fn bulk_toggle_replaces_only_the_current_tabs_selection() {
         let mut app = fixture();
+        app.components[0].selected = false;
         press(&mut app, 'f');
         press(&mut app, 'a');
         assert_eq!(selected(&app), ["group/changed.md", "config.md"]);
         press(&mut app, 'f');
         press(&mut app, 'a');
         assert_eq!(selected(&app), ["group/local.md", "config.md"]);
-        press(&mut app, 'n');
+        press(&mut app, 'a');
         assert_eq!(selected(&app), ["config.md"]);
     }
 
     #[test]
     fn new_filter_selects_and_installs_only_uninstalled_files() {
         let mut app = fixture();
+        app.components[1].selected = false;
         for _ in 0..3 {
             press(&mut app, 'f');
         }
@@ -216,11 +380,16 @@ mod status_filter {
     }
 
     fn disk_fixture(cli: TargetCli) -> (DiskFixture, App) {
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let serial = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let fixture = DiskFixture(std::env::temp_dir().join(format!("hibi_filter_{stamp}")));
+        let fixture = DiskFixture(std::env::temp_dir().join(format!(
+            "hibi_filter_{}_{stamp}_{serial}",
+            std::process::id()
+        )));
         let mut app = fresh_app();
         app.target_cli = Some(cli);
         app.available_tabs = Tab::for_cli(cli);
@@ -247,6 +416,7 @@ mod status_filter {
         let components =
             crate::fs::scanner::scan_all_sources(&sources, &app.dest_dir, cli).unwrap();
         app.finish_loading(components, vec![], vec![], vec![]);
+        app.clear_all_selections();
         (fixture, app)
     }
 

@@ -54,6 +54,13 @@ impl App {
         self.components_for_tab(self.tab)
     }
 
+    pub fn visible_components(&self) -> Vec<(usize, &Component)> {
+        self.current_components()
+            .into_iter()
+            .filter(|(_, c)| self.show_hidden || !self.is_component_hidden(c))
+            .collect()
+    }
+
     fn components_for_tab(&self, tab: Tab) -> Vec<(usize, &Component)> {
         let Some(component_type) = tab.to_component_type() else {
             return Vec::new();
@@ -72,7 +79,11 @@ impl App {
             .iter()
             .filter(|tab| tab.to_component_type().is_some())
             .map(|&tab| {
-                let components = self.components_for_tab(tab);
+                let components: Vec<_> = self
+                    .components_for_tab(tab)
+                    .into_iter()
+                    .filter(|(_, c)| self.show_hidden || !self.is_component_hidden(c))
+                    .collect();
                 (
                     tab,
                     TreeView::build_from_components(&self.components, &components),

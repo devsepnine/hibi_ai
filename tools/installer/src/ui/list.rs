@@ -12,11 +12,14 @@ use crate::component::InstallStatus;
 use crate::tree::TreeNode;
 
 pub fn render(f: &mut Frame, app: &App, area: Rect) {
-    if app.current_components().is_empty() {
-        let message = format!(
+    if app.visible_components().is_empty() {
+        let mut message = format!(
             "No {} files. Press f to change filter.",
             app.component_filter.display()
         );
+        if !app.show_hidden {
+            message.push_str(" Press H to show hidden folders.");
+        }
         f.render_widget(Paragraph::new(message).block(list_block(app)), area);
         return;
     }
@@ -47,19 +50,32 @@ fn list_block(app: &App) -> Block<'static> {
         }
     }
 
-    title = format!(
-        "{} | Filter: {} | Files: {} | Selected: {}",
-        title.trim(),
-        app.component_filter.display(),
-        components.len(),
-        selected
-    );
+    title = if app.hidden_folder_count() == 0 {
+        format!(
+            "{} | Filter: {} | Files: {} | Selected: {}",
+            title.trim(),
+            app.component_filter.display(),
+            components.len(),
+            selected
+        )
+    } else {
+        format!(
+            "{} | Selected: {} [{} hidden] | Filter: {} | Files: {} | Hidden: {}{}",
+            title.trim(),
+            selected,
+            app.hidden_selected_count(),
+            app.component_filter.display(),
+            components.len(),
+            app.hidden_folder_count(),
+            if app.show_hidden { " [shown]" } else { "" }
+        )
+    };
 
     Block::default()
         .borders(Borders::ALL)
         .border_style(pane_border_style(app, FocusArea::Content))
         .title(pane_title(FocusArea::Content, &title))
-        .title_bottom(" [f] Filter  [a] Select only shown  [n] Clear tab ")
+        .title_bottom(" [f] Filter  [a] Toggle all  [x/X] Hide  [H] Hidden  [E] Fold all ")
         .title_style(Style::default().fg(app.theme.text_primary()))
         .style(Style::default().bg(app.theme.bg_primary()))
 }
@@ -107,7 +123,12 @@ fn render_tree_node(
     let indent = "  ".repeat(depth);
 
     match node {
-        TreeNode::Folder { name, expanded, .. } => {
+        TreeNode::Folder {
+            name,
+            path,
+            expanded,
+            ..
+        } => {
             // Folder icon
             let icon = if *expanded { "v " } else { "> " };
 
@@ -126,7 +147,15 @@ fn render_tree_node(
                 Span::styled(" ", checkbox_style),
                 Span::styled(icon, Style::default().fg(app.theme.accent_primary())),
                 Span::styled(
-                    format!("{}/", name),
+                    format!(
+                        "{}/{}",
+                        name,
+                        if app.is_folder_hidden(path) {
+                            " [hidden]"
+                        } else {
+                            ""
+                        }
+                    ),
                     Style::default()
                         .fg(app.theme.accent_primary())
                         .add_modifier(Modifier::BOLD),
@@ -227,7 +256,7 @@ fn render_tree_node(
 }
 
 fn render_flat(f: &mut Frame, app: &App, area: Rect) {
-    let filtered = app.current_components();
+    let filtered = app.visible_components();
 
     let items: Vec<ListItem> = filtered
         .iter()

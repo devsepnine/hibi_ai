@@ -7,6 +7,7 @@ mod settings;
 #[cfg(test)]
 mod test_support;
 mod unshipped;
+pub(crate) mod visibility;
 
 use anyhow::Result;
 use std::path::Path;

@@ -49,19 +49,27 @@ impl App {
         }
     }
 
-    pub fn select_all(&mut self) {
+    pub fn toggle_all_selected(&mut self) {
         if self.tab == Tab::McpServers {
+            let selected = self.mcp_servers.iter().any(|m| !m.selected);
             for m in &mut self.mcp_servers {
-                m.selected = true;
+                m.selected = selected;
             }
         } else if self.tab == Tab::Plugins {
+            let selected = self.plugins.iter().any(|p| !p.selected);
             for p in &mut self.plugins {
-                p.selected = true;
+                p.selected = selected;
             }
         } else if let Some(comp_type) = self.tab.to_component_type() {
-            for c in &mut self.components {
+            let shown: std::collections::HashSet<_> = self
+                .visible_components()
+                .iter()
+                .map(|(index, _)| *index)
+                .collect();
+            let selected = shown.iter().any(|&index| !self.components[index].selected);
+            for (index, c) in self.components.iter_mut().enumerate() {
                 if c.component_type == comp_type {
-                    c.selected = self.component_filter.matches(&c.status);
+                    c.selected = selected && shown.contains(&index);
                 }
             }
         }
@@ -94,24 +102,6 @@ impl App {
         }
         for p in &mut self.plugins {
             p.selected = false;
-        }
-    }
-
-    pub fn deselect_all(&mut self) {
-        if self.tab == Tab::McpServers {
-            for m in &mut self.mcp_servers {
-                m.selected = false;
-            }
-        } else if self.tab == Tab::Plugins {
-            for p in &mut self.plugins {
-                p.selected = false;
-            }
-        } else if let Some(comp_type) = self.tab.to_component_type() {
-            for c in &mut self.components {
-                if c.component_type == comp_type {
-                    c.selected = false;
-                }
-            }
         }
     }
 }

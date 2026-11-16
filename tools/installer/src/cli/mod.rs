@@ -42,6 +42,10 @@ pub(crate) fn dispatch_key(
             handle_confirm_exit(app, code);
             Ok(())
         }
+        app::View::ConfirmHide => {
+            handle_confirm_hide(app, code);
+            Ok(())
+        }
         app::View::Sources => app.handle_sources_key(code),
         app::View::SourceAddType => app.handle_source_type_key(code),
         app::View::SourceAddMapTo => app.handle_source_map_to_key(code),
@@ -148,9 +152,12 @@ fn handle_content_focus_keys(app: &mut App, key: KeyCode) -> Result<()> {
         KeyCode::Down | KeyCode::Char('j') => app.next_item(),
         KeyCode::Up | KeyCode::Char('k') => app.prev_item(),
         KeyCode::Char(' ') => app.toggle_selected(),
-        KeyCode::Char('a') => app.select_all(),
-        KeyCode::Char('n') => app.deselect_all(),
+        KeyCode::Char('a') => app.toggle_all_selected(),
         KeyCode::Char('f') => app.cycle_component_filter(),
+        KeyCode::Char('x') => app.toggle_folder_visibility(),
+        KeyCode::Char('X') => app.hide_selected_folders(),
+        KeyCode::Char('H') => app.toggle_show_hidden(),
+        KeyCode::Char('E') => app.toggle_all_folders(),
         KeyCode::Enter => handle_enter(app)?,
         KeyCode::Char('d') => app.show_diff()?,
         KeyCode::Char('i') => app.install_selected()?,
@@ -233,6 +240,23 @@ fn handle_confirm_exit(app: &mut App, key: KeyCode) {
     match key {
         KeyCode::Char('y') => app.exit_to_main(),
         KeyCode::Esc | KeyCode::Char('n') => app.cancel_exit(),
+        _ => {}
+    }
+}
+
+fn handle_confirm_hide(app: &mut App, key: KeyCode) {
+    match key {
+        KeyCode::Char('y') => app.confirm_folder_hide(),
+        KeyCode::Esc | KeyCode::Char('n') | KeyCode::Char('q') => app.cancel_folder_hide(),
+        KeyCode::Down | KeyCode::Char('j') | KeyCode::Up | KeyCode::Char('k') => {
+            let (width, height) = crossterm::terminal::size().unwrap_or((80, 24));
+            let max = crate::ui::confirm_hide::max_scroll(app, width, height);
+            if matches!(key, KeyCode::Down | KeyCode::Char('j')) {
+                app.scroll_folder_hide_down(max);
+            } else {
+                app.scroll_folder_hide_up(max);
+            }
+        }
         _ => {}
     }
 }

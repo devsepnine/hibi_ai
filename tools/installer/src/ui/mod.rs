@@ -1,5 +1,6 @@
 mod cli_selection;
 mod confirm_exit;
+pub(crate) mod confirm_hide;
 mod diff;
 mod env_input;
 pub mod help;
@@ -104,11 +105,12 @@ pub fn draw(f: &mut Frame, app: &App) {
     render_status_bar(f, app, chunks[2]);
 
     // Painted after the status bar so a box may cover it — in a short terminal
-    // the help overlay needs every row it can take, and both boxes carry their
+    // the help overlay needs every row it can take, and the boxes carry their
     // own keys on their own borders.
     match app.current_view {
         View::Help => help::render(f, app, f.area()),
         View::ConfirmExit => confirm_exit::render(f, app, f.area()),
+        View::ConfirmHide => confirm_hide::render(f, app, f.area()),
         _ => {}
     }
 }
@@ -173,10 +175,10 @@ fn render_full_screen(f: &mut Frame, app: &App) -> bool {
 /// is one that wants the tab bar above it and the status bar below.
 fn render_content_pane(f: &mut Frame, app: &App, area: Rect) {
     match app.current_view {
-        // Both overlays paint their box over the list rather than replacing it,
-        // so all three views share a body and dismissing a box restores the
-        // screen unchanged.
-        View::List | View::Help | View::ConfirmExit => render_tab_list(f, app, area),
+        // Overlays retain the list so dismissing them restores the same context.
+        View::List | View::Help | View::ConfirmExit | View::ConfirmHide => {
+            render_tab_list(f, app, area)
+        }
         View::Diff => diff::render(f, app, area),
         // The dialogs sit over the MCP list they were opened from, which stays
         // visible so the user can see which server they are answering for.
@@ -236,10 +238,10 @@ fn status_help(app: &App) -> &'static str {
         View::Loading => "Loading...  [q] Quit",
         View::Preflighting => "Checking CLI...  [Esc] Cancel  [q] Quit",
         View::List => LIST_HELP,
-        // Both overlays name their own keys on their own frames, and the List
+        // Overlays name their own keys on their own frames, and the List
         // keys behind them are no longer live — repeating them here would
         // advertise a pane jump the modal will not answer.
-        View::Help | View::ConfirmExit => "",
+        View::Help | View::ConfirmExit | View::ConfirmHide => "",
         View::Diff => "[j/k/↑/↓] Scroll  [q/Esc] Close",
         View::EnvInput => "[Enter] Submit  [Esc] Cancel  [Backspace] Delete",
         View::ProjectPath => "[Enter] Confirm  [Esc] Cancel  [Backspace] Delete",

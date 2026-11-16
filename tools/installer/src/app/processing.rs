@@ -31,7 +31,7 @@ impl App {
                 .map(|(i, _)| i)
                 .collect()
         } else {
-            self.current_components()
+            self.visible_components()
                 .into_iter()
                 .filter(|(_, c)| c.selected && c.is_install_eligible())
                 .map(|(i, _)| i)
@@ -76,7 +76,7 @@ impl App {
                 .map(|(i, _)| i)
                 .collect()
         } else {
-            self.current_components()
+            self.visible_components()
                 .into_iter()
                 .filter(|(_, c)| c.selected)
                 .map(|(i, _)| i)

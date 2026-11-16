@@ -125,6 +125,49 @@ impl TreeView {
         }
     }
 
+    /// Expand every folder while retaining the current node.
+    pub fn expand_all(&mut self) {
+        let current = self.current_node_idx();
+        for node in &mut self.nodes {
+            if let TreeNode::Folder { expanded, .. } = node {
+                *expanded = true;
+            }
+        }
+        self.rebuild_visible();
+        self.restore_cursor(current);
+    }
+
+    /// Collapse every folder, focusing the current item's root.
+    pub fn collapse_all(&mut self) {
+        let mut current = self.current_node_idx();
+        while let Some(index) = current {
+            let parent = match &self.nodes[index] {
+                TreeNode::Folder { parent_idx, .. } | TreeNode::File { parent_idx, .. } => {
+                    *parent_idx
+                }
+            };
+            if parent.is_none() {
+                break;
+            }
+            current = parent;
+        }
+        for node in &mut self.nodes {
+            if let TreeNode::Folder { expanded, .. } = node {
+                *expanded = false;
+            }
+        }
+        self.rebuild_visible();
+        self.restore_cursor(current);
+    }
+
+    fn restore_cursor(&mut self, current: Option<usize>) {
+        if let Some(position) =
+            current.and_then(|node| self.visible_indices.iter().position(|&index| index == node))
+        {
+            self.cursor = position;
+        }
+    }
+
     /// Move cursor down
     pub fn next(&mut self) {
         if !self.visible_indices.is_empty() {

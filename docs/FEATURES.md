@@ -56,10 +56,12 @@
 | 탭, 탭 바, 탭 전환, 탭 이동, 탭이 잘림, ‹ › | `tab-bar` |
 | 숫자 키, 1번 2번, pane, 패널, 포커스 `(ambiguous)` | `tab-bar`, `source-wizard` |
 | 목록, 리스트, 체크박스, 전체 선택, 선택 해제, 폴더 펼치기, 트리, 미리 체크됨 | `component-list` |
+| 전체 폴더 열기, 전체 폴더 닫기, 모두 펼치기, 모두 접기 | `component-list` |
 | Space 안 먹힘, 체크가 안 됨 | `component-list`, `cli-picker` |
 | 에이전트, 커맨드, 스킬, Styles, Config 탭 | `component-list` |
 | modified, installed, new, external, managed, 상태 표시 | `component-list` |
 | 상태 필터, 수정 파일만, 외부 파일만, 미설치 파일만, 필터 결과만 선택 | `component-list` |
+| 폴더 숨김, 숨김 취소, 숨긴 항목 표시, .system, synced | `component-list` |
 | 바꾼 적 없는데 modified, 줄바꿈 CRLF | `component-list` |
 | 하단 바, 상태 바, 상태 메시지, 메시지가 잘림 | `status-bar` |
 | 상태줄, 상태표시줄, statusline `(ambiguous)` | `statusline-render`, `default-style-statusline`, `status-bar`, `settings-merge` |
@@ -95,6 +97,7 @@
 | 릴리즈, 배포, 태그, GitHub Actions, 체크섬 | `release-workflow`, `packaging`, `statusline-render` |
 | 커밋, 푸시, PR, 묻지 않고 커밋, 자동 커밋, Co-Authored-By, 티켓 번호 | `commit-push-gating` |
 | 영어로 답함, 한국어 응답, 응답 언어, 출력 스타일 | `response-language` |
+| 산출물 언어, PR 언어, QA 인수인계 언어, 커밋 언어 | `response-language` |
 | 주석, 주석이 너무 많음, 주석 언어 | `comment-rules` |
 | 리뷰, 리뷰어, 잔소리, 닛픽, nit, 지적이 너무 많음, 리뷰가 안 돌아옴, code-reviewer | `review-gate` |
 | 검증, verify, READY 안 나옴, PARTIAL | `verification-phase7` |
