@@ -28,7 +28,7 @@ ls .dependency-cruiser.* .eslintrc* eslint.config.* importlinter* .importlinter 
 - **Document exists**: update mode, see [Update mode](#update-mode).
 - **No document**: full build, steps 2 to 7.
 - Note the stack from the manifests: `package.json` and workspaces, `Cargo.toml` workspace, `go.mod`, `pyproject.toml`. Note any boundary lint already configured, because its rules are decided rules and need no question.
-- Write the document's prose in the language the repository's other docs use. Keep the template's headings and field labels, rule IDs, `MUST`, and `SHOULD` in English, because the verify block below greps for them.
+- Use `technical-writing` → Artifact language for the document's prose: default to the conversation's language and honor an explicitly requested language. Keep the template's headings and field labels, rule IDs, `MUST`, and `SHOULD` in English, because the verify block below greps for them.
 - Write every path relative to the repository root, including inside a monorepo package.
 
 ### 2. Find the units

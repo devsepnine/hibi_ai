@@ -55,7 +55,7 @@ description: "Commit convention: type/ticket/title format, pre-commit security c
 **커밋 메시지 규칙:**
 - 제목은 50자 이내로 간결하게
 - 본문은 변경 사항과 이유를 구체적으로 설명
-- 영문으로 작성
+- 제목과 본문은 `technical-writing`의 산출물 언어 정책을 따른다. 대화 언어를 기본으로 하며, 사용자가 언어를 명시하면 해당 언어를 우선한다.
 - 이모지 및 불필요하게 장황한 표현 금지
 - 의도가 드러나는 명확한 설명 작성
 - Claude Code 생성 마커 제거

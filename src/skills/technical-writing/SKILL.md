@@ -15,6 +15,12 @@ Three rules sit above the rest:
 
 Write the real symbol, file, flag, or command name, not a synonym or a description of it.
 
+## Artifact language
+
+Write artifact titles, headings, prose, and checklist text in the conversation's language by default. If the user explicitly requests a language for an artifact, use that language instead. Apply this to commit messages, PR titles and bodies, review comments, QA handoffs, reports, release notes, and saved documents.
+
+The language of a template, example, or previous artifact does not choose the output language. Preserve code, commands, paths, identifiers, schema keys, labels required by automated checks, and verbatim quotations. Translate other headings and labels into the artifact's language. This policy applies to artifact contents even when surrounding replies use a different language.
+
 ## Punctuation: no dashes, no parentheses
 
 Prose uses no em dash, no en dash, no hyphen standing in for a dash, and no parentheses. End the sentence, or join with a comma. A colon is fine before a list or an example, and after a label as in "**Label**: text". It is not a drop-in for a dash.

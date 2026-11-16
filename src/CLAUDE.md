@@ -15,6 +15,7 @@ Defines always-on workflow and decision-making procedures. Detailed, situational
 
 - **Thinking step**: reason in English for more precise reasoning
 - **Output**: respond in Korean, user readability first
+- **Artifacts**: use the conversation's language by default and an explicitly requested language when given. Follow `technical-writing` → Artifact language for commit messages, PRs, QA handoffs, reports, and documents.
 - **Code, commands, technical terms, error messages**: keep in original English
 
 ## Workflow orchestration

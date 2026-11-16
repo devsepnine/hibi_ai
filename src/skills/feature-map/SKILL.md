@@ -240,8 +240,8 @@ Diff from the recorded SHA: `git diff --name-status -M <sha>..HEAD`.
 
 ## Document template
 
-Use `assets/feature-map-template.md`. Write the map's prose in the language the
-project's docs use, and keep the template's headings and field labels in
+Use `assets/feature-map-template.md`. Follow `technical-writing` → Artifact language
+for the map's prose: default to the conversation's language and honor an explicitly requested language. Keep the template's headings and field labels in
 English, because the step-6 checks grep for them. A map written earlier with
 Korean labels such as `검증 시점` still verifies, since the checks accept both.
 Keep the section order: the header, holding the SHA and

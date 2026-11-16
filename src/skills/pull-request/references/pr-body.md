@@ -72,5 +72,5 @@ Order matters. The first two are cheap and catch the most, and their method is
 ## Language
 
 - Technical terms stay in English, such as API, database, migration, and refactoring.
-- Match the repository's existing PR language; default to English when nothing indicates otherwise.
-- Example: "Add caching logic to improve API response speed"
+- Follow `technical-writing` → Artifact language for the title, headings, body, and checklist. Default to the conversation's language and honor an explicitly requested language.
+- The template and previous PRs do not choose the language. Keep required template structure and machine-readable labels.

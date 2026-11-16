@@ -21,6 +21,8 @@ it.
 
 ## Two cases
 
+Use `technical-writing` → Artifact language for PR titles, bodies, reviews, and replies to review comments. Default to the conversation's language and honor an explicitly requested language.
+
 | Need | Where |
 |---|---|
 | Open, update, review, or answer comments on a PR in any repository | §1 to §7 below |

@@ -28,7 +28,7 @@ ls .dependency-cruiser.* .eslintrc* eslint.config.* importlinter* .importlinter 
 - **문서가 있다**: 갱신 모드다. [Update mode](#update-mode)를 본다.
 - **문서가 없다**: 전체 작성이고 2단계부터 7단계까지 진행한다.
 - 매니페스트에서 스택을 파악한다: `package.json`과 workspaces, `Cargo.toml` workspace, `go.mod`, `pyproject.toml`. 이미 설정된 경계 lint가 있으면 기록한다. 그 규칙은 이미 결정된 규칙이라 질문이 필요 없다.
-- 문서는 저장소의 다른 문서가 쓰는 언어로 쓴다. 템플릿의 제목과 필드 라벨, 규칙 ID, `MUST`, `SHOULD`는 영어로 둔다. 아래 검증 블록이 그 문자열을 grep하기 때문이다.
+- 문서 산문은 `technical-writing`의 산출물 언어 정책을 따른다. 대화 언어를 기본으로 하며, 사용자가 언어를 명시하면 해당 언어를 우선한다. 템플릿의 제목과 필드 라벨, 규칙 ID, `MUST`, `SHOULD`는 영어로 둔다. 아래 검증 블록이 그 문자열을 grep하기 때문이다.
 - 모든 경로는 모노레포 패키지 안에서도 저장소 루트 기준 상대 경로로 쓴다.
 
 ### 2. 단위를 찾는다

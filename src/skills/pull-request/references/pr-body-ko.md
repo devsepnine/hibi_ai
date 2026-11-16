@@ -70,5 +70,5 @@
 ## 언어
 
 - 기술 용어는 영어로 둔다. 예: API, database, migration, refactoring.
-- 저장소의 기존 PR 언어를 따르고, 아무 단서가 없으면 영어를 기본으로 한다.
-- 예: "Add caching logic to improve API response speed"
+- 제목, 소제목, 본문, 체크리스트는 `technical-writing`의 산출물 언어 정책을 따른다. 대화 언어를 기본으로 하며, 사용자가 언어를 명시하면 해당 언어를 우선한다.
+- 템플릿과 이전 PR의 언어로 출력 언어를 정하지 않는다. 필수 템플릿 구조와 자동 처리에 필요한 라벨은 유지한다.

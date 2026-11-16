@@ -20,14 +20,16 @@
 - **공유 의존**: `settings-merge`
 - **관련**: `review-gate`, `install-manifest`
 
-### `response-language`: 응답 언어와 출력 서식
+### `response-language`: 응답과 산출물 언어, 출력 서식
 
-- **위치**: 모든 대화 응답
-- **별칭**: 영어로 답함, 한국어 응답, 응답 언어, 출력 스타일, 서식
+- **위치**: 모든 대화 응답과 작성하는 산출물
+- **별칭**: 영어로 답함, 한국어 응답, 응답 언어, 산출물 언어, PR 언어, QA 인수인계 언어, 출력 스타일, 서식
+- **산출물 언어**: 커밋 메시지, PR 제목과 본문, 리뷰 코멘트, QA 인수인계, 보고서, 릴리즈 노트, 문서는 대화 언어를 기본으로 한다. 사용자가 산출물 언어를 명시하면 해당 언어를 우선한다. 제목과 체크리스트도 같은 기준이며 코드, 식별자, 자동 검증용 고정 라벨과 원문 인용은 유지한다. 템플릿이나 이전 산출물의 언어를 기본값으로 삼지 않는다
 - **UI 문구**: `"Default response language: Korean"`, `"respond in Korean, user readability first"`
 - **컨트롤**: Styles 탭에서 `hibi_default` 를 s 로 기본 지정, `default-style-statusline` 참고
 - **코드 경로**:
   - 상시 규칙: `src/CLAUDE.md` 의 Thinking and response language policy
+  - 산출물 공통 규칙: `src/skills/technical-writing/SKILL.md`의 Artifact language. `commit-rules`, `pull-request`, `qa-handoff`, `obsidian-notes`, `architecture-rules`, `feature-map`이 참조한다
   - 출력 스타일: `src/output-styles/hibi_default.md` 가 언어와 마크다운 서식을 정한다, settings.json 의 `outputStyle` 로 켠다
   - Codex: `src/AGENTS.md` 의 Language settings 와 Output formatting, Codex 에는 이 파일이 유일한 사본이다
 - **테스트**: none

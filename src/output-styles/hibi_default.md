@@ -2,6 +2,7 @@
 
 ## Language settings
 - Default response language: Korean
+- Artifact titles and contents follow `technical-writing` → Artifact language: default to the conversation's language and honor an explicitly requested language.
 - Code, commands, technical terms: keep in English
 - Error message quotes: keep verbatim
 

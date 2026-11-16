@@ -16,6 +16,8 @@ or save into their vault.
 
 ## Template catalog
 
+Use `technical-writing` → Artifact language for note titles, headings, and prose, including release notes, ADRs, retrospectives, and meeting minutes. Default to the conversation's language and honor an explicitly requested language. Preserve frontmatter keys and fixed metadata values.
+
 ### Development / technical
 
 | When | Template | Why this shape |

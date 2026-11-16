@@ -11,6 +11,8 @@ knows the product, not the codebase.
 
 ## Why this shape
 
+Use `technical-writing` → Artifact language for the document title, headings, summary, and QA checklist. Default to the conversation's language and honor an explicitly requested language.
+
 QA loses time on two failures: not knowing which changes are observable, and
 not knowing how to reproduce them. Compare the previous and current behavior,
 then give QA the setup, reproduction steps, and expected result for each check.
@@ -174,7 +176,7 @@ in `CLAUDE.md` applies to it like any other.
 
 Use `assets/handoff-template.md` as the skeleton. Keep the section order: QA
 reads top to bottom and stops once they have what they need.
-Use these Korean section names: 전체 요약, 기존과 달라진 변경사항, API 변경사항 and 번역 변경사항 when relevant, QA 체크리스트,
+When the artifact language is Korean, use these section names: 전체 요약, 기존과 달라진 변경사항, API 변경사항 and 번역 변경사항 when relevant, QA 체크리스트,
 회귀 주의 영역, 자동 검증 결과, 용어 설명, 개발자 확인 사항.
 Do not include a default deployment prerequisites section. Put essential setup
 in the relevant checklist item and unresolved questions in developer follow-up.
