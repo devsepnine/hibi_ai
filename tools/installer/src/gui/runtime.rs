@@ -14,6 +14,7 @@ pub struct Runtime {
     pub remove_count: usize,
     pub should_close: bool,
     pub window_size: iced::Size,
+    pub filter_menu_open: bool,
     pub(super) channels: ProcessingChannels,
     pub(super) init_rx: Option<Receiver<Result<App>>>,
     pub(super) closing: bool,
@@ -37,6 +38,7 @@ impl Runtime {
             remove_count: 0,
             should_close: false,
             window_size: iced::Size::new(1120.0, 780.0),
+            filter_menu_open: false,
             channels: ProcessingChannels::new(),
             init_rx: None,
             closing: false,
@@ -299,7 +301,7 @@ mod removal_tests {
         app.components = vec![visible, hidden, other_status];
         app.hidden_folders
             .insert(app.dest_dir.join("skills/hidden"));
-        app.component_filter = ComponentFilter::External;
+        app.component_filter = ComponentFilter::External.into();
         state.dispatch(Action::Key(KeyCode::Char('r')));
         assert!(state.remove_requested);
         assert_eq!(state.remove_count, 1);
@@ -354,7 +356,7 @@ mod removal_tests {
         for action in [
             Action::ToggleRow(0),
             Action::SelectTab(Tab::McpServers),
-            Action::SetFilter(ComponentFilter::New),
+            Action::SetFilter(ComponentFilter::New, true),
             Action::Command(KeyCode::Char('a')),
             Action::Key(KeyCode::Char('i')),
             Action::Key(KeyCode::Enter),
@@ -366,7 +368,10 @@ mod removal_tests {
         assert!(state.remove_requested);
         let app = state.app.as_ref().unwrap();
         assert_eq!(app.tab, Tab::Skills);
-        assert_eq!(app.component_filter, ComponentFilter::All);
+        assert_eq!(
+            app.component_filter,
+            crate::app::ComponentFilters::default()
+        );
         assert!(app.components[0].selected);
         assert_eq!(app.current_view, View::List);
         assert!(app.processing_queue.is_empty());

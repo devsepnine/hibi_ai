@@ -17,7 +17,7 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
             "No {} files. Press f to change filter.",
             app.component_filter.display()
         );
-        if !app.show_hidden {
+        if !app.hidden_visibility.shows_hidden() {
             message.push_str(" Press H to show hidden folders.");
         }
         f.render_widget(Paragraph::new(message).block(list_block(app)), area);
@@ -67,7 +67,11 @@ fn list_block(app: &App) -> Block<'static> {
             app.component_filter.display(),
             components.len(),
             app.hidden_folder_count(),
-            if app.show_hidden { " [shown]" } else { "" }
+            if app.hidden_visibility.shows_hidden() {
+                " [shown]"
+            } else {
+                ""
+            }
         )
     };
 

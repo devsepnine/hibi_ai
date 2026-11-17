@@ -160,14 +160,14 @@ mod tests {
             .insert(app.dest_dir.join("skills/hidden"));
         app.set_search_query("match".into());
         assert_eq!(shown_components(&app), vec![1, 2]);
-        app.component_filter = ComponentFilter::External;
+        app.component_filter = ComponentFilter::External.into();
         app.set_search_query("MATCH".into());
         assert!(app.visible_components().is_empty());
         assert!(app.components[0].selected);
-        app.show_hidden = true;
+        app.hidden_visibility = crate::app::HiddenVisibility::Include;
         app.set_search_query("Match".into());
         assert_eq!(shown_components(&app), vec![0]);
-        app.component_filter = ComponentFilter::Modified;
+        app.component_filter = ComponentFilter::Modified.into();
         app.set_search_query("match shared".into());
         assert_eq!(shown_components(&app), vec![1]);
         assert!(app.components.iter().all(|component| component.selected));

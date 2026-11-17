@@ -1,7 +1,10 @@
 mod actions;
 mod activity;
 mod dialogs;
+mod filters;
 mod home;
+#[cfg(test)]
+mod keyboard_tests;
 mod list;
 mod preferences;
 mod rows;
@@ -12,6 +15,9 @@ mod source_forms;
 mod sources;
 mod styles;
 mod text_input;
+#[cfg(test)]
+#[path = "visibility/tests.rs"]
+mod visibility_tests;
 
 use crossterm::event::KeyCode;
 use iced::widget::{Space, button, column, container, row, scrollable, text};
@@ -49,11 +55,13 @@ pub fn run() -> iced::Result {
 }
 
 fn update(state: &mut Runtime, message: Message) -> Task<Message> {
+    let focus_navigation = shortcuts::navigation_focus(&message);
     let scroll = match &message {
         Message::Action(Action::Key(key)) => Some(*key),
         Message::Action(
             Action::SelectTab(_)
-            | Action::SetFilter(_)
+            | Action::SetFilter(..)
+            | Action::SetHiddenVisibility(_)
             | Action::SetSearch(_)
             | Action::ClearSearch,
         ) => Some(KeyCode::Home),
@@ -81,12 +89,18 @@ fn update(state: &mut Runtime, message: Message) -> Task<Message> {
         Message::FocusSearch | Message::FocusResults | Message::SearchEscape => {}
     }
     if state.should_close {
-        iced::exit()
-    } else if let (Some(key), Some(app)) = (scroll, state.app.as_ref()) {
-        scroll_after_key(app, key)
+        return iced::exit();
+    }
+    let scroll = match (scroll, state.app.as_ref()) {
+        (Some(key), Some(app)) => scroll_after_key(app, key),
+        _ => Task::none(),
+    };
+    let focus = if search_available(state) {
+        focus_navigation.map_or_else(Task::none, iced::advanced::widget::operate)
     } else {
         Task::none()
-    }
+    };
+    Task::batch([focus, scroll])
 }
 
 fn search_available(state: &Runtime) -> bool {
@@ -115,7 +129,7 @@ fn view(state: &Runtime) -> Element<'_, Message> {
     } else if state.remove_requested {
         page = page.push(dialogs::remove(state.remove_count));
     } else if let Some(app) = &state.app {
-        page = page.push(content(app, compact));
+        page = page.push(content(app, compact, state.filter_menu_open));
     } else if state.error.is_none() {
         page = page.push(container(text("Loading sources and configuration…")).center_y(Fill));
     }
@@ -193,10 +207,10 @@ fn header(state: &Runtime) -> Element<'_, Message> {
     .into()
 }
 
-fn content(app: &App, compact: bool) -> Element<'_, Message> {
+fn content(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Message> {
     match app.current_view {
         View::CliSelection => home::view(app),
-        View::List => list::view(app, compact),
+        View::List => list::view(app, compact, filter_menu_open),
         View::Sources
         | View::SourceAddType
         | View::SourceAddUrl

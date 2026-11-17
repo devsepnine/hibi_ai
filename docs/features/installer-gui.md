@@ -15,6 +15,43 @@
 
 GUI를 실행하려면 데스크톱 디스플레이가 필요하다. GUI 시작에 실패하면 오류에 TUI 실행 방법이 표시된다.
 
+## 방향키 탐색
+
+왼쪽 Components에서 카테고리를 클릭하면 해당 영역이 키보드 포커스를 유지한다. 위아래 방향키로 카테고리를 이동하고 오른쪽 방향키나 Enter로 목록에 들어간다. 목록 항목을 클릭하면 위아래 방향키로 항목을 이동하고 왼쪽과 오른쪽 방향키로 폴더를 접거나 펼친다. 파일에서 왼쪽 방향키를 누르면 부모 폴더로 이동해 접는다.
+
+`1`은 Components, `2`는 목록에 포커스를 둔다. Tab과 Shift+Tab은 두 영역을 전환한다. 포커스를 가진 영역의 제목은 강조 색으로 표시한다. 검색창 사용 뒤 탐색 영역이나 작업 버튼을 클릭하면 검색창의 입력 포커스를 해제한다. 검색 중 일반 입력과 좌우 방향키는 검색창에서 처리하며 Enter로 목록에 돌아간다. TUI의 가로 탭 키 규칙은 유지한다.
+
+`tools/installer/src/gui/keyboard_tests.rs`는 GUI 키 라우팅과 실제 위젯 이벤트를 함께 검증한다. 사이드바 이동, 목록 이동, 폴더 접기와 펼치기, 검색창 포커스 해제와 확인창 뒤 입력 차단을 검사한다.
+
+## 폴더 숨김의 검증 기준
+
+숨김은 외부 파일과 관리 대상 파일에 같은 폴더 경로 규칙을 적용한다. 기존 숨김 설정도 파일 상태와 관계없이 적용하며 저장 형식은 유지한다. GUI의 Visibility 영역은 현재 대상과 카테고리에 저장된 숨김 폴더 수를 함께 표시한다.
+
+Hide selected와 Unhide selected는 완전히 체크한 폴더 수를 표시하며, 대상이 없으면 비활성화한다. 혼합 선택에서도 버튼의 목표 상태를 선택 전체에 적용한다. 이미 해당 상태인 폴더를 다시 처리해도 반대로 바꾸지 않는다. Hide selected는 기존 확인창을 사용하고 저장 성공 뒤 체크를 해제한다. Unhide selected는 숨김 설정을 해제하고 체크를 유지한다. 선택한 상위 폴더의 숨김을 해제하면 그 아래에 저장된 숨김 설정도 해제한다. 숨긴 상위 폴더를 선택하지 않고 하위 폴더만 숨김 해제하려 하면 상위 폴더 선택을 안내한다.
+
+| 요구사항 | 구현 경로 | 검증 경로 |
+|---|---|---|
+| 모든 파일 상태의 단일 숨김, 재실행과 숨김 해제 | `app/visibility.rs`의 `toggle_folder_visibility`, `is_component_hidden` | `cli/visibility/managed/tests.rs`의 `each_managed_status_can_be_hidden_persisted_and_unhidden_without_changing_files` |
+| 완전히 체크한 혼합 폴더의 일괄 숨김 | `app/visibility/folders.rs`의 `folder_states`, `hide_selected_folders` | `cli/visibility/tests.rs`의 `batch_skips_partial_folders_and_hides_fully_selected_mixed_parents` |
+| 숨긴 항목의 전체 선택과 설치 및 제거 제외 | `app/visibility.rs`, `app/filter.rs`의 `visible_components`, `app/processing.rs` | `cli/visibility/managed/tests.rs`의 `hidden_managed_items_are_excluded_from_bulk_selection_and_both_work_queues` |
+| 취소와 저장 실패 시 선택과 표시 보존 | `app/visibility.rs`의 `confirm_folder_hide`, `cancel_folder_hide` | `cli/visibility/managed/tests.rs`의 `cancelling_or_failing_to_save_managed_hide_preserves_checks_and_visibility` |
+| 확인 전 상태 변경 허용, 사라진 폴더는 일괄 저장 취소 | `app/visibility.rs`의 `confirm_folder_hide` | `cli/visibility/managed/tests.rs`의 `status_changes_between_request_and_confirmation_do_not_cancel_batch_hide`, `cli/visibility/tests.rs`의 `disappeared_second_batch_folder_cancels_entire_transaction` |
+| 혼합 선택의 명시적 목표 상태, 반복 실행과 저장 실패 보존 | `app/visibility/folders.rs`, `gui/actions.rs`, `gui/list.rs` | `gui/visibility/tests.rs`의 실제 버튼 클릭과 저장 파일 검증 |
+
+## 상태 선택과 숨김 표시
+
+GUI의 Filters 버튼은 Status와 Visibility를 하나의 오버레이에 모은다. 기본 표시는 Filters · Default이며, 세부 상태 수와 기본값에서 바꾼 Visibility 한 개를 합쳐 적용 조건 수를 표시한다. Status는 탭 대신 Default, Modified, External과 New를 체크하는 목록을 사용한다. 세부 상태는 OR로 합친다. Default를 체크하면 세부 선택을 초기화하며, 마지막 세부 상태를 해제해도 Default로 돌아간다. Default는 설치됨과 관리 중인 항목도 포함하므로 세부 상태 세 개를 모두 체크한 경우와 다르다.
+
+필터 오버레이는 컴포넌트 목록의 위치와 크기를 바꾸지 않는다. 상태와 Visibility를 고르는 동안 메뉴를 유지한다. 버튼을 다시 누르거나 Esc 또는 메뉴 바깥 클릭으로 닫는다. 바깥 클릭은 메뉴만 닫고 뒤쪽 항목을 선택하지 않는다. `gui/filters/dropdown.rs`는 앵커 버튼과 오버레이를 분리하고 화면 가장자리에서 메뉴를 배치한다. 작은 창에서는 메뉴 안을 스크롤할 수 있다.
+
+오버레이의 표시 영역은 생성할 때마다 창에서 받는다. iced는 배치를 캐시하고 그리기 단계에서 오버레이를 다시 생성하므로 배치 단계에서만 영역을 저장하면 메뉴가 보이지 않는다. `gui/filters/dropdown/tests.rs`는 이 수명 주기를 재현하고 렌더링한 메뉴 배경의 픽셀 수를 검사한다.
+
+Visibility는 같은 오버레이의 구분선 아래에서 Visible only, Include hidden과 Hidden only 중 하나를 고른다. 기본값인 Visible only는 숨긴 항목을 제외한다. Include hidden은 숨긴 항목과 일반 항목을 함께 표시하며, Hidden only는 숨긴 항목만 표시한다. 세 방식 모두 현재 상태와 검색 조건을 함께 적용한다. External과 Hidden only를 선택하면 숨긴 외부 파일만 표시하며 New나 Modified인 숨김 항목을 추가하지 않는다.
+
+보기 방식을 바꿔도 숨김 설정 자체는 바꾸지 않는다. Hidden only에서 숨김을 해제한 항목은 목록에서 빠진다. 결과가 없으면 현재 보기에서 숨김 항목이 없다는 안내를 표시한다. Visible only로 돌아갈 때는 기존처럼 숨긴 항목의 체크를 해제한다. TUI의 H는 기존 숨김 제외와 함께 보기를 전환한다.
+
+상태 선택의 단일 기준은 `app/filter.rs`의 `ComponentFilters`이며, 숨김 보기는 `app/visibility.rs`의 `HiddenVisibility`를 사용한다. 목록과 작업 대기열은 같은 선택을 사용한다. TUI의 `f`는 기존 단일 상태 순환을 유지한다. `gui/filters.rs`는 선택 목록을 그리며 `gui/visibility/filters/tests.rs`는 실제 위젯 클릭, Default 복귀와 숨김 표시의 교집합을 검증한다.
+
 ## 기존 기능과 GUI의 대응
 
 이 표는 기능 지원과 검수 범위를 정의한다. 테스트 실행 결과를 뜻하지 않는다. 자동 검증 결과는 실제 실행 로그에서 확인한다.
@@ -28,7 +65,7 @@ GUI를 실행하려면 데스크톱 디스플레이가 필요하다. GUI 시작�
 | `component-list` | 체크, 전체 선택과 해제, 폴더 펼침과 접힘 | 빈 목록과 필터 밖의 항목 처리, 선택 후 필터 변경 |
 | `component-list` | 상태 필터와 설치 상태 표시 | 수정됨, 외부 파일, 미설치 파일 구분 |
 | `gui-search` | 현재 카테고리의 이름, 경로와 출처 검색 | 결과 없음, 한글 정규화, 상태 필터 조합, 가려진 선택의 작업 제외 |
-| `component-list` | 외부 폴더 숨김과 숨김 해제 | 혼합 폴더 보호, 저장 실패 시 체크와 표시 유지 |
+| `component-list` | 파일 상태와 관계없는 폴더 숨김과 숨김 해제 | 관리 대상과 혼합 폴더, 저장 실패 시 체크와 표시 유지 |
 | `status-bar` | 대상, 상태 메시지와 버전 표시 | 긴 경로와 여러 줄 오류가 잘리지 않음 |
 | `help-overlay` | 도움말 제공 | 긴 도움말 스크롤과 닫기 |
 | `exit-confirm` | 선택을 버리기 전 확인 | 취소 후 체크 유지, 처리 중 창 닫기 보호 |

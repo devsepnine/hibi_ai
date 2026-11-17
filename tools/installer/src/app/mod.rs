@@ -13,9 +13,9 @@ mod types;
 mod visibility;
 
 pub use crate::target::TargetCli;
-pub use filter::ComponentFilter;
+pub use filter::{ComponentFilter, ComponentFilters};
 pub use types::{FocusArea, SyncStatus, Tab, View};
-pub use visibility::HideConfirmation;
+pub use visibility::{HiddenVisibility, HideConfirmation};
 
 use anyhow::Result;
 use std::collections::{BTreeSet, HashMap};
@@ -41,10 +41,10 @@ pub struct App {
     pub theme: Theme,
 
     pub components: Vec<Component>,
-    pub component_filter: ComponentFilter,
+    pub component_filter: ComponentFilters,
     pub search_query: String,
     pub hidden_folders: BTreeSet<PathBuf>,
-    pub show_hidden: bool,
+    pub hidden_visibility: HiddenVisibility,
     pub visibility_path: PathBuf,
     pub hide_confirmation: Option<HideConfirmation>,
     pub list_index: usize, // Index within current tab's filtered list (legacy, for MCP/Plugins)
@@ -187,10 +187,10 @@ impl App {
             should_quit: false,
             theme: Theme::default(),
             components: Vec::new(),
-            component_filter: ComponentFilter::default(),
+            component_filter: ComponentFilters::default(),
             search_query: String::new(),
             hidden_folders: BTreeSet::new(),
-            show_hidden: false,
+            hidden_visibility: HiddenVisibility::default(),
             visibility_path: d.visibility_path,
             hide_confirmation: None,
             list_index: 0,
@@ -252,7 +252,7 @@ impl App {
 
         // Switch to first available tab
         self.tab = self.available_tabs.first().copied().unwrap_or(Tab::Skills);
-        self.component_filter = ComponentFilter::default();
+        self.component_filter = ComponentFilters::default();
         self.search_query.clear();
 
         // These three index into lists the scan below is about to replace, and a

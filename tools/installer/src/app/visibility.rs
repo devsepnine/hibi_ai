@@ -1,8 +1,32 @@
-use super::{App, ComponentFilter, View};
-use crate::component::{Component, InstallStatus};
+use super::{App, View};
+use crate::component::Component;
 use crate::tree::TreeNode;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 mod folders;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum HiddenVisibility {
+    #[default]
+    Exclude,
+    Include,
+    #[cfg(feature = "gui")]
+    Only,
+}
+
+impl HiddenVisibility {
+    pub fn shows_hidden(self) -> bool {
+        self != Self::Exclude
+    }
+
+    pub fn matches(self, hidden: bool) -> bool {
+        match self {
+            Self::Exclude => !hidden,
+            Self::Include => true,
+            #[cfg(feature = "gui")]
+            Self::Only => hidden,
+        }
+    }
+}
 
 pub struct HideConfirmation {
     pub folders: Vec<String>,
@@ -31,7 +55,7 @@ impl App {
     }
 
     pub fn is_component_hidden(&self, component: &Component) -> bool {
-        if component.status != InstallStatus::External || self.hidden_folders.is_empty() {
+        if self.hidden_folders.is_empty() {
             return false;
         }
         let path = self.component_path(component);
@@ -71,11 +95,19 @@ impl App {
     }
 
     pub fn toggle_show_hidden(&mut self) {
-        if self.tab.to_component_type().is_none() {
+        self.set_hidden_visibility(if self.hidden_visibility.shows_hidden() {
+            HiddenVisibility::Exclude
+        } else {
+            HiddenVisibility::Include
+        });
+    }
+
+    pub fn set_hidden_visibility(&mut self, visibility: HiddenVisibility) {
+        if self.tab.to_component_type().is_none() || self.hidden_visibility == visibility {
             return;
         }
-        self.show_hidden = !self.show_hidden;
-        if !self.show_hidden {
+        self.hidden_visibility = visibility;
+        if visibility == HiddenVisibility::Exclude {
             let hidden_selected: Vec<_> = self
                 .components
                 .iter()
@@ -89,17 +121,15 @@ impl App {
         }
         self.rebuild_tree_views();
         self.status_message = Some(
-            if self.show_hidden
-                && matches!(
-                    self.component_filter,
-                    ComponentFilter::Modified | ComponentFilter::New
-                )
-            {
-                "Hidden display enabled. Press f to select All or External to see hidden folders."
-            } else if self.show_hidden {
-                "Showing hidden folders. Press x on a hidden folder to unhide it."
-            } else {
-                "Hidden folders concealed; hidden selections cleared."
+            match visibility {
+                HiddenVisibility::Include => {
+                    "Showing hidden folders. Press x on a hidden folder to unhide it."
+                }
+                HiddenVisibility::Exclude => "Hidden folders concealed; hidden selections cleared.",
+                #[cfg(feature = "gui")]
+                HiddenVisibility::Only => {
+                    "Showing only hidden folders. Unhide selected restores their visibility."
+                }
             }
             .to_string(),
         );
@@ -115,8 +145,7 @@ impl App {
         {
             Some(TreeNode::Folder { path, .. }) => path.clone(),
             _ => {
-                self.status_message =
-                    Some("Select an external folder to hide or unhide".to_string());
+                self.status_message = Some("Select a folder to hide or unhide".to_string());
                 return;
             }
         };
@@ -143,12 +172,6 @@ impl App {
                     "Unhidden {path}. Existing selections are unchanged."
                 ));
             }
-            return;
-        }
-        if !self.folder_is_external(&folder) {
-            self.status_message = Some(
-                "Only folders containing exclusively external files can be hidden".to_string(),
-            );
             return;
         }
         self.request_folder_hide(vec![path]);
@@ -184,7 +207,7 @@ impl App {
             let Some(folder) = self.folder_path(path) else {
                 return;
             };
-            if !states.get(&folder).is_some_and(|state| state.external) {
+            if !states.contains_key(&folder) {
                 self.status_message =
                     Some("Folder contents changed. Review the folders before hiding.".to_string());
                 return;
@@ -251,14 +274,5 @@ impl App {
             })
             .map(|(index, _)| index)
             .collect()
-    }
-
-    fn folder_is_external(&self, folder: &Path) -> bool {
-        let mut descendants = self
-            .components
-            .iter()
-            .filter(|c| self.component_path(c).starts_with(folder))
-            .peekable();
-        descendants.peek().is_some() && descendants.all(|c| c.status == InstallStatus::External)
     }
 }

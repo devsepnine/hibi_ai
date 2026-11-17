@@ -54,6 +54,7 @@ fn body_lines(pending: &HideConfirmation, width: u16) -> Vec<String> {
         format!("Hide {} folder(s)?", pending.folders.len()),
         format!("Clear {} selected file(s).", pending.selected_files),
         "Files remain on disk.".to_string(),
+        "Hidden files are excluded from install and remove.".to_string(),
         String::new(),
     ];
     summary

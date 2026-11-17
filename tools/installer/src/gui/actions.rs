@@ -1,6 +1,6 @@
 use crossterm::event::KeyCode;
 
-use crate::app::{ComponentFilter, Tab, TargetCli, View};
+use crate::app::{ComponentFilter, HiddenVisibility, Tab, TargetCli, View};
 use crate::{cli, loading};
 
 use super::runtime::Runtime;
@@ -14,7 +14,12 @@ pub enum Action {
     SelectRow(usize),
     ToggleRow(usize),
     ExpandRow(usize),
-    SetFilter(ComponentFilter),
+    HideSelectedFolders,
+    UnhideSelectedFolders,
+    SetFilter(ComponentFilter, bool),
+    ToggleFilterMenu,
+    CloseFilterMenu,
+    SetHiddenVisibility(HiddenVisibility),
     SetSearch(String),
     ClearSearch,
     SetInput(String),
@@ -36,7 +41,21 @@ pub enum Action {
 
 impl Runtime {
     pub fn dispatch(&mut self, action: Action) {
+        if self.filter_menu_open && matches!(action, Action::Key(KeyCode::Esc)) {
+            self.filter_menu_open = false;
+            return;
+        }
+        if !matches!(
+            action,
+            Action::ToggleFilterMenu | Action::SetFilter(..) | Action::SetHiddenVisibility(_)
+        ) {
+            self.filter_menu_open = false;
+        }
         match action {
+            Action::CloseFilterMenu => {
+                self.filter_menu_open = false;
+                return;
+            }
             Action::RequestClose => {
                 self.remove_requested = false;
                 self.remove_count = 0;
@@ -172,7 +191,7 @@ impl Runtime {
             {
                 app.tab = tab;
                 app.reset_visible_list_cursors();
-                app.focus_content();
+                app.focus_tabs();
             }
             Action::SelectRow(index) => {
                 select_row(app, index);
@@ -192,6 +211,14 @@ impl Runtime {
                     app.toggle_folder_expand();
                 }
             }
+            Action::HideSelectedFolders if app.current_view == View::List => {
+                app.focus_content();
+                app.hide_selected_folders();
+            }
+            Action::UnhideSelectedFolders if app.current_view == View::List => {
+                app.focus_content();
+                app.unhide_selected_folders();
+            }
             Action::SetSearch(query) if app.current_view == View::List => {
                 app.set_search_query(query);
                 app.focus_content();
@@ -200,15 +227,20 @@ impl Runtime {
                 app.set_search_query(String::new());
                 app.focus_content();
             }
-            Action::SetFilter(filter)
+            Action::SetFilter(filter, checked)
                 if app.current_view == View::List && app.tab.to_component_type().is_some() =>
             {
-                for _ in 0..4 {
-                    if app.component_filter == filter {
-                        break;
-                    }
-                    app.cycle_component_filter();
-                }
+                app.focus_content();
+                app.set_component_filter(filter, checked);
+            }
+            Action::ToggleFilterMenu
+                if app.current_view == View::List && app.tab.to_component_type().is_some() =>
+            {
+                self.filter_menu_open = !self.filter_menu_open;
+            }
+            Action::SetHiddenVisibility(visibility) if app.current_view == View::List => {
+                app.focus_content();
+                app.set_hidden_visibility(visibility);
             }
             Action::SetInput(value) if source_input_view(app.current_view) => {
                 app.source_input_buffer = value;
@@ -256,6 +288,13 @@ impl Runtime {
                         app.env_input_cancel();
                         anyhow::bail!("No environment variable is awaiting a value");
                     }
+                    let key = if app.current_view == View::List
+                        && app.focus == crate::app::FocusArea::Tabs
+                    {
+                        super::shortcuts::sidebar_key(key)
+                    } else {
+                        key
+                    };
                     cli::dispatch_key(app, key, &self.channels.refresh_tx)?;
                 }
                 if app.should_quit {

@@ -1,8 +1,40 @@
 use super::{Message, actions::Action, runtime::Runtime};
-use crate::app::{App, View};
+use crate::app::{App, FocusArea, View};
 use crossterm::event::KeyCode;
 use iced::{Subscription, Task};
 use std::time::Duration;
+
+pub(super) fn sidebar_key(key: KeyCode) -> KeyCode {
+    match key {
+        KeyCode::Up | KeyCode::Char('k') => KeyCode::Left,
+        KeyCode::Down | KeyCode::Char('j') => KeyCode::Right,
+        KeyCode::Right | KeyCode::Char('l') => KeyCode::Enter,
+        KeyCode::Left | KeyCode::Char('h') => KeyCode::Null,
+        key => key,
+    }
+}
+
+pub(super) fn navigation_focus(
+    message: &Message,
+) -> Option<impl iced::advanced::widget::Operation<Message> + use<>> {
+    matches!(
+        message,
+        Message::Action(
+            Action::SelectTab(_)
+                | Action::SelectRow(_)
+                | Action::ToggleRow(_)
+                | Action::ExpandRow(_)
+                | Action::HideSelectedFolders
+                | Action::UnhideSelectedFolders
+                | Action::SetFilter(..)
+                | Action::SetHiddenVisibility(_)
+                | Action::ClearSearch
+                | Action::Command(_)
+                | Action::Key(KeyCode::Tab | KeyCode::BackTab | KeyCode::Char('1' | '2'))
+        )
+    )
+    .then(|| iced::advanced::widget::operation::focusable::focus("component-list".into()))
+}
 
 pub(super) fn scroll_after_key(app: &App, key: KeyCode) -> Task<Message> {
     use iced::widget::operation::{self, AbsoluteOffset, RelativeOffset};
@@ -18,6 +50,22 @@ pub(super) fn scroll_after_key(app: &App, key: KeyCode) -> Task<Message> {
                     | KeyCode::Char('j' | 'k' | 'h' | 'l' | 'E' | 'f' | 'H')
             ) =>
         {
+            let sidebar = if app.focus == FocusArea::Tabs {
+                let index = app
+                    .available_tabs
+                    .iter()
+                    .position(|tab| *tab == app.tab)
+                    .unwrap_or(0);
+                let count = app.available_tabs.len();
+                let y = if count > 1 {
+                    index as f32 / (count - 1) as f32
+                } else {
+                    0.0
+                };
+                operation::snap_to("component-sidebar", RelativeOffset { x: 0.0, y })
+            } else {
+                Task::none()
+            };
             let (index, count) = match app.tab {
                 crate::app::Tab::McpServers => (
                     app.visible_mcp_servers()
@@ -44,7 +92,10 @@ pub(super) fn scroll_after_key(app: &App, key: KeyCode) -> Task<Message> {
             } else {
                 0.0
             };
-            operation::snap_to("component-list", RelativeOffset { x: 0.0, y })
+            Task::batch([
+                sidebar,
+                operation::snap_to("component-list", RelativeOffset { x: 0.0, y }),
+            ])
         }
         View::Diff | View::Help
             if matches!(key, KeyCode::Up | KeyCode::Down | KeyCode::Char('j' | 'k')) =>
@@ -68,40 +119,7 @@ pub(super) fn scroll_after_key(app: &App, key: KeyCode) -> Task<Message> {
 }
 
 pub(super) fn subscription(state: &Runtime) -> Subscription<Message> {
-    let events = iced::event::listen_with(|event, status, _| {
-        if matches!(
-            event,
-            iced::Event::Window(iced::window::Event::CloseRequested)
-        ) {
-            return Some(Message::Action(Action::RequestClose));
-        }
-        if let iced::Event::Window(iced::window::Event::Resized(size)) = event {
-            return Some(Message::Resized(size));
-        }
-        if let iced::Event::Keyboard(iced::keyboard::Event::KeyPressed { key, modifiers, .. }) =
-            &event
-        {
-            if modifiers.command()
-                && matches!(key, iced::keyboard::Key::Character(value) if value.eq_ignore_ascii_case("f"))
-            {
-                return Some(Message::FocusSearch);
-            }
-            if status == iced::event::Status::Captured
-                && *key == iced::keyboard::Key::Named(iced::keyboard::key::Named::Escape)
-            {
-                return Some(Message::SearchEscape);
-            }
-        }
-        if status == iced::event::Status::Captured {
-            return None;
-        }
-        match event {
-            iced::Event::Keyboard(iced::keyboard::Event::KeyPressed { key, modifiers, .. }) => {
-                keyboard_key(key, modifiers).map(|key| Message::Action(Action::Key(key)))
-            }
-            _ => None,
-        }
-    });
+    let events = iced::event::listen_with(|event, status, _| event_message(event, status));
     if state.busy() {
         Subscription::batch([
             events,
@@ -109,6 +127,40 @@ pub(super) fn subscription(state: &Runtime) -> Subscription<Message> {
         ])
     } else {
         events
+    }
+}
+
+pub(super) fn event_message(event: iced::Event, status: iced::event::Status) -> Option<Message> {
+    if matches!(
+        event,
+        iced::Event::Window(iced::window::Event::CloseRequested)
+    ) {
+        return Some(Message::Action(Action::RequestClose));
+    }
+    if let iced::Event::Window(iced::window::Event::Resized(size)) = event {
+        return Some(Message::Resized(size));
+    }
+    if let iced::Event::Keyboard(iced::keyboard::Event::KeyPressed { key, modifiers, .. }) = &event
+    {
+        if modifiers.command()
+            && matches!(key, iced::keyboard::Key::Character(value) if value.eq_ignore_ascii_case("f"))
+        {
+            return Some(Message::FocusSearch);
+        }
+        if status == iced::event::Status::Captured
+            && *key == iced::keyboard::Key::Named(iced::keyboard::key::Named::Escape)
+        {
+            return Some(Message::SearchEscape);
+        }
+    }
+    if status == iced::event::Status::Captured {
+        return None;
+    }
+    match event {
+        iced::Event::Keyboard(iced::keyboard::Event::KeyPressed { key, modifiers, .. }) => {
+            keyboard_key(key, modifiers).map(|key| Message::Action(Action::Key(key)))
+        }
+        _ => None,
     }
 }
 

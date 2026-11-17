@@ -71,7 +71,7 @@ pub fn view(app: &App) -> Element<'_, Message> {
         ),
         View::ConfirmHide => {
             let mut description = String::from(
-                "These external folders will be hidden from the component list. Their files stay in place.\n\n",
+                "These folders will be hidden from the component list and excluded from install and remove actions. Their files stay in place.\n\n",
             );
             if let Some(pending) = &app.hide_confirmation {
                 description.push_str(&pending.folders.join("\n"));
@@ -80,7 +80,7 @@ pub fn view(app: &App) -> Element<'_, Message> {
                     pending.selected_files
                 ));
             }
-            confirm("Hide external folders?", &description, "Hide folders")
+            confirm("Hide folders?", &description, "Hide folders")
         }
         View::Help => help(),
         _ => text("Select an environment to get started.")
@@ -227,8 +227,14 @@ fn help() -> Element<'static, Message> {
         (
             "Browse & review",
             &[
-                ("Arrow keys", "Navigate categories, components and folders"),
+                ("Up / Down", "Move through the focused categories or list"),
+                ("Left / Right", "Collapse or expand folders in the list"),
+                ("Right / Enter", "Enter the list from categories"),
                 ("1 / 2", "Focus categories or component list"),
+                (
+                    "Tab / Shift+Tab",
+                    "Switch between categories and component list",
+                ),
                 ("d / Enter", "View changes or open a folder"),
                 ("f", "Cycle the status filter"),
                 ("E", "Expand or collapse all folders"),
@@ -246,8 +252,8 @@ fn help() -> Element<'static, Message> {
         (
             "Folder visibility",
             &[
-                ("x", "Hide or unhide an external folder"),
-                ("X", "Hide selected external folders"),
+                ("x", "Hide or unhide a folder"),
+                ("X", "Hide selected folders"),
                 ("H", "Show or conceal hidden folders"),
             ][..],
         ),

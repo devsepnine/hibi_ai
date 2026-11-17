@@ -228,6 +228,12 @@ class Desktop:
         self.key("Escape")
         self.expect("COMPONENTS")
 
+    def select_status(self, label):
+        x, y, width, height = self.find("Filters", (220, 70, 1120, 350))
+        self.click(x + width/2, y + height/2)
+        self.click_text(label, (max(220, x-260), y+height+4, 1120, 560))
+        self.click_text("Filters", (220, 70, 1120, 350))
+
     def text_selection_checks(self):
         match = re.search(r"(\d+)\s+selected", self.text())
         assert match, self.text()
@@ -295,10 +301,10 @@ class Desktop:
         self.expect(f"{selected} selected")
         self.passed("03e-search-by-source")
         self.search("architect")
-        self.click_text("Modified", (220, 70, 1120, 350))
+        self.select_status("Modified")
         self.expect("No matching items")
         self.expect("0 selected")
-        self.click_text("All", (220, 70, 1120, 350))
+        self.select_status("Default")
         self.expect("1 selected")
         self.passed("03f-search-and-status-filter-intersection")
         self.search("hibi-search-no-matches")
@@ -316,7 +322,7 @@ class Desktop:
         self.expect(f"{selected} selected")
         # Navigate by keyboard so metadata search also exercises original-index routing.
         self.key("1")
-        for _ in range(9): self.key("Right")
+        for _ in range(9): self.key("Down")
         self.key("2")
         self.search("FIRECRAWL_API_KEY")
         self.expect("1 result")
@@ -330,7 +336,7 @@ class Desktop:
         self.clear_search()
         self.expect("3 selected")
         self.passed("03h-mcp-metadata-and-hidden-selection")
-        self.key("1"); self.key("Right"); self.key("2")
+        self.key("1"); self.key("Down"); self.key("2")
         self.search("anthropics rust")
         self.expect("1 result")
         self.expect("rust-analyzer")
@@ -339,7 +345,7 @@ class Desktop:
         assert "rustanalyzer" not in normalized(self.text()), "Hidden plugin metadata leaked into the empty-result inspector"
         self.passed("03i-plugin-metadata-and-empty-inspector")
         self.clear_search()
-        self.key("1"); self.key("Right"); self.key("2")
+        self.key("1"); self.key("Down"); self.key("2")
         self.expect("Agents")
         self.expect(f"{selected} selected")
 
@@ -447,11 +453,11 @@ class Desktop:
         self.inert("Install")
         self.inert("Remove")
         self.passed("04-zero-selection-disabled")
-        self.click_text("Modified", (220, 70, 1120, 350))
+        self.select_status("Modified")
         self.expect("Nothing to show")
         self.expect("0 selected")
         self.passed("05-empty-filter")
-        self.click_text("All", (220, 70, 1120, 350))
+        self.select_status("Default")
         self.expect("architect.md")
         self.clear_selection()
         # Keep nonmatching rows selected to prove search constrains installation.

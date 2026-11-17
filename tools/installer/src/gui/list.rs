@@ -2,11 +2,12 @@ use crossterm::event::KeyCode;
 use iced::widget::{Space, button, column, container, row, rule, scrollable, text, text_input};
 use iced::{Element, Fill};
 
-use super::{Message, actions::Action, key_button, rows, sidebar, styles};
-use crate::app::{App, ComponentFilter, Tab};
+use super::{Message, actions::Action, filters, key_button, rows, sidebar, styles};
+use crate::app::{App, FocusArea, Tab};
 
-pub fn view(app: &App, compact: bool) -> Element<'_, Message> {
+pub fn view(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Message> {
     let (selected, eligible, total) = selection_summary(app);
+    let selected_folders = app.selected_folders().len();
     let expand = app.get_tree_view().is_some_and(|tree| {
         tree.nodes
             .iter()
@@ -39,27 +40,12 @@ pub fn view(app: &App, compact: bool) -> Element<'_, Message> {
     ]
     .spacing(if compact { 8 } else { 16 });
     if app.tab.to_component_type().is_some() {
-        let filters = [
-            ComponentFilter::All,
-            ComponentFilter::Modified,
-            ComponentFilter::External,
-            ComponentFilter::New,
-        ]
-        .into_iter()
-        .fold(row![].spacing(4), |row, filter| {
-            row.push(
-                button(text(filter.display()).size(12))
-                    .padding([7, 12])
-                    .style(if app.component_filter == filter {
-                        styles::navigation
-                    } else {
-                        styles::subtle
-                    })
-                    .on_press(Message::Action(Action::SetFilter(filter))),
-            )
-        });
         main = main
-            .push(row![search(app), filters].spacing(8).align_y(iced::Center))
+            .push(
+                row![search(app), filters::view(app, filter_menu_open)]
+                    .spacing(8)
+                    .align_y(iced::Top),
+            )
             .push(
                 row![
                     key_button(
@@ -67,17 +53,20 @@ pub fn view(app: &App, compact: bool) -> Element<'_, Message> {
                         KeyCode::Char('E')
                     )
                     .style(styles::subtle),
-                    key_button("Hide / unhide", KeyCode::Char('x')).style(styles::subtle),
-                    key_button("Hide checked", KeyCode::Char('X')).style(styles::subtle),
-                    key_button(
-                        if app.show_hidden {
-                            "Conceal hidden"
-                        } else {
-                            "Show hidden"
-                        },
-                        KeyCode::Char('H')
-                    )
-                    .style(styles::subtle),
+                    button(text(format!("Hide selected · {selected_folders}")).size(12))
+                        .padding([7, 10])
+                        .style(styles::subtle)
+                        .on_press_maybe(
+                            (selected_folders > 0)
+                                .then_some(Message::Action(Action::HideSelectedFolders))
+                        ),
+                    button(text(format!("Unhide selected · {selected_folders}")).size(12))
+                        .padding([7, 10])
+                        .style(styles::subtle)
+                        .on_press_maybe(
+                            (selected_folders > 0)
+                                .then_some(Message::Action(Action::UnhideSelectedFolders))
+                        ),
                 ]
                 .spacing(3)
                 .wrap(),
@@ -136,7 +125,13 @@ pub fn view(app: &App, compact: bool) -> Element<'_, Message> {
     }
     let table = column![
         row![
-            text("NAME / SOURCE").size(10).style(styles::muted),
+            text("NAME / SOURCE · 2")
+                .size(10)
+                .style(if app.focus == FocusArea::Content {
+                    text::primary
+                } else {
+                    styles::muted
+                }),
             Space::new().width(Fill),
             text("STATUS").size(10).style(styles::muted)
         ]
@@ -294,7 +289,7 @@ fn focused_details(app: &App) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::app::test_support::fresh_app;
+    use crate::app::{ComponentFilter, test_support::fresh_app};
     use crate::component::{Component, ComponentType, InstallStatus};
     #[test]
     fn empty_search_results_do_not_expose_hidden_mcp_or_plugin_details() {
@@ -331,7 +326,7 @@ mod tests {
             ),
         ];
         assert_eq!(selection_summary(&app), (1, 0, 1));
-        app.component_filter = ComponentFilter::New;
+        app.component_filter = ComponentFilter::New.into();
         assert_eq!(selection_summary(&app), (0, 0, 0));
     }
 }

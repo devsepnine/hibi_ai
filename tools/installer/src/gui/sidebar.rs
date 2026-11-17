@@ -3,7 +3,7 @@ use iced::widget::{Space, button, column, container, row, rule, scrollable, text
 use iced::{Element, Fill};
 
 use super::{Message, actions::Action, key_button, styles};
-use crate::app::{App, Tab};
+use crate::app::{App, FocusArea, Tab};
 
 pub fn view(app: &App) -> Element<'_, Message> {
     let environment = app
@@ -41,8 +41,14 @@ pub fn view(app: &App) -> Element<'_, Message> {
                 .style(styles::subtle)
                 .on_press(Message::Action(Action::Back)),
             rule::horizontal(1),
-            text("COMPONENTS").size(10).style(styles::muted),
-            scrollable(navigation).height(Fill),
+            text("COMPONENTS · 1")
+                .size(10)
+                .style(if app.focus == FocusArea::Tabs {
+                    text::primary
+                } else {
+                    styles::muted
+                }),
+            scrollable(navigation).id("component-sidebar").height(Fill),
             rule::horizontal(1),
             key_button("Keyboard shortcuts", KeyCode::Char('?'))
                 .style(styles::subtle)

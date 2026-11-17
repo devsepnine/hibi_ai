@@ -2,6 +2,8 @@ use super::*;
 use crate::app::{Tab, TargetCli, View};
 use crate::component::{Component, InstallStatus};
 use crate::tree::{TreeNode, test_support::make_component};
+#[path = "managed/tests.rs"]
+mod managed;
 
 struct Fixture(std::path::PathBuf);
 
@@ -239,19 +241,21 @@ fn corrupt_preferences_are_reported_and_preserved() {
 }
 
 #[test]
-fn hide_rejects_mixed_folders_even_when_filter_only_shows_external_children() {
+fn hide_accepts_mixed_folders_even_when_filter_only_shows_external_children() {
     let (_fixture, mut app) = fixture();
     app.components.push(make_component(".system/managed.md"));
     app.finish_loading(app.components.clone(), vec![], vec![], vec![]);
     press(&mut app, 'f');
     press(&mut app, 'f');
-    press(&mut app, 'x');
-    assert_eq!(app.current_view, View::List);
+    hide(&mut app);
+    assert_eq!(app.hidden_folder_count(), 1);
+    assert!(!app.components[0].selected);
+    assert!(!app.components[2].selected);
+    assert!(app.visible_components().is_empty());
     assert_eq!(
-        app.status_message.as_deref(),
-        Some("Only folders containing exclusively external files can be hidden")
+        crate::fs::installer::visibility::load(&app.visibility_path).unwrap(),
+        app.hidden_folders
     );
-    assert!(!app.visibility_path.exists());
 }
 
 #[test]
@@ -294,7 +298,7 @@ fn batch_hides_fully_selected_external_roots_and_deduplicates_descendants() {
 }
 
 #[test]
-fn batch_skips_partial_and_mixed_parents_but_includes_eligible_child_folders() {
+fn batch_skips_partial_folders_and_hides_fully_selected_mixed_parents() {
     let (_fixture, mut app) = fixture();
     app.finish_loading(
         vec![
@@ -310,15 +314,12 @@ fn batch_skips_partial_and_mixed_parents_but_includes_eligible_child_folders() {
     );
     press(&mut app, 'X');
     assert_eq!(app.current_view, View::ConfirmHide);
-    assert_eq!(
-        app.hide_confirmation.as_ref().unwrap().folders,
-        ["mixed/local"]
-    );
-    assert_eq!(app.hide_confirmation.as_ref().unwrap().selected_files, 1);
+    assert_eq!(app.hide_confirmation.as_ref().unwrap().folders, ["mixed"]);
+    assert_eq!(app.hide_confirmation.as_ref().unwrap().selected_files, 2);
     press(&mut app, 'y');
     assert!(app.components[0].selected);
     assert!(!app.components[2].selected);
-    assert!(app.components[3].selected);
+    assert!(!app.components[3].selected);
     assert_eq!(app.hidden_folder_count(), 1);
     assert!(screen(&app).contains("partial/"));
 }
@@ -342,7 +343,7 @@ fn batch_respects_status_filter_and_ignores_non_component_tabs() {
     press(&mut app, 'H');
     assert_eq!(app.current_view, View::List);
     assert!(app.hide_confirmation.is_none());
-    assert!(!app.show_hidden);
+    assert!(!app.hidden_visibility.shows_hidden());
 }
 
 #[test]
@@ -408,7 +409,7 @@ fn concealing_hidden_folders_clears_their_checks_without_restoring_them() {
         [true, true]
     );
     press(&mut app, 'H');
-    assert!(!app.show_hidden);
+    assert!(!app.hidden_visibility.shows_hidden());
     assert_eq!(
         app.components
             .iter()
@@ -453,7 +454,7 @@ fn concealing_clears_hidden_checks_across_tabs_and_status_filters_only() {
             .iter()
             .map(|c| c.selected)
             .collect::<Vec<_>>(),
-        [false, true, false, true, true]
+        [false, true, false, false, true]
     );
     app.tab = Tab::Skills;
     press(&mut app, 'H');
@@ -462,7 +463,7 @@ fn concealing_clears_hidden_checks_across_tabs_and_status_filters_only() {
             .iter()
             .map(|c| c.selected)
             .collect::<Vec<_>>(),
-        [false, true, false, true, true]
+        [false, true, false, false, true]
     );
 }
 
@@ -627,12 +628,13 @@ fn cursor_hide_of_unchecked_folder_confirms_zero_checks_without_selecting_it() {
 }
 
 #[test]
-fn hidden_paths_are_target_scoped_and_do_not_hide_new_managed_files() {
+fn hidden_paths_remain_target_scoped_after_status_changes_and_new_managed_files() {
     let (_fixture, mut app) = fixture();
     hide(&mut app);
     app.components[0].status = InstallStatus::Modified;
+    app.components.push(make_component(".system/new/SKILL.md"));
     app.apply_components_refresh(app.components.clone());
-    assert!(screen(&app).contains(".system/"));
+    assert!(!screen(&app).contains(".system/"));
     app.components[0].status = InstallStatus::External;
     app.dest_dir = app.dest_dir.with_file_name(".claude");
     app.apply_components_refresh(app.components.clone());
@@ -717,28 +719,28 @@ fn empty_hidden_list_recovers_and_file_rows_do_not_open_confirmation() {
     assert!(app.hide_confirmation.is_none());
     assert_eq!(
         app.status_message.as_deref(),
-        Some("Select an external folder to hide or unhide")
+        Some("Select a folder to hide or unhide")
     );
 }
 
 #[test]
 fn visibility_hints_account_for_status_filter_and_already_shown_state() {
     let (_fixture, mut app) = fixture();
+    app.components[0].status = InstallStatus::Modified;
     hide(&mut app);
     assert!(screen_at_width(&app, 80).contains("[H] Hidden"));
     press(&mut app, 'f');
     press(&mut app, 'H');
-    assert!(
-        app.status_message
-            .as_deref()
-            .unwrap()
-            .contains("select All or External")
+    assert_eq!(
+        app.status_message.as_deref(),
+        Some("Showing hidden folders. Press x on a hidden folder to unhide it.")
     );
+    assert!(screen(&app).contains(".system/ [hidden]"));
     assert!(!screen(&app).contains("Press H to show hidden folders."));
 }
 
 #[test]
-fn batch_preserves_already_hidden_selected_descendants() {
+fn batch_sets_the_selected_parent_hidden_without_unhiding_hidden_descendants() {
     let (_fixture, mut app) = fixture();
     app.finish_loading(
         vec![
@@ -755,13 +757,12 @@ fn batch_preserves_already_hidden_selected_descendants() {
     press(&mut app, 'a');
     assert!(app.components[0].selected);
     press(&mut app, 'X');
-    assert_eq!(
-        app.hide_confirmation.as_ref().unwrap().folders,
-        ["parent/visible"]
-    );
+    assert_eq!(app.hide_confirmation.as_ref().unwrap().folders, ["parent"]);
     press(&mut app, 'y');
-    assert!(app.components[0].selected);
+    assert!(!app.components[0].selected);
     assert!(!app.components[1].selected);
+    assert!(app.is_folder_hidden("parent"));
+    assert!(app.is_folder_hidden("parent/hidden"));
 }
 
 #[test]
@@ -826,7 +827,7 @@ fn batch_handles_two_thousand_external_folders() {
 }
 
 #[test]
-fn changed_second_batch_folder_cancels_entire_transaction() {
+fn disappeared_second_batch_folder_cancels_entire_transaction() {
     let (_fixture, mut app) = fixture();
     app.finish_loading(
         vec![
@@ -842,11 +843,10 @@ fn changed_second_batch_folder_cancels_entire_transaction() {
         app.hide_confirmation.as_ref().unwrap().folders,
         ["one", "two"]
     );
-    app.components[1].status = InstallStatus::Modified;
+    app.components.pop();
     press(&mut app, 'y');
     assert_eq!(app.hidden_folder_count(), 0);
     assert!(app.components[0].selected);
-    assert!(app.components[1].selected);
     assert!(!app.visibility_path.exists());
     assert_eq!(app.current_view, View::List);
     assert!(

@@ -1,5 +1,5 @@
 use super::{Message, actions::Action, styles};
-use crate::app::{App, Tab};
+use crate::app::{App, HiddenVisibility, Tab};
 use crate::tree::TreeNode;
 use iced::widget::{Column, Space, button, checkbox, column, container, row, svg, text, tooltip};
 use iced::{Element, Fill};
@@ -145,15 +145,21 @@ pub fn items(app: &App) -> Column<'_, Message> {
     }
     if count == 0 {
         let mut empty = column![
-            text(if app.search_query.trim().is_empty() {
-                "Nothing to show here yet"
-            } else {
+            text(if !app.search_query.trim().is_empty() {
                 "No matching items"
+            } else if app.hidden_visibility == HiddenVisibility::Only
+                && app.tab.to_component_type().is_some()
+            {
+                "No hidden items in this view"
+            } else {
+                "Nothing to show here yet"
             })
             .size(20),
-            text("Try another search, change the status filter, or show hidden folders.")
-                .size(13)
-                .style(styles::muted),
+            text(
+                "Try another search, change the status filter, or choose another visibility mode."
+            )
+            .size(13)
+            .style(styles::muted),
         ]
         .spacing(8);
         if !app.search_query.is_empty() {
