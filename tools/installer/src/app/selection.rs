@@ -4,10 +4,24 @@ use super::types::Tab;
 impl App {
     pub fn toggle_selected(&mut self) {
         if self.tab == Tab::McpServers {
+            if !self
+                .visible_mcp_servers()
+                .iter()
+                .any(|(index, _)| *index == self.mcp_index)
+            {
+                return;
+            }
             if let Some(m) = self.mcp_servers.get_mut(self.mcp_index) {
                 m.selected = !m.selected;
             }
         } else if self.tab == Tab::Plugins {
+            if !self
+                .visible_plugins()
+                .iter()
+                .any(|(index, _)| *index == self.plugin_index)
+            {
+                return;
+            }
             if let Some(p) = self.plugins.get_mut(self.plugin_index) {
                 p.selected = !p.selected;
             }
@@ -51,25 +65,42 @@ impl App {
 
     pub fn toggle_all_selected(&mut self) {
         if self.tab == Tab::McpServers {
-            let selected = self.mcp_servers.iter().any(|m| !m.selected);
-            for m in &mut self.mcp_servers {
-                m.selected = selected;
+            let shown: Vec<_> = self
+                .visible_mcp_servers()
+                .iter()
+                .map(|(index, _)| *index)
+                .collect();
+            let selected = shown.iter().any(|&index| !self.mcp_servers[index].selected);
+            for index in shown {
+                self.mcp_servers[index].selected = selected;
             }
         } else if self.tab == Tab::Plugins {
-            let selected = self.plugins.iter().any(|p| !p.selected);
-            for p in &mut self.plugins {
-                p.selected = selected;
+            let shown: Vec<_> = self
+                .visible_plugins()
+                .iter()
+                .map(|(index, _)| *index)
+                .collect();
+            let selected = shown.iter().any(|&index| !self.plugins[index].selected);
+            for index in shown {
+                self.plugins[index].selected = selected;
             }
-        } else if let Some(comp_type) = self.tab.to_component_type() {
-            let shown: std::collections::HashSet<_> = self
+        } else if self.tab.to_component_type().is_some() {
+            let shown: Vec<_> = self
                 .visible_components()
                 .iter()
                 .map(|(index, _)| *index)
                 .collect();
             let selected = shown.iter().any(|&index| !self.components[index].selected);
-            for (index, c) in self.components.iter_mut().enumerate() {
-                if c.component_type == comp_type {
-                    c.selected = selected && shown.contains(&index);
+            if self.search_query.trim().is_empty() {
+                let component_type = self.tab.to_component_type();
+                for (index, component) in self.components.iter_mut().enumerate() {
+                    if Some(&component.component_type) == component_type.as_ref() {
+                        component.selected = selected && shown.contains(&index);
+                    }
+                }
+            } else {
+                for index in shown {
+                    self.components[index].selected = selected;
                 }
             }
         }
@@ -102,6 +133,97 @@ impl App {
         }
         for p in &mut self.plugins {
             p.selected = false;
+        }
+    }
+}
+
+#[cfg(test)]
+mod search_tests {
+    use super::*;
+    use crate::app::test_support::{fresh_app, make_mcp_server, make_plugin};
+    use crate::tree::test_support::make_component;
+
+    #[test]
+    fn matching_bulk_selection_preserves_nonmatching_items_in_all_lists() {
+        for tab in [Tab::Skills, Tab::McpServers, Tab::Plugins] {
+            let mut app = fresh_app();
+            app.tab = tab;
+            let mut hidden_component = make_component("hidden-component");
+            hidden_component.selected = true;
+            let mut shown_component = make_component("target-component");
+            shown_component.selected = true;
+            app.components = vec![hidden_component, shown_component];
+            app.mcp_servers = ["hidden-mcp", "target-mcp"]
+                .map(|name| {
+                    let mut server = make_mcp_server();
+                    server.def.name = name.into();
+                    server.selected = true;
+                    server
+                })
+                .into();
+            app.plugins = ["hidden-plugin", "target-plugin"]
+                .map(|name| {
+                    let mut plugin = make_plugin();
+                    plugin.def.name = name.into();
+                    plugin.selected = true;
+                    plugin
+                })
+                .into();
+            app.set_search_query("target".into());
+            app.toggle_all_selected();
+            assert!(app.components[0].selected);
+            assert!(app.mcp_servers[0].selected);
+            assert!(app.plugins[0].selected);
+            match tab {
+                Tab::Skills => assert!(!app.components[1].selected),
+                Tab::McpServers => assert!(!app.mcp_servers[1].selected),
+                Tab::Plugins => assert!(!app.plugins[1].selected),
+                _ => unreachable!(),
+            }
+            app.set_search_query("no-match".into());
+            let selections = (
+                app.components[0].selected,
+                app.mcp_servers[0].selected,
+                app.plugins[0].selected,
+            );
+            app.toggle_all_selected();
+            app.toggle_selected();
+            assert_eq!(
+                selections,
+                (
+                    app.components[0].selected,
+                    app.mcp_servers[0].selected,
+                    app.plugins[0].selected
+                )
+            );
+        }
+    }
+
+    #[test]
+    fn stale_mcp_and_plugin_cursor_cannot_toggle_nonmatching_item() {
+        for tab in [Tab::McpServers, Tab::Plugins] {
+            let mut app = fresh_app();
+            app.tab = tab;
+            app.mcp_servers = ["hidden", "target"]
+                .map(|name| {
+                    let mut server = make_mcp_server();
+                    server.def.name = name.into();
+                    server
+                })
+                .into();
+            app.plugins = ["hidden", "target"]
+                .map(|name| {
+                    let mut plugin = make_plugin();
+                    plugin.def.name = name.into();
+                    plugin
+                })
+                .into();
+            app.set_search_query("target".into());
+            app.mcp_index = 0;
+            app.plugin_index = 0;
+            app.toggle_selected();
+            assert!(!app.mcp_servers[0].selected);
+            assert!(!app.plugins[0].selected);
         }
     }
 }

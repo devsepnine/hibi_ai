@@ -1,6 +1,6 @@
 # 배포: 설치 스크립트, 패키징, 릴리즈
 
-운영자와 설치 사용자가 보는 면이다. TUI 가 없고 출력은 셸 메시지다.
+운영자와 설치 사용자가 보는 면이다. 설치와 패키징 명령은 셸 메시지를 출력한다.
 
 ### `install-script`: 리눅스용 원라인 설치
 
@@ -14,6 +14,7 @@
 - **테스트**: none
 - **함정**: macOS 나 Windows 에서 install.sh 가 바로 실패 → 리눅스만 받고 나머지는 brew · scoop 으로 보낸다, 근거: `install.sh` → `main`
 - **함정**: ARM 리눅스에서 `unsupported architecture` → 릴리즈가 x86_64 만 싣는다, 근거: `install.sh` → `main`
+- **함정**: Alpine은 GNU 바이너리를 실행할 수 없다. `install.sh`는 체크섬에 별도 musl 압축이 있으면 그 압축을 고른다. 이전 릴리즈는 기존 Linux 압축의 정적 musl 바이너리를 사용한다.
 - **함정**: bin/hibi 를 복사본으로 바꾸면 `Cannot find source directory` → 번들 설정을 실제 실행 파일 위치 기준으로 찾으므로 링크여야 한다, 근거: `tools/installer/src/source/mod.rs` → `find_package_source_dir`
 - **공유 의존**: GitHub 릴리즈의 `checksums.txt`
 - **관련**: `release-workflow`, `startup-loading`
@@ -25,10 +26,11 @@
 - **UI 문구**: `"Installer binaries not found in dist/"`, `"Stripping -ko reference files..."`, `"nfpm not found"`, `"Generating checksums..."`, `"Missing macOS targets:"`
 - **컨트롤**: 없음
 - **코드 경로**:
-  - 상태 / 핸들러: `tools/installer/build.sh` 가 macOS 유니버설 · Windows · 리눅스 musl 을 크로스 빌드한다
+  - 상태 / 핸들러: `tools/installer/build.sh`는 플랫폼별 네이티브 러너에서 macOS 유니버설, Windows, Linux GNU, Alpine musl을 빌드한다. 인수는 `native`, `macos`, `windows`, `linux`, `linux-musl`이다.
   - 상태 / 핸들러: `package.sh` 가 `src/` 를 dist 로 복사하고 `-ko.md` 를 지운 뒤 플랫폼별 tar.gz · zip 과 nfpm 패키지, 체크섬을 만든다
   - 데이터: 리눅스 패키지 배치는 `nfpm.yaml` → `contents`, 버전은 `package.sh` → `VERSION`
-- **테스트**: none
+  - 데이터: deb와 rpm은 GNU 바이너리, apk는 동적 musl 바이너리를 싣는다. 패키지는 X11과 Wayland 라이브러리 의존성과 데스크톱 실행 항목을 포함한다.
+- **테스트**: 임시 픽스처로 플랫폼 압축 네 개와 네이티브 패키지 세 개, apk 바이너리 구분, 의존성, 한국어 미러 제외, 체크섬을 검증했다. 실제 네이티브 바이너리 빌드는 릴리즈 러너에서 확인한다.
 - **함정**: src 에서 지운 파일이 릴리즈 압축에 남아 있음 → `cp -r` 은 덮기만 하고 지우지 않아서 dist 를 먼저 비우도록 고쳤다, 근거: `13e146d`
 - **함정**: 새 최상위 컴포넌트 디렉터리를 만들었는데 deb · rpm 에 없음 → `package.sh` 의 두 복사 목록과 `nfpm.yaml` 의 contents 가 디렉터리를 하나씩 나열한다, 근거: `nfpm.yaml` → `contents`
 - **함정**: 로컬에서 deb · rpm 이 안 생김 → nfpm 이 없으면 경고만 하고 건너뛴다, 근거: `package.sh` → `nfpm`
@@ -43,11 +45,11 @@
 - **컨트롤**: 수동 실행 입력 `version`
 - **코드 경로**:
   - 상태 / 핸들러: `.github/workflows/release.yml` 의 Resolve and verify version 단계가 태그와 `package.sh` · `tools/installer/Cargo.toml` 버전을 비교한다
-  - 상태 / 핸들러: 이어서 `tools/installer/build.sh` 와 `package.sh` 를 돌리고 `gh release create` 로 올린다
+  - 상태 / 핸들러: 검증 작업 뒤 플랫폼별 네이티브 빌드가 돈다. 모든 바이너리를 모아 `package.sh`로 패키징하고 `gh release create`로 올린다.
   - 데이터: 바이너리에 박힌 버전은 사용자 install.json 의 `version` 이 된다, `tools/installer/src/fs/manifest.rs` → `build`
 - **테스트**: none
 - **함정**: 태그를 밀었는데 워크플로가 버전 오류로 멈춤 → 태그와 `package.sh` 와 `Cargo.toml` 세 버전이 모두 같아야 한다, 근거: `.github/workflows/release.yml` → `PKG_VERSION`
 - **함정**: 수동 실행 입력값이 셸에 그대로 끼어들 수 있었음 → 입력을 run 식에 직접 넣던 것을 env 로 넘기도록 고쳤다, 근거: `b22fb9a`
 - **함정**: 상태줄 수정이 릴리즈에 안 들어감 → 워크플로는 인스톨러만 빌드한다, 근거: `.github/workflows/release.yml` → `build`
-- **공유 의존**: macOS 러너의 brew 로 받는 mingw-w64 · musl-cross · nfpm
+- **공유 의존**: 플랫폼별 Rust 툴체인과 Linux 화면 라이브러리. Alpine은 Docker의 Rust Alpine 이미지에서 빌드한다. 패키징은 nfpm을 사용한다.
 - **관련**: `packaging`, `install-manifest`, `statusline-render`

@@ -1,10 +1,10 @@
 # hibi-ai
 
-TUI installer for Claude Code and Codex CLI configurations.
+Rust iced GUI installer for Claude Code and Codex CLI configurations.
 
 ## Features
 
-- Interactive TUI for easy configuration management
+- Native GUI with dark and light themes, plus terminal mode
 - Support for both Claude Code and Codex CLI
 - Component-based installation of agents, commands, skills, hooks, MCPs, and plugins
 - Cross-platform support: macOS Universal Binary for Intel and Apple Silicon, Linux, Windows
@@ -72,11 +72,38 @@ Simply run `hibi` to launch the interactive installer:
 hibi
 ```
 
-The TUI will guide you through:
+The installer will guide you through:
 1. Selecting the target CLI, either Claude Code or Codex
 2. Choosing components to install
 3. Reviewing changes before installation
 4. Installing configurations
+
+### GUI와 터미널 실행
+
+`v2`에서 `hibi`를 실행하면 iced GUI가 열립니다. Light / Dark 버튼으로 테마를 전환합니다.
+기존 기능과 설치 기록, 소스 설정을 공유합니다. 화면과 검증 항목은 [GUI 기능맵](docs/features/installer-gui.md)에 정리했습니다.
+
+SSH나 그래픽 환경이 없는 터미널에서는 다음 명령을 사용합니다.
+
+```bash
+hibi --tui
+```
+
+GUI를 포함한 개발 빌드는 다음 명령을 사용합니다.
+
+```bash
+cargo run --manifest-path tools/installer/Cargo.toml
+```
+
+GUI 의존성 없이 터미널 전용 바이너리를 빌드할 수도 있습니다.
+
+```bash
+cargo build --manifest-path tools/installer/Cargo.toml --no-default-features
+```
+
+`--help`, `--version`, `--sync`는 창을 열지 않고 실행합니다.
+Linux GNU 릴리즈는 glibc 2.35 이상이 필요합니다. Alpine은 별도의 musl 바이너리를 사용합니다.
+deb, rpm, apk 패키지는 GUI 실행에 필요한 라이브러리와 기본 글꼴을 함께 설치합니다.
 
 ### Multi-Source Support
 

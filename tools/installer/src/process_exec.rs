@@ -53,11 +53,7 @@ pub(crate) fn get_item_name(app: &App, idx: usize) -> String {
 pub(crate) fn prepare(app: &App, idx: usize) -> Option<ProcessData> {
     if app.tab == Tab::McpServers {
         let server = app.mcp_servers.get(idx)?.clone();
-        let env_values = if app.env_input_server_idx == Some(idx) {
-            app.env_input_values.clone()
-        } else {
-            Vec::new()
-        };
+        let env_values = app.mcp_env_values.get(&idx).cloned().unwrap_or_default();
         let project_path = if app.mcp_scope == mcp::McpScope::Local {
             Some(app.mcp_project_path.clone())
         } else {
@@ -158,5 +154,32 @@ fn format_result(name: &str, is_removing: bool, result: Result<()>) -> Result<St
     match result {
         Ok(_) => Ok(format!("[OK] {} {}", action, name)),
         Err(e) => Err(e),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::app::test_support::{fresh_app, make_mcp_server};
+
+    #[test]
+    fn mcp_credentials_are_isolated_by_server() {
+        let mut app = fresh_app();
+        app.tab = Tab::McpServers;
+        app.mcp_servers = vec![make_mcp_server(), make_mcp_server(), make_mcp_server()];
+        app.mcp_env_values
+            .insert(0, vec![("TOKEN".into(), "first".into())]);
+        app.mcp_env_values
+            .insert(1, vec![("TOKEN".into(), "second".into())]);
+        for (index, expected) in [(0, Some("first")), (1, Some("second")), (2, None)] {
+            let Some(ProcessData::McpServer { env_values, .. }) = prepare(&app, index) else {
+                panic!("expected MCP process data");
+            };
+            assert_eq!(
+                env_values.first().map(|(_, value)| value.as_str()),
+                expected
+            );
+        }
+        assert!(prepare(&app, usize::MAX).is_none());
     }
 }

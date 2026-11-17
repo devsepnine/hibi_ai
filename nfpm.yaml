@@ -12,33 +12,106 @@ section: utils
 priority: optional
 maintainer: devsepnine
 description: |
-  TUI installer for Claude Code and Codex CLI configurations.
+  Desktop and terminal installer for Claude Code and Codex CLI configurations.
   Installs agents, commands, skills, hooks, MCPs, plugins, output styles,
   and a statusline into ~/.claude or ~/.codex.
 homepage: https://github.com/devsepnine/hibi_ai
 license: MIT
+umask: 0022
+overrides:
+  deb:
+    depends:
+      - libc6 (>= 2.35)
+      - libgcc-s1
+      - libxkbcommon0
+      - libxkbcommon-x11-0
+      - libx11-xcb1
+      - fonts-dejavu-core
+      - libwayland-client0
+      - libwayland-cursor0
+      - libx11-6
+      - libxcursor1
+      - libxi6
+      - libxrandr2
+  rpm:
+    depends:
+      - glibc >= 2.35
+      - libgcc
+      - libxkbcommon
+      - libxkbcommon-x11
+      - wayland-libs-client
+      - wayland-libs-cursor
+      - libX11
+      - libX11-xcb
+      - dejavu-sans-fonts
+      - libXcursor
+      - libXi
+      - libXrandr
+  apk:
+    depends:
+      - musl
+      - libgcc
+      - libxkbcommon
+      - libxkbcommon-x11
+      - wayland-libs-client
+      - wayland-libs-cursor
+      - libx11
+      - font-dejavu
+      - libxcursor
+      - libxi
+      - libxrandr
 contents:
+  - src: tools/installer/hibi.desktop
+    dst: /usr/share/applications/hibi.desktop
+    file_info: &data_file
+      mode: 0644
+      owner: root
+      group: root
   - src: dist/hibi-linux
     dst: /usr/bin/hibi
+    packager: deb
+    file_info: &executable_file
+      mode: 0755
+      owner: root
+      group: root
+  - src: dist/hibi-linux
+    dst: /usr/bin/hibi
+    packager: rpm
+    file_info: *executable_file
+  - src: dist/hibi-linux-musl
+    dst: /usr/bin/hibi
+    packager: apk
+    file_info: *executable_file
   - src: dist/agents
     dst: /usr/share/hibi/agents
+    file_info: *data_file
   - src: dist/commands
     dst: /usr/share/hibi/commands
+    file_info: *data_file
+  # Preserve tracked executable helpers when the checkout has normal Git modes.
   - src: dist/skills
     dst: /usr/share/hibi/skills
   - src: dist/hooks
     dst: /usr/share/hibi/hooks
+    file_info: *data_file
   - src: dist/mcps
     dst: /usr/share/hibi/mcps
+    file_info: *data_file
   - src: dist/plugins
     dst: /usr/share/hibi/plugins
+    file_info: *data_file
   - src: dist/output-styles
     dst: /usr/share/hibi/output-styles
+    file_info: *data_file
   - src: dist/statusline
     dst: /usr/share/hibi/statusline
+    file_info: *executable_file
   - src: dist/settings.json
     dst: /usr/share/hibi/settings.json
+    file_info: *data_file
   - src: dist/CLAUDE.md
     dst: /usr/share/hibi/CLAUDE.md
+    file_info: *data_file
   - src: dist/AGENTS.md
     dst: /usr/share/hibi/AGENTS.md
+    file_info: *data_file

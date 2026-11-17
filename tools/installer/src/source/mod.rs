@@ -20,13 +20,16 @@ fn find_package_source_dir() -> Result<PathBuf> {
         .map(|p| p.to_path_buf())
         .ok_or_else(|| anyhow::anyhow!("Cannot get executable directory"))?;
 
+    let working_dir = std::env::current_dir()?;
     let candidates = [
         exe_dir.clone(),                  // Scoop: exe and config in same dir
         exe_dir.join("../share/hibi"),    // Homebrew standard
         exe_dir.join("../share/hibi-ai"), // Homebrew alternative
         exe_dir.join("../../.."),         // From target/release
         exe_dir.join("../.."),            // From target
-        std::env::current_dir()?,         // Current directory
+        exe_dir.join("../../../../src"),  // Repository development build
+        working_dir.join("src"),          // Cargo run from repository root
+        working_dir.clone(),              // Current directory
         std::env::current_dir()?.join("config/ai/claude"),
     ];
 
@@ -45,7 +48,7 @@ fn find_package_source_dir() -> Result<PathBuf> {
     }
 
     anyhow::bail!(
-        "Cannot find source directory. Run from dotfiles root or config/ai/claude/tools/installer"
+        "Cannot find source directory. Run from the repository root or a release package containing bundled configuration"
     )
 }
 
@@ -89,7 +92,15 @@ pub(crate) fn sync_all_sources(
     }
 
     // Resolve all sources using the package-embedded source dir
-    match resolve_all_sources(source_dir) {
+    report_resolution(source_dir, summaries, resolve_all_sources(source_dir))
+}
+
+fn report_resolution(
+    source_dir: &Path,
+    mut summaries: Vec<String>,
+    result: Result<ResolveResult>,
+) -> SyncReport {
+    match result {
         Ok(r) => {
             for s in &r.sources {
                 if s.kind == SourceKind::Git {
@@ -100,11 +111,12 @@ pub(crate) fn sync_all_sources(
                     }
                 }
             }
+            let had_error = !r.warnings.is_empty();
             summaries.extend(r.warnings);
             SyncReport {
                 resolved: r.sources,
                 summaries,
-                had_error: false,
+                had_error,
             }
         }
         Err(e) => {
@@ -135,16 +147,7 @@ pub fn resolve_all_sources(bundled_dir: &Path) -> Result<ResolveResult> {
 
     for entry in entries {
         match resolve_entry(&entry, auto_update, &mut warnings) {
-            Ok(resolved) => {
-                if resolved.map_to.is_some() || validate_user_source_dir(&resolved.path) {
-                    sources.push(resolved);
-                } else {
-                    warnings.push(format!(
-                        "Source dir lacks expected structure, skipping: {}",
-                        resolved.path.display()
-                    ));
-                }
-            }
+            Ok(resolved) => retain_source(resolved, &mut sources, &mut warnings),
             Err(e) => {
                 warnings.push(format!("Failed to resolve source: {}", e));
             }
@@ -152,6 +155,26 @@ pub fn resolve_all_sources(bundled_dir: &Path) -> Result<ResolveResult> {
     }
 
     Ok(ResolveResult { sources, warnings })
+}
+
+fn retain_source(
+    resolved: ResolvedSource,
+    sources: &mut Vec<ResolvedSource>,
+    warnings: &mut Vec<String>,
+) {
+    if !resolved.path.is_dir() {
+        warnings.push(format!(
+            "Source path is not an existing directory, skipping: {}",
+            resolved.path.display()
+        ));
+    } else if resolved.map_to.is_some() || validate_user_source_dir(&resolved.path) {
+        sources.push(resolved);
+    } else {
+        warnings.push(format!(
+            "Source dir lacks expected structure, skipping: {}",
+            resolved.path.display()
+        ));
+    }
 }
 
 fn resolve_entry(
@@ -316,5 +339,94 @@ mod tests {
             assert!(result.is_ok());
             assert!(!result.unwrap());
         }
+    }
+    #[test]
+    fn unparseable_source_configuration_is_reported_as_error_with_bundled_fallback() {
+        let bundled = Path::new("/test/bundled");
+        let report = report_resolution(
+            bundled,
+            vec!["bundled: local".into()],
+            Ok(ResolveResult {
+                sources: vec![ResolvedSource::bundled(bundled)],
+                warnings: vec!["Failed to load sources.yaml: invalid YAML".into()],
+            }),
+        );
+        assert!(report.had_error);
+        assert_eq!(report.resolved.len(), 1);
+        assert_eq!(report.resolved[0].kind, SourceKind::Bundled);
+        assert!(
+            report
+                .summaries
+                .iter()
+                .any(|message| message.contains("invalid YAML"))
+        );
+    }
+
+    #[test]
+    fn warning_free_source_resolution_is_reported_as_success() {
+        let bundled = Path::new("/test/bundled");
+        let report = report_resolution(
+            bundled,
+            Vec::new(),
+            Ok(ResolveResult {
+                sources: vec![ResolvedSource::bundled(bundled)],
+                warnings: Vec::new(),
+            }),
+        );
+        assert!(!report.had_error);
+    }
+    #[test]
+    fn explicit_mapping_does_not_accept_missing_or_file_root() {
+        let serial = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let base = std::env::temp_dir().join(format!(
+            "hibi_root_validation_{}_{serial}",
+            std::process::id()
+        ));
+        std::fs::create_dir(&base).unwrap();
+        std::fs::write(base.join("file-root"), b"not a directory").unwrap();
+        for root in ["missing-root", "file-root"] {
+            let resolved = resolve_entry(
+                &SourceEntry::Local {
+                    path: base.clone(),
+                    root: Some(root.into()),
+                    map_to: Some("skills".into()),
+                },
+                false,
+                &mut Vec::new(),
+            )
+            .unwrap();
+            let mut sources = vec![ResolvedSource::bundled(&base)];
+            let mut warnings = Vec::new();
+            retain_source(resolved, &mut sources, &mut warnings);
+            assert_eq!(sources.len(), 1);
+            assert_eq!(sources[0].kind, SourceKind::Bundled);
+            assert_eq!(warnings.len(), 1);
+            assert!(warnings[0].contains("not an existing directory"));
+            assert!(warnings[0].contains(root));
+        }
+        std::fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn explicit_mapping_accepts_existing_directory_without_structural_markers() {
+        let base = std::env::temp_dir();
+        let resolved = resolve_entry(
+            &SourceEntry::Local {
+                path: base.clone(),
+                root: None,
+                map_to: Some("skills".into()),
+            },
+            false,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        let mut sources = Vec::new();
+        let mut warnings = Vec::new();
+        retain_source(resolved, &mut sources, &mut warnings);
+        assert_eq!(sources.len(), 1);
+        assert!(warnings.is_empty());
     }
 }

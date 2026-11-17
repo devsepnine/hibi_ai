@@ -65,11 +65,14 @@ impl App {
         let Some(component_type) = tab.to_component_type() else {
             return Vec::new();
         };
+        let query = super::search::SearchTerms::new(&self.search_query);
         self.components
             .iter()
             .enumerate()
             .filter(|(_, c)| {
-                c.component_type == component_type && self.component_filter.matches(&c.status)
+                c.component_type == component_type
+                    && self.component_filter.matches(&c.status)
+                    && query.matches_component(c)
             })
             .collect()
     }

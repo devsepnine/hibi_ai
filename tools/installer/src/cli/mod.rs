@@ -351,9 +351,13 @@ pub(crate) fn print_help() {
     println!("Options:");
     println!("  -h, --help       Show this help message");
     println!("  -v, --version    Show version");
-    println!("      --sync       Sync git sources without TUI");
+    println!("      --sync       Sync git sources without a window or TUI");
+    println!("      --tui        Launch the terminal installer");
     println!();
-    println!("Run without options to launch the interactive installer.");
+    #[cfg(feature = "gui")]
+    println!("Run without options to launch the desktop installer.");
+    #[cfg(not(feature = "gui"))]
+    println!("Run without options to launch the terminal installer.");
 }
 
 /// `hibi --sync`: fetch latest from git sources and print summary, no TUI.

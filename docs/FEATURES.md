@@ -13,6 +13,8 @@
 4. 항목의 코드 경로를 위에서부터 연다. 디버깅 전에 **함정**부터 읽는다.
 5. 어디에도 없으면 → 코드를 검색한 뒤, 빠진 기능·별칭·문구를 이 맵에 추가한다.
 
+GUI 화면과 실패 경로 검증 항목은 `docs/features/installer-gui.md`에 있다. `v2`는 iced GUI를 기본 실행하며 `--tui`로 기존 터미널 화면을 연다.
+
 ## 화면 인덱스
 
 | 화면 / 영역 | 기능 ID |
@@ -22,6 +24,7 @@
 | 터미널 명령행, TUI 없이 | `cli-flags`, `install-script` |
 | 목록 화면 상단 탭 바, 테두리 `[1]-` | `tab-bar`, `theme-toggle` |
 | 목록 화면 본문, 테두리 `[2]-` | `component-list`, `mcp-list`, `plugin-list`, `default-style-statusline` |
+| GUI 목록 위 검색창 | `gui-search` |
 | 목록 화면 하단 상태 바 | `status-bar` |
 | `?` 로 뜨는 Keybindings 상자 | `help-overlay` |
 | 본문에서 Esc 를 누르면 뜨는 Confirm 상자 | `exit-confirm` |
@@ -104,7 +107,8 @@
 | 스킬이 안 뜸, 스킬 트리거, description, 예산, /learn | `skill-triggering` |
 | 대시, 괄호, 줄표, lint-prose, 문체 린트 | `prose-lint` |
 | 커맨드 파일 어디, 스킬 파일 위치, 에이전트 정의, -ko 파일, 한국어 미러 | `component-lookup` |
-| 파일명 검색, 찾기 | → 없음; 가장 가까운 기능: `component-list` |
+| 파일명 검색, 찾기, 출처 검색, Ctrl+F, Cmd+F | `gui-search` |
+| 검색어 전체 선택, Ctrl+A, Cmd+A, 검색창 복사와 붙여넣기 | `gui-search` |
 | 마우스 클릭, 스크롤 휠 | → 없음; 가장 가까운 기능: `help-overlay` |
 | 테마 기억, 테마 저장 | → 없음; 가장 가까운 기능: `theme-toggle` |
 | MCP diff, 플러그인 diff | → 없음; 가장 가까운 기능: `diff-view` |
@@ -130,6 +134,7 @@
 | `cli-flags` | `--help`, `--version`, `--sync` | `docs/features/installer-startup.md` |
 | `tab-bar` | 상단 탭 바와 pane 포커스 이동 | `docs/features/installer-list.md` |
 | `component-list` | 컴포넌트 트리 목록, 상태, 선택 | `docs/features/installer-list.md` |
+| `gui-search` | GUI의 현재 카테고리 검색과 상태 필터 조합 | `docs/features/installer-gui.md` |
 | `status-bar` | 하단 키 힌트, 상태 메시지, 버전 | `docs/features/installer-list.md` |
 | `help-overlay` | `?` 키바인딩 표 | `docs/features/installer-list.md` |
 | `exit-confirm` | Esc 로 CLI 선택 화면 복귀 확인 | `docs/features/installer-list.md` |

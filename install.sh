@@ -44,7 +44,13 @@ main() {
     arch="$(uname -m)"
 
     case "$os" in
-        Linux) platform="linux" ;;
+        Linux)
+            platform="linux"
+            # GNU and Alpine executables use different dynamic loaders.
+            if [ -f /etc/alpine-release ]; then
+                platform="linux-musl"
+            fi
+            ;;
         Darwin) fail "on macOS use Homebrew instead: brew install devsepnine/brew/hibi" ;;
         MINGW* | MSYS* | CYGWIN*)
             fail "on Windows use Scoop instead: scoop bucket add hibi-ai https://github.com/devsepnine/scoop-bucket && scoop install hibi-ai" ;;
@@ -79,9 +85,17 @@ main() {
     tmpdir="$(mktemp -d)"
     trap 'rm -rf "$tmpdir"' EXIT
 
+    curl -fsSL "$base_url/checksums.txt" -o "$tmpdir/checksums.txt"
+    if [ "$platform" = "linux-musl" ]; then
+        # Releases before the desktop installer used a static musl binary in
+        # the ordinary Linux archive. Keep explicit older versions usable.
+        if ! awk -v n="${name}.tar.gz" '$2 == n { found = 1 } END { exit !found }' "$tmpdir/checksums.txt"; then
+            platform="linux"
+            name="hibi-ai-${version}-${platform}"
+        fi
+    fi
     echo "-> Downloading hibi-ai v${version} (${platform})..."
     curl -fsSL "$base_url/${name}.tar.gz" -o "$tmpdir/${name}.tar.gz"
-    curl -fsSL "$base_url/checksums.txt" -o "$tmpdir/checksums.txt"
 
     echo "-> Verifying checksum..."
     verify_checksum "$tmpdir" "${name}.tar.gz"

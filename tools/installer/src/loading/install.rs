@@ -84,6 +84,10 @@ fn dispatch_next_process(app: &mut App, channels: &mut ProcessingChannels) {
             channels.processing_active = false;
             app.processing_log
                 .push(format!("[ERR] Invalid item index: {}", idx));
+            app.processing_progress = Some(app.processing_progress.unwrap_or(0) + 1);
+            if app.processing_queue.is_empty() {
+                app.start_finish_processing();
+            }
             return;
         }
     };
@@ -93,7 +97,9 @@ fn dispatch_next_process(app: &mut App, channels: &mut ProcessingChannels) {
     let cancel_rx_for_thread = channels.take_cancel_rx();
 
     thread::spawn(move || {
-        let result = process_exec::execute(data, is_removing, target_cli, cancel_rx_for_thread);
+        let result = super::worker_result(|| {
+            process_exec::execute(data, is_removing, target_cli, cancel_rx_for_thread)
+        });
         let _ = tx_clone.send(result);
     });
 }
@@ -136,6 +142,8 @@ fn check_refresh_completion(app: &mut App, refresh_rx: &Receiver<Result<RefreshR
             app.needs_refresh = false;
             app.refreshing = false;
             app.processing_complete = true;
+            app.status_message =
+                Some("Operation finished; status refresh failed. Review the log.".into());
         }
         Err(TryRecvError::Empty) => {}
         Err(TryRecvError::Disconnected) => {
@@ -144,12 +152,14 @@ fn check_refresh_completion(app: &mut App, refresh_rx: &Receiver<Result<RefreshR
             app.needs_refresh = false;
             app.refreshing = false;
             app.processing_complete = true;
+            app.status_message =
+                Some("Operation finished; status refresh failed. Review the log.".into());
         }
     }
 }
 
 /// Handle input during the Installing view.
-fn handle_installing_input(
+pub(super) fn handle_installing_input(
     app: &mut App,
     key: KeyCode,
     cancel_tx: &Sender<()>,
@@ -194,6 +204,11 @@ pub(crate) fn handle_installing_view(
         }
     }
 
+    tick_installing(app, channels);
+    Ok(())
+}
+
+pub(crate) fn tick_installing(app: &mut App, channels: &mut ProcessingChannels) {
     app.tick();
 
     if channels.processing_active {
@@ -211,6 +226,87 @@ pub(crate) fn handle_installing_view(
     } else if app.refreshing {
         check_refresh_completion(app, &channels.refresh_rx);
     }
+}
 
-    Ok(())
+#[cfg(any(feature = "gui", test))]
+pub(crate) fn installing_key(app: &mut App, key: KeyCode, channels: &mut ProcessingChannels) {
+    if key == KeyCode::Esc && !app.processing_complete {
+        if !channels.processing_active && !app.processing_queue.is_empty() {
+            app.processing_log
+                .push("[WARN] Cancelled by user".to_string());
+        }
+        app.processing_queue.clear();
+        if !channels.processing_active && !app.refreshing && !app.needs_refresh {
+            app.start_finish_processing();
+        }
+    }
+    let _ = handle_installing_input(
+        app,
+        key,
+        &channels.current_cancel_tx,
+        &channels.processing_active,
+    );
+}
+
+#[cfg(test)]
+mod gui_tests {
+    use super::*;
+    use crate::app::View;
+    use crate::app::test_support::fresh_app;
+
+    #[test]
+    fn panicked_process_delivers_error_and_finishes_queue() {
+        let mut app = fresh_app();
+        app.current_view = View::Installing;
+        let mut channels = ProcessingChannels::new();
+        channels.processing_active = true;
+        channels
+            .process_tx
+            .send(super::super::worker_result(|| {
+                panic!("process failed");
+            }))
+            .unwrap();
+        handle_process_completion(&mut app, &mut channels);
+        assert!(!channels.processing_active);
+        assert!(app.needs_refresh);
+        assert!(
+            app.processing_log
+                .iter()
+                .any(|line| line.contains("worker panicked"))
+        );
+    }
+
+    #[test]
+    fn invalid_last_queue_index_still_refreshes_and_settles() {
+        let mut app = fresh_app();
+        app.current_view = View::Installing;
+        app.processing_queue = vec![99];
+        let mut channels = ProcessingChannels::new();
+        dispatch_next_process(&mut app, &mut channels);
+        assert!(app.processing_queue.is_empty());
+        assert!(!channels.processing_active);
+        assert!(app.needs_refresh);
+        assert!(
+            app.processing_log
+                .iter()
+                .any(|line| line.contains("Invalid item index"))
+        );
+    }
+
+    #[test]
+    fn cancelling_active_process_clears_remaining_queue_and_signals_cleanup() {
+        let mut app = fresh_app();
+        app.current_view = View::Installing;
+        app.processing_queue = vec![1, 2];
+        let mut channels = ProcessingChannels::new();
+        let (cancel_tx, cancel_rx) = std::sync::mpsc::channel();
+        channels.current_cancel_tx = cancel_tx;
+        channels.processing_active = true;
+        installing_key(&mut app, KeyCode::Esc, &mut channels);
+        assert!(app.processing_queue.is_empty());
+        assert!(app.cancelling);
+        assert!(cancel_rx.try_recv().is_ok());
+        assert!(!app.processing_complete);
+        assert_eq!(app.current_view, View::Installing);
+    }
 }

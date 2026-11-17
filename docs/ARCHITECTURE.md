@@ -16,8 +16,9 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 
 | Unit | Path | Responsibility | May depend on |
 |---|---|---|---|
-| `main` | `tools/installer/src/main.rs` | 터미널 셋업, view별 loading 분기, `--help`와 `--sync` 진입 | `app`, `loading`, `ui`, `cli`, `fs` |
-| `app` | `tools/installer/src/app/` | TUI 상태 `App`, 입력, 이동, 소스 위저드 | `component`, `fs`, `mcp`, `plugin`, `source`, `theme`, `tree` |
+| `main` | `tools/installer/src/main.rs` | GUI 기본 진입, `--tui` 터미널 셋업, view별 loading 분기, `--help`와 `--sync` 진입 | `gui`, `app`, `loading`, `ui`, `cli`, `fs` |
+| `gui` | `tools/installer/src/gui/` | iced 화면, 메시지 처리, 백그라운드 작업의 비차단 폴링 | `app`, `cli`, `loading`, `component`, `mcp`, `plugin`, `source`, `theme`, `tree`, `fs` 설정 API와 상수 |
+| `app` | `tools/installer/src/app/` | 공유 인스톨러 상태 `App`, 입력, 이동, 소스 위저드 | `component`, `fs`, `mcp`, `plugin`, `source`, `theme`, `tree` |
 | `ui` | `tools/installer/src/ui/` | ratatui 렌더링 | `app`, `tree`, `component`, `source`, `mcp`, `plugin`, `theme`, `fs` 상수 |
 | `cli` | `tools/installer/src/cli/` | 키 입력 분기와 비대화형 `run_sync` | `app`, `fs`, `loading`, `source`, `ui` |
 | `fs` | `tools/installer/src/fs/` | 스캔, 설치·제거, manifest, diff, CLI 프로세스, settings.json 쓰기 | `component`, `mcp`, `plugin`, `source`, `target`, `paths`, `exec` |
@@ -230,3 +231,13 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 | `2026-10-04` | 번들 원본에서 빠진 파일이 사용자 설치본에 남는다 | 설치 기록에 파일별 SHA-256을 남기고 해시가 같을 때만 지운다. 사용자가 고친 파일과 해시가 없는 파일은 남기고 알린다. `tools/installer/src/fs/installer/unshipped.rs`, v1.22.0 |
 | `2026-10-04` | 빠진 파일 정리에서 요청에 없던 동작을 둘까 | 그대로 승인. 판정한 ID는 기록에서 빼서 알림은 한 번만 뜬다. 원본에 타입 디렉터리가 없으면 판정하지 않는다. 타입 디렉터리 자체가 링크인지는 보지 않고 그 아래 링크만 따라가지 않는다. 지우지 못한 파일은 다음 실행에 다시 시도한다. 원본과 같은 내용의 파일은 hibi가 쓴 것으로 본다. trash로 옮기지 않고 바로 지운다 |
 | `2026-10-04` | 규칙 검사를 CI에 연결할까 | 릴리즈 워크플로가 빌드 전에 lint 두 개와 fmt, 테스트를 실행한다. 상태줄은 CI 빌드 대신 바이너리 갱신 여부를 검사한다 |
+
+GUI 화면은 상태만 읽는다. `gui/runtime.rs`와 `gui/actions.rs`가 입력과 작업 수명 관리를 맡는다.
+설치와 제거, 소스 검증은 기존 모델을 공유한다. 작업 취소와 창 닫기는 작업 정리가 끝날 때까지 기다린다.
+`gui` Cargo 기능은 기본으로 켜진다. 기능을 끄면 기존 터미널 바이너리만 빌드한다.
+
+GUI의 화면 모듈은 `home`, `sidebar`, `list`, `rows`, `sources`, `source_forms`, `dialogs`, `activity`로 나눈다. 색상과 공통 시각 상태는 `styles`를 사용한다. 화면 렌더링은 사용자 파일이나 외부 프로세스를 직접 변경하지 않는다.
+
+`app/search.rs`는 검색어와 이름, 경로 및 메타데이터의 비교를 맡는다. 상태 필터와 숨김 규칙은 기존 `app/filter.rs`와 함께 적용한다. 검색 결과는 원래 항목 인덱스를 유지하며 선택과 작업 큐가 같은 결과를 사용한다. `gui/shortcuts.rs`는 키보드 구독과 목록 스크롤을 맡고 검색창이 받은 일반 입력을 작업 명령으로 전달하지 않는다.
+
+`gui/text_input.rs`는 검색창의 보조키를 현재 키 이벤트와 동기화한다. 검색어 편집에는 Control과 Command를 모두 허용하고 선택, 클립보드와 입력기 처리는 iced 기본 입력 위젯에 맡긴다. 위젯의 상태와 포커스 식별자는 그대로 전달한다.

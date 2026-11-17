@@ -105,24 +105,11 @@ impl App {
     pub fn handle_source_confirm_key(&mut self, key: KeyCode) -> Result<()> {
         match key {
             KeyCode::Char('y') => {
-                let entry_idx = self.source_list_index.saturating_sub(1);
-                if entry_idx < self.source_entries.len() {
-                    if let SourceEntry::Git { url, .. } = &self.source_entries[entry_idx]
-                        && let Err(e) = git::remove_cache(url)
-                    {
-                        self.source_sync_status = Some(SyncStatus::Error(format!(
-                            "Source removed, but cache cleanup failed: {}",
-                            e
-                        )));
-                    }
-                    self.source_entries.remove(entry_idx);
-                    config::save_config(&self.source_entries, self.source_auto_update)?;
-                    if self.source_list_index > self.source_entries.len() {
-                        self.source_list_index = self.source_entries.len();
-                    }
-                    self.source_reload()?;
+                if self.remove_source_using(config::save_config, git::remove_cache)? {
+                    self.source_start_resolve();
+                } else {
+                    self.current_view = View::Sources;
                 }
-                self.current_view = View::Sources;
             }
             KeyCode::Esc | KeyCode::Char('n') => {
                 self.current_view = View::Sources;
@@ -130,6 +117,33 @@ impl App {
             _ => {}
         }
         Ok(())
+    }
+
+    fn remove_source_using(
+        &mut self,
+        save: impl FnOnce(&[SourceEntry], bool) -> Result<()>,
+        remove_cache: impl FnOnce(&str) -> Result<bool>,
+    ) -> Result<bool> {
+        let Some(index) = self.source_list_index.checked_sub(1) else {
+            return Ok(false);
+        };
+        let Some(entry) = self.source_entries.get(index).cloned() else {
+            return Ok(false);
+        };
+        let mut entries = self.source_entries.clone();
+        entries.remove(index);
+        save(&entries, self.source_auto_update)?;
+        self.source_entries = entries;
+        self.source_sync_status = None;
+        self.source_list_index = self.source_list_index.min(self.source_entries.len());
+        if let SourceEntry::Git { url, .. } = entry
+            && let Err(error) = remove_cache(&url)
+        {
+            self.source_sync_status = Some(SyncStatus::Error(format!(
+                "Source removed, but cache cleanup failed: {error}"
+            )));
+        }
+        Ok(true)
     }
 
     fn source_nav_up(&mut self) {
@@ -229,31 +243,28 @@ impl App {
         self.source_sync_rx = Some(rx);
         self.current_view = View::SourceSyncing;
 
+        let previous_warning = match self.source_sync_status.take() {
+            Some(SyncStatus::Error(message)) => Some(message),
+            _ => None,
+        };
         thread::spawn(move || {
-            let result = source::resolve_all_sources(&source_dir);
-            let (resolved, warnings) = match result {
-                Ok(r) => (r.sources, r.warnings),
-                Err(_) => (
+            let (resolved, mut warnings) = match source::resolve_all_sources(&source_dir) {
+                Ok(result) => (result.sources, result.warnings),
+                Err(error) => (
                     vec![source::ResolvedSource::bundled(&source_dir)],
-                    Vec::new(),
+                    vec![format!("Failed to resolve sources: {error:#}")],
                 ),
             };
+            if let Some(warning) = previous_warning {
+                warnings.insert(0, warning);
+            }
             let _ = tx.send(SyncPayload {
                 resolved,
+                had_error: !warnings.is_empty(),
                 summaries: warnings,
-                had_error: false,
                 rescan: None,
             });
         });
-    }
-
-    fn source_reload(&mut self) -> Result<()> {
-        let result = source::resolve_all_sources(&self.source_dir)?;
-        self.sources = result.sources;
-        if !result.warnings.is_empty() {
-            self.source_sync_status = Some(SyncStatus::Error(result.warnings.join("; ")));
-        }
-        Ok(())
     }
 
     pub(crate) fn source_cancel(&mut self) {
@@ -303,6 +314,108 @@ impl App {
                     Some(SyncStatus::Error("Sync thread crashed".to_string()));
                 self.current_view = View::Sources;
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::app::test_support::fresh_app;
+
+    fn git_source() -> SourceEntry {
+        SourceEntry::Git {
+            url: "https://example.invalid/config.git".into(),
+            branch: None,
+            root: None,
+            map_to: None,
+        }
+    }
+
+    fn temp_fixture() -> std::path::PathBuf {
+        let id = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!(
+            "hibi_source_transaction_{}_{id}",
+            std::process::id()
+        ));
+        std::fs::create_dir(&path).unwrap();
+        path
+    }
+
+    #[test]
+    fn removal_write_failure_keeps_source_cursor_view_and_cache() {
+        let mut app = fresh_app();
+        app.current_view = View::SourceConfirmRemove;
+        app.source_list_index = 1;
+        app.source_entries.push(git_source());
+        let fixture = temp_fixture();
+        let marker = fixture.join("cache-marker");
+        std::fs::write(&marker, "cached repository").unwrap();
+        let result = app.remove_source_using(
+            |_, _| {
+                std::fs::write(fixture.join("missing").join("sources.yaml"), "sources: []")?;
+                Ok(())
+            },
+            |_| {
+                std::fs::remove_file(&marker)?;
+                Ok(true)
+            },
+        );
+        assert!(result.is_err());
+        assert_eq!(app.source_entries.len(), 1);
+        assert_eq!(app.source_list_index, 1);
+        assert_eq!(app.current_view, View::SourceConfirmRemove);
+        assert!(marker.exists());
+        std::fs::remove_dir_all(fixture).unwrap();
+    }
+
+    #[test]
+    fn cache_cleanup_runs_only_after_saved_removal_and_failure_is_visible() {
+        let mut app = fresh_app();
+        app.source_list_index = 1;
+        app.source_entries.push(git_source());
+        let fixture = temp_fixture();
+        let saved_config = fixture.join("sources.yaml");
+        let result = app.remove_source_using(
+            |entries, _| {
+                assert!(entries.is_empty());
+                std::fs::write(&saved_config, "sources: []")?;
+                Ok(())
+            },
+            |_| {
+                assert_eq!(std::fs::read_to_string(&saved_config)?, "sources: []");
+                anyhow::bail!("cache is locked")
+            },
+        );
+        assert!(result.unwrap());
+        assert!(app.source_entries.is_empty());
+        assert_eq!(app.source_list_index, 0);
+        assert!(matches!(app.source_sync_status,
+            Some(SyncStatus::Error(ref message)) if message.contains("cache is locked")));
+        std::fs::remove_dir_all(fixture).unwrap();
+    }
+
+    #[test]
+    fn bundled_and_stale_remove_confirmation_never_persist_or_clear_cache() {
+        let mut app = fresh_app();
+        app.source_entries.push(git_source());
+        for index in [0, 2, usize::MAX] {
+            app.source_list_index = index;
+            assert!(
+                !app.remove_source_using(
+                    |_, _| {
+                        panic!("invalid source selection must not write configuration");
+                    },
+                    |_| {
+                        panic!("invalid source selection must not clear cache");
+                    }
+                )
+                .unwrap()
+            );
+            assert_eq!(app.source_entries.len(), 1);
         }
     }
 }

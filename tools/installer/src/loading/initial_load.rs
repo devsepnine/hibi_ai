@@ -19,35 +19,38 @@ pub(crate) fn start_loading_thread(app: &App, refresh_tx: &Sender<Result<Refresh
     let target_cli = app.target_cli.unwrap_or(TargetCli::Claude);
 
     thread::spawn(move || {
-        let record = fs::manifest::recorded_install(&dest_dir);
-        let mut cleaned = fs::installer::auto_cleanup_deprecated_hooks(&source_dir, &dest_dir);
-        cleaned.extend(fs::installer::auto_cleanup_renamed_skills(
-            &source_dir,
-            &dest_dir,
-            &record.ids,
-        ));
-        let unshipped =
-            fs::installer::auto_cleanup_unshipped_files(&source_dir, &dest_dir, &record);
-        cleaned.extend(unshipped.report);
-        if !unshipped.settled.is_empty() {
-            // A failure here only means the same IDs are judged again on the
-            // next launch, where a file already removed counts as gone.
-            let _ = fs::manifest::forget(&dest_dir, &unshipped.settled);
-        }
+        let result = super::worker_result(|| {
+            let record = fs::manifest::recorded_install(&dest_dir);
+            let mut cleaned = fs::installer::auto_cleanup_deprecated_hooks(&source_dir, &dest_dir);
+            cleaned.extend(fs::installer::auto_cleanup_renamed_skills(
+                &source_dir,
+                &dest_dir,
+                &record.ids,
+            ));
+            let unshipped =
+                fs::installer::auto_cleanup_unshipped_files(&source_dir, &dest_dir, &record);
+            cleaned.extend(unshipped.report);
+            if !unshipped.settled.is_empty() {
+                // A failure here only means the same IDs are judged again on the
+                // next launch, where a file already removed counts as gone.
+                let _ = fs::manifest::forget(&dest_dir, &unshipped.settled);
+            }
 
-        let components = fs::scanner::scan_all_sources(&sources, &dest_dir, target_cli);
-        let mcp_result = fs::scanner::scan_all_mcp_sources(&sources, target_cli);
-        let plugins = fs::scanner::scan_all_plugin_sources(&sources);
+            let components = fs::scanner::scan_all_sources(&sources, &dest_dir, target_cli);
+            let mcp_result = fs::scanner::scan_all_mcp_sources(&sources, target_cli);
+            let plugins = fs::scanner::scan_all_plugin_sources(&sources);
 
-        let result = match (components, mcp_result, plugins) {
-            (Ok(c), Ok((m, _mcp_warning)), Ok(p)) => Ok(RefreshResult::InitialLoad {
-                components: c,
-                mcp_servers: m,
-                plugins: p,
-                cleaned_items: cleaned,
-            }),
-            (Err(e), _, _) | (_, Err(e), _) | (_, _, Err(e)) => Err(e),
-        };
+            let result = match (components, mcp_result, plugins) {
+                (Ok(c), Ok((m, _mcp_warning)), Ok(p)) => Ok(RefreshResult::InitialLoad {
+                    components: c,
+                    mcp_servers: m,
+                    plugins: p,
+                    cleaned_items: cleaned,
+                }),
+                (Err(e), _, _) | (_, Err(e), _) | (_, _, Err(e)) => Err(e),
+            };
+            result
+        });
         let _ = tx_clone.send(result);
     });
 }
@@ -65,6 +68,11 @@ pub(crate) fn handle_loading_view(
         }
     }
 
+    tick_loading(app, refresh_rx);
+    Ok(())
+}
+
+pub(crate) fn tick_loading(app: &mut App, refresh_rx: &Receiver<Result<RefreshResult>>) {
     app.tick();
 
     match refresh_rx.try_recv() {
@@ -95,6 +103,4 @@ pub(crate) fn handle_loading_view(
             app.current_view = View::CliSelection;
         }
     }
-
-    Ok(())
 }

@@ -97,7 +97,7 @@ impl App {
         if let Some(current_idx) = self.available_tabs.iter().position(|t| *t == self.tab) {
             let next_idx = (current_idx + 1) % self.available_tabs.len();
             self.tab = self.available_tabs[next_idx];
-            self.list_index = 0;
+            self.reset_visible_list_cursors();
         }
     }
 
@@ -109,47 +109,51 @@ impl App {
                 current_idx - 1
             };
             self.tab = self.available_tabs[prev_idx];
-            self.list_index = 0;
+            self.reset_visible_list_cursors();
         }
+    }
+
+    pub(crate) fn reset_visible_list_cursors(&mut self) {
+        self.list_index = 0;
+        self.mcp_index = self
+            .visible_mcp_servers()
+            .first()
+            .map_or(0, |(index, _)| *index);
+        self.plugin_index = self
+            .visible_plugins()
+            .first()
+            .map_or(0, |(index, _)| *index);
     }
 
     pub fn next_item(&mut self) {
-        if self.tab == Tab::McpServers {
-            let len = self.mcp_servers.len();
-            if len > 0 {
-                self.mcp_index = (self.mcp_index + 1) % len;
-            }
-        } else if self.tab == Tab::Plugins {
-            let len = self.plugins.len();
-            if len > 0 {
-                self.plugin_index = (self.plugin_index + 1) % len;
-            }
-        } else if let Some(tree) = self.tree_views.get_mut(&self.tab) {
-            tree.next();
-        }
+        self.move_item(false);
     }
 
     pub fn prev_item(&mut self) {
+        self.move_item(true);
+    }
+
+    fn move_item(&mut self, backwards: bool) {
         if self.tab == Tab::McpServers {
-            let len = self.mcp_servers.len();
-            if len > 0 {
-                self.mcp_index = if self.mcp_index == 0 {
-                    len - 1
-                } else {
-                    self.mcp_index - 1
-                };
-            }
+            let visible: Vec<_> = self
+                .visible_mcp_servers()
+                .iter()
+                .map(|(index, _)| *index)
+                .collect();
+            self.mcp_index = adjacent_index(&visible, self.mcp_index, backwards);
         } else if self.tab == Tab::Plugins {
-            let len = self.plugins.len();
-            if len > 0 {
-                self.plugin_index = if self.plugin_index == 0 {
-                    len - 1
-                } else {
-                    self.plugin_index - 1
-                };
-            }
+            let visible: Vec<_> = self
+                .visible_plugins()
+                .iter()
+                .map(|(index, _)| *index)
+                .collect();
+            self.plugin_index = adjacent_index(&visible, self.plugin_index, backwards);
         } else if let Some(tree) = self.tree_views.get_mut(&self.tab) {
-            tree.prev();
+            if backwards {
+                tree.prev();
+            } else {
+                tree.next();
+            }
         }
     }
 
@@ -226,6 +230,18 @@ impl App {
     pub fn get_tree_view(&self) -> Option<&TreeView> {
         self.tree_views.get(&self.tab)
     }
+}
+
+fn adjacent_index(visible: &[usize], current: usize, backwards: bool) -> usize {
+    let Some(position) = visible.iter().position(|&index| index == current) else {
+        return visible.first().copied().unwrap_or(0);
+    };
+    let next = if backwards {
+        (position + visible.len() - 1) % visible.len()
+    } else {
+        (position + 1) % visible.len()
+    };
+    visible[next]
 }
 
 #[cfg(test)]
@@ -321,5 +337,59 @@ mod tests {
         // Repeated `1` presses must not bounce focus back to Content.
         app.focus_tabs();
         assert_eq!(app.focus, FocusArea::Tabs);
+    }
+}
+
+#[cfg(test)]
+mod search_tests {
+    use super::*;
+    use crate::app::test_support::{fresh_app, make_mcp_server, make_plugin};
+
+    #[test]
+    fn mcp_navigation_uses_filtered_original_indices_and_wraps() {
+        let mut app = fresh_app();
+        app.tab = Tab::McpServers;
+        app.mcp_servers = ["hidden", "target-a", "other", "target-b"]
+            .map(|name| {
+                let mut server = make_mcp_server();
+                server.def.name = name.into();
+                server
+            })
+            .into();
+        app.set_search_query("target".into());
+        assert_eq!(app.mcp_index, 1);
+        app.next_item();
+        assert_eq!(app.mcp_index, 3);
+        app.next_item();
+        assert_eq!(app.mcp_index, 1);
+        app.prev_item();
+        assert_eq!(app.mcp_index, 3);
+        app.set_search_query("no-match".into());
+        app.next_item();
+        app.prev_item();
+        assert_eq!(app.mcp_index, 0);
+    }
+
+    #[test]
+    fn plugin_navigation_and_tab_switch_keep_global_filtered_cursor() {
+        let mut app = fresh_app();
+        app.available_tabs = vec![Tab::McpServers, Tab::Plugins];
+        app.tab = Tab::Plugins;
+        app.plugins = ["hidden", "target-one", "other", "target-two"]
+            .map(|name| {
+                let mut plugin = make_plugin();
+                plugin.def.name = name.into();
+                plugin
+            })
+            .into();
+        app.set_search_query("target".into());
+        assert_eq!(app.plugin_index, 1);
+        app.prev_item();
+        assert_eq!(app.plugin_index, 3);
+        app.next_tab();
+        app.prev_tab();
+        assert_eq!(app.tab, Tab::Plugins);
+        assert_eq!(app.plugin_index, 1);
+        assert_eq!(app.search_query, "target");
     }
 }

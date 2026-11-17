@@ -14,12 +14,16 @@ impl App {
     }
 
     pub fn env_input_submit(&mut self) -> Result<()> {
-        if self.env_input_buffer.is_empty() {
+        if self.current_view != View::EnvInput || self.env_input_buffer.is_empty() {
             return Ok(()); // Don't allow empty values
         }
 
         // Save current value
-        let var_name = self.env_input_vars[self.env_input_current].clone();
+        let var_name = self
+            .env_input_vars
+            .get(self.env_input_current)
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!("No environment variable is awaiting a value"))?;
         let value = self.env_input_buffer.clone();
         self.env_input_values.push((var_name, value));
         self.env_input_buffer.clear();
@@ -35,10 +39,7 @@ impl App {
     }
 
     pub fn env_input_cancel(&mut self) {
-        self.env_input_server_idx = None;
-        self.env_input_vars.clear();
-        self.env_input_values.clear();
-        self.env_input_buffer.clear();
+        self.clear_env_inputs();
         self.processing_queue.clear();
         self.current_view = View::List;
     }
@@ -75,10 +76,32 @@ impl App {
     }
 
     pub fn project_path_submit(&mut self) {
-        if !self.project_path_buffer.is_empty() {
-            self.mcp_project_path = self.project_path_buffer.clone();
-            self.status_message = Some(format!("MCP scope: local ({})", self.mcp_project_path));
+        if self.current_view != View::ProjectPath {
+            return;
         }
+        if self.project_path_buffer.is_empty() {
+            self.status_message = Some("Enter an existing project directory.".into());
+            return;
+        }
+        let path =
+            crate::source::config::expand_tilde(std::path::Path::new(&self.project_path_buffer));
+        let canonical = match path.canonicalize() {
+            Ok(path) => path,
+            Err(error) => {
+                self.status_message = Some(format!(
+                    "Cannot open project directory: {error}. Choose an existing directory."
+                ));
+                return;
+            }
+        };
+        if !canonical.is_dir() {
+            self.status_message =
+                Some("The project path is not a directory. Choose an existing directory.".into());
+            return;
+        }
+        self.mcp_project_path = canonical.to_string_lossy().into_owned();
+        self.mcp_scope = McpScope::Local;
+        self.status_message = Some(format!("MCP scope: local ({})", self.mcp_project_path));
         self.current_view = View::List;
     }
 
@@ -87,5 +110,140 @@ impl App {
         self.mcp_scope = McpScope::User;
         self.status_message = Some("MCP scope: user".to_string());
         self.current_view = View::List;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::app::test_support::fresh_app;
+
+    #[test]
+    fn stale_env_submit_returns_error_instead_of_panicking() {
+        let mut app = fresh_app();
+        app.current_view = View::EnvInput;
+        app.env_input_buffer = "secret".into();
+        app.env_input_current = usize::MAX;
+        assert!(app.env_input_submit().is_err());
+        assert!(app.env_input_values.is_empty());
+    }
+
+    #[test]
+    fn empty_and_stale_view_submits_do_not_advance() {
+        let mut app = fresh_app();
+        app.current_view = View::EnvInput;
+        app.env_input_vars = vec!["TOKEN".into()];
+        app.env_input_submit().unwrap();
+        assert_eq!(app.env_input_current, 0);
+        app.current_view = View::List;
+        app.env_input_buffer = "secret".into();
+        app.env_input_submit().unwrap();
+        assert!(app.env_input_values.is_empty());
+        assert_eq!(app.current_view, View::List);
+    }
+
+    #[test]
+    fn korean_input_backspace_removes_one_character() {
+        let mut app = fresh_app();
+        app.env_input_char('한');
+        app.env_input_char('글');
+        app.env_input_backspace();
+        assert_eq!(app.env_input_buffer, "한");
+    }
+
+    struct ProjectFixture(std::path::PathBuf);
+
+    impl ProjectFixture {
+        fn new() -> Self {
+            let stamp = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let path = std::env::temp_dir()
+                .join(format!("hibi_mcp_project_{}_{stamp}", std::process::id()));
+            std::fs::create_dir(&path).unwrap();
+            Self(path)
+        }
+    }
+
+    impl Drop for ProjectFixture {
+        fn drop(&mut self) {
+            std::fs::remove_dir_all(&self.0).unwrap();
+        }
+    }
+
+    #[test]
+    fn invalid_project_paths_keep_form_previous_directory_and_input() {
+        let fixture = ProjectFixture::new();
+        let file = fixture.0.join("not-a-directory");
+        std::fs::write(&file, "file").unwrap();
+        let missing = fixture.0.join("missing-directory");
+        let mut app = fresh_app();
+        app.mcp_scope = McpScope::Local;
+        app.current_view = View::ProjectPath;
+        app.mcp_project_path = "previous project".into();
+        for value in [
+            String::new(),
+            missing.to_string_lossy().into_owned(),
+            file.to_string_lossy().into_owned(),
+            "invalid\0path".into(),
+        ] {
+            app.project_path_buffer = value.clone();
+            app.project_path_submit();
+            assert_eq!(app.current_view, View::ProjectPath);
+            assert_eq!(app.mcp_scope, McpScope::Local);
+            assert_eq!(app.mcp_project_path, "previous project");
+            assert_eq!(app.project_path_buffer, value);
+            assert!(app.status_message.as_deref().unwrap().contains("directory"));
+            assert!(!missing.exists());
+        }
+    }
+
+    #[test]
+    fn korean_project_directory_with_leading_and_trailing_spaces_is_committed() {
+        let fixture = ProjectFixture::new();
+        let project = fixture.0.join(" 프로젝트 폴더 ");
+        std::fs::create_dir(&project).unwrap();
+        let mut app = fresh_app();
+        app.current_view = View::ProjectPath;
+        app.mcp_scope = McpScope::Local;
+        app.project_path_buffer = project.to_string_lossy().into_owned();
+        let entered = app.project_path_buffer.clone();
+        app.project_path_submit();
+        assert_eq!(app.current_view, View::List);
+        assert_eq!(app.mcp_scope, McpScope::Local);
+        assert_eq!(
+            app.mcp_project_path,
+            project.canonicalize().unwrap().to_string_lossy()
+        );
+        assert_eq!(app.project_path_buffer, entered);
+    }
+
+    #[test]
+    fn cancelling_invalid_project_form_reverts_to_user_and_keeps_previous_directory() {
+        let mut app = fresh_app();
+        app.current_view = View::ProjectPath;
+        app.mcp_scope = McpScope::Local;
+        app.mcp_project_path = "previous project".into();
+        app.project_path_submit();
+        assert_eq!(app.current_view, View::ProjectPath);
+        app.project_path_cancel();
+        assert_eq!(app.current_view, View::List);
+        assert_eq!(app.mcp_scope, McpScope::User);
+        assert_eq!(app.mcp_project_path, "previous project");
+    }
+
+    #[test]
+    fn stale_project_submission_does_not_commit_a_new_directory() {
+        let fixture = ProjectFixture::new();
+        let mut app = fresh_app();
+        app.current_view = View::List;
+        app.mcp_scope = McpScope::User;
+        app.mcp_project_path = "previous project".into();
+        app.project_path_buffer = fixture.0.to_string_lossy().into_owned();
+        app.project_path_submit();
+        assert_eq!(app.mcp_scope, McpScope::User);
+        assert_eq!(app.mcp_project_path, "previous project");
+        assert_eq!(app.current_view, View::List);
     }
 }

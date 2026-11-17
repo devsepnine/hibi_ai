@@ -1,12 +1,5 @@
 name: Release
 
-# Builds all-platform binaries on a macOS runner (reusing tools/installer/build.sh,
-# which cross-compiles macOS Universal + Windows + Linux), packages them with
-# package.sh, and publishes a GitHub Release with the archives + checksums.
-#
-# Trigger by pushing a tag like `v1.12.0`, or run manually via the Actions tab.
-# The tag/input version MUST match `VERSION` in package.sh (guarded below).
-
 on:
   push:
     tags:
@@ -14,27 +7,35 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to release (e.g. 1.12.0) — must match package.sh"
+        description: "Version to release, matching package.sh and Cargo.toml"
         required: true
 
 permissions:
-  contents: write
+  contents: read
+
+env:
+  CARGO_NET_RETRY: "10"
 
 jobs:
-  release:
-    runs-on: macos-latest
-    env:
-      # Retry transient crates.io index/download timeouts instead of failing
-      # the whole build on the first network blip.
-      CARGO_NET_RETRY: "10"
+  verify:
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          # lint-arch.py compares the history of the statusline source and its
-          # committed binaries; a shallow clone has no history to compare.
           fetch-depth: 0
-
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Linux display and GUI test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libwayland-dev \
+            libx11-dev libxcursor-dev libxi-dev libxrandr-dev pkg-config \
+            xvfb xauth python3-xlib python3-pil tesseract-ocr tesseract-ocr-eng fonts-dejavu-core
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tools/installer
       - name: Resolve and verify version
         id: ver
         env:
@@ -70,37 +71,102 @@ jobs:
           python3 tools/lint-prose.py
           python3 tools/lint-arch.py
           cargo fmt --manifest-path tools/installer/Cargo.toml --check
-          cargo test --manifest-path tools/installer/Cargo.toml
+          cargo test --locked --manifest-path tools/installer/Cargo.toml
+          cargo test --locked --manifest-path tools/installer/Cargo.toml --no-default-features
 
-      - name: Install Rust cross targets
+      - name: Exercise desktop GUI with isolated configuration
         run: |
-          rustup target add \
-            aarch64-apple-darwin \
-            x86_64-apple-darwin \
-            x86_64-pc-windows-gnu \
-            x86_64-unknown-linux-musl
+          cargo build --locked --manifest-path tools/installer/Cargo.toml
+          python3 tools/installer/tests/cli_smoke.py --binary tools/installer/target/debug/hibi --artifacts /tmp/hibi-cli-smoke
+          xvfb-run -a -s "-screen 0 1280x900x24" \
+            python3 tools/installer/tests/gui_smoke.py \
+            --binary tools/installer/target/debug/hibi --artifacts /tmp/hibi-gui-smoke
+      - name: Upload GUI acceptance screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gui-acceptance
+          path: /tmp/hibi-gui-smoke
+          if-no-files-found: ignore
 
-      - name: Install cross toolchains (mingw-w64, musl-cross) and nfpm
-        run: |
-          brew install mingw-w64 filosottile/musl-cross/musl-cross nfpm
-
-      - name: Cache cargo registry and build artifacts
-        uses: Swatinem/rust-cache@v2
+  build:
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos
+            runner: macos-latest
+            artifact: hibi
+          - platform: windows
+            runner: windows-latest
+            artifact: hibi.exe
+          - platform: linux
+            runner: ubuntu-22.04
+            artifact: hibi-linux
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Linux display dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libwayland-dev libx11-dev libxcursor-dev libxi-dev libxrandr-dev pkg-config
+      - uses: Swatinem/rust-cache@v2
         with:
           workspaces: tools/installer
+          key: ${{ matrix.platform }}
+      - name: Build native desktop installer
+        shell: bash
+        run: bash tools/installer/build.sh "${{ matrix.platform }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.platform }}
+          path: dist/${{ matrix.artifact }}
+          if-no-files-found: error
 
-      - name: Build all-platform binaries
-        working-directory: tools/installer
-        run: bash build.sh
+  build-alpine:
+    needs: verify
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Alpine desktop installer
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work rust:alpine sh -ec '
+            apk add --no-cache bash build-base pkgconf libxkbcommon-dev libxkbcommon-x11 font-dejavu wayland-dev libx11-dev libxcursor-dev libxi-dev libxrandr-dev
+            bash tools/installer/build.sh linux-musl
+          '
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-linux-musl
+          path: dist/hibi-linux-musl
+          if-no-files-found: error
 
+  release:
+    needs: [verify, build, build-alpine]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: installer-*
+          path: dist
+          merge-multiple: true
+      - name: Restore executable permissions
+        run: chmod +x dist/hibi dist/hibi-linux dist/hibi-linux-musl
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+          cache: false
+      - name: Install nfpm
+        run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.49.0
       - name: Package release archives
         run: bash package.sh
-
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          # Same reason as the version step: keep expressions out of run.
-          RESOLVED_VERSION: ${{ steps.ver.outputs.version }}
+          RESOLVED_VERSION: ${{ needs.verify.outputs.version }}
         run: |
           VERSION="$RESOLVED_VERSION"
           gh release create "v${VERSION}" \

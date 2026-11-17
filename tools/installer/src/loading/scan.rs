@@ -80,7 +80,7 @@ pub(super) fn start_refresh_thread(app: &mut App, refresh_tx: &Sender<Result<Ref
     let scope = RefreshScope::for_tab(app.tab);
 
     thread::spawn(move || {
-        let result = match scope {
+        let result = super::worker_result(|| match scope {
             RefreshScope::Components => {
                 fs::scanner::scan_all_sources(&sources, &dest_dir, target_cli).map(|components| {
                     // Record provenance here rather than in the consumer: the
@@ -100,7 +100,7 @@ pub(super) fn start_refresh_thread(app: &mut App, refresh_tx: &Sender<Result<Ref
             RefreshScope::Plugins => {
                 fs::scanner::scan_all_plugin_sources(&sources).map(RefreshResult::Plugins)
             }
-        };
+        });
         let _ = tx_clone.send(result);
     });
 }

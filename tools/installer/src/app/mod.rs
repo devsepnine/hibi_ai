@@ -2,6 +2,7 @@ mod filter;
 mod input;
 mod navigation;
 mod processing;
+mod search;
 mod selection;
 mod settings;
 mod source_wizard;
@@ -41,6 +42,7 @@ pub struct App {
 
     pub components: Vec<Component>,
     pub component_filter: ComponentFilter,
+    pub search_query: String,
     pub hidden_folders: BTreeSet<PathBuf>,
     pub show_hidden: bool,
     pub visibility_path: PathBuf,
@@ -90,6 +92,7 @@ pub struct App {
     pub env_input_current: usize,            // Current env var index
     pub env_input_buffer: String,            // Current input text
     pub env_input_values: Vec<(String, String)>, // Collected (name, value) pairs
+    pub mcp_env_values: HashMap<usize, Vec<(String, String)>>,
 
     // Project path input state (for local scope MCP)
     pub project_path_buffer: String, // Current project path input
@@ -185,6 +188,7 @@ impl App {
             theme: Theme::default(),
             components: Vec::new(),
             component_filter: ComponentFilter::default(),
+            search_query: String::new(),
             hidden_folders: BTreeSet::new(),
             show_hidden: false,
             visibility_path: d.visibility_path,
@@ -221,6 +225,7 @@ impl App {
             env_input_current: 0,
             env_input_buffer: String::new(),
             env_input_values: Vec::new(),
+            mcp_env_values: HashMap::new(),
             project_path_buffer: d.default_project,
             source_entries: d.source_entries,
             source_auto_update: d.source_auto_update,
@@ -248,6 +253,7 @@ impl App {
         // Switch to first available tab
         self.tab = self.available_tabs.first().copied().unwrap_or(Tab::Skills);
         self.component_filter = ComponentFilter::default();
+        self.search_query.clear();
 
         // These three index into lists the scan below is about to replace, and a
         // shorter result leaves them past the end. ratatui clamps the highlight

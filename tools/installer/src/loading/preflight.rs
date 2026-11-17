@@ -20,7 +20,7 @@ fn start_preflight_thread(app: &App, preflight_tx: &Sender<Result<()>>) {
     let tx = preflight_tx.clone();
     let target_cli = app.target_cli.unwrap_or(TargetCli::Claude);
     thread::spawn(move || {
-        let result = fs::installer::preflight_cli_available(target_cli);
+        let result = super::worker_result(|| fs::installer::preflight_cli_available(target_cli));
         let _ = tx.send(result);
     });
 }
@@ -38,6 +38,21 @@ pub(crate) fn handle_preflighting_view(
     app: &mut App,
     channels: &mut ProcessingChannels,
 ) -> Result<()> {
+    if poll(Duration::from_millis(100))? {
+        if let Event::Key(key) = event::read()? {
+            if key.kind != KeyEventKind::Release {
+                preflighting_key(app, key.code, channels);
+            }
+        }
+    }
+
+    tick_preflighting(app, channels)
+}
+
+pub(crate) fn tick_preflighting(app: &mut App, channels: &mut ProcessingChannels) -> Result<()> {
+    if app.current_view != View::Preflighting {
+        return Ok(());
+    }
     // Idempotent spawn: keeps the main loop's match arm a one-liner
     // and ensures the probe always starts in the same place that
     // checks for its completion.
@@ -45,14 +60,6 @@ pub(crate) fn handle_preflighting_view(
         channels.reset_preflight_channel();
         start_preflight_thread(app, &channels.preflight_tx);
         channels.preflight_active = true;
-    }
-
-    if poll(Duration::from_millis(100))? {
-        if let Event::Key(key) = event::read()? {
-            if key.kind != KeyEventKind::Release {
-                handle_preflighting_input(app, key.code, channels);
-            }
-        }
     }
 
     app.tick();
@@ -68,7 +75,13 @@ pub(crate) fn handle_preflighting_view(
             if app.is_removing {
                 app.complete_remove_setup();
             } else {
-                app.complete_install_setup()?;
+                if let Err(error) = app.complete_install_setup() {
+                    app.clear_env_inputs();
+                    app.processing_queue.clear();
+                    app.is_removing = false;
+                    app.current_view = View::List;
+                    return Err(error);
+                }
             }
         }
         Ok(Err(e)) => {
@@ -79,6 +92,7 @@ pub(crate) fn handle_preflighting_view(
                 "install"
             };
             app.status_message = Some(format!("Cannot start {}: {}", verb, e));
+            app.clear_env_inputs();
             app.processing_queue.clear();
             app.is_removing = false;
             app.current_view = View::List;
@@ -87,6 +101,7 @@ pub(crate) fn handle_preflighting_view(
         Err(TryRecvError::Disconnected) => {
             channels.preflight_active = false;
             app.status_message = Some("Preflight thread crashed".to_string());
+            app.clear_env_inputs();
             app.processing_queue.clear();
             app.is_removing = false;
             app.current_view = View::List;
@@ -96,7 +111,7 @@ pub(crate) fn handle_preflighting_view(
     Ok(())
 }
 
-fn handle_preflighting_input(app: &mut App, key: KeyCode, channels: &mut ProcessingChannels) {
+pub(crate) fn preflighting_key(app: &mut App, key: KeyCode, channels: &mut ProcessingChannels) {
     match key {
         KeyCode::Esc => {
             // Drop the in-flight thread's result by resetting the channel.
@@ -104,6 +119,7 @@ fn handle_preflighting_input(app: &mut App, key: KeyCode, channels: &mut Process
             // its send returns Err and is discarded.
             channels.preflight_active = false;
             channels.reset_preflight_channel();
+            app.clear_env_inputs();
             app.processing_queue.clear();
             app.is_removing = false;
             app.cancelling = false;
@@ -114,5 +130,44 @@ fn handle_preflighting_input(app: &mut App, key: KeyCode, channels: &mut Process
             app.should_quit = true;
         }
         _ => {}
+    }
+}
+
+#[cfg(test)]
+mod gui_tests {
+    use super::*;
+    use crate::app::test_support::fresh_app;
+
+    #[test]
+    fn cancelled_preflight_does_not_restart_on_next_tick() {
+        let mut app = fresh_app();
+        app.current_view = View::Preflighting;
+        app.processing_queue = vec![0];
+        let mut channels = ProcessingChannels::new();
+        preflighting_key(&mut app, KeyCode::Esc, &mut channels);
+        tick_preflighting(&mut app, &mut channels).unwrap();
+        assert_eq!(app.current_view, View::List);
+        assert!(!channels.preflight_active);
+        assert!(app.processing_queue.is_empty());
+    }
+
+    #[test]
+    fn panicked_preflight_returns_to_list_with_error() {
+        let mut app = fresh_app();
+        app.current_view = View::Preflighting;
+        app.processing_queue = vec![0];
+        let mut channels = ProcessingChannels::new();
+        channels.preflight_active = true;
+        channels
+            .preflight_tx
+            .send(super::super::worker_result(|| {
+                panic!("preflight failed");
+            }))
+            .unwrap();
+        tick_preflighting(&mut app, &mut channels).unwrap();
+        assert_eq!(app.current_view, View::List);
+        assert!(!channels.preflight_active);
+        assert!(app.processing_queue.is_empty());
+        assert!(app.status_message.unwrap().contains("worker panicked"));
     }
 }

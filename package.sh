@@ -16,11 +16,13 @@ echo "🔨 Preparing dist directory..."
 mkdir -p "$DIST_DIR"
 
 # Check if installer binaries exist
-if [ ! -f "$DIST_DIR/hibi" ]; then
-    echo "❌ Error: Installer binaries not found in dist/"
-    echo "   Please run: cd tools/installer && ./build.sh"
-    exit 1
-fi
+for binary in hibi hibi.exe hibi-linux hibi-linux-musl; do
+    if [ ! -f "$DIST_DIR/$binary" ]; then
+        echo "❌ Error: Installer binaries not found in dist/: $binary"
+        echo "   Build macos, windows, linux and linux-musl on their native hosts first."
+        exit 1
+    fi
+done
 
 # Copy statusline from src
 echo "  - Copying statusline..."
@@ -66,7 +68,7 @@ rm -rf "$RELEASE_DIR"
 mkdir -p "$RELEASE_DIR"
 
 # Package for each platform
-for PLATFORM in "macos" "linux" "windows"; do
+for PLATFORM in "macos" "linux" "linux-musl" "windows"; do
     echo ""
     echo "📦 Creating package for ${PLATFORM}..."
 
@@ -80,6 +82,8 @@ for PLATFORM in "macos" "linux" "windows"; do
         cp "$DIST_DIR/hibi.exe" "$PKG_DIR/"
     elif [ "$PLATFORM" = "macos" ]; then
         cp "$DIST_DIR/hibi" "$PKG_DIR/"
+    elif [ "$PLATFORM" = "linux-musl" ]; then
+        cp "$DIST_DIR/hibi-linux-musl" "$PKG_DIR/hibi"
     else
         cp "$DIST_DIR/hibi-linux" "$PKG_DIR/hibi"
     fi
@@ -134,7 +138,11 @@ shopt -s nullglob
 ARTIFACTS=(*.tar.gz *.zip *.deb *.rpm *.apk)
 shopt -u nullglob
 if [ ${#ARTIFACTS[@]} -gt 0 ]; then
-    shasum -a 256 "${ARTIFACTS[@]}" > checksums.txt
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "${ARTIFACTS[@]}" > checksums.txt
+    else
+        shasum -a 256 "${ARTIFACTS[@]}" > checksums.txt
+    fi
     echo "✅ Created: checksums.txt"
 fi
 cd "$PROJECT_ROOT"

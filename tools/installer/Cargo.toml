@@ -8,7 +8,12 @@ rust-version = "1.89"
 name = "hibi"
 path = "src/main.rs"
 
+[features]
+default = ["gui"]
+gui = ["dep:iced"]
+
 [dependencies]
+iced = { version = "0.14", optional = true, default-features = false, features = ["advanced", "tokio", "tiny-skia", "crisp", "svg", "x11", "wayland"] }
 # TUI
 ratatui = "0.30"
 crossterm = "0.29"
@@ -31,6 +36,9 @@ sha2 = "0.10"
 
 # Command parsing
 shlex = "2"
+
+# Canonical Unicode search matching
+unicode-normalization = "0.1"
 
 # Error handling
 anyhow = "1.0"

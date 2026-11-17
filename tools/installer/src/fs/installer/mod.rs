@@ -1,6 +1,8 @@
 mod mcp;
 mod merge;
 mod plugin;
+#[cfg(feature = "gui")]
+pub(crate) mod preferences;
 mod process;
 mod renamed;
 mod settings;
