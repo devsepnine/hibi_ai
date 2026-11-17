@@ -21,6 +21,41 @@
       "prompt": "아래 문단을 규칙에 맞게 고쳐줘: \"결합도(coupling)는 변경이 퍼지는 범위 — 즉 blast radius — 를 결정하는 것이 중요하다.\"",
       "expected_output": "The Korean rewrite drops the dashes and the parenthetical gloss, keeps one term per concept (결합도 or coupling, not both), removes the translationese '~하는 것이 중요하다', and states the fact directly, e.g. '결합도는 변경이 얼마나 멀리 퍼지는지를 정한다.'",
       "files": []
+    },
+    {
+      "id": 4,
+      "name": "restore-actors-and-actions",
+      "prompt": "다음 작업 보고를 명확하게 고쳐줘. 실제 작업자는 설치기야: 파일 비교의 수행 이후 변경 항목에 대한 복사 처리가 설치기에 의해 이루어졌습니다.",
+      "expected_output": "The rewrite makes the installer the actor and uses verbs for comparison and copying, for example '설치기가 파일을 비교한 뒤 변경된 항목을 복사했습니다.' It preserves the order and completed status without adding validation, success claims, or other actions. It does not merely replace formal nouns with different formal nouns.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "resolve-vague-technical-relations",
+      "prompt": "이 코딩 설명을 다듬어줘: 데이터베이스 준비 상태 확인은 인증 핸들러 실행 전, 사용자 세션 진입 경계에 위치한다. 추가 코드나 동작 정보는 없어.",
+      "expected_output": "The rewrite states the supported relationship directly, for example '인증 핸들러가 실행되기 전에 데이터베이스가 준비됐는지 확인합니다.' The review flags '사용자 세션 진입 경계' as undefined and separates the confirmed sequence from that ambiguity. It does not invent the checking component, a health endpoint, failure behavior, or a new definition for that phrase. A focused question about the ambiguous phrase is acceptable if its meaning changes the intended claim.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "lead-with-the-result-and-cut-empty-context",
+      "prompt": "진행 상황을 한 번 읽고 이해하게 다듬어줘. 폴링 외에 대기 중인 작업은 없고, 사용자는 결과를 언제 받을지만 궁금해: 다른 어떤 것도 결과 외에는 아무것에도 의존하지 않으므로, 폴링이 반환되는 즉시 보고하겠습니다.",
+      "expected_output": "The response leads with the promised action and timing, for example '폴링이 끝나면 결과를 보고하겠습니다.' It may omit the irrelevant absence of other work. If that context is retained, it comes after the main point in a separate clear sentence. It does not claim polling has completed or invent an estimated time.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "name": "preserve-necessary-passive-and-uncertainty",
+      "prompt": "명확성 원칙에 맞게 이 장애 보고를 검수해줘. 누가 삭제했는지는 로그에 없어: 설정 파일이 삭제됐습니다. 삭제 주체는 아직 확인하지 못했습니다. 복구 전에 감사 로그를 확인해야 합니다.",
+      "expected_output": "The review accepts the passive deletion sentence because the actor is unknown, preserves that uncertainty and the requirement to inspect audit logs before recovery, and does not invent an actor or force an unnecessary rewrite. A short explanation that the original is already clear is acceptable. Clarity does not mean always using active voice or deleting necessary qualifications.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "name": "measure-reader-work-with-sentence-evidence",
+      "prompt": "아래 세 문장의 명확성을 검수하고 결함 문장 비율도 알려줘. 도구가 실제로 파일을 비교했다는 사실만 확인됐어. 1. 도구가 파일을 비교했습니다. 2. 비교의 수행이 이루어졌습니다. 3. 그 경계가 이를 가능하게 합니다.",
+      "expected_output": "The review accepts sentence 1, identifies the hidden actor and nominalized action in sentence 2, and identifies the unresolved references in sentence 3 without inventing their meanings. It reports 2 defective sentences out of 3 inspected sentences, about 67 percent, and counts each sentence once even if it has several defects. It explains defects with the specific text and reader effort, treats the fraction as this review's judgment rather than a calibrated detector, and makes no claim about AI authorship or general model quality.",
+      "files": []
     }
   ]
 }

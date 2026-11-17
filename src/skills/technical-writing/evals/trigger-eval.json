@@ -12,6 +12,10 @@
     "should_trigger": true
   },
   {
+    "query": "이 AI 작업 보고를 다듬어줘. 누가 무엇을 했는지 안 보이고 명사를 쌓아서 요점을 찾기 어려워.",
+    "should_trigger": true
+  },
+  {
     "query": "이 PR에 달린 리뷰 코멘트들 triage해서 반영할 것만 골라줘.",
     "should_trigger": false
   },

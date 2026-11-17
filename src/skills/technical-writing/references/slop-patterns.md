@@ -1,6 +1,35 @@
 # Slop patterns
 
-Scan for these, then rewrite. Preserve the meaning and the intended tone. Adapted from pstack's `unslop`; its rule numbers are kept so the two lists can be compared.
+Scan for these, then rewrite. Preserve the meaning and the intended tone. The numbered catalog adapts pstack's `unslop`; its rule numbers are kept so the two lists can be compared.
+
+## Reader clarity
+
+Look for the work the sentence leaves to the reader. A familiar technical term or a long sentence is not a defect by itself.
+
+### Hidden actors and actions
+
+Find who acts and what happens, then compare them with the grammatical subject and verb. "File comparison was performed by the installer" makes the reader recover the action from "comparison". "The installer compared the files" states it directly.
+
+Nominalizations and passive voice can still be useful. "The configuration file was deleted. We have not identified who deleted it" accurately reports an unknown actor. Do not replace it with an invented person or component.
+
+### Vague names and relationships
+
+Check what each reference names and how adjacent nouns relate. Replace unusual labels with the names the reader or code uses. Keep a precise domain term when it carries meaning that an everyday substitute would lose.
+
+"The database readiness check sits at the user session entry boundary before authentication handler execution" obscures a supported sequence. "Database readiness is checked before the authentication handler runs" states that sequence. The original does not define the boundary or name the checking component. If that boundary matters, ask what it means or inspect the code before explaining it.
+
+### Empty sentences and misplaced emphasis
+
+Find the result, decision, request, or next step the reader needs. Put it before the explanation. Check whether each remaining sentence adds information the reader can use.
+
+"Since nothing else depends on anything but the result, I will report as soon as polling returns" buries the promise. "When polling finishes, I will report the result" makes it clear. Add "No other work is waiting" only if the reader needs that fact. Do not drop a condition or uncertainty that changes the promise.
+
+### Review with sentence evidence
+
+- For each defect, identify the sentence, the hidden actor or unclear relationship or buried point, and a rewrite that preserves the supported meaning.
+- Accept a sentence that already communicates clearly. When context is missing or reviewers disagree, record the uncertainty instead of forcing a defect label.
+- If asked to quantify defects, report defective sentences divided by inspected sentences. Count each sentence once even when it has several defect types, and keep the evidence with the count.
+- Treat that rate as a judgment about the reviewed sample. It does not identify AI authorship, measure a model's overall quality, or reproduce a study's result. Punctuation lint checks syntax, not these semantic defects.
 
 ## Content
 
@@ -45,7 +74,7 @@ Scan for these, then rewrite. Preserve the meaning and the intended tone. Adapte
 
 - **27. Say what it does, not how it feels.** "SQL you can read" names a feeling. "`.toSQL()` returns the exact string sent to the database" names the mechanism. If the sentence could appear unchanged in another project's docs, it says nothing about this one.
 - **28. Shorten or split dense sentences.** If the reader has to backtrack, break the sentence in two.
-- **29. Active voice.** "Queries are validated" becomes "the compiler validates queries". Passive is fine only when the actor is unknown or does not matter.
+- **29. Active voice.** When the compiler is the known actor, "Queries are validated" becomes "the compiler validates queries". Passive can be clearer when the actor is unknown or irrelevant, or when the reader needs the existing topic first.
 - **30. Cut adverbs.** "significantly improves" becomes the measured delta.
 - **31. Prefer the plain word.** "utilize" becomes "use", "facilitate" becomes "help", "in the event that" becomes "if".
 - **32. Mannered prose.** Aphorisms, rhetorical fragments, personified code, figurative verbs. Say what you mean.

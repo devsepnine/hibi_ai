@@ -1,11 +1,13 @@
 ---
 name: technical-writing
-description: "Technical writing: one Diátaxis mode per doc, plain sentences, an AI-slop cut list, no dashes or parentheses. Use when writing or reviewing docs, READMEs, or skill and agent text. 기술 문서 작성, 문서 리뷰, AI 문체 제거, 글 다듬기."
+description: "Technical writing: clear actors, actions, and terms; point first; Diátaxis; no dashes or parentheses. Use for docs, READMEs, reports, technical explanations, skills, and agent text. 기술 문서 작성·리뷰, AI 문체 제거."
 ---
 
 # Technical Writing
 
-The goal is writing that a tired engineer understands on the first read. This skill owns how prose reads. Other skills own what a document must contain: `pull-request` for PR bodies, `commit-rules` for commit messages, `qa-handoff` and `obsidian-notes` for their templates. Apply this skill on top of them.
+Clarity is a responsibility to the reader. Following Joseph M. Williams and Joseph Bizup's approach in *Style: The Basics of Clarity and Grace*, make an idea no harder to understand than it needs to be. Apply this standard to AI prose in documents, reports, engineering explanations, and progress updates. The goal is writing that a tired reader understands on the first read.
+
+This skill owns how prose reads. Other skills own what a document must contain: `pull-request` for PR bodies, `commit-rules` for commit messages, `qa-handoff` and `obsidian-notes` for their templates. Apply this skill on top of them.
 
 Three rules sit above the rest:
 
@@ -50,7 +52,6 @@ Do not mix modes. Split and link instead.
 ## Write sentences to the reader
 
 - Talk to the reader as "you", in the present tense.
-- Say who does what: "the compiler checks", not "is checked".
 - Put the condition before the instruction: "To delete the document, click Delete."
 - Put the common case first and exceptions after.
 - One instruction per sentence. Split an instruction past about 20 words.
@@ -59,6 +60,14 @@ Do not mix modes. Split and link instead.
 - Call each thing by one name everywhere. Do not reword a sentence that did not change.
 - Headings carry the point, not the topic: "Pick the mode first", not "Modes".
 - Never write "simply", "easy", or "quickly" in a procedure.
+
+## Show the actor, action, and point
+
+- **Put actors in subjects and actions in verbs.** Prefer "the installer compares files" to "file comparison is performed". Unpack nominalizations such as "validation", "execution", and "arrival" when they hide what happens. Keep a passive or a different subject when the actor is unknown, irrelevant, or the reader needs the existing topic first. Never invent an actor to force active voice.
+- **Name things precisely and show their relationships.** Use the names readers and the code use. Replace unclear references and noun chains with explicit relationships. Keep necessary technical terms. If the source leaves a relationship unclear, state what is known and identify the missing meaning rather than inventing it.
+- **Put the reader's main point first.** Lead with the result, decision, requested action, or next step, then give the reason and necessary qualifications. Cut a sentence that adds no fact, instruction, or useful distinction. Preserve uncertainty, conditions, and causal order when moving or shortening text.
+
+Read the [reader clarity examples and review method](references/slop-patterns.md#reader-clarity) when these defects appear. Judge the work needed to understand a sentence, not its length, formality, or presumed author. Do not treat vocabulary checks or punctuation lint as proof of clarity.
 
 ## Cut the AI tells
 
@@ -83,6 +92,8 @@ The same rules apply to Korean text, with these additions:
 
 - [ ] The document is one Diátaxis mode
 - [ ] Every sentence names a mechanism, a fact, or an instruction
+- [ ] Actors, actions, and references are clear without inventing missing facts
+- [ ] The main point comes before supporting detail, with necessary qualifications intact
 - [ ] No pattern from `references/slop-patterns.md`
 - [ ] `python tools/lint-prose.py <changed paths>` prints nothing
 - [ ] EN and `-ko.md` mirrors still say the same thing

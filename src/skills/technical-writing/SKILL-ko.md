@@ -1,11 +1,13 @@
 ---
 name: technical-writing
-description: "Technical writing: one Diátaxis mode per doc, plain sentences, an AI-slop cut list, no dashes or parentheses. Use when writing or reviewing docs, READMEs, or skill and agent text. 기술 문서 작성, 문서 리뷰, AI 문체 제거, 글 다듬기."
+description: "Technical writing: clear actors, actions, and terms; point first; Diátaxis; no dashes or parentheses. Use for docs, READMEs, reports, technical explanations, skills, and agent text. 기술 문서 작성·리뷰, AI 문체 제거."
 ---
 
 # Technical Writing
 
-목표는 지친 엔지니어가 한 번 읽고 이해하는 글이다. 이 skill은 글이 어떻게 읽히는지를 소유한다. 문서에 무엇이 들어가야 하는지는 다른 skill이 소유한다. PR 본문은 `pull-request`, 커밋 메시지는 `commit-rules`, 각 템플릿은 `qa-handoff`와 `obsidian-notes`가 맡는다. 이 skill은 그 위에 얹어서 적용한다.
+명확성은 독자에 대한 책임이다. Joseph M. Williams와 Joseph Bizup의 *Style: The Basics of Clarity and Grace*가 제시한 관점에 따라, 아이디어를 이해하는 데 필요한 수준 이상으로 독자를 힘들게 하지 않는다. AI가 쓰는 문서, 보고서, 기술 설명, 진행 상황에도 같은 기준을 적용한다. 목표는 지친 독자가 한 번 읽고 이해하는 글이다.
+
+이 스킬은 글을 어떻게 쓸지 다룬다. 문서에 무엇을 담을지는 다른 스킬이 정한다. PR 본문은 `pull-request`, 커밋 메시지는 `commit-rules`, 각 템플릿은 `qa-handoff`와 `obsidian-notes`가 맡는다. 이 스킬은 그 위에 적용한다.
 
 나머지 규칙보다 위에 세 가지 규칙이 있다:
 
@@ -50,7 +52,6 @@ description: "Technical writing: one Diátaxis mode per doc, plain sentences, an
 ## 독자에게 말하듯 쓴다
 
 - 독자를 "you"로, 현재 시제로 부른다.
-- 누가 무엇을 하는지 말한다: "is checked"가 아니라 "the compiler checks".
 - 조건을 지시 앞에 둔다: "문서를 삭제하려면 Delete를 누른다."
 - 흔한 경우를 먼저, 예외를 뒤에 둔다.
 - 문장 하나에 지시 하나. 약 20단어를 넘는 지시는 나눈다.
@@ -59,6 +60,14 @@ description: "Technical writing: one Diátaxis mode per doc, plain sentences, an
 - 한 대상은 어디서나 한 이름으로 부른다. 바뀌지 않은 문장은 다시 쓰지 않는다.
 - 제목은 주제가 아니라 요점을 담는다: "Modes"가 아니라 "Pick the mode first".
 - 절차에 "simply", "easy", "quickly"를 쓰지 않는다.
+
+## 행위자와 행동, 요점을 드러낸다
+
+- **행위자를 주어에, 행동을 동사에 둔다.** "파일 비교의 수행이 이루어진다"보다 "설치기가 파일을 비교한다"로 쓴다. 검증, 실행, 도착 같은 명사에 행동이 숨어 있으면 동사로 풀어 쓴다. 행위자를 모르거나 중요하지 않을 때, 또는 독자가 기존 화제를 먼저 알아야 할 때는 수동태나 다른 주어를 유지한다. 능동태를 만들려고 행위자를 지어내지 않는다.
+- **정확한 이름과 관계를 쓴다.** 독자와 코드가 쓰는 이름을 사용한다. 불분명한 지칭과 명사를 쌓은 표현은 대상 간 관계가 드러나도록 풀어 쓴다. 필요한 전문 용어는 유지한다. 원문에서 관계가 불분명하면 확인된 사실과 뜻을 알 수 없는 부분을 밝히고 의미를 지어내지 않는다.
+- **독자에게 필요한 요점을 먼저 쓴다.** 결과, 결정, 요청한 행동, 다음 작업을 먼저 쓰고 이유와 필요한 조건을 뒤에 둔다. 사실, 지시, 유용한 구분을 더하지 않는 문장은 지운다. 문장을 옮기거나 줄일 때 불확실성, 조건, 인과 순서를 보존한다.
+
+이 결함이 보이면 [명확성 예시와 검수 방법](references/slop-patterns-ko.md#독자가-해석해야-하는-부분을-찾는다)을 읽는다. 문장의 길이, 격식, 작성자에 대한 추측 대신 뜻을 이해하는 데 드는 수고를 판단한다. 어휘 검사나 문장부호 린트 통과만으로 명확성을 입증했다고 보지 않는다.
 
 ## AI 문체를 걷어낸다
 
@@ -83,6 +92,8 @@ description: "Technical writing: one Diátaxis mode per doc, plain sentences, an
 
 - [ ] 문서가 Diátaxis 모드 하나다
 - [ ] 모든 문장이 메커니즘, 사실, 지시 중 하나를 말한다
+- [ ] 빠진 사실을 지어내지 않고 행위자와 행동, 지칭 대상을 분명하게 썼다
+- [ ] 핵심을 근거보다 먼저 쓰고 필요한 조건을 보존했다
 - [ ] `references/slop-patterns.md`의 패턴이 없다
 - [ ] `python tools/lint-prose.py <changed paths>`가 아무것도 출력하지 않는다
 - [ ] EN과 `-ko.md` 미러가 여전히 같은 말을 한다
