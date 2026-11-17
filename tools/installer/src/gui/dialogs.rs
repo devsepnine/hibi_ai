@@ -10,7 +10,7 @@ use super::{
 };
 use crate::app::{App, View};
 
-pub fn view(app: &App) -> Element<'_, Message> {
+pub fn view(app: &App, follow_log: bool) -> Element<'_, Message> {
     match app.current_view {
         View::Loading => card(
             column![
@@ -26,7 +26,7 @@ pub fn view(app: &App) -> Element<'_, Message> {
             ]
             .spacing(18),
         ),
-        View::Preflighting | View::Installing => progress(app),
+        View::Preflighting | View::Installing => progress(app, follow_log),
         View::Diff => diff(app),
         View::EnvInput => {
             let server = app.current_env_server_name().unwrap_or("MCP server");
@@ -44,6 +44,7 @@ pub fn view(app: &App) -> Element<'_, Message> {
                 "Enter the required value to continue. It is hidden while you type.",
                 app.current_env_var().unwrap_or("Value"),
                 text_input("Enter value", &app.env_input_buffer)
+                    .style(styles::input)
                     .secure(true)
                     .on_input(|value| Message::Action(Action::SetEnvInput(value)))
                     .on_submit(Message::Action(Action::Key(KeyCode::Enter)))
@@ -58,6 +59,7 @@ pub fn view(app: &App) -> Element<'_, Message> {
             "The MCP server will be available in this project's local configuration.",
             "Project directory",
             text_input("/path/to/project", &app.project_path_buffer)
+                .style(styles::input)
                 .on_input(|value| Message::Action(Action::SetProjectPath(value)))
                 .on_submit(Message::Action(Action::Key(KeyCode::Enter)))
                 .padding(14)
@@ -107,7 +109,7 @@ fn card<'a>(content: impl Into<Element<'a, Message>>) -> Element<'a, Message> {
 
 pub(super) fn neutral<'a>(label: &'a str, action: Action) -> iced::widget::Button<'a, Message> {
     button(label)
-        .style(styles::subtle)
+        .style(styles::secondary)
         .padding([10, 16])
         .on_press(Message::Action(action))
 }
@@ -146,7 +148,7 @@ fn confirm(title: &str, description: &str, label: &str) -> Element<'static, Mess
                 neutral("Keep working", Action::Cancel),
                 Space::new().width(Fill),
                 button(text(label.to_owned()))
-                    .style(styles::subtle)
+                    .style(styles::primary)
                     .padding([10, 16])
                     .on_press(Message::Action(Action::Key(KeyCode::Char('y'))))
             ]
@@ -176,7 +178,7 @@ pub fn close(busy: bool) -> Element<'static, Message> {
                 neutral("Keep working", Action::DismissClose),
                 Space::new().width(Fill),
                 button("Close application")
-                    .style(button::danger)
+                    .style(styles::destructive)
                     .padding([10, 16])
                     .on_press(Message::Action(Action::ConfirmClose))
             ]
@@ -192,7 +194,7 @@ pub fn remove(count: usize) -> Element<'static, Message> {
         text(format!("Remove {count} selected items?")).size(24),
         text("This removes the selected installed items in the current category from this environment, including selected external files.").style(styles::muted),
         text("This action cannot be undone.").size(13).style(text::danger),
-        row![neutral("Cancel", Action::CancelRemove), Space::new().width(Fill), button("Remove items").style(button::danger).padding([10,16]).on_press(Message::Action(Action::ConfirmRemove))].spacing(12),
+        row![neutral("Cancel", Action::CancelRemove), Space::new().width(Fill), button("Remove items").style(styles::destructive).padding([10,16]).on_press(Message::Action(Action::ConfirmRemove))].spacing(12),
     ].spacing(20))
 }
 

@@ -2,6 +2,7 @@ mod actions;
 mod activity;
 mod dialogs;
 mod filters;
+mod fonts;
 mod home;
 #[cfg(test)]
 mod keyboard_tests;
@@ -20,7 +21,7 @@ mod text_input;
 mod visibility_tests;
 
 use crossterm::event::KeyCode;
-use iced::widget::{Space, button, column, container, row, scrollable, text};
+use iced::widget::{Space, button, column, container, row, scrollable, svg, text, tooltip};
 use iced::{Element, Fill, Task, Theme};
 
 use crate::app::{App, View};
@@ -37,10 +38,12 @@ pub enum Message {
     FocusSearch,
     FocusResults,
     SearchEscape,
+    OperationLogScrolled(scrollable::Viewport),
 }
 
 pub fn run() -> iced::Result {
     iced::application(Runtime::new, update, view)
+        .default_font(fonts::interface())
         .title("HIBI AI")
         .theme(theme)
         .subscription(subscription)
@@ -71,6 +74,14 @@ fn update(state: &mut Runtime, message: Message) -> Task<Message> {
         Message::Action(action) => state.dispatch(action),
         Message::Tick => state.tick(),
         Message::Resized(size) => state.window_size = size,
+        Message::OperationLogScrolled(viewport) => {
+            if state.app.as_ref().is_some_and(|app| {
+                matches!(app.current_view, View::Preflighting | View::Installing)
+            }) && let Some(operation) = state.operation_log.update(viewport)
+            {
+                return iced::advanced::widget::operate(operation);
+            }
+        }
         Message::FocusSearch if search_available(state) => {
             return iced::widget::operation::focus("component-search");
         }
@@ -90,6 +101,13 @@ fn update(state: &mut Runtime, message: Message) -> Task<Message> {
     }
     if state.should_close {
         return iced::exit();
+    }
+    if !state
+        .app
+        .as_ref()
+        .is_some_and(|app| matches!(app.current_view, View::Preflighting | View::Installing))
+    {
+        state.operation_log = Default::default();
     }
     let scroll = match (scroll, state.app.as_ref()) {
         (Some(key), Some(app)) => scroll_after_key(app, key),
@@ -121,15 +139,24 @@ fn theme(state: &Runtime) -> Theme {
 
 fn view(state: &Runtime) -> Element<'_, Message> {
     let compact = state.window_size.height < 680.0;
-    let mut page = column![header(state), iced::widget::rule::horizontal(1)]
-        .spacing(if compact { 10 } else { 16 })
-        .padding(if compact { 14 } else { 20 });
+    let padding = if compact { 14.0 } else { 20.0 };
+    let mut page = column![
+        header(state),
+        iced::widget::rule::horizontal(1).style(styles::divider),
+    ]
+    .spacing(if compact { 10 } else { 16 })
+    .padding(padding);
     if state.close_requested {
         page = page.push(dialogs::close(state.busy()));
     } else if state.remove_requested {
         page = page.push(dialogs::remove(state.remove_count));
     } else if let Some(app) = &state.app {
-        page = page.push(content(app, compact, state.filter_menu_open));
+        page = page.push(content(
+            app,
+            compact,
+            state.filter_menu_open,
+            state.operation_log.following,
+        ));
     } else if state.error.is_none() {
         page = page.push(container(text("Loading sources and configuration…")).center_y(Fill));
     }
@@ -158,11 +185,19 @@ fn view(state: &Runtime) -> Element<'_, Message> {
     if let Some(message) = state
         .app
         .as_ref()
+        .filter(|app| !(app.current_view == View::Installing && app.processing_complete))
         .and_then(|app| app.status_message.as_ref())
     {
-        page = page.push(scrollable(text(message).size(11).style(styles::muted)).height(30));
+        page = page
+            .push(container(scrollable(text(message).size(11).style(styles::muted))).max_height(30))
+            .padding(iced::Padding::new(padding).bottom(8));
     }
-    container(page.height(Fill)).width(Fill).height(Fill).into()
+    // Include the background in damage tracking when presentation buffers are reused.
+    container(page.height(Fill))
+        .width(Fill)
+        .height(Fill)
+        .style(|theme: &Theme| container::Style::default().background(theme.palette().background))
+        .into()
 }
 
 fn header(state: &Runtime) -> Element<'_, Message> {
@@ -170,6 +205,11 @@ fn header(state: &Runtime) -> Element<'_, Message> {
         state.app.as_ref().map(|app| app.theme.mode()),
         Some(ThemeMode::Latte)
     );
+    let theme_icon: &[u8] = if dark {
+        br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="black" stroke-width="1.7"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5" fill="none" stroke="black" stroke-width="1.7" stroke-linecap="round"/></svg>"#
+    } else {
+        br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z" fill="none" stroke="black" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>"#
+    };
     row![
         container(text("h").size(23))
             .width(36)
@@ -177,37 +217,65 @@ fn header(state: &Runtime) -> Element<'_, Message> {
             .center_x(36)
             .center_y(36)
             .style(styles::badge),
-        text("hibi").size(23),
-        text(format!("/  Configuration manager · {}", crate::fs::VERSION))
-            .size(12)
-            .style(styles::muted),
+        text("hibi").size(20),
+        text("Configuration manager").size(11).style(styles::muted),
         Space::new().width(Fill),
-        text(if state.busy() {
-            "Working…"
+        text(if state.operation_active() {
+            "Working…".to_string()
         } else {
-            "Local workspace"
+            crate::fs::VERSION.to_string()
         })
         .size(11)
         .style(styles::muted),
-        button(text(if dark { "Light theme" } else { "Dark theme" }).size(12))
-            .padding([8, 12])
-            .style(styles::subtle)
-            .on_press_maybe(
-                state
-                    .app
-                    .is_some()
-                    .then_some(Message::Action(Action::ToggleTheme))
-            ),
-        button(text("Close").size(12))
-            .style(styles::subtle)
-            .on_press(Message::Action(Action::RequestClose)),
+        header_button(
+            theme_icon,
+            if dark { "Light theme" } else { "Dark theme" },
+            state.app.is_some().then_some(Action::ToggleTheme),
+        ),
     ]
     .spacing(12)
     .align_y(iced::Center)
     .into()
 }
 
-fn content(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Message> {
+fn header_button(
+    icon: &'static [u8],
+    label: &'static str,
+    action: Option<Action>,
+) -> Element<'static, Message> {
+    let enabled = action.is_some();
+    let icon = svg(svg::Handle::from_memory(icon))
+        .width(18)
+        .height(18)
+        .style(move |theme: &Theme, _| svg::Style {
+            color: Some(
+                theme
+                    .palette()
+                    .text
+                    .scale_alpha(if enabled { 1.0 } else { 0.55 }),
+            ),
+        });
+    tooltip(
+        button(icon)
+            .padding(9)
+            .width(36)
+            .height(36)
+            .style(styles::subtle)
+            .on_press_maybe(action.map(Message::Action)),
+        text(label).size(12),
+        tooltip::Position::Bottom,
+    )
+    .gap(6)
+    .style(styles::surface)
+    .into()
+}
+
+fn content(
+    app: &App,
+    compact: bool,
+    filter_menu_open: bool,
+    follow_log: bool,
+) -> Element<'_, Message> {
     match app.current_view {
         View::CliSelection => home::view(app),
         View::List => list::view(app, compact, filter_menu_open),
@@ -220,12 +288,13 @@ fn content(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Mess
         | View::SourceAddMapTo
         | View::SourceConfirmRemove
         | View::SourceSyncing => sources::view(app),
-        _ => dialogs::view(app),
+        _ => dialogs::view(app, follow_log),
     }
 }
 
 pub(super) fn key_button(label: &str, key: KeyCode) -> iced::widget::Button<'_, Message> {
     button(text(label).size(12))
         .padding([7, 10])
+        .style(styles::primary)
         .on_press(Message::Action(Action::Command(key)))
 }

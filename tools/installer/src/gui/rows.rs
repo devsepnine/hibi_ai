@@ -4,7 +4,7 @@ use crate::tree::TreeNode;
 use iced::widget::{Column, Space, button, checkbox, column, container, row, svg, text, tooltip};
 use iced::{Element, Fill};
 
-const ROW_HEIGHT: f32 = 44.0;
+const ROW_HEIGHT: f32 = 40.0;
 
 pub fn items(app: &App) -> Column<'_, Message> {
     let mut rows = Column::new().spacing(2).padding(6).width(Fill);
@@ -68,6 +68,8 @@ pub fn items(app: &App) -> Column<'_, Message> {
                         .height(28)
                         .on_press(Message::Action(Action::ExpandRow(index))),
                     checkbox(tree.is_folder_all_selected(node_index, &app.components))
+                        .size(15)
+                        .style(styles::check)
                         .on_toggle(move |_| Message::Action(Action::ToggleRow(index))),
                     button(
                         row![
@@ -88,7 +90,7 @@ pub fn items(app: &App) -> Column<'_, Message> {
                         .align_y(iced::Center)
                     )
                     .style(if tree.cursor == index {
-                        styles::navigation
+                        styles::focused_row
                     } else {
                         styles::subtle
                     })
@@ -188,13 +190,13 @@ fn file<'a>(
             text(name).size(13).wrapping(text::Wrapping::None),
             text(source).size(10).style(styles::muted)
         ]
-        .spacing(2),
+        .spacing(1),
     )
     .width(Fill)
     .clip(true);
     let status_badge =
         container(text(status).size(11))
-            .padding([4, 8])
+            .padding([3, 7])
             .style(move |theme: &iced::Theme| {
                 let mut style = styles::badge(theme);
                 style.text_color = Some(match status {
@@ -206,7 +208,10 @@ fn file<'a>(
                 style
             });
     row![
-        checkbox(selected).on_toggle(move |_| Message::Action(Action::ToggleRow(index))),
+        checkbox(selected)
+            .size(15)
+            .style(styles::check)
+            .on_toggle(move |_| Message::Action(Action::ToggleRow(index))),
         tooltip(
             button(
                 row![name_column, status_badge]
@@ -214,13 +219,13 @@ fn file<'a>(
                     .align_y(iced::Center)
             )
             .style(if focused {
-                styles::navigation
+                styles::focused_row
             } else {
                 styles::subtle
             })
             .height(ROW_HEIGHT - 4.0)
             .width(Fill)
-            .padding([4, 10])
+            .padding([2, 8])
             .on_press(Message::Action(Action::SelectRow(index))),
             container(
                 column![

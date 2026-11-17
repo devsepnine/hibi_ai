@@ -159,13 +159,6 @@ impl Runtime {
             && previous_theme != Some(app.theme.mode())
         {
             self.appearance.request(app.theme.mode());
-            app.status_message = Some(
-                match app.theme.mode() {
-                    crate::theme::ThemeMode::Mocha => "Dark theme enabled.",
-                    crate::theme::ThemeMode::Latte => "Light theme enabled.",
-                }
-                .into(),
-            );
         }
         if let Err(error) = result {
             let message = format!("{error:#}");
@@ -258,6 +251,7 @@ impl Runtime {
             Action::Back if app.current_view == View::Installing && app.processing_complete => {
                 loading::installing_key(app, KeyCode::Esc, &mut self.channels);
             }
+            Action::Back if app.current_view == View::List => app.request_exit_to_main(),
             Action::Back if !self_busy_view(app) => {
                 cli::dispatch_key(app, KeyCode::Esc, &self.channels.refresh_tx)?;
             }

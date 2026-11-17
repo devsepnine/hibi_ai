@@ -1,5 +1,7 @@
 use crossterm::event::KeyCode;
-use iced::widget::{Space, button, column, container, row, rule, scrollable, text, text_input};
+use iced::widget::{
+    Space, button, column, container, row, rule, scrollable, text, text_input, tooltip,
+};
 use iced::{Element, Fill};
 
 use super::{Message, actions::Action, filters, key_button, rows, sidebar, styles};
@@ -14,9 +16,9 @@ pub fn view(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Mes
             .any(|node| node.is_folder() && !node.is_expanded())
     });
     let mut heading =
-        column![text(app.tab.display_name()).size(if compact { 23 } else { 27 })].spacing(5);
+        column![text(app.tab.display_name()).size(if compact { 22 } else { 24 })].spacing(5);
     if !compact {
-        heading = heading.push(text(description(app.tab)).size(13).style(styles::muted));
+        heading = heading.push(text(description(app.tab)).size(12).style(styles::muted));
     }
     let mut main = column![
         row![
@@ -25,10 +27,11 @@ pub fn view(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Mes
             container(
                 text(format!(
                     "{total} {}",
-                    if app.search_query.trim().is_empty() {
-                        "items"
-                    } else {
-                        "results"
+                    match (app.search_query.trim().is_empty(), total) {
+                        (true, 1) => "item",
+                        (true, _) => "items",
+                        (false, 1) => "result",
+                        (false, _) => "results",
                     }
                 ))
                 .size(12)
@@ -38,7 +41,7 @@ pub fn view(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Mes
         ]
         .align_y(iced::Center),
     ]
-    .spacing(if compact { 8 } else { 16 });
+    .spacing(if compact { 8 } else { 12 });
     if app.tab.to_component_type().is_some() {
         main = main
             .push(
@@ -52,23 +55,23 @@ pub fn view(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Mes
                         if expand { "Expand all" } else { "Collapse all" },
                         KeyCode::Char('E')
                     )
-                    .style(styles::subtle),
+                    .style(styles::secondary),
                     button(text(format!("Hide selected · {selected_folders}")).size(12))
                         .padding([7, 10])
-                        .style(styles::subtle)
+                        .style(styles::secondary)
                         .on_press_maybe(
                             (selected_folders > 0)
                                 .then_some(Message::Action(Action::HideSelectedFolders))
                         ),
                     button(text(format!("Unhide selected · {selected_folders}")).size(12))
                         .padding([7, 10])
-                        .style(styles::subtle)
+                        .style(styles::secondary)
                         .on_press_maybe(
                             (selected_folders > 0)
                                 .then_some(Message::Action(Action::UnhideSelectedFolders))
                         ),
                 ]
-                .spacing(3)
+                .spacing(6)
                 .wrap(),
             );
     } else {
@@ -125,34 +128,27 @@ pub fn view(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Mes
     }
     let table = column![
         row![
-            text("NAME / SOURCE · 2")
-                .size(10)
+            text("Component")
+                .size(11)
                 .style(if app.focus == FocusArea::Content {
                     text::primary
                 } else {
                     styles::muted
                 }),
             Space::new().width(Fill),
-            text("STATUS").size(10).style(styles::muted)
+            text("Status").size(11).style(styles::muted)
         ]
         .padding([10, 16]),
-        rule::horizontal(1),
+        rule::horizontal(1).style(styles::divider),
         scrollable(rows::items(app))
             .id("component-list")
             .height(Fill),
     ];
     main = main.push(container(table).style(styles::surface).height(Fill));
-    if !compact && let Some(details) = focused_details(app) {
-        main = main.push(scrollable(text(details).size(11).style(styles::muted)).height(34));
-    }
     let controls = column![
-        rule::horizontal(1),
+        rule::horizontal(1).style(styles::divider),
         row![
-            column![
-                text(format!("{selected} selected")).size(14),
-                text("In this view").size(10).style(styles::muted)
-            ]
-            .spacing(2),
+            selection_label(app, selected),
             Space::new().width(Fill),
             key_button(
                 if selected > 0 && selected == total {
@@ -165,7 +161,7 @@ pub fn view(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Mes
             .style(styles::subtle)
             .on_press_maybe((total > 0).then_some(command('a'))),
             key_button("Diff", KeyCode::Char('d'))
-                .style(styles::subtle)
+                .style(styles::secondary)
                 .on_press_maybe(
                     app.selected_component_index()
                         .is_some()
@@ -175,15 +171,15 @@ pub fn view(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Mes
                 .style(styles::danger)
                 .on_press_maybe((selected > 0).then_some(command('r'))),
             key_button("Install", KeyCode::Char('i'))
-                .padding([9, 16])
+                .padding([9, 18])
                 .on_press_maybe((eligible > 0).then_some(command('i'))),
         ]
         .spacing(8)
         .align_y(iced::Center),
     ]
-    .spacing(12);
+    .spacing(10);
     row![sidebar::view(app), main.push(controls).height(Fill)]
-        .spacing(24)
+        .spacing(18)
         .height(Fill)
         .into()
 }
@@ -193,7 +189,8 @@ fn search(app: &App) -> Element<'_, Message> {
         text_input("Search this category…", &app.search_query)
             .id("component-search")
             .size(13)
-            .padding([8, 10])
+            .padding([10, 12])
+            .style(styles::input)
             .on_input(|query| Message::Action(Action::SetSearch(query)))
             .on_submit(Message::FocusResults)
     )]
@@ -207,6 +204,25 @@ fn search(app: &App) -> Element<'_, Message> {
         );
     }
     field.width(Fill).into()
+}
+
+fn selection_label(app: &App, selected: usize) -> Element<'_, Message> {
+    let label = column![
+        text(format!("{selected} selected")).size(13),
+        text("In this view").size(10).style(styles::muted),
+    ]
+    .spacing(3);
+    if let Some(details) = focused_details(app) {
+        tooltip(
+            label,
+            container(text(details).size(12)).max_width(600).padding(10),
+            tooltip::Position::Top,
+        )
+        .style(styles::surface)
+        .into()
+    } else {
+        label.into()
+    }
 }
 
 fn command(value: char) -> Message {

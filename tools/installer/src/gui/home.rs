@@ -6,13 +6,13 @@ use crate::app::{App, TargetCli};
 
 pub fn view(app: &App) -> Element<'_, Message> {
     let intro = column![
-        text("YOUR AI WORKSPACE").size(11).style(styles::muted),
-        text("Your workspace, configured.").size(34),
+        text("Your AI workspace").size(11).style(styles::muted),
+        text("Your workspace, configured.").size(28),
         text("Manage the instructions, tools and workflows your AI assistants use.")
-            .size(15)
+            .size(13)
             .style(styles::muted),
     ]
-    .spacing(12);
+    .spacing(10);
     let choices = column![
         target(
             "C",
@@ -43,15 +43,15 @@ pub fn view(app: &App) -> Element<'_, Message> {
             Space::new().width(Fill),
             button("Manage sources")
                 .padding([9, 12])
-                .style(styles::subtle)
+                .style(styles::secondary)
                 .on_press(Message::Action(Action::OpenSources)),
         ]
         .align_y(iced::Center)
         .spacing(12),
     )
-    .padding(18)
-    .style(styles::surface);
-    container(container(column![intro, choices, sources].spacing(28)).max_width(720))
+    .padding(16)
+    .style(styles::sidebar);
+    container(container(column![intro, choices, sources].spacing(24)).max_width(680))
         .center_x(Fill)
         .center_y(Fill)
         .into()
@@ -65,24 +65,24 @@ fn target<'a>(
 ) -> Element<'a, Message> {
     button(
         row![
-            container(text(icon).size(24))
-                .width(48)
-                .height(48)
-                .center_x(48)
-                .center_y(48)
+            container(text(icon).size(20))
+                .width(40)
+                .height(40)
+                .center_x(40)
+                .center_y(40)
                 .style(styles::badge),
             column![
-                text(name).size(19),
+                text(name).size(17),
                 text(description).size(12).style(styles::muted)
             ]
-            .spacing(7)
+            .spacing(6)
             .width(Fill),
             text("›").size(24).style(styles::muted),
         ]
-        .spacing(18)
+        .spacing(16)
         .align_y(iced::Center),
     )
-    .padding(22)
+    .padding(18)
     .width(Fill)
     .style(|theme, status| {
         let mut style = styles::subtle(theme, status);

@@ -56,7 +56,7 @@ fn unified_menu_stays_inside_a_small_window_without_moving_the_list() {
         .labels()
         .0
         .iter()
-        .find(|(label, _)| label == "NAME / SOURCE · 2")
+        .find(|(label, _)| label == "Component")
         .unwrap()
         .1;
     desktop.open_filters();
@@ -70,7 +70,7 @@ fn unified_menu_stays_inside_a_small_window_without_moving_the_list() {
     let after = labels
         .0
         .iter()
-        .find(|(label, _)| label == "NAME / SOURCE · 2")
+        .find(|(label, _)| label == "Component")
         .unwrap()
         .1;
     assert_eq!(before, after);
@@ -197,7 +197,7 @@ fn opening_status_dropdown_does_not_move_the_component_list() {
         .labels()
         .0
         .iter()
-        .find(|(label, _)| label == "NAME / SOURCE · 2")
+        .find(|(label, _)| label == "Component")
         .unwrap()
         .1;
     desktop.open_filters();
@@ -205,7 +205,7 @@ fn opening_status_dropdown_does_not_move_the_component_list() {
         .labels()
         .0
         .iter()
-        .find(|(label, _)| label == "NAME / SOURCE · 2")
+        .find(|(label, _)| label == "Component")
         .unwrap()
         .1;
     assert_eq!(before, after);

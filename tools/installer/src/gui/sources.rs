@@ -64,10 +64,13 @@ fn source_list(app: &App) -> Element<'_, Message> {
     }
     let can_edit = editable_selection(app).is_some();
     let actions = row![
-        button("Add source").on_press(key('a')).padding([10, 16]),
+        button("Add source")
+            .on_press(key('a'))
+            .style(styles::primary)
+            .padding([10, 16]),
         button("Sync all")
             .on_press(key('f'))
-            .style(styles::subtle)
+            .style(styles::secondary)
             .padding([10, 16]),
         Space::new().width(Fill),
         text(format!("{} libraries", app.source_entries.len() + 1))
@@ -89,7 +92,7 @@ fn source_list(app: &App) -> Element<'_, Message> {
         row![
             button("Edit source")
                 .on_press_maybe(can_edit.then(|| key('e')))
-                .style(styles::subtle)
+                .style(styles::secondary)
                 .padding([9, 14]),
             button("Remove source")
                 .on_press_maybe(can_edit.then(|| key('r')))
@@ -98,7 +101,7 @@ fn source_list(app: &App) -> Element<'_, Message> {
             Space::new().width(Fill),
             button("Back")
                 .on_press(Message::Action(Action::Back))
-                .style(styles::subtle)
+                .style(styles::secondary)
                 .padding([9, 14]),
         ]
         .spacing(8)

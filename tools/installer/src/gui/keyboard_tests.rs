@@ -24,6 +24,82 @@ fn runtime() -> Runtime {
     state
 }
 
+fn render_page(state: &Runtime, tree: &mut Tree, renderer: &mut Renderer) -> Vec<u8> {
+    use iced::Color;
+    use iced::advanced::renderer::{Headless, Renderer as _};
+
+    let viewport = Rectangle::with_size(state.window_size);
+    let theme = super::theme(state);
+    let mut element = super::view(state);
+    tree.diff(element.as_widget());
+    let node = element.as_widget_mut().layout(
+        tree,
+        renderer,
+        &layout::Limits::new(Size::ZERO, state.window_size),
+    );
+    renderer.reset(viewport);
+    element.as_widget().draw(
+        tree,
+        renderer,
+        &theme,
+        &iced::advanced::renderer::Style {
+            text_color: theme.palette().text,
+        },
+        Layout::new(&node),
+        mouse::Cursor::Unavailable,
+        &viewport,
+    );
+    renderer.screenshot(Size::new(1120, 780), 1.0, Color::from_rgb(1.0, 0.0, 1.0))
+}
+
+#[test]
+fn theme_changes_repaint_the_entire_page_background() {
+    let mut state = runtime();
+    let mut renderer = Renderer::new(Font::default(), Pixels(16.0));
+    let mut tree = Tree::new(super::view(&state).as_widget());
+    for dark in [true, false, true] {
+        let app = state.app.as_mut().unwrap();
+        if dark != (app.theme.mode() == crate::theme::ThemeMode::Mocha) {
+            app.theme.toggle();
+        }
+        let pixels = render_page(&state, &mut tree, &mut renderer);
+        let expected = if dark { [30, 30, 46] } else { [245, 245, 250] };
+        for (x, y) in [(0, 0), (1119, 0), (0, 779), (1119, 779)] {
+            let offset = (y * 1120 + x) * 4;
+            assert_eq!(&pixels[offset..offset + 3], &expected);
+        }
+    }
+}
+
+#[test]
+fn saving_appearance_does_not_change_the_visible_page() {
+    let mut state = runtime();
+    let mut renderer = Renderer::new(Font::default(), Pixels(16.0));
+    let mut tree = Tree::new(super::view(&state).as_widget());
+    let before = render_page(&state, &mut tree, &mut renderer);
+    state
+        .appearance
+        .request(state.app.as_ref().unwrap().theme.mode());
+    assert!(state.busy());
+    let saving = render_page(&state, &mut tree, &mut renderer);
+    let changed = before.iter().zip(&saving).filter(|(a, b)| a != b).count();
+    assert_eq!(changed, 0);
+}
+
+#[test]
+fn toggling_theme_preserves_status_messages_and_footer_visibility() {
+    for status in [None, Some("Installation complete".to_string())] {
+        let mut state = runtime();
+        state.app.as_mut().unwrap().status_message = status.clone();
+        let previous = state.app.as_ref().unwrap().theme.mode();
+        let _ = super::update(&mut state, Message::Action(Action::ToggleTheme));
+        let app = state.app.as_ref().unwrap();
+        assert_eq!(app.theme.mode(), previous.toggle());
+        assert_eq!(app.status_message, status);
+        assert!(state.appearance.busy());
+    }
+}
+
 #[test]
 fn clicking_category_keeps_keyboard_navigation_in_the_sidebar() {
     let mut state = runtime();
@@ -35,6 +111,36 @@ fn clicking_category_keeps_keyboard_navigation_in_the_sidebar() {
     assert_eq!(app.focus, FocusArea::Tabs);
     state.dispatch(Action::Key(KeyCode::Up));
     assert_eq!(state.app.as_ref().unwrap().tab, Tab::Skills);
+}
+
+#[test]
+fn switch_cli_button_opens_the_picker_or_confirmation_from_either_focus_area() {
+    for focus in [FocusArea::Tabs, FocusArea::Content] {
+        for selected in [false, true] {
+            let mut state = runtime();
+            let app = state.app.as_mut().unwrap();
+            app.focus = focus;
+            for component in &mut app.components {
+                component.selected = selected;
+            }
+            state.dispatch(Action::Back);
+            assert_eq!(
+                state.app.as_ref().unwrap().current_view,
+                if selected {
+                    View::ConfirmExit
+                } else {
+                    View::CliSelection
+                },
+                "focus={focus:?}, selected={selected}",
+            );
+            if selected {
+                state.dispatch(Action::Cancel);
+                let app = state.app.as_ref().unwrap();
+                assert_eq!(app.current_view, View::List);
+                assert!(app.components.iter().all(|component| component.selected));
+            }
+        }
+    }
 }
 
 #[test]

@@ -21,7 +21,7 @@ import time
 
 try:
     from PIL import Image, ImageChops, ImageOps
-    from Xlib import X, XK, display
+    from Xlib import X, XK, display, protocol
     from Xlib.ext import xtest
 except ImportError as error:
     sys.exit(f"GUI smoke dependencies missing: {error}. Install python-xlib and Pillow.")
@@ -191,6 +191,21 @@ class Desktop:
         x, y, w, h = self.find(label, region)
         self.click(x+w/2, y+h/2)
 
+    def click_theme(self):
+        geometry = self.window.get_geometry()
+        padding = 14 if geometry.height < 680 else 20
+        self.click(geometry.width - padding - 18, padding + 18)
+
+    def expect_theme(self, theme):
+        deadline = time.monotonic() + 8
+        while time.monotonic() < deadline:
+            dark = sum(self.capture().getpixel((0, 0))) < 300
+            if dark == (theme == "dark"):
+                return
+            time.sleep(.1)
+        self.screenshot("failure")
+        raise AssertionError(f"Expected {theme} theme")
+
     def key(self, name, shift=False, control=False, logo=False):
         controlcode = self.d.keysym_to_keycode(XK.string_to_keysym("Control_L"))
         if control:
@@ -239,8 +254,8 @@ class Desktop:
         assert match, self.text()
         selected = int(match.group(1))
         for theme in ("dark", "light"):
-            self.click_text("Dark theme" if theme == "dark" else "Light theme")
-            self.expect("Light theme" if theme == "dark" else "Dark theme")
+            self.click_theme()
+            self.expect_theme(theme)
             for modifier in ("control", "logo"):
                 keys = {modifier: True}
                 self.search("architect", submit=False)
@@ -386,7 +401,7 @@ class Desktop:
         raise AssertionError("Could not clear selection in the current view")
 
     def back_to_home(self):
-        self.click_text("Switch environment")
+        self.click_text("Switch CLI")
         if "leavethisenvironment" in normalized(self.text()):
             self.click_text("Discard selections")
         self.expect("Your workspace")
@@ -404,7 +419,12 @@ class Desktop:
         raise AssertionError(f"Appearance {appearance} was not persisted")
 
     def close_window(self):
-        self.click_text("Close", (900, 0, 1120, 80))
+        self.window.send_event(protocol.event.ClientMessage(
+            window=self.window.id,
+            client_type=self.d.intern_atom("WM_PROTOCOLS"),
+            data=(32, [self.d.intern_atom("WM_DELETE_WINDOW"), X.CurrentTime, 0, 0, 0]),
+        ))
+        self.d.sync()
         time.sleep(.2)
         if self.process.poll() is None:
             self.click_text("Close application")
@@ -421,25 +441,25 @@ class Desktop:
     def run(self):
         self.launch()
         self.passed("01-dark-home")
-        self.click_text("Light theme")
-        self.expect("Dark theme")
+        self.click_theme()
+        self.expect_theme("light")
         assert sum(self.capture().getpixel((0, 0))) > 600
         self.passed("02-light-home")
         self.wait_for_appearance("light")
         self.close_window()
         self.launch()
-        self.expect("Dark theme")
+        self.expect_theme("light")
         self.passed("02b-light-theme-restored")
         self.click_text("Claude Code")
         self.expect("COMPONENTS")
         self.expect("Agents")
         # A normal-size capture records the entire category sidebar for visual review.
         self.passed("03-claude-sidebar")
-        self.click_text("Dark theme")
-        self.expect("Light theme")
+        self.click_theme()
+        self.expect_theme("dark")
         self.passed("03a-dark-claude-sidebar")
-        self.click_text("Light theme")
-        self.expect("Dark theme")
+        self.click_theme()
+        self.expect_theme("light")
         sidebar_text = " ".join(w["text"] for w in self.words() if w["x"] < 210)
         self.wheel(140, 420, 6)
         sidebar_text += " " + " ".join(w["text"] for w in self.words() if w["x"] < 210)
@@ -563,14 +583,14 @@ class Desktop:
         self.expect("Bundled library")
         self.click_text("Back", (850, 600, 1120, 780))
         self.expect("Your workspace")
-        self.click_text("Dark theme")
-        self.expect("Light theme")
+        self.click_theme()
+        self.expect_theme("dark")
         self.passed("16-dark-home-final")
         assert sum(self.capture().getpixel((0, 0))) < 150
         self.wait_for_appearance("dark")
         self.close_window()
         self.launch()
-        self.expect("Light theme")
+        self.expect_theme("dark")
         self.passed("17-dark-theme-restored")
         self.close_window()
         (self.artifacts / "results.json").write_text(json.dumps({"passed": self.results, "isolated_home": str(self.home)}, indent=2))

@@ -13,7 +13,7 @@ fn key(value: char) -> Message {
 fn cancel<'a>() -> iced::widget::Button<'a, Message> {
     button("Cancel")
         .padding([10, 16])
-        .style(styles::subtle)
+        .style(styles::secondary)
         .on_press(Message::Action(Action::Cancel))
 }
 
@@ -50,7 +50,7 @@ pub(super) fn source_type() -> Element<'static, Message> {
             )
             .width(Fill)
             .padding(18)
-            .style(styles::subtle)
+            .style(styles::secondary)
             .on_press(key('1')),
             button(
                 column![
@@ -63,7 +63,7 @@ pub(super) fn source_type() -> Element<'static, Message> {
             )
             .width(Fill)
             .padding(18)
-            .style(styles::subtle)
+            .style(styles::secondary)
             .on_press(key('2')),
             cancel(),
         ]
@@ -112,7 +112,7 @@ pub(super) fn confirm_remove(app: &App) -> Element<'_, Message> {
         text("Disconnect this library?").size(24),
         container(text(label.unwrap_or_else(|| "This source is no longer available.".to_string())).size(14)).padding(16).style(styles::surface),
         text("This removes the library from your sources and clears its Git cache. Your installed components stay in place.").style(styles::muted),
-        row![cancel(), Space::new().width(Fill), button("Remove source").on_press_maybe(entry.map(|_| key('y'))).style(button::danger).padding([10,16])].spacing(10),
+        row![cancel(), Space::new().width(Fill), button("Remove source").on_press_maybe(entry.map(|_| key('y'))).style(styles::destructive).padding([10,16])].spacing(10),
     ].spacing(18))
 }
 
@@ -155,6 +155,7 @@ pub(super) fn source_input(app: &App) -> Element<'_, Message> {
         text(title).size(24),
         text(hint).style(styles::muted),
         text_input(label, &app.source_input_buffer)
+            .style(styles::input)
             .on_input(|value| Message::Action(Action::SetInput(value)))
             .on_submit(Message::Action(Action::Key(KeyCode::Enter)))
             .padding(14)
@@ -170,6 +171,7 @@ pub(super) fn source_input(app: &App) -> Element<'_, Message> {
                 cancel(),
                 Space::new().width(Fill),
                 button("Continue")
+                    .style(styles::primary)
                     .on_press(Message::Action(Action::Key(KeyCode::Enter)))
                     .padding([10, 20])
             ]

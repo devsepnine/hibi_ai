@@ -31,7 +31,7 @@ pub(super) fn view(app: &App, open: bool) -> Element<'_, Message> {
     .width(180)
     .height(36)
     .style(if active == 0 {
-        styles::subtle
+        styles::secondary
     } else {
         styles::navigation
     })
@@ -40,7 +40,7 @@ pub(super) fn view(app: &App, open: bool) -> Element<'_, Message> {
         column![
             text("Status").size(11).style(styles::muted),
             status_choices(app),
-            rule::horizontal(1),
+            rule::horizontal(1).style(styles::divider),
             visibility_choices(app),
         ]
         .spacing(14),
@@ -77,6 +77,7 @@ fn status_choices(app: &App) -> Column<'_, Message> {
     .fold(column![].spacing(12), |choices, filter| {
         choices.push(
             checkbox(app.component_filter.contains(filter))
+                .style(styles::check)
                 .label(if filter == ComponentFilter::All {
                     "Default"
                 } else {
