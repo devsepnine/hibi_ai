@@ -1,0 +1,18 @@
+[
+  {
+    "query": "설정 저장 테스트 케이스를 설계해줘. 쓰기 실패와 실패 후 재시도도 검증하고 싶어.",
+    "should_trigger": true
+  },
+  {
+    "query": "취소 후 늦게 도착한 응답이 화면을 덮어쓰지 않는지 테스트 작성해줘.",
+    "should_trigger": true
+  },
+  {
+    "query": "순수 함수의 경곗값과 실패 경로 테스트를 리뷰해줘.",
+    "should_trigger": true
+  },
+  {
+    "query": "README의 설치 안내 문장만 다듬어줘. 코드와 테스트는 바꾸지 마.",
+    "should_trigger": false
+  }
+]

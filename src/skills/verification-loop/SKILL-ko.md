@@ -98,6 +98,8 @@ git diff HEAD~1 --name-only
 - 누락된 에러 처리
 - 잠재적 엣지 케이스
 
+`coding-standards`의 `references/review-checklist.md` 중 셀프리뷰와 PR 리뷰의 실패 경로를 적용한다. 관련 실패 시나리오, 근거, 검증하지 못한 한계를 정상 동작 검사와 구분해서 기록한다. 테스트 사례 설계에는 `tdd-workflow`를 쓴다.
+
 ### Phase 7: 실제 결과물 관찰
 
 변경된 동작을 직접 실행하고 결과를 읽는다:
@@ -112,6 +114,7 @@ git diff HEAD~1 --name-only
 | 문서만 | 독자의 입장에서 diff를 다시 읽음; 동작을 좌우하는 텍스트, 즉 skill·agent·command 프롬프트가 바뀐 경우에만 eval 실행 |
 
 - 캐시되거나 파생된 표현, 예를 들어 파일 mtime, 에이전트의 자기 보고, 오래된 스크린샷이 아니라 실제 값을 읽는다.
+- 변경한 흐름에 도달 가능한 실패가 있으면 정상 동작과 대표 실패를 함께 실행하고 약속한 실패 후 상태를 관찰한다. 격리된 데이터와 제어할 수 있는 의존성을 쓴다. 실행할 수 없으면 `INCONCLUSIVE`와 부족한 근거를 보고하고, 적용할 실패 시나리오가 없으면 이유와 함께 `N/A`로 표시한다.
 - 확인이 실패하면 시스템보다 관찰 방법을 먼저 의심한다.
 - 한 번 눈으로 보기보다 비교를 다시 돌릴 수 있는 스크립트를 선호하고, 그 출력을 증거로 남긴다.
 - 직접 돌릴 수 있는 확인을 사용자에게 넘기지 않는다. 기기나 자격증명이 없어 여기서 정말 실행할 수 없다면 `INCONCLUSIVE`로 표시하고 무엇이 판정할지 적는다. `INCONCLUSIVE`이거나 변경된 곳과 다른 환경에서 실행한 확인은 `NOT READY`다.
@@ -131,6 +134,7 @@ Tests:     [PASS/FAIL] (X/Y passed, Z% coverage)
 Security:  [PASS/FAIL] (X issues)
 Diff:      [X files changed]
 Artifact:  [PASS/FAIL/INCONCLUSIVE] (what was run, what was observed)
+Failure paths: [PASS/FAIL/INCONCLUSIVE/N/A] (scenarios, state after failure, evidence or limits)
 
 Overall:   [READY/NOT READY/PARTIAL] for PR
 

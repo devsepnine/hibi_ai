@@ -62,6 +62,19 @@ If unsure, default up, from Major to Blocker, rather than down.
 - [ ] No unintended side effects in unrelated modules
 - [ ] Behavior parity verified against previous version when refactoring
 
+### Failure paths in self-review and PR review
+
+Apply this pass after coding and when reviewing a PR, even when CI and success tests pass.
+
+1. Identify the changed behavior, its callers, and the assumptions needed for success. Use `tdd-workflow` → Design failure cases before code to select relevant, reachable failure scenarios. Explain when none applies.
+2. Trace each selected failure from its trigger through the real operation to the caller. Check error propagation, success indicators, persisted and in-memory state, resource cleanup, and any promised recovery. A catch block alone does not establish correct failure behavior.
+3. Compare the observed or traced result with the contract. For partial work, check the declared atomicity or per-item policy. Do not invent rollback, retries, or other requirements. Raise an undefined failure policy as an open decision.
+4. Check whether a test or reproduction reaches that failure and asserts the promised outcome and state after failure. A mock that rejects, a green build, or a coverage percentage is not sufficient evidence by itself. Reuse adequate existing tests and add only checks justified by the change and risk.
+5. Distinguish demonstrated defects, test gaps, and unverified risks. A defect finding names the reachable trigger, affected code location, incorrect outcome, and supporting evidence. Report unexecuted checks as limits, not as passed or as proven bugs.
+
+- [ ] Relevant failure scenarios reviewed alongside success, with evidence or explicit limits
+- [ ] State preservation, cleanup, partial effects, and recovery checked where the contract requires them
+
 ## Concurrency & Resource Safety
 
 This project uses Rust threads + `mpsc` channels + child processes. Review

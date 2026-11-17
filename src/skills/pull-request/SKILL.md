@@ -202,12 +202,10 @@ Necessity is a question, not a verdict. When you cannot tell what a hunk is for,
 ask the author. The answer is usually one sentence, and it belonged in the body
 anyway.
 
-**c. Is it correct?** Edge cases, error paths, existing callers. Depth in
-`/code-review`, and `security-review` when the diff touches auth, input
-handling, or secrets.
+**c. Is it correct when it fails?** Review success and reachable failure paths using `coding-standards` → `references/review-checklist.md`, Failure paths in self-review and PR review. Trace the trigger through errors, partial effects, cleanup, and the caller's resulting state. Distinguish confirmed defects from test gaps and unverified risks. Depth in `/code-review`, and `security-review` when the diff touches auth, input handling, or secrets.
 
 **d. Is it tested?** Would a test fail if this change were reverted? If not, the
-claim is unverified regardless of coverage numbers; see `tdd-workflow`.
+claim is unverified regardless of coverage numbers. Check meaningful assertions for relevant failure scenarios as well as success, including state after failure rather than only an error being thrown. Use `tdd-workflow` for case design, reuse adequate existing tests, and state any unexecuted checks.
 
 Posting a review is outward-facing too: draft it, show it, and post only when
 asked:

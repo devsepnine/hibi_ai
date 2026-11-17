@@ -1,0 +1,33 @@
+{
+  "skill_name": "tdd-workflow",
+  "evals": [
+    {
+      "id": 1,
+      "name": "test-failed-save-state-and-recovery",
+      "prompt": "설정 저장 함수 테스트를 작성해줘. 기존 설정은 {theme: 'dark'}이고 저장이 성공해야 화면 상태를 바꿔. 쓰기 실패 시 기존 파일과 화면 선택을 보존하고 오류를 보여줘야 해. 사용자가 다시 저장할 수도 있어.",
+      "expected_output": "Designs a success baseline plus a write failure injected at the storage boundary while calling the real save operation. Starts with nonempty existing data, asserts the specific error, reads back preserved settings, verifies the UI selection remains unchanged and no success is shown, and exercises a permitted retry from that failed state. Does not mock the save operation itself or consider a rejection assertion alone sufficient.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "partial-batch-failure-follows-contract",
+      "prompt": "배치 테스트 설계해줘. 항목별 성공을 저장하며 롤백은 하지 않는 계약이야. 첫 항목 저장 후 두 번째 항목에서 오류가 나면 중단하고 성공한 항목 목록과 오류를 반환해. 자동 재시도는 없어.",
+      "expected_output": "Injects failure on the second write after the first real effect. Asserts the first item's persisted data and returned success list, the second item's specific error, and that later items were not written. Preserves the declared partial-success policy and does not demand rollback, automatic retry, or whole-batch atomicity. Includes a successful batch for comparison.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "cancellation-and-late-result-are-deterministic",
+      "prompt": "검색 UI 테스트 설계해줘. 새 요청을 보내면 이전 요청을 취소하고, 취소 뒤 늦게 온 이전 응답은 무시하는 계약이야. 네트워크 지연을 기다리는 sleep 테스트는 피하고 싶어.",
+      "expected_output": "Controls request completion with deferred responses or equivalent deterministic scheduling. Tests a normal result, cancellation, and a stale earlier response arriving after the new result. Asserts the latest visible results, correct busy state, and no stale overwrite, while verifying the declared cancellation behavior. Does not depend on arbitrary sleeps or only check that a cancel mock was called.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "avoid-inventing-failures-for-pure-change",
+      "prompt": "로컬 순수 함수 clamp(value, min, max) 테스트를 설계해줘. 모두 유한한 정수이고 min <= max는 호출 전에 보장돼. I/O, async, 저장 상태는 없어.",
+      "expected_output": "Tests an in-range value, values below and above the bounds, exact bounds, and equal bounds with concrete expected results. Explains why dependency failure, cancellation, retry, and partial persistence do not apply. Does not fabricate network errors or unreachable input types to satisfy a fixed negative-test count, and does not add runtime validation for the already guaranteed contract.",
+      "files": []
+    }
+  ]
+}

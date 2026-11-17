@@ -70,6 +70,20 @@
       "prompt": "3차 리뷰 코멘트 왔어. 전부 반영해줘.",
       "expected_output": "Treats each comment as a claim to classify, not an instruction to execute. Reads the whole thread including resolved rounds, pulls line-level comments with their path and line so a comment on a changed line is distinguishable from one on adjacent pre-existing code, and compares comment timestamps against commit timestamps to find points a later commit already handled — linking that commit instead of re-fixing. Applies the scope test (would this change be needed if this PR had never existed) and routes a pre-existing issue or a new requirement to a follow-up rather than growing the diff. Does not comply with a comment whose premise the code contradicts; replies with the evidence. Asks the commenter whether an unclear item belongs in this PR or a follow-up instead of guessing. Replies to every comment including the deferred ones, naming the class and where it went.",
       "files": []
+    },
+    {
+      "id": 11,
+      "name": "review-traces-failure-after-partial-effect",
+      "prompt": "이 PR을 리뷰해줘. 계약상 설정 저장에 실패하면 기존 화면 값이 유지돼야 해. 바뀐 코드는 화면 값을 먼저 갱신한 뒤 await writeSettings()를 호출하고 catch에서는 오류 배너만 보여줘. 테스트는 저장 성공 한 개뿐이고 CI는 초록이야.",
+      "expected_output": "Traces a reachable write rejection after the UI update and identifies the contract violation that the changed UI value remains on failure. Connects the failure trigger, code location or the supplied code order, and incorrect state with evidence. Recommends testing the real save flow with storage failure, preserved previous UI state, the specific error, and no false success. Distinguishes the demonstrated defect from the separate missing failure test and does not approve solely because CI is green or merely recommend adding a catch block that already exists.",
+      "files": []
+    },
+    {
+      "id": 12,
+      "name": "review-does-not-invent-failure-policy",
+      "prompt": "PR 리뷰 중이야. 배치 작업은 항목별 커밋 계약이고 첫 성공 후 두 번째 쓰기가 실패해도 첫 항목은 유지해. 그 동작과 구체적인 오류를 테스트했고 재시도나 롤백은 지원하지 않아. 해피 패스만 보지 말고 봐줘.",
+      "expected_output": "Reviews the declared partial-success behavior and whether returned results, persisted state, later unprocessed items, and error propagation agree with it. Does not declare retained first-item data a bug or require rollback or automatic retry without a requirement. Separates any unverified aspects from demonstrated defects and acknowledges adequate existing failure evidence rather than demanding duplicate tests to satisfy a quota.",
+      "files": []
     }
   ]
 }

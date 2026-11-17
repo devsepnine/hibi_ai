@@ -98,6 +98,8 @@ Review each changed file for:
 - Missing error handling
 - Potential edge cases
 
+Apply `coding-standards` → `references/review-checklist.md`, Failure paths in self-review and PR review. Record the relevant failure scenarios, evidence, and untested limits separately from success checks. Use `tdd-workflow` for test case design.
+
 ### Phase 7: Observe the Real Artifact
 
 Exercise the changed behavior directly and read the result:
@@ -112,6 +114,7 @@ Exercise the changed behavior directly and read the result:
 | Docs only | Re-read the diff as its reader would; run evals only when behavior-bearing text changed, such as skill, agent, or command prompts |
 
 - Read the actual value, not a cached or derived representation such as a file mtime, an agent's self-report, or an old screenshot.
+- When the changed flow has a reachable failure, exercise a representative failure as well as success and inspect the promised state after failure. Use isolated data and controlled dependencies. If this cannot be run, report `INCONCLUSIVE` and the missing evidence; explain `N/A` when no failure scenario applies.
 - When a check fails, suspect the observation method before the system.
 - Prefer a script that re-runs the comparison over a one-time look; keep its output as the evidence.
 - Never hand the user a check you could have run. If it truly cannot run here, for example with no device or no credentials, mark it `INCONCLUSIVE` and say what would settle it. `INCONCLUSIVE`, or a check run in a different environment than the one changed, is `NOT READY`.
@@ -131,6 +134,7 @@ Tests:     [PASS/FAIL] (X/Y passed, Z% coverage)
 Security:  [PASS/FAIL] (X issues)
 Diff:      [X files changed]
 Artifact:  [PASS/FAIL/INCONCLUSIVE] (what was run, what was observed)
+Failure paths: [PASS/FAIL/INCONCLUSIVE/N/A] (scenarios, state after failure, evidence or limits)
 
 Overall:   [READY/NOT READY/PARTIAL] for PR
 

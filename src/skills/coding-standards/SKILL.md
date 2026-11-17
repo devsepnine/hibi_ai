@@ -183,6 +183,12 @@ test('returns empty array when no markets match query', () => {
 ```
 Descriptive names that read as specifications. No `test('works')`. See `tdd-workflow` skill for full TDD loop and 80%+ coverage requirements.
 
+## Self-review after code changes
+
+Before reporting completion, reread the diff as a reviewer and apply [Failure paths in self-review and PR review](references/review-checklist.md#failure-paths-in-self-review-and-pr-review). For each changed behavior, challenge the assumptions that make it succeed and trace a reachable failure through the caller, state changes, error handling, and cleanup. Explain when no failure scenario applies. A green success test or coverage percentage does not establish failure behavior.
+
+Use `tdd-workflow` to design the cases and `verification-loop` to record executed checks and limits. Separate a demonstrated defect from a missing test or an unverified risk.
+
 ## File Organization
 
 Many small focused files > few large files. Soft 300 LOC, hard 500 LOC per file; see `references/code-thresholds.md`. Organize by feature/domain, not by type.

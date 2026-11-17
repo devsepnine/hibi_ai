@@ -1,6 +1,6 @@
 ---
 name: tdd-workflow
-description: "Test-first development: red/green/refactor, unit/integration/E2E, 80%+ coverage. Use when adding a feature, fixing a bug, or refactoring. TDD, 테스트 주도 개발, 테스트 우선, 커버리지."
+description: "Test-first development: success and failure cases, red/green/refactor, unit/integration/E2E, coverage. Use when designing tests, adding features, fixing bugs, or refactoring. 테스트 설계, 실패 경로, TDD, 테스트 우선."
 ---
 
 # Test-Driven Development Workflow
@@ -12,12 +12,13 @@ description: "Test-first development: red/green/refactor, unit/integration/E2E, 
 - 새 기능, 버그 수정, 리팩토링
 - API 엔드포인트, 컴포넌트
 - 런타임 동작이 바뀌는 모든 코드
+- 테스트 사례 설계와 리뷰
 
 ## 핵심 원칙
 
 1. **코드 전에 테스트**: 실패하는 테스트를 먼저 쓰고, 구현한다
 2. **80%+ 커버리지**: unit + integration + E2E 합산
-3. **모든 경로 테스트**: happy path, 엣지 케이스, 에러, 경계
+3. **정상과 실패를 함께 고려**: 커버리지 수치만 보지 않고 바뀐 계약과 위험을 기준으로 도달 가능한 오류와 경계 사례를 고른다
 4. **구현이 아니라 동작**: 사용자가 호출하는 방식으로 코드를 호출하고, 사용자가 관찰하는 결과를 literal 기대값으로 assert한다. Assertion 강도를 참고한다
 
 ## Red-Green-Refactor 사이클
@@ -29,6 +30,25 @@ description: "Test-first development: red/green/refactor, unit/integration/E2E, 
 | 3. Implement | Minimal code to pass | `npm test` → PASS, 즉 Green |
 | 4. Refactor | Remove dup, improve names, optimize | Tests stay green |
 | 5. Verify Coverage | `npm run test:coverage` | ≥ 80% on branches/functions/lines |
+
+## 구현 전에 실패 사례를 설계한다
+
+동작이 바뀔 때마다 구현 전에 입력, 의존성, 상태 전이가 어떻게 실패할 수 있는지 살핀다. 해당 흐름에서 실제로 도달할 수 있는 사례를 고른다. 개수를 채우려고 억지 테스트를 추가하지 말고, 적용되지 않는 유형은 이유를 설명한다.
+
+| 상황 | 대표적인 유발 조건 | 관찰할 결과 |
+|---|---|---|
+| 입력이나 접근 거부 | 빈 값, 잘못된 형식, 경곗값, 권한 부족 | 구체적인 오류와 허용되지 않은 부수 효과의 부재 |
+| 의존성 실패 | 읽기나 쓰기 오류, 요청 거부, 잘못된 응답, 타임아웃 | 맥락이 있는 오류가 호출자에게 전달되고 성공으로 표시되지 않음 |
+| 작업 중단 | 취소, 닫기, 연결 해제, 의존 대상 소멸 | 약속한 취소 동작, 자원 정리, 최종 상태 |
+| 일부만 완료 | 첫 쓰기는 성공하고 두 번째 쓰기는 실패 | 약속한 원자성이나 항목별 결과와 실제 저장 상태 |
+| 작업 중복이나 경합 | 중복 제출, 오래된 응답, 동시 수정, 재시도 | 계약에서 정한 순서와 중복 효과 처리 |
+| 실패 후 작업 재개 | 실패한 작업을 다시 시도 | 실제 실패 상태에서 데이터 손실이나 추가 효과 없이 복구 |
+
+선택한 사례마다 초기 상태, 실패를 일으킬 조건, 예상 오류나 출력, 실패 후 상태를 정한다. 보존할 데이터, 발생하면 안 되는 효과, 해제할 자원, 약속한 복구 동작을 포함한다. 예외 발생이나 오류 배너만 확인해서는 이 보장을 입증할 수 없다.
+
+데이터 손실을 잡아야 하는 테스트는 기존 데이터가 있는 상태에서 시작한다. 의존성과 만나는 지점에서 실패를 주입하고 테스트 대상인 실제 작업을 호출한다. 대상 작업 자체를 실패하도록 mock하면 mock을 테스트하는 셈이다. 부분 완료는 앞선 효과가 발생한 뒤 실패시킨다. sleep이나 실제 장애에 기대지 말고 시계와 완료 순서를 제어한다.
+
+기대값은 계약에서 도출한다. 롤백, 자동 재시도, 멱등성, 타임아웃이면 아무것도 저장되지 않았다는 가정을 넣지 않는다. 필요한 동작이 정해지지 않았다면 기대값으로 굳히기 전에 결정할 사안으로 알린다. 커버리지 티어와 테스트가 비현실적일 때의 예외를 적용한다.
 
 ## 테스트 타입 매트릭스
 
@@ -105,6 +125,7 @@ src/
 - [ ] 외부 API는 모듈 경계에서 mock, 예: `jest.mock('@/lib/...')`
 - [ ] mock은 현실적인 shape를 반환, 예: 1536-dim embedding 벡터
 - [ ] success path와 failure path 모두 커버
+- [ ] 실제 작업까지 실패를 주입하고 출력과 실패 후 상태를 검증
 - [ ] unit/integration 테스트에 실제 network/DB 호출 금지
 - [ ] 테스트 사이에 mock reset, 예: `beforeEach(jest.clearAllMocks)`
 
@@ -141,8 +162,8 @@ src/
 - [ ] 테스트를 먼저 작성했고 실패를 확인했다. 의도한 이유로 실패해야 Red가 입증된 것이며, setup·import·오타로 인한 실패는 Red가 아니므로 테스트부터 고친다
 - [ ] 모든 assertion이 "테스트 대상이 `undefined` 반환" 검사를 통과한다
 - [ ] 구현은 테스트를 수정하지 않고 통과시킨다
-- [ ] 엣지 케이스: empty / null / 잘못된 타입 / min-max 경계 / concurrent / partial failure / 대용량 입력 10k+ 항목 / 특수문자 Unicode, 이모지, SQL 메타문자
-- [ ] 에러 경로는 단순 "throws"가 아니라 구체적인 assertion으로
+- [ ] [실패 사례 설계](#구현-전에-실패-사례를-설계한다)에 따라 도달 가능한 실패와 경계 사례를 고르고, 적용되지 않는 유형의 이유를 설명했다
+- [ ] 실패 사례에서 단순 "throws" 대신 구체적인 오류와 약속한 상태 보존, 정리, 복구를 검증했다
 - [ ] 변경된 파일에 커버리지 ≥ 80%, 티어 C+
 - [ ] `.skip` / `.only` / 비활성 테스트 없음
 - [ ] unit 테스트는 합산 < 30s

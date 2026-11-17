@@ -183,6 +183,12 @@ test('returns empty array when no markets match query', () => {
 ```
 명세처럼 읽히는 서술적 이름. `test('works')` 같은 건 금지. 전체 TDD 루프와 80%+ 커버리지 요구사항은 `tdd-workflow` skill 참조.
 
+## 코드 변경 후 셀프리뷰
+
+완료를 보고하기 전에 리뷰어의 관점에서 diff를 다시 읽고 [셀프리뷰와 PR 리뷰의 실패 경로](references/review-checklist-ko.md#셀프리뷰와-pr-리뷰의-실패-경로)를 적용한다. 동작이 바뀔 때마다 성공에 필요한 가정을 의심하고, 도달 가능한 실패를 호출자, 상태 변경, 오류 처리, 정리까지 추적한다. 실패 시나리오가 적용되지 않으면 이유를 설명한다. 정상 동작 테스트나 커버리지 수치만으로 실패 동작을 입증할 수 없다.
+
+사례 설계에는 `tdd-workflow`, 실행한 검사와 한계 기록에는 `verification-loop`를 쓴다. 확인된 결함과 테스트 누락, 미검증 위험을 구분한다.
+
 ## 파일 조직화
 
 작고 집중된 다수의 파일 > 큰 파일 소수. 파일당 soft 300 LOC, hard 500 LOC이며 `references/code-thresholds.md`를 참조한다. 타입이 아닌 feature/domain 으로 조직한다.

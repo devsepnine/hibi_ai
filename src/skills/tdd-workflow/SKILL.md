@@ -1,6 +1,6 @@
 ---
 name: tdd-workflow
-description: "Test-first development: red/green/refactor, unit/integration/E2E, 80%+ coverage. Use when adding a feature, fixing a bug, or refactoring. TDD, 테스트 주도 개발, 테스트 우선, 커버리지."
+description: "Test-first development: success and failure cases, red/green/refactor, unit/integration/E2E, coverage. Use when designing tests, adding features, fixing bugs, or refactoring. 테스트 설계, 실패 경로, TDD, 테스트 우선."
 ---
 
 # Test-Driven Development Workflow
@@ -12,12 +12,13 @@ Ensures all code follows TDD principles with comprehensive test coverage.
 - New features, bug fixes, refactoring
 - API endpoints, components
 - Any code that changes runtime behavior
+- Test case design and review
 
 ## Core Principles
 
 1. **Tests BEFORE code**: write failing test first, then implement
 2. **80%+ coverage**: unit + integration + E2E combined
-3. **All paths tested**: happy path, edge cases, errors, boundaries
+3. **Success and failure considered together**: select reachable error and boundary cases from the changed contract and risk, not from coverage numbers alone
 4. **Behavior, not implementation**: call the code the way its users do and assert what they observe against a literal expected value, as described in Assertion Strength
 
 ## Red-Green-Refactor Cycle
@@ -29,6 +30,25 @@ Ensures all code follows TDD principles with comprehensive test coverage.
 | 3. Implement | Minimal code to pass | `npm test` → PASS as Green |
 | 4. Refactor | Remove dup, improve names, optimize | Tests stay green |
 | 5. Verify Coverage | `npm run test:coverage` | ≥ 80% on branches/functions/lines |
+
+## Design failure cases before code
+
+For each changed behavior, consider how its inputs, dependencies, and state transitions can fail before writing the implementation. Select cases that are reachable in this flow. Explain when a category does not apply instead of adding artificial tests to fill a quota.
+
+| Situation | Representative trigger | What to observe |
+|---|---|---|
+| Input or access rejected | Empty, malformed, boundary value, missing permission | Specific error and absence of unauthorized effects |
+| Dependency fails | Read or write error, rejection, malformed response, timeout | Error reaches the caller with context and no false success |
+| Work interrupted | Cancel, close, disconnect, dependency disappears | Promised cancellation behavior, resource cleanup, final state |
+| Only part completes | First write succeeds, second write fails | Declared atomicity or per-item results and actual persisted state |
+| Work overlaps or repeats | Double submission, stale response, concurrent update, retry | Ordering and duplicate-effect behavior required by the contract |
+| Work resumes after failure | Retry after a failed attempt | Recovery from the actual failed state, without lost data or extra effects |
+
+For each selected case, define the initial state, failure trigger, expected error or output, and state after failure. Include the data that must survive, effects that must not occur, resources that must be released, and any promised recovery. A thrown error or error banner alone does not prove those guarantees.
+
+Use existing data in the setup when the test must detect data loss. Inject failure at the dependency boundary and call the real operation under test. Mocking the operation itself to reject tests the mock. For partial work, fail after the earlier effect has occurred. Control clocks and completion order instead of depending on sleeps or a live outage.
+
+Derive expectations from the contract. Do not assume rollback, automatic retry, idempotency, or that a timeout means nothing was committed. If the required behavior is undefined, surface that decision before encoding an expectation. Apply the coverage tier and the exceptions in When a Test Is Impractical.
 
 ## Test Type Matrix
 
@@ -105,6 +125,7 @@ src/
 - [ ] External APIs mocked at module boundary, as in `jest.mock('@/lib/...')`
 - [ ] Mock returns realistic shapes, e.g., a 1536-dim embedding vector
 - [ ] Both success and failure paths covered
+- [ ] Failure injection reaches the real operation and asserts its output and state after failure
 - [ ] No real network/DB calls in unit/integration tests
 - [ ] Mocks reset between tests, as in `beforeEach(jest.clearAllMocks)`
 
@@ -141,8 +162,8 @@ Before marking work complete:
 - [ ] Test written FIRST and saw it fail, which proves Red, for the intended reason; a failure from setup, import, or typo is not Red, fix the test first
 - [ ] Every assertion survives the "code under test returns `undefined`" check
 - [ ] Implementation makes test pass without modifying test
-- [ ] Edge cases: empty / null / wrong type / min-max boundary / concurrent / partial failure / large input of 10k+ items / special characters such as Unicode, emoji, SQL metacharacters
-- [ ] Error path tested with a specific assertion, not just "throws"
+- [ ] Reachable failure and boundary cases selected using [failure case design](#design-failure-cases-before-code), with inapplicable categories explained
+- [ ] Failure cases assert the specific error and promised state preservation, cleanup, and recovery rather than only "throws"
 - [ ] Coverage ≥ 80% on changed files, tier C+
 - [ ] No `.skip` / `.only` / disabled tests
 - [ ] Unit tests run in < 30s total
