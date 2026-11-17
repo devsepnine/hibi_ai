@@ -1,0 +1,26 @@
+{
+  "skill_name": "rust-best-practices",
+  "evals": [
+    {
+      "id": 1,
+      "name": "official-style-preserves-repository-settings",
+      "prompt": "공식 nightly Rust Style Guide 기준으로 이번 Rust 변경을 검수해줘. 저장소에는 stable 툴체인 고정과 rustfmt max_width = 120 설정이 있고 툴체인 변경은 범위 밖이야.",
+      "expected_output": "Consults the local style reference and repository toolchain and formatter settings. Checks formatting using the existing configuration and relevant manifest or workspace command. Does not switch to nightly, overwrite max_width with the guide's default, change the edition, or reformat unrelated files. Separates formatting checks from API naming and behavior review.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "conversion-names-reflect-cost-and-ownership",
+      "prompt": "아직 공개하지 않은 Rust API 이름을 검토해줘. as_text(&self) -> String은 문자열을 복사하고, as_str(&self) -> Option<&str>은 UTF-8을 검사하며 빌린 문자열을 돌려줘. to_bytes(self) -> Vec<u8>는 non-Copy 래퍼를 소비해서 내부 버퍼를 꺼내.",
+      "expected_output": "Uses C-CONV to recommend names reflecting the supplied cost and ownership, such as to_text, to_str, and into_bytes respectively. Recognizes that validation may justify to_ without allocation. Does not change signatures to fit names, invent copying where a buffer is transferred, or treat every borrowed result as an as_ conversion.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "getter-exceptions-and-public-compatibility",
+      "prompt": "배포 중인 Rust 컬렉션 API를 명명 가이드로 리뷰해줘. get(&self, index: usize) -> Option<&Item>과 iter(&self) -> Iter가 있어. 호환성을 깨는 변경은 요청하지 않았어.",
+      "expected_output": "Accepts indexed get as a legitimate getter exception and checks the borrowing semantics and corresponding iterator type. Does not demand renaming get solely because ordinary field getters omit get_. Preserves the published API and checks compatibility before suggesting a rename. Uses the official naming reference without treating rustfmt success as naming verification.",
+      "files": []
+    }
+  ]
+}

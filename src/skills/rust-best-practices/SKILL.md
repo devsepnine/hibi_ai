@@ -1,12 +1,17 @@
 ---
 name: rust-best-practices
-description: Rust practices, ownership, error handling, async, testing, project structure. Use when writing or reviewing Rust. 러스트 코드 작성, Rust 모범사례, 소유권, Rust 리뷰. NOT iced/ratatui specifics.
-version: 1.0.0
+description: "Rust practices: ownership, errors, async, tests, formatting, API naming, project layout. Use when writing or reviewing Rust. 러스트 코드 작성, Rust 모범사례, API 명명, rustfmt, Rust 리뷰. NOT iced/ratatui specifics."
+metadata:
+  version: "1.0.0"
 ---
 
 # Rust Best Practices
 
 Idiomatic, safe, performant Rust across five areas: ownership, errors, async, testing, project structure.
+
+## Style and API naming
+
+When writing or reviewing Rust, use [Style and API naming](references/style-and-api-naming.md). It links the official formatting and naming rules and gives focused review checks. Follow the repository's toolchain, edition, and formatter configuration. The nightly documentation URL is not an instruction to upgrade them. Check ownership and cost when naming conversions; a formatter cannot validate those meanings. Before renaming an existing public API, check callers and compatibility.
 
 ## Default Configuration: Edition 2024
 
@@ -126,6 +131,7 @@ Strategy:
 - Property tests with `proptest`; coverage with `cargo-llvm-cov`.
 - Mock external deps via traits, not concrete types.
 - Always test failure paths and edge cases, empty/max/concurrent.
+- Use `tdd-workflow` for failure case design and `coding-standards` for self-review, including state after failure.
 
 Details: [testing.md](references/testing.md) · [Rust Book Ch.11](https://doc.rust-lang.org/book/ch11-00-testing.html)
 
@@ -216,6 +222,7 @@ enum_glob_use = "deny"
 
 ## References
 
+- [Style and API naming](references/style-and-api-naming.md)
 - [Edition 2024 Guide](references/edition-2024.md), start here
 - [Ownership & Borrowing](references/ownership-borrowing.md)
 - [Error Handling](references/error-handling.md)

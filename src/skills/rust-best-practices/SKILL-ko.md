@@ -1,12 +1,17 @@
 ---
 name: rust-best-practices
-description: Rust practices, ownership, error handling, async, testing, project structure. Use when writing or reviewing Rust. 러스트 코드 작성, Rust 모범사례, 소유권, Rust 리뷰. NOT iced/ratatui specifics.
-version: 1.0.0
+description: "Rust practices: ownership, errors, async, tests, formatting, API naming, project layout. Use when writing or reviewing Rust. 러스트 코드 작성, Rust 모범사례, API 명명, rustfmt, Rust 리뷰. NOT iced/ratatui specifics."
+metadata:
+  version: "1.0.0"
 ---
 
 # Rust Best Practices
 
 다섯 영역인 소유권, 에러, async, 테스트, 프로젝트 구조에 걸친 관용적이고 안전하며 성능 좋은 Rust 코드 작성법.
+
+## 스타일과 API 명명
+
+Rust를 작성하거나 리뷰할 때 [스타일과 API 명명](references/style-and-api-naming-ko.md)을 적용한다. 공식 포맷과 명명 규칙의 링크와 검수 기준을 담았다. 저장소의 툴체인, 에디션, 포맷 설정을 따른다. nightly 문서 URL은 이 설정들을 올리라는 지시가 아니다. 변환 메서드는 소유권과 비용을 확인하고 이름을 정한다. 포맷 도구는 그 의미를 검증하지 못한다. 기존 공개 API의 이름을 바꾸기 전에 호출자와 호환성을 확인한다.
 
 ## 기본 설정: Edition 2024
 
@@ -126,6 +131,7 @@ mod tests {
 - 프로퍼티 테스트는 `proptest`, 커버리지는 `cargo-llvm-cov`.
 - 외부 의존성은 구체 타입이 아닌 trait로 mocking 한다.
 - 항상 실패 경로와 엣지 케이스인 empty/max/concurrent를 테스트한다.
+- 실패 사례 설계에는 `tdd-workflow`, 실패 후 상태를 포함한 셀프리뷰에는 `coding-standards`를 적용한다.
 
 자세한 내용: [testing.md](references/testing.md) · [Rust Book Ch.11](https://doc.rust-lang.org/book/ch11-00-testing.html)
 
@@ -216,6 +222,7 @@ enum_glob_use = "deny"
 
 ## References
 
+- [스타일과 API 명명](references/style-and-api-naming-ko.md)
 - [Edition 2024 Guide](references/edition-2024.md), start here
 - [Ownership & Borrowing](references/ownership-borrowing.md)
 - [Error Handling](references/error-handling.md)
