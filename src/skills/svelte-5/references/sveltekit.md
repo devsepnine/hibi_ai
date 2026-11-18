@@ -56,7 +56,8 @@ import type { PageLoad } from './$types'
 
 export const load: PageLoad = async ({ fetch, params }) => {
   const res = await fetch(`/api/posts/${params.slug}`)   // scoped fetch
-  if (!res.ok) error(404, 'Not found')
+  if (res.status === 404) error(404, 'Post not found')
+  if (!res.ok) error(502, 'Unable to load post')
   return { post: await res.json() }
 }
 ```
@@ -75,12 +76,16 @@ filesystem reads, auth checks.
 
 ```ts
 // +page.server.ts
+import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ locals, params }) => {
-  const post = await locals.db.posts.findUnique({ where: { slug: params.slug } })
-  if (!post) error(404, 'Not found')
-  return { post }           // ships to the client as serialized JSON
+  const post = await locals.db.posts.findUnique({
+    where: { slug: params.slug },
+    select: { slug: true, title: true }
+  })
+  if (!post) error(404, 'Post not found')
+  return { post: { slug: post.slug, title: post.title } }
 }
 ```
 
@@ -285,7 +290,7 @@ Rules:
   Use `dynamic/*` only when the value actually changes per deploy /
   per request.
 
-## `$app/state`: replaced `$app/stores` in v2
+## `$app/state` in SvelteKit 2.12+
 
 ```ts
 import { page, navigating, updated } from '$app/state'
@@ -298,9 +303,7 @@ if (navigating) {
 }
 ```
 
-If you see `$app/stores` or `$page` in code, it's a v1/v2-early
-pattern, so migrate. The v2 `$app/state` API is already tracked by
-runes, so just read the fields.
+In a legacy component, keep the existing `$app/stores` subscription for reactive route updates. When migrating to runes on SvelteKit 2.12 or later, read `$app/state` in the markup or a derived expression.
 
 ## API endpoints: `+server.ts`
 
@@ -366,7 +369,7 @@ the target's features, such as edge runtime, ISR, and image opt, matter.
   Cache, use `depends` + `invalidate`, or move to a background job.
 - **Mutating `locals` inside `load`**: `locals` is set once per
   request in `handle`; treat it as read-only from `load`/`action`.
-- **Using `$app/stores`** in new code: v2 prefers `$app/state`.
+- In a new runes component on SvelteKit 2.12 or later, use `$app/state` for reactive route reads.
 - **Using `+server.ts` for form submissions**: loses progressive
   enhancement. Use form actions.
 - **Returning non-serializable data** from a server `load`: classes,

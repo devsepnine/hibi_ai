@@ -7,12 +7,7 @@ tags: lists, performance, flatlist, virtualization
 
 ## Optimize List Performance with Stable Object References
 
-가상화 리스트로 데이터를 넘기기 전에 map이나 filter를 하지 않는다. 가상화는
-무엇이 바뀌었는지를 객체 참조의 안정성으로 판별한다. 새 참조는 visible item
-전체를 다시 렌더하게 만든다. 리스트 부모 레벨에서 빈번한 render 자체를
-막아야 한다.
-
-필요하다면 리스트 아이템 안에서 context selector를 사용한다.
+표시할 항목을 고르려면 `filter`를 사용해도 된다. 결과 배열은 새로 만들어지지만 각 행의 객체 참조는 유지된다. 변경되지 않은 행까지 매 렌더에서 새 객체로 만들면 메모된 행이 다시 렌더될 수 있다. 행 값이 실제로 바뀌면 그 행을 갱신한다.
 
 **Incorrect, creates new object references on every keystroke:**
 
@@ -21,7 +16,7 @@ function DomainSearch() {
   const { keyword, setKeyword } = useKeywordZustandState()
   const { data: tlds } = useTlds()
 
-  // Bad: creates new objects on every render, reparenting the entire list on every keystroke
+  // Bad: creates new objects on every render, changing every item reference on each keystroke
   const domains = tlds.map((tld) => ({
     domain: `${keyword}.${tld.name}`,
     tld: tld.name,
@@ -33,99 +28,40 @@ function DomainSearch() {
       <TextInput value={keyword} onChangeText={setKeyword} />
       <LegendList
         data={domains}
-        renderItem={({ item }) => <DomainItem item={item} keyword={keyword} />}
+        renderItem={({ item }) => <Text>{item.domain}</Text>}
       />
     </>
   )
 }
 ```
 
-**Correct, stable references, transform inside items:**
+**검색 입력과 행 데이터를 유지하는 예제**
+
+입력과 각 행이 자신이 사용하는 상태를 구독한다. 검색어가 바뀌면 화면에 표시할 도메인 이름이 갱신된다. 목록에는 저장소에서 읽은 원래 행을 전달한다.
 
 ```tsx
-const renderItem = ({ item }) => <DomainItem tld={item} />
-
-function DomainSearch() {
-  const { data: tlds } = useTlds()
-
-  return (
-    <LegendList
-      // good: as long as the data is stable, LegendList will not re-render the entire list
-      data={tlds}
-      renderItem={renderItem}
-    />
-  )
+function SearchInput() {
+  const keyword = useKeywordZustandState((state) => state.keyword)
+  const setKeyword = useKeywordZustandState((state) => state.setKeyword)
+  return <TextInput value={keyword} onChangeText={setKeyword} />
 }
 
 function DomainItem({ tld }: { tld: Tld }) {
-  // good: transform within items, and don't pass the dynamic data as a prop
-  // good: use a selector function from zustand to receive a stable string back
-  const domain = useKeywordZustandState((s) => s.keyword + '.' + tld.name)
-  return <Text>{domain}</Text>
+  const keyword = useKeywordZustandState((state) => state.keyword)
+  return <Text>{keyword}.{tld.name}</Text>
 }
-```
 
-**Updating parent array reference:**
-
-내부 객체 참조가 안정적이라면 새 array 인스턴스를 만드는 것은 괜찮다. 예를
-들어 객체 리스트를 정렬하는 경우다.
-
-```tsx
-// good: creates a new array instance without mutating the inner objects
-// good: parent array reference is unaffected by typing and updating "keyword"
-const sortedTlds = tlds.toSorted((a, b) => a.name.localeCompare(b.name))
-
-return <LegendList data={sortedTlds} renderItem={renderItem} />
-```
-
-새 array 인스턴스 `sortedTlds`가 만들어져도 내부 객체 참조는 안정적이다.
-
-**With zustand for dynamic data, which avoids parent re-renders:**
-
-```tsx
-const useSearchStore = create<{ keyword: string }>(() => ({ keyword: '' }))
+const renderItem = ({ item }: { item: Tld }) => <DomainItem tld={item} />
 
 function DomainSearch() {
   const { data: tlds } = useTlds()
-
   return (
     <>
       <SearchInput />
-      <LegendList
-        data={tlds}
-        // if you aren't using React Compiler, wrap renderItem with useCallback
-        renderItem={({ item }) => <DomainItem tld={item} />}
-      />
+      <LegendList data={tlds} renderItem={renderItem} />
     </>
   )
 }
-
-function DomainItem({ tld }: { tld: Tld }) {
-  // Select only what you need—component only re-renders when keyword changes
-  const keyword = useSearchStore((s) => s.keyword)
-  const domain = `${keyword}.${tld.name}`
-  return <Text>{domain}</Text>
-}
 ```
 
-이제 가상화는 입력 시 바뀌지 않은 아이템을 건너뛸 수 있다. 키 입력마다 부모가
-아니라 visible 아이템 약 20개만 다시 렌더된다.
-
-**Deriving state within list items based on parent data, which avoids parent
-re-renders:**
-
-데이터가 부모 state에 따라 조건적으로 결정되는 컴포넌트라면 이 패턴이 더
-중요해진다. 예를 들어 어떤 아이템이 즐겨찾기 되어 있는지 확인할 때, 아이템
-자신이 state에 접근하면 즐겨찾기 토글이 한 컴포넌트만 다시 렌더되게 만들
-수 있다.
-
-```tsx
-function DomainItemFavoriteButton({ tld }: { tld: Tld }) {
-  const isFavorited = useFavoritesStore((s) => s.favorites.has(tld.id))
-  return <TldFavoriteButton isFavorited={isFavorited} />
-}
-```
-
-참고: React Compiler를 쓰는 경우 리스트 아이템 안에서 React Context 값을 직접
-읽어도 된다. 다만 대부분의 경우 Zustand selector보다 약간 느릴 수 있는데,
-체감 차이는 미미할 수 있다.
+필터링이나 정렬로 새 배열을 만들 때도 기존 행 객체를 재사용할 수 있다. 행 자체가 변경되면 해당 행의 새 값을 전달한다.

@@ -88,7 +88,7 @@ Vercel이 유지 관리하는 React 및 Next.js 애플리케이션 성능 최적
 - `rendering-activity` - 표시/숨김에는 Activity 컴포넌트를 사용한다
 - `rendering-conditional-render` - 조건부 렌더에는 &&가 아니라 삼항을 쓴다
 - `rendering-document-metadata` - 명령형 head 변경 대신 React 19의 네이티브 `<title>`/`<meta>`/`<link>` hoisting을 사용한다
-- `rendering-usetransition-loading` - 로딩 상태에는 useTransition을 선호한다
+- `rendering-usetransition-loading` - React 19 전환으로 진행 상태를 표시하고 최신 검색 응답만 반영한다.
 - `rendering-resource-hints` - preload에는 React DOM resource hints를 쓴다
 - `rendering-script-defer-async` - script 태그에는 defer 또는 async를 사용한다
 
@@ -97,8 +97,8 @@ Vercel이 유지 관리하는 React 및 Next.js 애플리케이션 성능 최적
 - `js-batch-dom-css` - CSS 변경은 클래스나 cssText로 묶는다
 - `js-index-maps` - 반복 조회에는 Map을 만든다
 - `js-cache-property-access` - 루프에서 객체 프로퍼티는 캐시한다
-- `js-cache-function-results` - 함수 결과는 모듈 레벨 Map에 캐시한다
-- `js-cache-storage` - localStorage/sessionStorage 읽기는 캐시한다
+- `js-cache-function-results` - 입력으로 결정되는 계산은 데이터 수명에 맞춰 캐시한다.
+- `js-cache-storage` - 변경 알림 지연을 허용하는 브라우저 설정은 마운트 후 캐시하고 외부 변경 시 무효화한다.
 - `js-combine-iterations` - 여러 filter/map은 한 루프로 결합한다
 - `js-length-check-first` - 비싼 비교 전에 배열 length를 먼저 확인한다
 - `js-early-exit` - 함수에서 일찍 return 한다

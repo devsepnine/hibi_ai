@@ -7,64 +7,52 @@ tags: javascript, localStorage, storage, caching, performance
 
 ## Cache Storage API Calls
 
-`localStorage`, `sessionStorage`, and `document.cookie` are synchronous and expensive. Cache reads in memory.
+Use a memory cache for browser preferences that may lag until another tab’s storage event arrives. Route writes, removals, and clears in this tab through these functions. Read storage directly if other code writes in the same tab or the caller needs the latest value immediately.
 
-**Incorrect, reads storage on every call:**
-
-```typescript
-function getTheme() {
-  return localStorage.getItem('theme') ?? 'light'
-}
-// Called 10 times = 10 storage reads
-```
-
-**Correct, Map cache:**
+Call the accessors in a browser event handler or an effect after mount. Register listeners in the browser so server rendering can import the module.
 
 ```typescript
 const storageCache = new Map<string, string | null>()
 
-function getLocalStorage(key: string) {
-  if (!storageCache.has(key)) {
-    storageCache.set(key, localStorage.getItem(key))
-  }
-  return storageCache.get(key)
+function getLocalStorage(key: string): string | null {
+  if (!storageCache.has(key)) storageCache.set(key, localStorage.getItem(key))
+  return storageCache.get(key) ?? null
 }
 
 function setLocalStorage(key: string, value: string) {
   localStorage.setItem(key, value)
-  storageCache.set(key, value)  // keep cache in sync
+  storageCache.set(key, value)
+}
+
+function removeLocalStorage(key: string) {
+  localStorage.removeItem(key)
+  storageCache.delete(key)
+}
+
+function clearLocalStorage() {
+  localStorage.clear()
+  storageCache.clear()
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.storageArea !== localStorage) return
+    if (event.key === null) storageCache.clear()
+    else storageCache.delete(event.key)
+  })
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') storageCache.clear()
+  })
 }
 ```
 
-Use a Map rather than a hook so it works everywhere: utilities, event handlers, not just React components.
-
-**Cookie caching:**
+Cookies can expire or change independently of storage events. Read the current cookie string on each call and split each name from its value at the first equals sign.
 
 ```typescript
-let cookieCache: Record<string, string> | null = null
-
 function getCookie(name: string) {
-  if (!cookieCache) {
-    cookieCache = Object.fromEntries(
-      document.cookie.split('; ').map(c => c.split('='))
-    )
-  }
-  return cookieCache[name]
+  const prefix = name + '='
+  const pair = document.cookie.split(/;\s*/).find(entry => entry.startsWith(prefix))
+  return pair?.slice(prefix.length)
 }
-```
-
-**Important, invalidate on external changes:**
-
-If storage can change externally, such as from another tab or server-set cookies, invalidate cache:
-
-```typescript
-window.addEventListener('storage', (e) => {
-  if (e.key) storageCache.delete(e.key)
-})
-
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    storageCache.clear()
-  }
-})
 ```

@@ -1,10 +1,6 @@
 # Migrating from Svelte 4 to Svelte 5
 
-Svelte 5 keeps `.svelte` files and most template syntax, and ships
-with a **legacy mode** that recognizes v4 patterns for backwards
-compatibility. New code should use runes mode, which is the default. This
-doc covers the mechanical translations plus the subtle cases where a
-blind swap goes wrong.
+Use this guide when a component is being migrated. Svelte 5 supports legacy components alongside runes components. Keep the existing component mode for routine maintenance.
 
 ## Quick reference
 
@@ -335,10 +331,8 @@ Recommended migration path for a large app:
 1. Upgrade to Svelte 5 with no code changes. Legacy mode keeps it
    working.
 2. Migrate leaf components first, since they have the fewest dependencies.
-3. Move to `.svelte.ts` for shared state; delete the store versions.
-4. Migrate layouts and routes last.
-5. Once everything is runes, delete `"svelteOptions.legacy"` compiler
-   flags you may have set.
+3. Preserve store contracts used by other components.
+4. Migrate layouts and routes when their consumers are ready.
 
 ## Automated migration
 
@@ -367,7 +361,6 @@ Save those for a human pass.
 - **`on:event` on DOM elements** still compiles under legacy mode,
   but in runes mode, switch to plain attributes. The types for
   `on:*` are less precise than the DOM attribute types.
-- **`$app/stores`** works but logs a deprecation in SvelteKit 2.
-  Migrate to `$app/state`, which has no `$` prefix and gives plain reactive access.
+- When migrating a component to runes on SvelteKit 2.12 or later, read route state from `$app/state`. Keep the existing `$app/stores` subscription for reactive route updates while the component remains in legacy mode.
 - **`beforeNavigate` / `afterNavigate` lifecycle hooks** moved to
   `$app/navigation`. If you were importing from `svelte`, stop.

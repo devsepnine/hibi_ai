@@ -36,18 +36,18 @@ is a file: `rules/<id>.md`, with `rules/<id>-ko.md` as the Korean translation.
 
 ### 2. List Performance: HIGH
 
-- `list-performance-virtualize` - Use FlashList for large lists
+- `list-performance-virtualize` - Use the project’s virtualized list for long or growing collections.
 - `list-performance-item-memo` - Memoize list item components
 - `list-performance-callbacks` - Stabilize callback references
 - `list-performance-inline-objects` - Avoid inline style objects
-- `list-performance-function-references` - Extract functions outside render
+- `list-performance-function-references` - Preserve references to unchanged list items
 - `list-performance-images` - Optimize images in lists
 - `list-performance-item-expensive` - Move expensive work outside items
 - `list-performance-item-types` - Use item types for heterogeneous lists
 
 ### 3. Animation: HIGH
 
-- `animation-gpu-properties` - Animate only transform and opacity
+- `animation-gpu-properties` - Prefer transform and opacity when surrounding layout stays fixed.
 - `animation-derived-value` - Use useDerivedValue for computed animations
 - `animation-gesture-detector-press` - Use Gesture.Tap instead of Pressable
 
@@ -76,7 +76,7 @@ is a file: `rules/<id>.md`, with `rules/<id>-ko.md` as the Korean translation.
 
 ### 9. User Interface: MEDIUM
 
-- `ui-expo-image` - Use expo-image for all images
+- `ui-expo-image` - Use the existing image stack and select expo-image when its features are needed.
 - `ui-image-gallery` - Use Galeria for image lightboxes
 - `ui-pressable` - Use Pressable over TouchableOpacity
 - `ui-safe-area-scroll` - Handle safe areas in ScrollViews

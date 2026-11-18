@@ -7,28 +7,18 @@ tags: javascript, functions, optimization, early-return
 
 ## Early Return from Functions
 
-Return early when result is determined to skip unnecessary processing.
+This validator returns the first error in input order and checks email before name for each user. It can stop at that first error. A validator that returns the last error or all errors must preserve its own error order and result contract.
 
 **Incorrect, processes all items even after finding answer:**
 
 ```typescript
 function validateUsers(users: User[]) {
-  let hasError = false
-  let errorMessage = ''
-  
+  const errors: string[] = []
   for (const user of users) {
-    if (!user.email) {
-      hasError = true
-      errorMessage = 'Email required'
-    }
-    if (!user.name) {
-      hasError = true
-      errorMessage = 'Name required'
-    }
-    // Continues checking all users even after error found
+    if (!user.email) errors.push('Email required')
+    if (!user.name) errors.push('Name required')
   }
-  
-  return hasError ? { valid: false, error: errorMessage } : { valid: true }
+  return errors.length ? { valid: false, error: errors[0] } : { valid: true }
 }
 ```
 

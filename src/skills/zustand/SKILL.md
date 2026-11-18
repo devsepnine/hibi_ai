@@ -18,6 +18,8 @@ Copy the template from [assets/template.md](assets/template.md) and replace:
 - `{{StoreName}}` → PascalCase store name, e.g., `Project`
 - `{{description}}` → one-line JSDoc description
 
+Connect the template’s `fetchItems` to the project API. The store takes its own snapshot of each input through `parseItem`. When the item gains fields, extend the type and parser together, including any nested values that callers can mutate.
+
 ## State / Actions Separation
 
 Split the store type into **state**, the data, and **actions**, the mutators. This
@@ -25,11 +27,12 @@ keeps intent obvious, makes `Pick<>` for selectors trivial, and surfaces
 action-only selectors, which never re-render.
 
 ```typescript
+interface Item { id: string }
+
 export interface MyState {
   items: Item[];
   selectedId: string | null;
-  isLoading: boolean;
-  error: string | null;
+  load: { status: 'idle' } | { status: 'loading' } | { status: 'failed'; error: string };
 }
 
 export interface MyActions {
@@ -134,7 +137,7 @@ stay in sync.
 
 ```typescript
 const initialState: MyState = {
-  items: [], selectedId: null, isLoading: false, error: null,
+  items: [], selectedId: null, load: { status: 'idle' },
 };
 
 // inside the store:

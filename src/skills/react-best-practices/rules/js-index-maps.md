@@ -7,7 +7,7 @@ tags: javascript, map, indexing, optimization, performance
 
 ## Build Index Maps for Repeated Lookups
 
-Multiple `.find()` calls by the same key should use a Map.
+These orders look up users by string ID. When an ID occurs more than once, keep the first user in the index to preserve the result of `.find()`.
 
 **Incorrect, `O(n)` per lookup:**
 
@@ -24,7 +24,10 @@ function processOrders(orders: Order[], users: User[]) {
 
 ```typescript
 function processOrders(orders: Order[], users: User[]) {
-  const userById = new Map(users.map(u => [u.id, u]))
+  const userById = new Map<User['id'], User>()
+  for (const user of users) {
+    if (!userById.has(user.id)) userById.set(user.id, user)
+  }
 
   return orders.map(order => ({
     ...order,

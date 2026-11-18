@@ -7,17 +7,14 @@ tags: animation, performance, reanimated, transform, opacity
 
 ## Animate Transform and Opacity Instead of Layout Properties
 
-`width`, `height`, `top`, `left`, `margin`, `padding` 애니메이션은 피한다.
-이런 속성들은 매 프레임 레이아웃을 다시 계산하게 만든다. 대신 `transform`의
-scale, translate와 `opacity`를 사용한다. 이들은 레이아웃을 트리거하지 않고
-GPU 위에서 실행된다.
+패널이 접힐 때 아래 항목도 올라와야 하면 레이아웃을 변경한다. `scaleY`는 패널이 차지하는 자리를 유지한다. 자리는 그대로 두고 패널만 보이거나 사라져야 하면 `transform`과 `opacity`가 적합하다.
 
-**Incorrect, animates height, triggers layout every frame:**
+**다음 항목이 함께 이동하는 패널**
 
 ```tsx
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 
-function CollapsiblePanel({ expanded }: { expanded: boolean }) {
+function CollapsiblePanel({ expanded, children }: { expanded: boolean; children: React.ReactNode }) {
   const animatedStyle = useAnimatedStyle(() => ({
     height: withTiming(expanded ? 200 : 0), // triggers layout on every frame
     overflow: 'hidden',
@@ -27,12 +24,12 @@ function CollapsiblePanel({ expanded }: { expanded: boolean }) {
 }
 ```
 
-**Correct, animates scaleY, GPU-accelerated:**
+**고정된 공간 안에서 축소하는 패널**
 
 ```tsx
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 
-function CollapsiblePanel({ expanded }: { expanded: boolean }) {
+function CollapsiblePanel({ expanded, children }: { expanded: boolean; children: React.ReactNode }) {
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       { scaleY: withTiming(expanded ? 1 : 0) },
@@ -53,7 +50,7 @@ function CollapsiblePanel({ expanded }: { expanded: boolean }) {
 ```tsx
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 
-function SlideIn({ visible }: { visible: boolean }) {
+function SlideIn({ visible, children }: { visible: boolean; children: React.ReactNode }) {
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       { translateY: withTiming(visible ? 0 : 100) },
@@ -65,5 +62,4 @@ function SlideIn({ visible }: { visible: boolean }) {
 }
 ```
 
-GPU 가속 속성: `transform`의 translate, scale, rotate와 `opacity`. 그 외 모든
-속성은 레이아웃을 트리거한다.
+대상 기기에서 접기 전후의 주변 요소 위치와 전환 중 프레임 시간을 함께 확인한다.

@@ -1,6 +1,6 @@
 # Migrating from Svelte 4 to Svelte 5
 
-Svelte 5는 `.svelte` 파일과 대부분의 template 문법을 유지하고, backwards compatibility를 위해 v4 패턴을 인식하는 **legacy mode**를 제공한다. 새 코드는 기본값인 runes mode를 사용해야 한다. 이 문서는 기계적인 변환과 맹목적인 swap이 잘못되는 미묘한 경우를 다룬다.
+이 지침은 컴포넌트를 마이그레이션할 때 사용한다. Svelte 5는 legacy와 runes 컴포넌트를 함께 지원한다. 일반 유지보수에서는 대상 컴포넌트의 기존 모드를 유지한다.
 
 ## Quick reference
 
@@ -309,9 +309,8 @@ Svelte 5는 v4 스타일 파일을 runes-mode 파일과 함께 실행할 수 있
 
 1. 코드 변경 없이 Svelte 5로 업그레이드한다. legacy mode가 작동하게 한다.
 2. 먼저 leaf component를 마이그레이션한다. 의존성이 가장 적다.
-3. 공유 state는 `.svelte.ts`로 옮긴다; store 버전을 삭제한다.
-4. 레이아웃과 라우트는 마지막에 마이그레이션한다.
-5. 모든 것이 runes가 되면 설정했을 수 있는 `"svelteOptions.legacy"` 컴파일러 플래그를 삭제한다.
+3. 다른 컴포넌트가 사용하는 store 계약을 유지한다.
+4. 호출자가 준비된 뒤 레이아웃과 라우트를 전환한다.
 
 ## Automated migration
 
@@ -330,5 +329,5 @@ store를 `.svelte.ts` 모듈로 변환하지 **않는데**, 너무 프로젝트�
 - **Legacy mode는 runes를 주지 않는다.** v5 프로젝트에서 열린 v4 파일은 나머지 앱이 v5 컴파일러 하에 실행 중이라도 여전히 `$:` reactivity를 사용한다. "부분적으로 업그레이드"하기를 바라며 `$state`를 뿌리지 마라.
 - **`$$props` / `$$restProps`는 legacy 전용이다.** runes mode에서는 `let { ...rest } = $props()`을 사용한다.
 - **DOM element의 `on:event`**는 legacy mode에서 여전히 컴파일된다. 그러나 runes mode에서는 일반 attribute로 전환한다. `on:*` 타입은 DOM attribute 타입보다 덜 정확하다.
-- **`$app/stores`**는 작동하지만 SvelteKit 2에서 deprecation을 로깅한다. `$app/state`로 마이그레이션한다. `$` prefix 없이 plain reactive 액세스를 쓴다.
+- SvelteKit 2.12 이상의 컴포넌트를 runes로 전환할 때 라우트 값은 `$app/state`에서 읽는다. 기존 legacy 컴포넌트를 유지하는 동안은 `$app/stores` 구독이 라우트 변경을 추적한다.
 - **`beforeNavigate` / `afterNavigate` lifecycle hook**은 `$app/navigation`으로 이동했다. `svelte`에서 import하고 있다면 멈춰라.

@@ -5,11 +5,7 @@ description: Svelte 5 + SvelteKit 2 with runes `$state`/`$derived`/`$effect`, sn
 
 # Svelte 5
 
-Produce idiomatic Svelte 5 components and SvelteKit 2 routes. Defaults
-to **runes mode**, the current Svelte 5 default, the
-`{@render children()}` / snippet pattern, and callback-prop events. Never
-revert to legacy `export let` / `on:event` / `createEventDispatcher`
-unless the user is explicitly maintaining a pre-5 codebase.
+Check the installed Svelte version, compiler options, and component syntax. Svelte 5 supports legacy and runes components in the same project. For a targeted fix, preserve the component’s current mode, public props, slots, and events. Migrate when the task or project calls for it. For a new component, use runes where the project leaves the mode open.
 
 Read the matching reference file when working:
 
@@ -23,18 +19,9 @@ Read the matching reference file when working:
   mechanical translation of `export let`, `$:`, slots,
   `createEventDispatcher`, `on:event`, `<svelte:component>` into v5
 
-## Defaults
+## Defaults for new components
 
-Assume the user is on:
-
-- **Svelte 5** in runes mode, released 2024. It is the default since
-  `svelte@5`.
-- **SvelteKit 2**: `+page.svelte`, `+layout.ts`, `+page.server.ts`
-  file-system routing; form actions; `$app/state`, not `$app/stores`.
-- **TypeScript** unless the user's file explicitly uses plain JS.
-
-When in doubt, pick the modern path: runes over stores, snippets
-over slots, callback props over dispatchers.
+The following examples use Svelte 5 runes, TypeScript, snippets and callback props. Use the language and conventions of the target project. SvelteKit examples use version 2 routing and form actions. Reactive reads from `$app/state` require runes and SvelteKit 2.12 or later.
 
 ## Runes at a glance
 
@@ -54,7 +41,7 @@ Details, traps, and examples: [runes.md](references/runes.md).
 
 ## Component shape
 
-A Svelte 5 component is a `.svelte` file with three ordered slots:
+This runes component uses a script, markup, and scoped styles.
 
 ```svelte
 <script lang="ts">
@@ -112,10 +99,7 @@ Full copy-ready template: [assets/component.svelte](assets/component.svelte).
 
 ## Sharing reactive state in `.svelte.ts`
 
-Runes work inside `.svelte`, `.svelte.js`, and `.svelte.ts` files.
-Use a `.svelte.ts` module when multiple components need the same
-reactive source. **Don't use legacy `writable`/`readable` stores for
-new code**. They still work for backwards compatibility only.
+For new shared reactive state, a runes module can live in a `.svelte.ts` or `.svelte.js` file. Keep a store where callers depend on its subscription contract.
 
 ```ts
 // cart.svelte.ts
@@ -157,26 +141,33 @@ Full routing + load + actions flow: [sveltekit.md](references/sveltekit.md).
 
 ```ts
 // +page.ts  (universal — runs on server first, then client on nav)
+import { error } from '@sveltejs/kit'
 import type { PageLoad } from './$types'
 export const load: PageLoad = async ({ fetch, params }) => {
   const res = await fetch(`/api/posts/${params.slug}`)   // use the scoped fetch
-  if (!res.ok) throw error(404, 'Post not found')
+  if (res.status === 404) error(404, 'Post not found')
+  if (!res.ok) error(502, 'Unable to load post')
   return { post: await res.json() }
 }
 ```
 
 ```ts
 // +page.server.ts  (server-only — access secrets, DB)
+import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
-import { env } from '$env/dynamic/private'
 export const load: PageServerLoad = async ({ locals, params }) => {
-  const post = await locals.db.posts.findUnique({ where: { slug: params.slug } })
-  return { post, revalidateSecret: env.REVALIDATE_SECRET }    // never leak: pick fields
+  const post = await locals.db.posts.findUnique({
+    where: { slug: params.slug },
+    select: { slug: true, title: true }
+  })
+  if (!post) error(404, 'Post not found')
+  return { post: { slug: post.slug, title: post.title } }
 }
 ```
 
 Guidelines:
 
+- Server load results travel to the browser. Return only the fields the user may read.
 - Use `+page.ts` if the endpoint is public and you want client-side
   nav to skip a server round-trip.
 - Use `+page.server.ts` when the data source is server-only, such as a DB,
@@ -222,7 +213,7 @@ disabled, plus fine-grained control over the response. Prefer form
 actions over `fetch('/api/...', { method: 'POST' })` for mutations
 that belong to a page.
 
-## Events: callback props, not dispatchers
+## Callback props in runes components
 
 ```svelte
 <!-- Modal.svelte -->
@@ -273,7 +264,7 @@ anything that used to be a slot with props.
 
 ## Migrating from Svelte 4
 
-If the user has v4 code, mechanical translations:
+Use these translations when the task includes migrating the component to runes.
 
 | v4 | v5 |
 |----|----|
@@ -295,15 +286,8 @@ mode: [migrating-from-svelte-4.md](references/migrating-from-svelte-4.md).
 - **Don't write to reactive state inside `$effect`**. It causes
   re-run loops. Put the update in the event handler that triggered it.
   If genuine cascading is needed, use `$derived`, which is pure.
-- **Don't reach for `svelte/store` in new code**. `.svelte.ts` +
-  `$state` covers cross-component sharing without the
-  subscribe/unsubscribe dance.
-- **Don't use `$app/stores`** in SvelteKit 2 code. It's deprecated in
-  favor of `$app/state`. `page.url`, `page.params`, `page.status` are
-  now plain reactive properties, no `$page` prefix.
-- **Don't mix `export let` with `$props()`**. The compiler will
-  warn, and the component is locked out of runes features for that
-  variable.
+- Keep `$app/stores` subscription behavior in legacy components. In a migration, switch route reads to `$app/state` together with the runes that track them.
+- A component using `$props()` cannot also declare props with `export let`. The compiler rejects this combination.
 - **Don't set DOM properties imperatively when a reactive attribute
   would do**. A `$effect` that calls `element.classList.add(...)` is
   usually a `class={{ ... }}` shorthand waiting to happen.

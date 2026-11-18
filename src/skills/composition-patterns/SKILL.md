@@ -28,8 +28,7 @@ Reference these guidelines when:
 
 ### 1. Component Architecture, impact HIGH
 
-- `architecture-avoid-boolean-props` - Don't add boolean props to customize
-  behavior; use composition
+- `architecture-avoid-boolean-props` - Use booleans for independent toggles, a discriminated union for exclusive modes, and composition when callers assemble UI elements.
 - `architecture-compound-components` - Structure complex components with shared
   context
 

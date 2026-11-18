@@ -7,7 +7,7 @@ tags: api-routes, server-actions, waterfalls, parallelization
 
 ## Prevent Waterfall Chains in API Routes
 
-API 라우트와 Server Action에서는 독립적인 작업은 await을 미루더라도 즉시 시작한다.
+독립적인 비동기 작업은 함께 시작하고 첫 `await` 전에 `Promise.all`에 연결한다. 먼저 실패한 작업의 오류도 라우트의 호출자에게 전달된다.
 
 **Incorrect, config waits for auth, data waits for both:**
 
@@ -24,12 +24,9 @@ export async function GET(request: Request) {
 
 ```typescript
 export async function GET(request: Request) {
-  const sessionPromise = auth()
-  const configPromise = fetchConfig()
-  const session = await sessionPromise
   const [config, data] = await Promise.all([
-    configPromise,
-    fetchData(session.user.id)
+    fetchConfig(),
+    auth().then(session => fetchData(session.user.id)),
   ])
   return Response.json({ data, config })
 }

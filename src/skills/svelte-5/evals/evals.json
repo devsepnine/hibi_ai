@@ -21,6 +21,13 @@
       "prompt": "SvelteKit 2로 'posts' 기능을 만들어줘. `src/routes/posts/+page.svelte`, `+page.server.ts` 두 파일 필요. load 함수는 DB에서 posts 목록 가져오고 (locals.db.posts.findMany()로 가정), default action은 POST form으로 새 글 작성받기 — title 필드 (빈 문자열이면 fail(400, {error})로 되돌리고, 성공하면 redirect(303, `/posts/${slug}`)). 페이지에는 기존 글 목록 + 새 글 작성 form (use:enhance) 포함. TypeScript 사용.",
       "expected_output": "Two files: +page.server.ts exporting load: PageServerLoad and actions: Actions (default action with FormData extraction, fail on empty title, redirect on success); +page.svelte importing PageData/ActionData from './$types', using $props() to receive { data, form }, rendering post list with {#each} and a form with method=\"POST\" use:enhance showing form?.error if present. No $app/stores, no export let.",
       "files": []
+    },
+    {
+      "id": 4,
+      "name": "maintain-legacy-component-on-svelte-5",
+      "prompt": "Svelte 5 프로젝트의 기존 Counter.svelte가 export let count = 0, $: doubled = count * 2, on:click을 쓴다. 버튼의 표시 문구만 두 배 값으로 변경해줘. 부모는 기존 prop으로 호출해.",
+      "expected_output": "Changes the displayed label and preserves the existing component mode, public prop, and click behavior. The component still compiles with the Svelte 5 compiler.",
+      "files": []
     }
   ]
 }

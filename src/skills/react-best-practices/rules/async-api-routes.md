@@ -7,7 +7,7 @@ tags: api-routes, server-actions, waterfalls, parallelization
 
 ## Prevent Waterfall Chains in API Routes
 
-In API routes and Server Actions, start independent operations immediately, even if you don't await them yet.
+Start independent async operations together and attach them to `Promise.all` before the first `await`. A rejection from either operation then reaches the caller.
 
 **Incorrect, config waits for auth, data waits for both:**
 
@@ -24,12 +24,9 @@ export async function GET(request: Request) {
 
 ```typescript
 export async function GET(request: Request) {
-  const sessionPromise = auth()
-  const configPromise = fetchConfig()
-  const session = await sessionPromise
   const [config, data] = await Promise.all([
-    configPromise,
-    fetchData(session.user.id)
+    fetchConfig(),
+    auth().then(session => fetchData(session.user.id)),
   ])
   return Response.json({ data, config })
 }

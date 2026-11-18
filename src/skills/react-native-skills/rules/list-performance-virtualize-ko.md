@@ -1,18 +1,15 @@
 ---
-title: Use a List Virtualizer for Any List
+title: Virtualize Long or Growing Lists
 impact: HIGH
 impactDescription: reduced memory, faster mounts
 tags: lists, performance, virtualization, scrollview
 ---
 
-## Use a List Virtualizer for Any List
+## 길거나 계속 늘어나는 목록 가상화
 
-짧은 리스트라도 ScrollView에 children을 map해서 그리지 말고 LegendList나
-FlashList 같은 list virtualizer를 사용한다. virtualizer는 visible 아이템만
-렌더하므로 메모리 사용량과 mount 시간이 줄어든다. ScrollView는 모든 children을
-한 번에 마운트하기 때문에 금방 비싸진다.
+항목 수가 적고 상한이 정해진 설정 화면이 원활히 렌더링되면 기존 레이아웃을 유지한다. 계속 늘어나는 피드의 모든 항목을 함께 렌더링하면 초기 표시 시간과 메모리 사용량이 증가할 수 있다. 프로젝트에서 사용하는 FlatList나 FlashList로 화면 주변에 필요한 행을 렌더링한다.
 
-**Incorrect, ScrollView renders all items at once:**
+**모든 행을 처음에 렌더링하는 피드**
 
 ```tsx
 function Feed({ items }: { items: Item[] }) {
@@ -27,23 +24,20 @@ function Feed({ items }: { items: Item[] }) {
 // 50 items = 50 components mounted, even if only 10 visible
 ```
 
-**Correct, virtualizer renders only visible items:**
+**내장 FlatList를 사용하는 피드**
 
 ```tsx
-import { LegendList } from '@legendapp/list'
+import { FlatList } from 'react-native'
 
 function Feed({ items }: { items: Item[] }) {
   return (
-    <LegendList
+    <FlatList
       data={items}
-      // if you aren't using React Compiler, wrap these with useCallback
       renderItem={({ item }) => <ItemCard item={item} />}
       keyExtractor={(item) => item.id}
-      estimatedItemSize={80}
     />
   )
 }
-// Only ~10-15 visible items mounted at a time
 ```
 
 **Alternative, FlashList:**
@@ -62,6 +56,3 @@ function Feed({ items }: { items: Item[] }) {
   )
 }
 ```
-
-이 이점은 스크롤 가능한 콘텐츠가 있는 모든 화면에 적용된다. 예를 들어 profile, settings, feed, 검색
-결과가 있다. virtualization을 기본값으로 삼는다.

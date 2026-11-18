@@ -7,7 +7,7 @@ tags: javascript, map, indexing, optimization, performance
 
 ## Build Index Maps for Repeated Lookups
 
-같은 키로 반복되는 `.find()` 호출은 Map을 사용한다.
+이 예시에서 주문은 문자열 사용자 ID로 조회한다. 같은 ID가 여러 번 나오면 `.find()`가 반환할 첫 사용자를 인덱스에 유지한다.
 
 **Incorrect, `O(n)` per lookup:**
 
@@ -24,7 +24,10 @@ function processOrders(orders: Order[], users: User[]) {
 
 ```typescript
 function processOrders(orders: Order[], users: User[]) {
-  const userById = new Map(users.map(u => [u.id, u]))
+  const userById = new Map<User['id'], User>()
+  for (const user of users) {
+    if (!userById.has(user.id)) userById.set(user.id, user)
+  }
 
   return orders.map(order => ({
     ...order,

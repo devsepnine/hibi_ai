@@ -34,18 +34,18 @@ React Native 및 Expo 애플리케이션을 위한 종합 베스트 프랙티스
 
 ### 2. List Performance: HIGH
 
-- `list-performance-virtualize` - 큰 리스트에는 FlashList를 사용한다
+- `list-performance-virtualize` - 길거나 계속 늘어나는 목록에는 프로젝트의 가상화 리스트를 사용한다.
 - `list-performance-item-memo` - 리스트 아이템 컴포넌트는 memoize 한다
 - `list-performance-callbacks` - 콜백 참조를 안정화한다
 - `list-performance-inline-objects` - 인라인 style 객체를 피한다
-- `list-performance-function-references` - 함수는 render 바깥으로 추출한다
+- `list-performance-function-references` - 변경되지 않은 행의 객체 참조를 유지한다
 - `list-performance-images` - 리스트 안의 이미지를 최적화한다
 - `list-performance-item-expensive` - 비싼 작업은 아이템 바깥으로 옮긴다
 - `list-performance-item-types` - 이질적 리스트에는 item types를 쓴다
 
 ### 3. Animation: HIGH
 
-- `animation-gpu-properties` - transform과 opacity만 애니메이션한다
+- `animation-gpu-properties` - 주변 요소의 배치가 고정된 효과에는 transform과 opacity를 우선한다.
 - `animation-derived-value` - 계산된 애니메이션에는 useDerivedValue를 쓴다
 - `animation-gesture-detector-press` - Pressable 대신 Gesture.Tap을 사용한다
 
@@ -74,7 +74,7 @@ React Native 및 Expo 애플리케이션을 위한 종합 베스트 프랙티스
 
 ### 9. User Interface: MEDIUM
 
-- `ui-expo-image` - 모든 이미지에 expo-image를 사용한다
+- `ui-expo-image` - 기존 이미지 컴포넌트를 우선하고 필요한 기능에 따라 expo-image를 선택한다.
 - `ui-image-gallery` - 이미지 라이트박스는 Galeria를 사용한다
 - `ui-pressable` - TouchableOpacity 대신 Pressable을 사용한다
 - `ui-safe-area-scroll` - ScrollView의 safe area를 처리한다

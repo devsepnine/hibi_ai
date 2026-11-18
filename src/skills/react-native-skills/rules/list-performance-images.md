@@ -48,6 +48,4 @@ function ProductItem({ product }: { product: Product }) {
 }
 ```
 
-Use an optimized image component with built-in caching and placeholder support,
-such as `expo-image` or `SolitoImage`, which uses `expo-image` under the hood.
-Request images at 2x the display size for retina screens.
+Request a thumbnail sized for the displayed image and the device pixel density. Use the project’s image component and enable caching or placeholders when needed.

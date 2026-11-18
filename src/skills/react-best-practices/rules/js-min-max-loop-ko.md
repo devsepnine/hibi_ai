@@ -41,7 +41,7 @@ min/max만 필요한데도 여전히 불필요하게 정렬한다.
 
 ```typescript
 function getLatestProject(projects: Project[]) {
-  if (projects.length === 0) return null
+  if (projects.length === 0) return undefined
   
   let latest = projects[0]
   
@@ -55,21 +55,21 @@ function getLatestProject(projects: Project[]) {
 }
 
 function getOldestAndNewest(projects: Project[]) {
-  if (projects.length === 0) return { oldest: null, newest: null }
+  if (projects.length === 0) return { oldest: undefined, newest: undefined }
   
   let oldest = projects[0]
   let newest = projects[0]
   
   for (let i = 1; i < projects.length; i++) {
     if (projects[i].updatedAt < oldest.updatedAt) oldest = projects[i]
-    if (projects[i].updatedAt > newest.updatedAt) newest = projects[i]
+    if (projects[i].updatedAt >= newest.updatedAt) newest = projects[i]
   }
   
   return { oldest, newest }
 }
 ```
 
-배열을 한 번만 순회하고, 복사도 정렬도 없다.
+이 예시의 갱신 시각은 유효한 유한수다. 빈 배열에서는 두 구현 모두 `undefined`를 반환값이나 각 필드에 담는다. 시각이 같으면 내림차순 정렬의 첫 항목은 먼저 나온 프로젝트다. 오름차순 정렬의 마지막 항목은 나중에 나온 프로젝트이므로 `newest`를 구하는 비교에는 등호를 포함한다.
 
 **Alternative, Math.min/Math.max for small arrays:**
 

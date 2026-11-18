@@ -5,7 +5,7 @@ description: Svelte 5 + SvelteKit 2 with runes `$state`/`$derived`/`$effect`, sn
 
 # Svelte 5
 
-관용적인 Svelte 5 컴포넌트와 SvelteKit 2 라우트를 만든다. 기본은 현재 Svelte 5 기본값인 **runes mode**, `{@render children()}` / snippet 패턴, callback-prop 이벤트다. 사용자가 명시적으로 5 이전 코드베이스를 유지보수하는 게 아니라면 절대 legacy `export let` / `on:event` / `createEventDispatcher`로 회귀하지 않는다.
+설치된 Svelte 버전, 컴파일러 옵션, 대상 컴포넌트 문법을 확인한다. Svelte 5에서는 한 프로젝트에 legacy 컴포넌트와 runes 컴포넌트를 함께 둘 수 있다. 작은 수정은 해당 파일의 모드와 외부에 제공하는 prop, slot, 이벤트를 유지한다. 요청이나 프로젝트 지침에 따라 모드를 전환한다. 새 컴포넌트에서 모드 선택이 열려 있으면 runes를 사용한다.
 
 작업 시 해당하는 reference 파일을 읽는다:
 
@@ -18,16 +18,9 @@ description: Svelte 5 + SvelteKit 2 with runes `$state`/`$derived`/`$effect`, sn
   `export let`, `$:`, slot, `createEventDispatcher`, `on:event`,
   `<svelte:component>`을 v5로 기계적으로 옮기는 방법
 
-## 기본 가정
+## 새 컴포넌트의 기본값
 
-사용자는 다음을 사용한다고 가정한다:
-
-- **Svelte 5**, runes mode, 2024 출시. `svelte@5` 이후 기본값.
-- **SvelteKit 2**: `+page.svelte`, `+layout.ts`, `+page.server.ts`
-  파일 시스템 라우팅; form action; `$app/state`이며 `$app/stores`가 아님.
-- **TypeScript**를 쓴다. 사용자 파일이 명시적으로 plain JS를 쓰는 경우는 예외다.
-
-확신이 안 설 때는 모던 경로를 택한다: store보다 rune, slot보다 snippet, dispatcher보다 callback prop.
+다음 예시는 Svelte 5 runes, TypeScript, snippet, callback prop을 사용한다. 대상 프로젝트의 언어와 관례를 우선한다. SvelteKit 예시는 버전 2의 라우팅과 폼 액션을 사용한다. `$app/state`의 변경을 추적하려면 runes와 SvelteKit 2.12 이상이 필요하다.
 
 ## Runes 한눈에 보기
 
@@ -47,7 +40,7 @@ description: Svelte 5 + SvelteKit 2 with runes `$state`/`$derived`/`$effect`, sn
 
 ## 컴포넌트 형태
 
-Svelte 5 컴포넌트는 세 개의 순차 슬롯을 가진 `.svelte` 파일이다:
+다음 runes 컴포넌트는 스크립트, 마크업, scoped 스타일로 구성된다.
 
 ```svelte
 <script lang="ts">
@@ -101,7 +94,7 @@ Svelte 5 컴포넌트는 세 개의 순차 슬롯을 가진 `.svelte` 파일이�
 
 ## `.svelte.ts`로 반응형 state 공유
 
-Rune은 `.svelte`, `.svelte.js`, `.svelte.ts` 파일 안에서 모두 동작한다. 여러 컴포넌트가 같은 reactive source를 필요로 하면 `.svelte.ts` 모듈을 사용한다. **신규 코드에 legacy `writable`/`readable` store를 사용하지 말 것**. 이들은 backwards compatibility만을 위해 동작한다.
+새 공유 상태는 `.svelte.ts` 또는 `.svelte.js` 모듈에 runes로 작성할 수 있다. 호출자가 store의 구독 계약에 의존하면 이를 유지한다.
 
 ```ts
 // cart.svelte.ts
@@ -141,26 +134,33 @@ export const cart = {
 
 ```ts
 // +page.ts  (universal — runs on server first, then client on nav)
+import { error } from '@sveltejs/kit'
 import type { PageLoad } from './$types'
 export const load: PageLoad = async ({ fetch, params }) => {
   const res = await fetch(`/api/posts/${params.slug}`)   // use the scoped fetch
-  if (!res.ok) throw error(404, 'Post not found')
+  if (res.status === 404) error(404, 'Post not found')
+  if (!res.ok) error(502, 'Unable to load post')
   return { post: await res.json() }
 }
 ```
 
 ```ts
 // +page.server.ts  (server-only — access secrets, DB)
+import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
-import { env } from '$env/dynamic/private'
 export const load: PageServerLoad = async ({ locals, params }) => {
-  const post = await locals.db.posts.findUnique({ where: { slug: params.slug } })
-  return { post, revalidateSecret: env.REVALIDATE_SECRET }    // never leak: pick fields
+  const post = await locals.db.posts.findUnique({
+    where: { slug: params.slug },
+    select: { slug: true, title: true }
+  })
+  if (!post) error(404, 'Post not found')
+  return { post: { slug: post.slug, title: post.title } }
 }
 ```
 
 가이드라인:
 
+- 서버 load의 반환값은 브라우저로 전달된다. 사용자가 읽을 수 있는 필드만 반환한다.
 - 엔드포인트가 public이고 클라이언트 측 nav가 server round-trip을 건너뛰길 원하면 `+page.ts`를 쓴다.
 - 데이터 소스가 server-only, 예를 들어 DB, secret, filesystem이면 `+page.server.ts`를 쓴다.
 - universal 파일에서 `$env/static/private` 또는 `$env/dynamic/private`을 import 하지 않는다. 컴파일러가 정당한 이유로 막는다.
@@ -200,7 +200,7 @@ export const actions: Actions = {
 
 `use:enhance`는 progressive enhancement, 즉 JS가 비활성화돼도 동작하는 form과 응답에 대한 fine-grained control을 제공한다. 페이지에 속하는 mutation에는 `fetch('/api/...', { method: 'POST' })`보다 form action을 선호한다.
 
-## 이벤트: dispatcher가 아닌 callback prop
+## runes 컴포넌트의 callback prop
 
 ```svelte
 <!-- Modal.svelte -->
@@ -247,7 +247,7 @@ Snippet은 slot과 달리 위치 인자를 받고, `Snippet<[Args]>`로 typing�
 
 ## Svelte 4에서의 마이그레이션
 
-사용자가 v4 코드를 가지고 있다면, 기계적 번역:
+컴포넌트의 runes 전환이 작업 범위에 포함될 때 적용한다.
 
 | v4 | v5 |
 |----|----|
@@ -266,9 +266,8 @@ Snippet은 slot과 달리 위치 인자를 받고, `Snippet<[Args]>`로 typing�
 ## 안티패턴
 
 - **`$effect` 안에서 reactive state에 쓰지 말 것**. 재실행 루프를 일으킨다. 업데이트는 그것을 트리거한 이벤트 핸들러에 둔다. 진정한 cascade가 필요하면 `$derived`를 쓴다. 이쪽은 순수하다.
-- **신규 코드에서 `svelte/store`에 손을 뻗지 말 것**. `.svelte.ts` + `$state`로 subscribe/unsubscribe 없이 cross-component 공유를 다 한다.
-- **SvelteKit 2 코드에서 `$app/stores`를 쓰지 말 것**. `$app/state`가 권장되며 deprecated. `page.url`, `page.params`, `page.status`는 이제 plain reactive 프로퍼티이고 `$page` prefix가 없다.
-- **`export let`과 `$props()`를 섞지 말 것**. 컴파일러가 경고하고 그 변수에 대해 컴포넌트가 rune 기능에서 잠긴다.
+- legacy 컴포넌트는 기존 `$app/stores` 구독을 유지한다. 마이그레이션할 때는 경로 정보 읽기를 `$app/state`로 바꾸고 변경을 추적하는 runes도 함께 적용한다.
+- `$props()`를 사용하는 컴포넌트에 `export let`으로 prop을 선언하면 컴파일 오류가 발생한다.
 - **reactive attribute로 충분할 때 imperative DOM property 설정 금지**. `element.classList.add(...)`를 호출하는 `$effect`는 보통 `class={{ ... }}` shorthand가 어울린다.
 
 ## 통합 노트

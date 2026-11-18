@@ -41,7 +41,7 @@ Still sorts unnecessarily when only min/max are needed.
 
 ```typescript
 function getLatestProject(projects: Project[]) {
-  if (projects.length === 0) return null
+  if (projects.length === 0) return undefined
   
   let latest = projects[0]
   
@@ -55,21 +55,21 @@ function getLatestProject(projects: Project[]) {
 }
 
 function getOldestAndNewest(projects: Project[]) {
-  if (projects.length === 0) return { oldest: null, newest: null }
+  if (projects.length === 0) return { oldest: undefined, newest: undefined }
   
   let oldest = projects[0]
   let newest = projects[0]
   
   for (let i = 1; i < projects.length; i++) {
     if (projects[i].updatedAt < oldest.updatedAt) oldest = projects[i]
-    if (projects[i].updatedAt > newest.updatedAt) newest = projects[i]
+    if (projects[i].updatedAt >= newest.updatedAt) newest = projects[i]
   }
   
   return { oldest, newest }
 }
 ```
 
-Single pass through the array, no copying, no sorting.
+These examples assume finite timestamps. For an empty array both versions return `undefined` for each requested project. On a tie the first item of the descending sort is the first matching project. The last item of the ascending sort is the last matching project, so the comparison for `newest` includes equality.
 
 **Alternative, Math.min/Math.max for small arrays:**
 

@@ -5,13 +5,11 @@ impactDescription: memory efficiency, caching, blurhash placeholders, progressiv
 tags: images, performance, expo-image, ui
 ---
 
-## Use expo-image for Optimized Images
+## 이미지 컴포넌트 선택
 
-React Native의 `Image` 대신 `expo-image`를 사용한다. 메모리 효율적인 캐싱,
-blurhash placeholder, progressive loading을 제공하고 리스트에서 더 좋은
-성능을 낸다.
+프로젝트의 이미지 컴포넌트가 화면 요구를 충족하면 유지한다. URL과 고정 크기만 필요한 아바타는 React Native Image로 표시할 수 있다. expo-image를 사용하는 프로젝트라면 필요한 화면에 placeholder, 캐시 정책, 재사용 지원을 적용한다.
 
-**Incorrect, React Native Image:**
+**React Native Image를 사용하는 아바타**
 
 ```tsx
 import { Image } from 'react-native'
@@ -21,7 +19,7 @@ function Avatar({ url }: { url: string }) {
 }
 ```
 
-**Correct, expo-image:**
+**expo-image를 사용하는 프로젝트의 아바타**
 
 ```tsx
 import { Image } from 'expo-image'
@@ -62,8 +60,5 @@ function Avatar({ url }: { url: string }) {
 - `priority`: `low`, `normal`, `high`
 - `cachePolicy`: `memory`, `disk`, `memory-disk`, `none`
 - `recyclingKey`: 리스트 recycling용 unique key
-
-web과 native를 아우르는 cross-platform에서는 내부적으로 `expo-image`를 쓰는
-`solito/image`의 `SolitoImage`를 사용한다.
 
 Reference: [expo-image](https://docs.expo.dev/versions/latest/sdk/image/)

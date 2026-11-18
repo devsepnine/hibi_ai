@@ -50,7 +50,8 @@ import type { PageLoad } from './$types'
 
 export const load: PageLoad = async ({ fetch, params }) => {
   const res = await fetch(`/api/posts/${params.slug}`)   // scoped fetch
-  if (!res.ok) error(404, 'Not found')
+  if (res.status === 404) error(404, 'Post not found')
+  if (!res.ok) error(502, 'Unable to load post')
   return { post: await res.json() }
 }
 ```
@@ -66,12 +67,16 @@ export const load: PageLoad = async ({ fetch, params }) => {
 
 ```ts
 // +page.server.ts
+import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ locals, params }) => {
-  const post = await locals.db.posts.findUnique({ where: { slug: params.slug } })
-  if (!post) error(404, 'Not found')
-  return { post }           // ships to the client as serialized JSON
+  const post = await locals.db.posts.findUnique({
+    where: { slug: params.slug },
+    select: { slug: true, title: true }
+  })
+  if (!post) error(404, 'Post not found')
+  return { post: { slug: post.slug, title: post.title } }
 }
 ```
 
@@ -260,7 +265,7 @@ import { env as priv }       from '$env/dynamic/private' // process.env at runti
 - 브라우저로 ship되는 파일에서 `*/private`을 import하면 컴파일 에러이다.
 - `static/*`을 선호한다. 더 나은 tree-shaking과 런타임 lookup 비용 없음. 값이 실제로 deploy/요청별로 변경될 때만 `dynamic/*`을 사용한다.
 
-## `$app/state`: replaced `$app/stores` in v2
+## `$app/state` in SvelteKit 2.12+
 
 ```ts
 import { page, navigating, updated } from '$app/state'
@@ -273,7 +278,7 @@ if (navigating) {
 }
 ```
 
-코드에서 `$app/stores`나 `$page`가 보인다면 v1/v2-early 패턴이므로 마이그레이션한다. v2 `$app/state` API는 이미 runes로 추적되므로 그저 field를 read하면 된다.
+legacy 컴포넌트에서 라우트 변경을 추적할 때는 기존 `$app/stores` 구독을 유지한다. SvelteKit 2.12 이상에서 runes로 전환할 때는 마크업이나 파생 식에서 `$app/state`를 읽는다.
 
 ## API endpoints: `+server.ts`
 
@@ -329,6 +334,6 @@ export const trailingSlash = 'never' // url normalization
 - **load에서 `fetch` destructure 없이 fetch**: 글로벌 `fetch`가 쿠키를 운반하지 않고 상대 URL을 해석할 수 없으므로 SSR이 깨진다.
 - **`load`의 long-running 작업**: `load`는 모든 내비게이션마다 실행된다. 캐시하고, `depends` + `invalidate`을 사용하거나, 백그라운드 job으로 옮긴다.
 - **`load` 내부에서 `locals` mutate**: `locals`는 `handle`에서 요청당 한 번 설정된다; `load`/`action`에서는 read-only로 취급한다.
-- **새 코드에서 `$app/stores` 사용**: v2는 `$app/state`를 선호한다.
+- SvelteKit 2.12 이상의 새 runes 컴포넌트에서 반응형 라우트 값을 읽을 때는 `$app/state`를 사용한다.
 - **form 제출에 `+server.ts` 사용**: progressive enhancement를 잃는다. form action을 사용한다.
 - **서버 `load`에서 직렬화 불가능한 데이터 반환**: class, function, proxy가 조용히 drop된다. plain 객체를 반환한다.

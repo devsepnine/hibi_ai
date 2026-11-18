@@ -28,8 +28,7 @@ component, 상태 끌어올리기, 내부 컴포지션을 사용해 boolean prop
 
 ### 1. Component Architecture, impact HIGH
 
-- `architecture-avoid-boolean-props` - 동작 커스터마이징을 위한 boolean
-  prop 추가 금지; 컴포지션 사용
+- `architecture-avoid-boolean-props` - 독립적인 토글은 불리언으로, 배타적인 모드는 판별 유니온으로 표현한다. 호출자가 UI 요소를 조합해야 하면 컴포지션을 사용한다.
 - `architecture-compound-components` - 공유 context로 복잡한 컴포넌트
   구조화
 

@@ -1,4 +1,5 @@
 ```typescript
+import { fetchItems } from './api.js';
 import { create } from 'zustand';
 import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { useShallow } from 'zustand/shallow';
@@ -8,14 +9,34 @@ import type {} from '@redux-devtools/extension';
 // Types
 // ============================================================================
 
+export interface {{StoreName}}Item {
+  id: string;
+}
+
+function parseItem(value: unknown): {{StoreName}}Item {
+  if (typeof value === 'object' && value !== null && 'id' in value) {
+    const id = value.id;
+    if (typeof id === 'string') return { id };
+  }
+  throw new TypeError('Expected an item with a string ID');
+}
+
+function parseItems(value: unknown): {{StoreName}}Item[] {
+  if (!Array.isArray(value)) throw new TypeError('Expected an array of items');
+  const items: {{StoreName}}Item[] = [];
+  for (const item of value) {
+    items.push(parseItem(item));
+  }
+  return items;
+}
+
 /**
  * {{StoreName}}State — 데이터 형태 (함수 없음).
  */
 export interface {{StoreName}}State {
-  items: unknown[];
+  items: {{StoreName}}Item[];
   selectedId: string | null;
-  isLoading: boolean;
-  error: string | null;
+  load: { status: 'idle' } | { status: 'loading' } | { status: 'failed'; error: string };
 }
 
 /**
@@ -23,12 +44,12 @@ export interface {{StoreName}}State {
  */
 export interface {{StoreName}}Actions {
   // 세터
-  setItems: (items: unknown[]) => void;
+  setItems: (items: {{StoreName}}Item[]) => void;
   setSelectedId: (id: string | null) => void;
 
   // 복합 / 비동기
   loadItems: () => Promise<void>;
-  addItem: (item: unknown) => void;
+  addItem: (item: {{StoreName}}Item) => void;
   removeItem: (id: string) => void;
 
   // initialState로 리셋 (store.getInitialState()와 동기 유지)
@@ -44,8 +65,7 @@ export type {{StoreName}}Store = {{StoreName}}State & {{StoreName}}Actions;
 const initialState: {{StoreName}}State = {
   items: [],
   selectedId: null,
-  isLoading: false,
-  error: null,
+  load: { status: 'idle' },
 };
 
 // ============================================================================
@@ -71,22 +91,24 @@ export const use{{StoreName}}Store = create<{{StoreName}}Store>()(
         ...initialState,
 
         // 단순 세터 — devtools 추적을 위해 액션 이름을 붙인다
-        setItems: (items) => set({ items }, false, '{{StoreName}}/setItems'),
+        setItems: (items) => set({ items: parseItems(items) }, false, '{{StoreName}}/setItems'),
         setSelectedId: (selectedId) =>
           set({ selectedId }, false, '{{StoreName}}/setSelectedId'),
 
-        // 비동기 예제 — 시작 시 항상 error를 비우고, 실패 시 설정한다
+        // 새 요청이나 초기화가 load를 교체하면 이전 요청은 쓰기 권한을 잃는다.
         loadItems: async () => {
-          set({ isLoading: true, error: null }, false, '{{StoreName}}/loadItems/start');
+          const request = { status: 'loading' } as const;
+          set({ load: request }, false, '{{StoreName}}/loadItems/start');
           try {
-            // const items = await fetchItems();
-            const items: unknown[] = [];
-            set({ items, isLoading: false }, false, '{{StoreName}}/loadItems/success');
+            const payload: unknown = await fetchItems();
+            if (get().load !== request) return;
+            const items = parseItems(payload);
+            set({ items, load: { status: 'idle' } }, false, '{{StoreName}}/loadItems/success');
           } catch (err) {
+            if (get().load !== request) return;
             set(
               {
-                error: err instanceof Error ? err.message : 'Failed to load',
-                isLoading: false,
+                load: { status: 'failed', error: err instanceof Error ? err.message : 'Failed to load' },
               },
               false,
               '{{StoreName}}/loadItems/error',
@@ -95,13 +117,15 @@ export const use{{StoreName}}Store = create<{{StoreName}}Store>()(
         },
 
         // spread / filter를 통한 불변 업데이트
-        addItem: (item) =>
-          set({ items: [...get().items, item] }, false, '{{StoreName}}/addItem'),
+        addItem: (item) => {
+          const storedItem = parseItem(item);
+          set({ items: [...get().items, storedItem] }, false, '{{StoreName}}/addItem');
+        },
 
         removeItem: (id) =>
           set(
             {
-              items: get().items.filter((it) => (it as { id: string }).id !== id),
+              items: get().items.filter((item) => item.id !== id),
               selectedId: get().selectedId === id ? null : get().selectedId,
             },
             false,
@@ -131,8 +155,8 @@ export const use{{StoreName}}List = () =>
   use{{StoreName}}Store(
     useShallow((s) => ({
       items: s.items,
-      isLoading: s.isLoading,
-      error: s.error,
+      isLoading: s.load.status === 'loading',
+      error: s.load.status === 'failed' ? s.load.error : null,
     })),
   );
 ```

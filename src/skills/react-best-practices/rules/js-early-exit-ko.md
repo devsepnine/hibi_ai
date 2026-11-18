@@ -7,28 +7,18 @@ tags: javascript, functions, optimization, early-return
 
 ## Early Return from Functions
 
-결과가 결정되면 즉시 return해서 불필요한 처리를 건너뛴다.
+입력 순서대로 만난 첫 오류를 반환하며 한 사용자의 이메일을 이름보다 먼저 검사한다. 이 계약에서는 첫 오류에서 검사를 끝낼 수 있다. 마지막 오류나 전체 오류 목록을 반환하는 검증기는 검사 순서와 반환 계약을 보존해야 한다.
 
 **Incorrect, processes all items even after finding answer:**
 
 ```typescript
 function validateUsers(users: User[]) {
-  let hasError = false
-  let errorMessage = ''
-  
+  const errors: string[] = []
   for (const user of users) {
-    if (!user.email) {
-      hasError = true
-      errorMessage = 'Email required'
-    }
-    if (!user.name) {
-      hasError = true
-      errorMessage = 'Name required'
-    }
-    // Continues checking all users even after error found
+    if (!user.email) errors.push('Email required')
+    if (!user.name) errors.push('Name required')
   }
-  
-  return hasError ? { valid: false, error: errorMessage } : { valid: true }
+  return errors.length ? { valid: false, error: errors[0] } : { valid: true }
 }
 ```
 

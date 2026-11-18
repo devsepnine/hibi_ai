@@ -55,25 +55,7 @@ function ProjectList({ projects }: { projects: Project[] }) {
 }
 ```
 
-**Simpler pattern for single-value functions:**
-
-```typescript
-let isLoggedInCache: boolean | null = null
-
-function isLoggedIn(): boolean {
-  if (isLoggedInCache !== null) {
-    return isLoggedInCache
-  }
-  
-  isLoggedInCache = document.cookie.includes('auth=')
-  return isLoggedInCache
-}
-
-// Clear cache when auth changes
-function onAuthChange() {
-  isLoggedInCache = null
-}
-```
+Render login status from the project’s session state and subscribe to session changes. A user switch or session expiry can change the answer with identical arguments. Cache a result at module scope only when its inputs determine the result and its lifetime matches the data.
 
 Use a Map rather than a hook so it works everywhere: utilities, event handlers, not just React components.
 

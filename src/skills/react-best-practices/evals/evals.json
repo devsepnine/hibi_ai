@@ -1,0 +1,12 @@
+{
+  "skill_name": "react-best-practices",
+  "evals": [
+    {
+      "id": 1,
+      "name": "browser-preference-cache-with-server-import",
+      "prompt": "Next.js에서 공통 모듈로 쓸 화면 설정 캐시를 구현해줘. 서버에서도 이 모듈을 import하고, 브라우저에서 마운트된 뒤 localStorage 설정을 읽고 써. 같은 탭의 삭제와 다른 탭의 변경 및 전체 초기화도 반영해야 해.",
+      "expected_output": "Importing the module succeeds without window or document. In the browser a repeated read can use the cached value, a same-tab removal is visible to the next read, and storage events for a changed key or a cleared store invalidate the applicable entries.",
+      "files": []
+    }
+  ]
+}

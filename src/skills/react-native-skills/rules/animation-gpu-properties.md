@@ -7,14 +7,14 @@ tags: animation, performance, reanimated, transform, opacity
 
 ## Animate Transform and Opacity Instead of Layout Properties
 
-Avoid animating `width`, `height`, `top`, `left`, `margin`, or `padding`. These trigger layout recalculation on every frame. Instead, use `transform` with scale and translate, and `opacity`, which run on the GPU without triggering layout.
+If collapsing a panel must move the rows below it, animate the layout. A scale transform preserves the space the panel occupies. Use transform and opacity for a visual transition within a fixed slot.
 
-**Incorrect, animates height, triggers layout every frame:**
+**Panel that moves the following rows**
 
 ```tsx
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 
-function CollapsiblePanel({ expanded }: { expanded: boolean }) {
+function CollapsiblePanel({ expanded, children }: { expanded: boolean; children: React.ReactNode }) {
   const animatedStyle = useAnimatedStyle(() => ({
     height: withTiming(expanded ? 200 : 0), // triggers layout on every frame
     overflow: 'hidden',
@@ -24,12 +24,12 @@ function CollapsiblePanel({ expanded }: { expanded: boolean }) {
 }
 ```
 
-**Correct, animates scaleY, GPU-accelerated:**
+**Panel that scales within a fixed slot**
 
 ```tsx
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 
-function CollapsiblePanel({ expanded }: { expanded: boolean }) {
+function CollapsiblePanel({ expanded, children }: { expanded: boolean; children: React.ReactNode }) {
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       { scaleY: withTiming(expanded ? 1 : 0) },
@@ -50,7 +50,7 @@ function CollapsiblePanel({ expanded }: { expanded: boolean }) {
 ```tsx
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 
-function SlideIn({ visible }: { visible: boolean }) {
+function SlideIn({ visible, children }: { visible: boolean; children: React.ReactNode }) {
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       { translateY: withTiming(visible ? 0 : 100) },
@@ -62,4 +62,4 @@ function SlideIn({ visible }: { visible: boolean }) {
 }
 ```
 
-GPU-accelerated properties: `transform` with translate, scale, and rotate, and `opacity`. Everything else triggers layout.
+On the target device, check sibling positions before and after collapse and measure frame times during the transition.

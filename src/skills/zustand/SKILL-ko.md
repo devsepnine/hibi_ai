@@ -15,16 +15,19 @@ TypeScript 타입, 적절한 미들웨어, 흔한 함정인 infinite re-render, 
 - `{{StoreName}}` → PascalCase store 이름, 예: `Project`
 - `{{description}}` → 한 줄 JSDoc description
 
+템플릿의 `fetchItems`를 프로젝트 API에 연결한다. `parseItem`은 호출자의 입력에서 스토어가 소유하는 값을 만든다. 도메인 필드가 늘면 타입과 파서를 함께 갱신하고, 스토어 밖에서 변경할 수 있는 중첩 값도 파싱한다.
+
 ## State / Actions 분리
 
 store 타입을 **state**인 데이터와 **actions**인 mutator로 분리한다. 이렇게 하면 의도가 명확해지고, selector를 위한 `Pick<>`이 쉬워지며, 절대 re-render하지 않는 action-only selector가 드러난다.
 
 ```typescript
+interface Item { id: string }
+
 export interface MyState {
   items: Item[];
   selectedId: string | null;
-  isLoading: boolean;
-  error: string | null;
+  load: { status: 'idle' } | { status: 'loading' } | { status: 'failed'; error: string };
 }
 
 export interface MyActions {
@@ -119,7 +122,7 @@ export const useMyStore = create<MyStore>()(
 
 ```typescript
 const initialState: MyState = {
-  items: [], selectedId: null, isLoading: false, error: null,
+  items: [], selectedId: null, load: { status: 'idle' },
 };
 
 // inside the store:

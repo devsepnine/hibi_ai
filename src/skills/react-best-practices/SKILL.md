@@ -88,7 +88,7 @@ Reference these guidelines when:
 - `rendering-activity` - Use Activity component for show/hide
 - `rendering-conditional-render` - Use ternary, not && for conditionals
 - `rendering-document-metadata` - Use React 19's native `<title>`/`<meta>`/`<link>` hoisting instead of imperative head mutation
-- `rendering-usetransition-loading` - Prefer useTransition for loading state
+- `rendering-usetransition-loading` - Track pending React 19 transitions and apply the latest search response.
 - `rendering-resource-hints` - Use React DOM resource hints for preloading
 - `rendering-script-defer-async` - Use defer or async on script tags
 
@@ -97,8 +97,8 @@ Reference these guidelines when:
 - `js-batch-dom-css` - Group CSS changes via classes or cssText
 - `js-index-maps` - Build Map for repeated lookups
 - `js-cache-property-access` - Cache object properties in loops
-- `js-cache-function-results` - Cache function results in module-level Map
-- `js-cache-storage` - Cache localStorage/sessionStorage reads
+- `js-cache-function-results` - Cache pure computations for the lifetime of their inputs.
+- `js-cache-storage` - Cache browser preferences after mount and invalidate on external changes when event delays are acceptable.
 - `js-combine-iterations` - Combine multiple filter/map into one loop
 - `js-length-check-first` - Check array length before expensive comparison
 - `js-early-exit` - Return early from functions

@@ -7,7 +7,7 @@ tags: composition, props, architecture
 
 ## Avoid Boolean Prop Proliferation
 
-`isThread`, `isEditing`, `isDMThread` 같은 boolean prop을 추가해 컴포넌트 동작을 커스터마이즈하지 않는다. 각 boolean은 가능한 상태를 두 배로 늘리고 유지보수가 불가능한 조건부 로직을 만든다. 대신 composition을 사용한다.
+`disabled`처럼 독립적인 속성에는 불리언이 맞다. `isThread`와 `isDMThread`가 동시에 참이면 안 된다면 하나의 모드로 표현한다. 모드마다 필요한 데이터가 다르면 판별 유니온을 사용하고, 호출자가 헤더나 푸터를 바꿔 끼워야 하면 컴포지션을 사용한다.
 
 **Incorrect, boolean props create exponential complexity:**
 

@@ -48,6 +48,4 @@ function ProductItem({ product }: { product: Product }) {
 }
 ```
 
-캐싱과 placeholder를 내장한 최적화 이미지 컴포넌트를 사용한다. 예를 들어
-`expo-image`, 혹은 내부적으로 `expo-image`를 쓰는 `SolitoImage`. retina
-디스플레이용으로 표시 크기의 2배 이미지를 요청한다.
+화면 표시 크기와 기기 픽셀 밀도에 맞는 썸네일을 요청한다. 프로젝트에서 사용하는 이미지 컴포넌트로 표시하고 필요에 따라 캐시와 placeholder를 적용한다.

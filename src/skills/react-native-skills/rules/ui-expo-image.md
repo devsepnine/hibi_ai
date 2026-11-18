@@ -5,11 +5,11 @@ impactDescription: memory efficiency, caching, blurhash placeholders, progressiv
 tags: images, performance, expo-image, ui
 ---
 
-## Use expo-image for Optimized Images
+## Choose an image component
 
-Use `expo-image` instead of React Native's `Image`. It provides memory-efficient caching, blurhash placeholders, progressive loading, and better performance for lists.
+Keep the project’s image component when it meets the screen’s needs. React Native Image is sufficient for an avatar with a URL and a fixed size. In a project that uses expo-image, use its placeholder, cache policy, or recycling support where the screen needs those features.
 
-**Incorrect, React Native Image:**
+**Avatar using React Native Image**
 
 ```tsx
 import { Image } from 'react-native'
@@ -19,7 +19,7 @@ function Avatar({ url }: { url: string }) {
 }
 ```
 
-**Correct, expo-image:**
+**Avatar in a project that uses expo-image**
 
 ```tsx
 import { Image } from 'expo-image'
@@ -60,7 +60,5 @@ function Avatar({ url }: { url: string }) {
 - `priority`: `low`, `normal`, `high`
 - `cachePolicy`: `memory`, `disk`, `memory-disk`, `none`
 - `recyclingKey`: Unique key for list recycling
-
-For cross-platform use across web and native, use `SolitoImage` from `solito/image` which uses `expo-image` under the hood.
 
 Reference: [expo-image](https://docs.expo.dev/versions/latest/sdk/image/)

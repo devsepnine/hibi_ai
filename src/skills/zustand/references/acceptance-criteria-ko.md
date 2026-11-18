@@ -94,16 +94,16 @@ export const useMyStore = create<MyStore>(
 ### 3.1 ✅ CORRECT
 
 ```typescript
+interface Project { id: string; name: string }
+
 export interface ProjectState {
   projects: Project[];
   selectedId: string | null;
-  isLoading: boolean;
 }
 
 export interface ProjectActions {
   addProject: (project: Project) => void;
   selectProject: (id: string) => void;
-  loadProjects: () => Promise<void>;
   reset: () => void;
 }
 
@@ -112,23 +112,13 @@ export type ProjectStore = ProjectState & ProjectActions;
 const initialState: ProjectState = {
   projects: [],
   selectedId: null,
-  isLoading: false,
 };
 
-export const useProjectStore = create<ProjectStore>()((set, get) => ({
+export const useProjectStore = create<ProjectStore>()((set) => ({
   ...initialState,
   addProject: (project) =>
-    set((s) => ({ projects: [...s.projects, project] })),
+    set((s) => ({ projects: [...s.projects, { id: project.id, name: project.name }] })),
   selectProject: (selectedId) => set({ selectedId }),
-  loadProjects: async () => {
-    set({ isLoading: true });
-    try {
-      const projects = await fetchProjects();
-      set({ projects, isLoading: false });
-    } catch {
-      set({ isLoading: false });
-    }
-  },
   reset: () => set(initialState),
 }));
 ```
@@ -327,27 +317,28 @@ export const useTodoStore = create<TodoStore>()(
 ### 9.1 ✅ CORRECT
 
 ```typescript
-export const useDataStore = create<DataStore>()((set) => ({
+export const useDataStore = create<DataStore>()((set, get) => ({
   data: null,
-  isLoading: false,
-  error: null,
+  load: { status: 'idle' },
 
   fetchData: async (id: string) => {
-    set({ isLoading: true, error: null });
+    const request = { status: 'loading' } as const;
+    set({ load: request });
     try {
       const data = await api.getData(id);
-      set({ data, isLoading: false });
+      if (get().load !== request) return;
+      set({ data, load: { status: 'idle' } });
     } catch (err) {
+      if (get().load !== request) return;
       set({
-        error: err instanceof Error ? err.message : 'Request failed',
-        isLoading: false,
+        load: { status: 'failed', error: err instanceof Error ? err.message : 'Request failed' },
       });
     }
   },
 }));
 ```
 
-시작 시 항상 `error`를 reset하고, 읽기 쉬운 메시지를 표면화하며, 모든 종료 경로에서 loading을 클리어한다.
+실패 상태에만 오류 메시지를 둔다. 재시도할 때는 상태 전체를 `loading`으로 교체한다.
 
 ---
 
@@ -365,6 +356,8 @@ interface UISlice {
   toggleSidebar: () => void;
 }
 
+interface Item { id: string }
+
 interface DataSlice {
   items: Item[];
   addItem: (item: Item) => void;
@@ -379,7 +372,7 @@ const createUISlice: StateCreator<AppStore, [], [], UISlice> = (set) => ({
 
 const createDataSlice: StateCreator<AppStore, [], [], DataSlice> = (set) => ({
   items: [],
-  addItem: (item) => set((s) => ({ items: [...s.items, item] })),
+  addItem: (item) => set((s) => ({ items: [...s.items, { id: item.id }] })),
 });
 
 export const useAppStore = create<AppStore>()((...a) => ({
