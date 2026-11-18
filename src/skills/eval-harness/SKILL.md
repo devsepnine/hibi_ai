@@ -17,16 +17,17 @@ Eval-Driven Development treats evals as the "unit tests of AI development":
 
 ## Runnable scripts
 
-Two measurements here are executable rather than templates. Both need only
-Python 3.9+ and the `claude` CLI. Paths below are relative to this skill's own
-directory. Prefix them with wherever it lives: `~/.claude/skills/eval-harness/`
-when installed, `src/skills/eval-harness/` in the hibi-ai repo.
+For a source checkout, set the following variable from the repository root. For an installed tree, set `skills_dir="$HOME/.claude/skills"` from any directory. Both scripts use Python 3.9 or later. Trigger evaluation also invokes the `claude` CLI with its active skills.
+
+```bash
+skills_dir="$PWD/src/skills"
+```
 
 ### Does a skill's description actually trigger?
 
 ```bash
-python3 scripts/trigger_eval.py --skill do-178c \
-  --eval-set ../do-178c/evals/trigger-eval.json --timeout 300 --jobs 4
+python3 "$skills_dir/eval-harness/scripts/trigger_eval.py" --skill do-178c \
+  --eval-set "$skills_dir/do-178c/evals/trigger-eval.json" --timeout 300 --jobs 4
 ```
 
 The eval set is a JSON list of `{"query": ..., "should_trigger": true|false}`,
@@ -45,7 +46,8 @@ look like measurements but are not:
   reports no score at all. A detector that cannot report "dirty" proves
   nothing by reporting "clean".
 - **Completion tracking.** Only a run that reached its own answer, meaning a `result`
-  event with subtype `success`, can testify that the skill was *not* chosen. A
+  event with subtype `success` and no reported error, can testify that the skill was *not* chosen.
+  An unfired run with `is_error: true` is INCONCLUSIVE even if its subtype says `success`. A
   timeout emits no `result` at all, and `error_max_turns` means the turn budget
   ran out first. An **unfired** row that ended either way is INCONCLUSIVE, never
   PASS and never FAIL. A row that **fired** still scores by expectation even if
@@ -79,7 +81,7 @@ every row ends INCONCLUSIVE with `Claude Code cannot be launched inside another
 Claude Code session` in stderr. Run the harness from a terminal outside Claude
 Code. From inside a session, the child only starts once the session-identity
 variables are removed from its environment, for example
-`env -u CLAUDECODE -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_SESSION_ID -u CLAUDE_PID -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN -u CLAUDE_CODE_SESSION_ATTENDED -u CLAUDE_CODE_EXECPATH python scripts/trigger_eval.py ...`.
+`env -u CLAUDECODE -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_SESSION_ID -u CLAUDE_PID -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN -u CLAUDE_CODE_SESSION_ATTENDED -u CLAUDE_CODE_EXECPATH python3 "$skills_dir/eval-harness/scripts/trigger_eval.py" ...`.
 That switches off a guard on purpose, so do it only when the user agrees.
 
 Do not substitute the `skill-creator` plugin's `run_eval` for this: it matches
@@ -93,9 +95,10 @@ for a discarded failure scored as a verdict. Nothing here is worth re-filing.
 ### Skill-listing budget
 
 ```bash
-python3 scripts/skill_budget.py ~/.claude/skills   # what the model actually sees
-python3 scripts/skill_budget.py src/skills         # a repo tree before installing
+python3 "$skills_dir/eval-harness/scripts/skill_budget.py" "$skills_dir"
 ```
+
+The repository’s single line strings work with the Python standard library. Run with PyYAML for block scalars and other complex YAML. With `uv`, replace `python3` in the command above with `uv run --with pyyaml python`. Invalid or unsupported frontmatter reports the file and exits with code 2.
 
 The model-facing skill listing has a hard character budget,
 `floor(context_window * 4 * 0.01)` = 8,000 at a 200K window. Over budget the

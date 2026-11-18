@@ -12,7 +12,7 @@ Two properties every number here depends on:
   not, in the same batch, or the run is void. A detector that cannot report
   "dirty" proves nothing when it reports "clean".
 - Completion tracking. Only a run that reached its own answer -- a `result`
-  event with subtype `success` -- can testify that the skill was *not* chosen. A
+  event with subtype `success` and no reported error -- can testify that the skill was *not* chosen. A
   timeout emits no `result` at all, and `error_max_turns` means the turn budget
   ran out first: the nested session spends early turns on the pre-work checks
   its CLAUDE.md mandates, so a skill it would have picked at turn 3 never gets
@@ -101,6 +101,8 @@ def parse_stream(raw: str, target: str) -> tuple[bool, bool, str, list[str], lis
         if event.get("type") == "result":
             completed = True
             subtype = event.get("subtype", "")
+            if subtype == "success" and event.get("is_error") is True:
+                subtype = "success with is_error"
         # `message` is a plain string on some system events, and `content` is a
         # string on text-only assistant turns. Assuming either is structured
         # crashes the whole batch on one unexpected event.

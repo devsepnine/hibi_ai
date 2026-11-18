@@ -95,10 +95,10 @@
 - **컨트롤**: `python src/skills/eval-harness/scripts/skill_budget.py src/skills`, `/eval` → `src/commands/eval.md`, `/learn` → `src/commands/learn.md`
 - **코드 경로**:
   - 데이터: 각 스킬의 frontmatter `description`, 위치는 `component-lookup`
-  - 측정: `src/skills/eval-harness/scripts/skill_budget.py` → `BUDGET_FRACTION`, 트리거 측정은 `src/skills/eval-harness/scripts/trigger_eval.py` 가 중첩 `claude -p` 를 띄워 Skill 호출을 본다
+  - 측정: `src/skills/eval-harness/scripts/skill_budget.py` → `BUDGET_PERCENT`, 트리거 측정은 `src/skills/eval-harness/scripts/trigger_eval.py` 가 중첩 `claude -p` 를 띄워 Skill 호출을 본다
   - 평가셋: 스킬별 evals 디렉터리의 trigger-eval.json, 예 `src/skills/feature-map/evals/trigger-eval.json`
 - **테스트**: `src/skills/feature-map/evals/trigger-eval.json`, `src/skills/technical-writing/evals/trigger-eval.json`, `src/skills/pull-request/evals/trigger-eval.json`
-- **함정**: 특정 스킬이 전혀 트리거되지 않음 → 목록 전체가 문자 예산을 넘으면 넘친 스킬은 이름만 남고 description 이 통째로 빠진다, 근거: `src/skills/eval-harness/scripts/skill_budget.py` → `BUDGET_FRACTION`
+- **함정**: 특정 스킬이 전혀 트리거되지 않음 → 목록 전체가 문자 예산을 넘으면 넘친 스킬은 이름만 남고 description 이 통째로 빠진다, 근거: `src/skills/eval-harness/scripts/skill_budget.py` → `BUDGET_PERCENT`
 - **함정**: description 을 고쳤는데 트리거 평가 결과가 그대로 → 평가는 ~/.claude/skills 의 설치본을 읽으므로 먼저 설치해야 한다, 근거: `src/skills/eval-harness/SKILL.md` → `installed`
 - **함정**: 하네스가 죽었는데 FAIL 로 집계됨 → 처리 안 된 예외가 exit 1 로 끝났다, 지금은 exit 4 다, 근거: `582b99b`
 - **함정**: `/learn` 으로 저장한 패턴이 한 번도 로드되지 않음 → 예전에는 로드되지 않는 평면 파일에 썼다, 근거: `b22fb9a`

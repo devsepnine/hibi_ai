@@ -17,16 +17,17 @@ Eval-Driven Development는 eval을 "AI 개발의 단위 테스트"로 다룬다:
 
 ## 실행 가능한 스크립트
 
-여기서 두 가지 측정은 템플릿이 아니라 실행물이다. 둘 다 Python 3.9+ 와
-`claude` CLI 만 필요하다. 아래 경로는 이 스킬 디렉터리 기준이므로 실제 위치를
-앞에 붙인다. 설치본은 `~/.claude/skills/eval-harness/`, hibi-ai 저장소는
-`src/skills/eval-harness/`.
+저장소를 검사할 때는 저장소 루트에서 다음 변수를 설정한다. 설치본을 검사할 때는 어느 디렉터리에서든 `skills_dir="$HOME/.claude/skills"`로 설정한다. 두 스크립트 모두 Python 3.9 이상을 사용하며, 트리거 검사는 실행 환경에 설치된 스킬로 `claude` CLI를 구동한다.
+
+```bash
+skills_dir="$PWD/src/skills"
+```
 
 ### 스킬 설명이 실제로 트리거되는가
 
 ```bash
-python3 scripts/trigger_eval.py --skill do-178c \
-  --eval-set ../do-178c/evals/trigger-eval.json --timeout 300 --jobs 4
+python3 "$skills_dir/eval-harness/scripts/trigger_eval.py" --skill do-178c \
+  --eval-set "$skills_dir/do-178c/evals/trigger-eval.json" --timeout 300 --jobs 4
 ```
 
 eval set 은 `{"query": ..., "should_trigger": true|false}` 의 JSON 리스트이고,
@@ -45,7 +46,8 @@ frontmatter 의 `name:` 이 아니라 디렉터리명이다.
   보고하지 않는다. "dirty" 를 보고할 수 없는 검출기의 "clean" 은 아무것도
   증명하지 않는다.
 - **완료 추적.** 스킬이 선택되지 **않았다**고 증언할 수 있는 것은 자기 답변까지
-  도달한 실행, 즉 subtype 이 `success` 인 `result` 이벤트뿐이다. 타임아웃은
+  도달한 실행, 즉 오류 보고 없이 subtype이 `success`인 `result` 이벤트뿐이다.
+  스킬이 발동하지 않았고 `is_error: true`이면 subtype이 `success`여도 INCONCLUSIVE로 기록한다. 타임아웃은
   `result` 를 아예 내보내지 않고, `error_max_turns` 는 턴 예산이 먼저 소진된
   것이다. **발동하지 않은** 행이 이렇게 끝나면 INCONCLUSIVE 이며 PASS 도 FAIL 도
   아니다. 반면 **발동한** 행은 이후 실행이 죽었어도 기대값대로 채점된다. 발동은
@@ -75,7 +77,7 @@ Claude Code 세션 안에서는 중첩 `claude -p`가 시작을 거부해서, �
 stderr에 `Claude Code cannot be launched inside another Claude Code session`을 남기고
 INCONCLUSIVE로 끝난다. 하네스는 Claude Code 밖의 터미널에서 실행한다. 세션 안에서
 돌리려면 자식 프로세스의 환경에서 세션 식별 변수를 지워야 한다. 예:
-`env -u CLAUDECODE -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_SESSION_ID -u CLAUDE_PID -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN -u CLAUDE_CODE_SESSION_ATTENDED -u CLAUDE_CODE_EXECPATH python scripts/trigger_eval.py ...`.
+`env -u CLAUDECODE -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_SESSION_ID -u CLAUDE_PID -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN -u CLAUDE_CODE_SESSION_ATTENDED -u CLAUDE_CODE_EXECPATH python3 "$skills_dir/eval-harness/scripts/trigger_eval.py" ...`.
 이는 안전장치를 일부러 끄는 것이므로 사용자가 동의할 때만 한다.
 
 `skill-creator` 플러그인의 `run_eval` 로 대체하지 말 것: 런타임이 절대 내보내지
@@ -89,9 +91,10 @@ call로 `run_eval.py:137-141`·`150-154`를 인용하고, #1478은 버려진 실
 ### 스킬 목록 예산
 
 ```bash
-python3 scripts/skill_budget.py ~/.claude/skills   # 모델이 실제로 보는 목록
-python3 scripts/skill_budget.py src/skills         # 설치 전 저장소 트리
+python3 "$skills_dir/eval-harness/scripts/skill_budget.py" "$skills_dir"
 ```
+
+저장소의 한 줄 문자열은 Python 표준 라이브러리로 측정한다. 블록 스칼라 등 복합 YAML은 PyYAML이 있는 Python으로 실행한다. `uv`를 사용할 때는 위 명령의 `python3`를 `uv run --with pyyaml python`으로 바꾼다. 지원하지 않는 구문이나 잘못된 frontmatter는 해당 파일과 종료 코드 2로 보고한다.
 
 모델이 보는 스킬 목록에는 하드 문자 예산이 있고, 그 값은
 `floor(context_window * 4 * 0.01)`, 200K 윈도우에서 8,000자. 초과 시 절삭은

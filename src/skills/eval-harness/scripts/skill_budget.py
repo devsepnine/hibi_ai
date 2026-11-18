@@ -21,10 +21,8 @@ Two consequences worth keeping in mind while writing descriptions:
 - Lengths count UTF-16 units, as JS `.length` does, so one Hangul syllable
   costs 1 -- the same as one ASCII letter. Korean vocabulary is budget-efficient.
 
-Only single-line frontmatter scalars are read. That covers every skill in this
-repo and avoids a PyYAML dependency in a script that ships to users; a folded
-(`>-`) or block (`|`) value would be measured with its indicator, over-stating
-its cost rather than under-stating it.
+The repository uses simple single-line frontmatter. With PyYAML installed,
+YAML block scalars and other supported YAML syntax are decoded before counting.
 
 Exit status: 0 within budget, 1 over budget, 2 usage error.
 """
@@ -32,12 +30,18 @@ Exit status: 0 within budget, 1 over budget, 2 usage error.
 from __future__ import annotations
 
 import argparse
-import math
+import json
+import re
 import sys
 from pathlib import Path
 
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
 CHARS_PER_TOKEN = 4
-BUDGET_FRACTION = 0.01
+BUDGET_PERCENT = 1
 ENTRY_OVERHEAD = 4
 DESCRIPTION_CAP = 1536
 AUTHORING_TARGET = 200
@@ -48,30 +52,65 @@ def utf16_len(text: str) -> int:
     return len(text.encode("utf-16-le")) // 2
 
 
-def unquote(value: str) -> str:
-    """YAML quoting is not part of the string the client measures."""
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
-        return value[1:-1]
-    return value
+def simple_fields(header: str) -> dict[str, str]:
+    """Read the repository's one-line strings when PyYAML is unavailable."""
+    unsupported = "use Python with PyYAML for this frontmatter, e.g. uv run --with pyyaml python"
+    fields = {}
+    in_metadata = False
+    for line in header.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        match = re.fullmatch(r"(  )?([\w-]+):(?:[ \t]+(.*))?", line)
+        if not match:
+            raise ValueError(unsupported)
+        indent, key, value = match.groups()
+        if indent and not in_metadata:
+            raise ValueError(unsupported)
+        value = (value or "").strip()
+        if not indent:
+            in_metadata = key == "metadata" and not value
+            if in_metadata:
+                continue
+        quoted = re.fullmatch(r"""("(?:[^"\\]|\\.)*"|'(?:[^']|'')*')(?:\s+#.*)?""", value)
+        if quoted:
+            literal = quoted.group(1)
+            value = json.loads(literal) if literal.startswith('"') else literal[1:-1].replace("''", "'")
+        else:
+            value = re.split(r"\s+#", value, maxsplit=1)[0]
+            # A bare argument hint such as <file-or-pattern> is also a YAML string.
+            plain_string = value[:1].isalpha() or re.fullmatch(r"<[\w|-]+>", value)
+            if not plain_string or re.search(r":(?:\s|$)", value):
+                raise ValueError(unsupported)
+            if value.lower() in {"yes", "no", "true", "false", "on", "off", "null", "~"}:
+                raise ValueError(unsupported)
+        if not indent:
+            fields[key] = value
+    return fields
 
 
 def parse_frontmatter(text: str) -> dict[str, str]:
-    """Read top-level scalar keys, joining folded continuation lines."""
-    lines = text.splitlines()
-    if not lines or lines[0].strip() != "---":
-        return {}
-    fields: dict[str, str] = {}
-    key: str | None = None
-    for line in lines[1:]:
-        if line.strip() == "---":
-            break
-        if line and not line[0].isspace() and ":" in line:
-            key, _, value = line.partition(":")
-            key = key.strip()
-            fields[key] = value.strip()
-        elif key and line.strip():
-            fields[key] = (fields[key] + " " + line.strip()).strip()
-    return {k: unquote(v) for k, v in fields.items()}
+    lines = text.splitlines(keepends=True)
+    if not lines or lines[0].rstrip() != "---":
+        raise ValueError("missing frontmatter opening delimiter")
+    end = next((i for i in range(1, len(lines)) if lines[i].rstrip() == "---"), None)
+    if end is None:
+        raise ValueError("missing frontmatter closing delimiter")
+    header = "".join(lines[1:end])
+    if yaml is None:
+        values = simple_fields(header)
+    else:
+        try:
+            values = yaml.safe_load(header)
+        except yaml.YAMLError as exc:
+            raise ValueError(str(exc)) from exc
+    if not isinstance(values, dict):
+        raise ValueError("frontmatter must be a mapping")
+    for field in ("name", "description", "when_to_use"):
+        if field == "when_to_use" and field not in values:
+            continue
+        if not isinstance(values.get(field), str):
+            raise ValueError(f"frontmatter {field} must be a string")
+    return values
 
 
 def listed_length(fields: dict[str, str]) -> int:
@@ -94,11 +133,16 @@ def main() -> int:
     if not args.skills_dir.is_dir():
         ap.error(f"{args.skills_dir} is not a directory")
 
-    budget = math.floor(args.context_window * CHARS_PER_TOKEN * BUDGET_FRACTION)
+    budget = args.context_window * CHARS_PER_TOKEN * BUDGET_PERCENT // 100
+    if budget < 1:
+        ap.error("--context-window must allow a skill listing budget of at least one character")
     rows = []
     for skill_md in sorted(args.skills_dir.glob("*/SKILL.md")):
         name = skill_md.parent.name
-        fields = parse_frontmatter(skill_md.read_text(encoding="utf-8"))
+        try:
+            fields = parse_frontmatter(skill_md.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            ap.error(f"{skill_md}: {exc}")
         listed = listed_length(fields)
         rows.append({
             "name": name,
