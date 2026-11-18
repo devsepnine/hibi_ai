@@ -97,7 +97,7 @@ esac
         return path
 
     def words(self):
-        image = self.capture()
+        image = self.capture(park_pointer=False)
         key = image.tobytes()
         if self.ocr_cache and self.ocr_cache[0] == key:
             return self.ocr_cache[1]
@@ -169,15 +169,20 @@ esac
         raise AssertionError(f"Expected one of {labels!r}; recognized: {self.text()}")
 
     def find(self, label, region=None):
+        _, bounds = self.find_any((label,), region)
+        return bounds
+
+    def find_any(self, labels, region):
         deadline = time.monotonic() + 8
         while True:
             words = self.words()
-            bounds = self.label_bounds(words, label, region)
-            if bounds is not None:
-                return bounds
+            for label in labels:
+                bounds = self.label_bounds(words, label, region)
+                if bounds is not None:
+                    return label, bounds
             if time.monotonic() >= deadline:
                 recognized = " ".join(word["text"] for word in words)
-                raise AssertionError(f"Could not locate {label!r}; recognized: {recognized}")
+                raise AssertionError(f"Could not locate any of {labels!r}; recognized: {recognized}")
             time.sleep(.1)
 
     @staticmethod
@@ -430,11 +435,14 @@ esac
         assert ImageChops.difference(before, after).getbbox() is None, f"Disabled {label} changed the screen"
 
     def clear_selection(self):
-        for _ in range(3):
-            if "0selected" in normalized(self.text()):
-                return
-            self.key("a")
-        raise AssertionError("Could not clear selection in the current view")
+        footer = (220, 300, 1120, 780)
+        action, _ = self.find_any(("0 selected", "Clear selection", "Select all"), footer)
+        if action == "0 selected":
+            return
+        if action == "Select all":
+            self.click_text("Select all", footer)
+        self.click_text("Clear selection", footer)
+        self.find("0 selected", footer)
 
     def back_to_home(self):
         self.click_text("Switch CLI")
@@ -578,7 +586,7 @@ esac
         self.click_text("Back to components")
         self.clear_search()
         self.click_text("Keyboard shortcuts")
-        self.expect("Selection")
+        self.expect("Browse & review")
         before = self.capture()
         for _ in range(8): self.key("Down")
         self.expect_scroll(before, "Help")

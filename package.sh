@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="2.0.0-beta.1"
+VERSION="2.0.0-beta.2"
 NAME="hibi-ai"
 
 echo "📦 Packaging ${NAME} v${VERSION}..."
@@ -117,6 +117,10 @@ echo ""
 echo "📝 Generating checksums..."
 cd "$PROJECT_ROOT/$RELEASE_DIR"
 shopt -s nullglob
+# GitHub replaces tildes in uploaded asset names. Sign the names users download.
+for package in *'~'*.deb *'~'*.rpm; do
+    mv -- "$package" "${package//\~/.}"
+done
 ARTIFACTS=(*.tar.gz *.zip *.deb *.rpm *.apk)
 shopt -u nullglob
 if [ ${#ARTIFACTS[@]} -gt 0 ]; then
