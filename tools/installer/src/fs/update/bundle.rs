@@ -56,9 +56,14 @@ fn download(
     base: &str,
     key: &str,
 ) -> Result<TempDir> {
-    let prefix = format!("hibi-ai-{version}-{}", platform());
-    let ext = if cfg!(windows) { "zip" } else { "tar.gz" };
-    let name = format!("{prefix}.{ext}");
+    let (prefix, name) = if origin::is_app_bundle(root) {
+        ("Hibi.app".to_owned(), format!("Hibi-{version}-macos.zip"))
+    } else {
+        let prefix = format!("hibi-ai-{version}-{}", platform());
+        let ext = if cfg!(windows) { "zip" } else { "tar.gz" };
+        let name = format!("{prefix}.{ext}");
+        (prefix, name)
+    };
     let sums = fetch(client, &format!("{base}/checksums.txt"), 1 << 20)?;
     let sig = fetch(client, &format!("{base}/checksums.txt.minisig"), 8192)?;
     let hash = digest(key, &sums, &sig, &name)?;
@@ -87,15 +92,34 @@ fn stage(
     let stage = staging.tempdir_in(root.parent().context("Missing bundle parent")?)?;
     let next = stage.path().join("bundle");
     fs::create_dir(&next)?;
-    archive::extract(bytes, prefix, &next, cfg!(windows))?;
+    let app = origin::is_app_bundle(root);
+    archive::extract(bytes, prefix, &next, app || cfg!(windows))?;
+    let resources = if app {
+        ensure!(
+            next.join("Contents/Info.plist").is_file()
+                && next.join("Contents/Resources/Hibi.icns").is_file(),
+            "Incomplete macOS application"
+        );
+        next.join("Contents/Resources")
+    } else {
+        next.clone()
+    };
     ensure!(
-        origin::marker_matches(&next, &version.to_string())
-            && next.join("skills").is_dir()
-            && next.join("settings.json").is_file(),
+        origin::marker_matches(&resources, &version.to_string())
+            && resources.join("skills").is_dir()
+            && resources.join("settings.json").is_file(),
         "Incomplete release bundle"
     );
-    probe(&next.join(executable()), version)?;
+    probe(&next.join(bundle_executable(root)), version)?;
     Ok(stage)
+}
+
+fn bundle_executable(installation: &Path) -> &'static str {
+    if origin::is_app_bundle(installation) {
+        "Contents/MacOS/hibi"
+    } else {
+        executable()
+    }
 }
 
 #[cfg(unix)]
@@ -160,7 +184,7 @@ fn activate(
     exchange(root, &next)?;
     // Keep the old bundle, including locally added files, even if recovery fails.
     let backup = stage.keep();
-    let exe = root.join(executable());
+    let exe = root.join(bundle_executable(root));
     if let Err(error) = probe(&exe, version).and_then(|()| launch(&exe)) {
         exchange(root, &next).with_context(|| {
             format!(
@@ -221,6 +245,29 @@ mod tests {
         );
         assert!(origin::direct_root(&root, &version.to_string()));
         assert!(activate(&root, staged()?, &version, |_| Ok(())).is_err());
+        #[cfg(target_os = "macos")]
+        {
+            let app = work.join("Renamed Hibi.app");
+            let staged_app = || download(&client, &app, &version, &base, &key);
+            assert!(
+                activate(&app, staged_app()?, &version, |_| anyhow::bail!(
+                    "launch failed"
+                ))
+                .is_err()
+            );
+            assert!(origin::direct_root(&app, &current.to_string()));
+            activate(&app, staged_app()?, &version, |exe| {
+                probe(exe, &version)?;
+                origin::run(
+                    Command::new("/usr/bin/codesign")
+                        .args(["--verify", "--strict"])
+                        .arg(&app),
+                    15,
+                )?;
+                Ok(())
+            })?;
+            assert!(origin::direct_root(&app, &version.to_string()));
+        }
         Ok(())
     }
 }

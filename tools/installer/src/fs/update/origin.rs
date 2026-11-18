@@ -26,6 +26,14 @@ fn json_file(path: &Path) -> Option<Value> {
 }
 
 pub(super) fn resolve(exe: &Path, version: &Version, client: &Client) -> Result<Route> {
+    #[cfg(target_os = "macos")]
+    if exe.ends_with("Contents/MacOS/hibi")
+        && let Some(app) = exe.ancestors().nth(3)
+        && is_app_bundle(app)
+        && direct_root(app, env!("CARGO_PKG_VERSION"))
+    {
+        return Ok(Route::Direct(app.into()));
+    }
     let root = exe.parent().context("Missing installation directory")?;
     if let Some(keg) = root.parent()
         && let Some(receipt) = json_file(&keg.join("INSTALL_RECEIPT.json"))
@@ -101,6 +109,10 @@ pub(super) fn resolve(exe: &Path, version: &Version, client: &Client) -> Result<
 }
 
 pub(super) fn direct_root(root: &Path, current: &str) -> bool {
+    if is_app_bundle(root) {
+        return root.join("Contents/Info.plist").is_file()
+            && marker_matches(&root.join("Contents/Resources"), current);
+    }
     let portable = root
         .file_name()
         .and_then(|n| n.to_str())
@@ -117,6 +129,10 @@ pub(super) fn direct_root(root: &Path, current: &str) -> bool {
             .and_then(|p| p.join("bin/hibi").canonicalize().ok())
             .is_some_and(|bin| bin == root.join(executable()));
     (portable || prefix_install) && marker_matches(root, current)
+}
+
+pub(super) fn is_app_bundle(root: &Path) -> bool {
+    cfg!(target_os = "macos") && root.extension().is_some_and(|ext| ext == "app")
 }
 
 pub(super) fn marker_matches(root: &Path, version: &str) -> bool {

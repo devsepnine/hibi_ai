@@ -20,6 +20,14 @@ fn find_package_source_dir() -> Result<PathBuf> {
         .map(|p| p.to_path_buf())
         .ok_or_else(|| anyhow::anyhow!("Cannot get executable directory"))?;
 
+    #[cfg(target_os = "macos")]
+    if exe_dir.ends_with("Contents/MacOS") {
+        let resources = exe_dir.with_file_name("Resources");
+        if validate_source_dir(&resources) {
+            return Ok(resources);
+        }
+    }
+
     let working_dir = std::env::current_dir()?;
     let candidates = [
         exe_dir.clone(),                  // Scoop: exe and config in same dir

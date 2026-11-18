@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="2.0.0-beta.2"
+VERSION="2.0.0-beta.3"
 NAME="hibi-ai"
 
 echo "📦 Packaging ${NAME} v${VERSION}..."
@@ -16,7 +16,11 @@ echo "🔨 Preparing dist directory..."
 mkdir -p "$DIST_DIR"
 
 # Check if installer binaries exist
-for binary in hibi hibi.exe hibi-linux hibi-linux-musl; do
+binaries=(hibi hibi.exe hibi-linux hibi-linux-musl)
+if [[ "${1:-}" == --macos-app ]]; then
+    binaries=(hibi)
+fi
+for binary in "${binaries[@]}"; do
     if [ ! -f "$DIST_DIR/$binary" ]; then
         echo "❌ Error: Installer binaries not found in dist/: $binary"
         echo "   Build macos, windows, linux and linux-musl on their native hosts first."
@@ -44,12 +48,27 @@ find "$DIST_DIR" -type f -name '*-ko.md' -delete
 
 echo "✅ dist directory ready"
 
+mac_app="Hibi-${VERSION}-macos"
+if [[ "$(uname -s)" == Darwin ]]; then
+    bash tools/installer/package-macos-app.sh "$VERSION" "$PROJECT_ROOT/$DIST_DIR" "${bundle_dirs[@]}" "${bundle_files[@]}"
+fi
+for ext in zip dmg; do
+    if [[ ! -f "$DIST_DIR/$mac_app.$ext" ]]; then
+        echo "Missing $mac_app.$ext. Build it on macOS with bash package.sh --macos-app." >&2
+        exit 1
+    fi
+done
+if [[ "${1:-}" == --macos-app ]]; then
+    exit 0
+fi
+
 # Create release directory with version
 RELEASE_DIR="release/v${VERSION}"
 echo ""
 echo "📦 Creating release packages..."
 rm -rf "$RELEASE_DIR"
 mkdir -p "$RELEASE_DIR"
+cp "$DIST_DIR/$mac_app.zip" "$DIST_DIR/$mac_app.dmg" "$RELEASE_DIR/"
 
 # Package for each platform
 for PLATFORM in "macos" "linux" "linux-musl" "windows"; do
@@ -121,7 +140,7 @@ shopt -s nullglob
 for package in *'~'*.deb *'~'*.rpm; do
     mv -- "$package" "${package//\~/.}"
 done
-ARTIFACTS=(*.tar.gz *.zip *.deb *.rpm *.apk)
+ARTIFACTS=(*.tar.gz *.zip *.dmg *.deb *.rpm *.apk)
 shopt -u nullglob
 if [ ${#ARTIFACTS[@]} -gt 0 ]; then
     if command -v sha256sum >/dev/null 2>&1; then
@@ -136,7 +155,7 @@ cd "$PROJECT_ROOT"
 echo ""
 echo "🎉 Packaging complete!"
 echo ""
-ls -lh "$RELEASE_DIR"/*.{tar.gz,zip,deb,rpm,apk} 2>/dev/null || true
+ls -lh "$RELEASE_DIR"/*.{tar.gz,zip,dmg,deb,rpm,apk} 2>/dev/null || true
 echo ""
 echo "Checksums:"
 cat "$RELEASE_DIR/checksums.txt"

@@ -59,13 +59,26 @@ def smoke(installer, work):
     archive = work / f"{prefix}.tar.gz"
     with tarfile.open(archive, "w:gz", compresslevel=1) as output:
         output.add(bundle, arcname=prefix)
-    (work / "checksums.txt").write_text(f"{hashlib.sha256(archive.read_bytes()).hexdigest()}  {archive.name}\n")
+    archives = [archive]
+    if platform == "macos":
+        items = [item.name for item in bundle.iterdir() if item.name not in {"hibi", ".hibi-bundle"}]
+        run("bash", installer / "package-macos-app.sh", next_version, bundle, *items)
+        app_zip = bundle / f"Hibi-{next_version}-macos.zip"
+        archives.append(app_zip)
+        old_app = work / "Renamed Hibi.app" / "Contents"
+        (old_app / "MacOS").mkdir(parents=True)
+        (old_app / "Resources").mkdir()
+        (old_app / "Info.plist").write_text("<plist version=\"1.0\"><dict/></plist>")
+        (old_app / "Resources/.hibi-bundle").write_text(current)
+        shutil.copy2(target / "debug/hibi", old_app / "MacOS/hibi")
+    (work / "checksums.txt").write_text("".join(
+        f"{hashlib.sha256(item.read_bytes()).hexdigest()}  {item.name}\n" for item in archives))
     run("minisign", "-G", "-W", "-s", work / "fixture.key", "-p", work / "fixture.pub", stdout=subprocess.DEVNULL)
     run("minisign", "-S", "-s", work / "fixture.key", "-m", work / "checksums.txt")
     public = work / "release-assets"
     public.mkdir()
-    for name in [archive.name, "checksums.txt", "checksums.txt.minisig"]:
-        os.link(work / name, public / name)
+    for item in [*archives, work / "checksums.txt", work / "checksums.txt.minisig"]:
+        os.link(item, public / item.name)
     home = work / "home"
     settings = {
         ".hibi/preferences.json": '{"language":"ko","appearance":"dark"}',

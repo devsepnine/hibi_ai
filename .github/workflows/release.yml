@@ -126,6 +126,17 @@ jobs:
       - name: Build native desktop installer
         shell: bash
         run: bash tools/installer/build.sh "${{ matrix.platform }}"
+      - name: Package macOS application
+        if: runner.os == 'macOS'
+        run: bash package.sh --macos-app
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'macOS'
+        with:
+          name: installer-macos-app
+          path: |
+            dist/Hibi-*-macos.zip
+            dist/Hibi-*-macos.dmg
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
           name: installer-${{ matrix.platform }}
@@ -199,6 +210,7 @@ jobs:
           gh release create "v${VERSION}" \
             "release/v${VERSION}"/*.tar.gz \
             "release/v${VERSION}"/*.zip \
+            "release/v${VERSION}"/*.dmg \
             "release/v${VERSION}"/*.deb \
             "release/v${VERSION}"/*.rpm \
             "release/v${VERSION}"/*.apk \

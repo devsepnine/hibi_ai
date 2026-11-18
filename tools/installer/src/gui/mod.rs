@@ -54,7 +54,7 @@ pub enum Message {
 
 pub fn run() -> iced::Result {
     #[cfg(target_os = "macos")]
-    set_dock_icon();
+    set_application_icon();
     iced::application(Runtime::new, update, view)
         .default_font(fonts::interface())
         .title("HIBI AI")
@@ -66,15 +66,22 @@ pub fn run() -> iced::Result {
 }
 
 #[cfg(target_os = "macos")]
-fn set_dock_icon() {
-    use objc2_app_kit::{NSApplication, NSImage};
+fn set_application_icon() {
+    use objc2_app_kit::{NSApplication, NSImage, NSImageNameApplicationIcon};
     use objc2_foundation::{MainThreadMarker, NSData};
 
     let main = MainThreadMarker::new().expect("GUI startup runs on the main thread");
     let data = NSData::with_bytes(include_bytes!("../../assets/hibi.png"));
     let icon = NSImage::initWithData(main.alloc(), &data).expect("valid Hibi application icon");
-    // SAFETY: Both AppKit objects are accessed on the main thread.
-    unsafe { NSApplication::sharedApplication(main).setApplicationIconImage(Some(&icon)) };
+    // The standard About panel looks up the named image even in an unbundled process.
+    // SAFETY: AppKit is accessed on the main thread and retains the registered image.
+    unsafe {
+        NSApplication::sharedApplication(main).setApplicationIconImage(Some(&icon));
+        if let Some(previous) = NSImage::imageNamed(NSImageNameApplicationIcon) {
+            previous.setName(None);
+        }
+        icon.setName(Some(NSImageNameApplicationIcon));
+    }
 }
 
 fn update(state: &mut Runtime, message: Message) -> Task<Message> {
