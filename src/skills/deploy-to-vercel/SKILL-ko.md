@@ -10,7 +10,7 @@ metadata:
 
 어떤 프로젝트든 Vercel에 배포한다. **사용자가 production을 명시적으로 요청하지 않는 한 항상 preview로 배포한다**, production이 아님.
 
-목표는 사용자를 최선의 장기 설정 상태로 이끄는 것이다: 프로젝트가 Vercel에 연결되어 git push 배포가 가능한 상태. 아래 모든 방법은 사용자를 그 상태에 더 가깝게 만든다.
+사용자가 지정한 프로젝트와 배포 환경을 사용한다.
 
 ## Step 1: 프로젝트 상태 수집
 
@@ -37,7 +37,7 @@ vercel teams list --format json 2>/dev/null
 이후의 모든 CLI 명령어, `vercel deploy`, `vercel link`, `vercel inspect` 등, 에 `--scope`로 팀 슬러그를 전달한다:
 
 ```bash
-vercel deploy [path] -y --no-wait --scope <team-slug>
+vercel deploy [path] --environment=preview -y --no-wait --scope <team-slug>
 ```
 
 프로젝트가 이미 연결되어 있으면, `.vercel/project.json` 또는 `.vercel/repo.json` 존재, 해당 파일의 `orgId`가 팀을 결정한다, 다시 묻지 않는다. 팀이 하나, 또는 개인 계정뿐, 이면, 프롬프트를 건너뛰고 직접 사용한다.
@@ -52,47 +52,18 @@ vercel deploy [path] -y --no-wait --scope <team-slug>
 
 ## Step 2: 배포 방법 선택
 
-### 연결됨, `.vercel/` 존재 + git remote 있음 → Git Push
+### 연결된 프로젝트
 
-이상적인 상태. 프로젝트가 연결되어 있고 git 통합이 있다.
-
-1. **푸시하기 전에 사용자에게 묻는다.** 명시적 승인 없이는 절대 푸시하지 말 것:
-   ```
-   This project is connected to Vercel via git. I can commit and push to
-   trigger a deployment. Want me to proceed?
-   ```
-
-2. **Commit and push:**
-   ```bash
-   git add .
-   git commit -m "deploy: <description of changes>"
-   git push
-   ```
-   Vercel은 푸시로부터 자동 빌드한다. non-production 브랜치는 preview 배포를, production 브랜치, 보통 `main`, 는 production 배포를 받는다.
-
-3. **Preview URL 가져오기.** CLI가 인증되어 있으면:
-   ```bash
-   sleep 5
-   vercel ls --format json
-   ```
-   JSON 출력에는 `deployments` 배열이 있다. 가장 최신 항목의 `url` 필드가 preview URL이다.
-
-   CLI가 인증되어 있지 않으면, Vercel 대시보드 또는 git provider의 commit status 체크에서 preview URL을 확인하라고 사용자에게 알린다.
-
----
-
-### 연결됨, `.vercel/` 존재 + git remote 없음 → `vercel deploy`
-
-프로젝트는 연결되어 있지만 git repo가 없다. CLI로 직접 배포한다.
+어느 브랜치에서든 현재 작업 내용의 프리뷰를 배포할 때는 CLI를 사용한다. 사용자가 Git 배포를 지정하면 Vercel에서 프로젝트의 Git 연동과 프로덕션 브랜치를 먼저 확인한다. 프로덕션 브랜치에 푸시하려면 프로덕션 배포 요청과 해당 푸시 승인이 필요하다. Git으로 배포한 결과는 프로젝트, 배포 환경, 커밋 SHA가 일치하는 항목으로 확인한다.
 
 ```bash
-vercel deploy [path] -y --no-wait
+vercel deploy [path] --environment=preview -y --no-wait
 ```
 
 `--no-wait`을 사용해 빌드 완료까지 차단하지 않고 즉시 배포 URL을 반환받는다, 빌드는 시간이 걸릴 수 있다. 그 후 배포 상태를 확인한다:
 
 ```bash
-vercel inspect <deployment-url>
+vercel inspect <deployment-url> --wait --timeout=5m
 ```
 
 production 배포, 사용자가 명시적으로 요청한 경우만:
@@ -111,7 +82,7 @@ CLI는 동작하지만 프로젝트가 아직 연결되지 않았다. 사용자�
 2. **팀이 선택되면 즉시 link로 진행한다.** 무엇이 일어날지 사용자에게 알리지만 별도의 확인은 묻지 않는다:
    ```
    Linking this project to <team name> on Vercel. This will create a Vercel
-   project to deploy to and enable automatic deployments on future git pushes.
+   project or associate this directory with the chosen existing project.
    ```
 
 3. **git remote가 있으면**, 선택한 팀 스코프로 repo 기반 링크를 사용한다:
@@ -126,9 +97,7 @@ CLI는 동작하지만 프로젝트가 아직 연결되지 않았다. 사용자�
    ```
    사용자에게 프로젝트 선택 또는 생성을 프롬프트한다. `.vercel/project.json`을 만든다.
 
-4. **그 다음 사용 가능한 최선의 방법으로 배포한다:**
-   - git remote가 있으면 → 묻고 나서 commit + push, 위 git push 방법의 승인 게이트가 적용된다. 2단계의 "별도 확인을 요청하지 않는다"는 linking에만 해당하며 commit·push에는 결코 해당하지 않는다
-   - git remote가 없으면 → `vercel deploy [path] -y --no-wait --scope <team-slug>`, 그 후 `vercel inspect <url>`로 상태 확인
+4. CLI로 프리뷰를 배포하고 반환된 URL의 배포 상태를 확인한다.
 
 ---
 
@@ -155,7 +124,7 @@ Vercel CLI가 전혀 설정되지 않은 상태.
    vercel link --scope <team-slug>          # if no git remote
    ```
 
-5. **배포** 사용 가능한 최선의 방법으로, remote가 있으면 git push를 쓴다. 이때 **먼저 묻는다**: 위 git push 방법의 승인 게이트가 여기에도 적용된다. remote가 없으면 `vercel deploy -y --no-wait --scope <team-slug>` 후 `vercel inspect <url>`로 상태 확인.
+5. CLI로 배포하고 반환된 URL의 배포 상태를 확인한다.
 
 ---
 
@@ -170,6 +139,8 @@ bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh [path]
 **Arguments:**
 - `path` - 배포할 디렉토리 또는 `.tgz` 파일, 기본값: 현재 디렉토리
 
+아카이브 최상위에 디렉터리가 하나이고 그 안에 `package.json`, `vercel.json`, `.vercelignore` 또는 HTML 페이지가 있으면 해당 디렉터리가 배포 루트다. 그 밖의 아카이브는 최상위 구조를 유지한다.
+
 **Examples:**
 ```bash
 # Deploy current directory
@@ -182,9 +153,7 @@ bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh /path/to/project
 bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh /path/to/project.tgz
 ```
 
-스크립트는 `package.json`에서 프레임워크를 자동 감지하고, 프로젝트를 패키징하고, `node_modules`, `.git`, `.env` 제외, 업로드하고, 빌드 완료를 기다린다.
-
-**사용자에게 알린다:** "Your deployment is ready at [previewUrl]. Claim it at [claimUrl] to manage your deployment."
+스크립트는 업로드 전에 프로젝트의 `.vercelignore`를 적용한다. 업로드가 접수되면 배포 응답을 출력한다. 아래 출력 지침에 따라 종료 코드와 확인 결과를 보고한다.
 
 ---
 
@@ -199,7 +168,7 @@ bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh /path/to/project.tgz
 
 2. **`vercel`이 설치되어 있으면**, CLI로 배포 시도:
    ```bash
-   vercel deploy [path] -y --no-wait
+   vercel deploy [path] --environment=preview -y --no-wait
    ```
 
 3. **`vercel`이 설치되지 않았거나 CLI가 "No existing credentials found"로 실패하면**, fallback 스크립트 사용:
@@ -216,11 +185,8 @@ bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh /path/to/project.tgz
    bash "$skill_dir/scripts/deploy-codex.sh" /path/to/project.tgz
    ```
 
-스크립트가 프레임워크 감지, 패키징, 배포를 처리한다. 빌드 완료를 기다리고 `previewUrl`과 `claimUrl`이 포함된 JSON을 반환한다.
+스크립트는 업로드 전에 프로젝트의 `.vercelignore`를 적용한다. 업로드가 접수되면 배포 응답을 출력한다. 아래 출력 지침에 따라 종료 코드와 확인 결과를 보고한다.
 
-**사용자에게 알린다:** "Your deployment is ready at [previewUrl]. Claim it at [claimUrl] to manage your deployment."
-
-**상승된 네트워크 접근:** sandboxing이 네트워크 호출을 차단하는 경우, `sandbox_permissions=require_escalated`, 에만 실제 deploy 명령을 escalate한다. `command -v vercel` 체크는 escalate **하지 말 것**.
 
 ---
 
@@ -248,22 +214,9 @@ Codex는 sandbox에서 실행된다. CLI가 사용 가능한지 먼저 확인하
 
 ## 출력
 
-항상 사용자에게 배포 URL을 보여준다.
+CLI 배포는 반환된 URL이나 ID로 `vercel inspect <url> --wait --timeout=5m`을 실행해 확인한 빌드 상태를 알린다. Git 배포는 대상 환경과 커밋의 상태 검사를 확인한다.
 
-- **Git push:** `vercel ls --format json`을 사용해 preview URL을 찾는다. CLI가 인증되지 않았으면 사용자에게 Vercel 대시보드 또는 commit status 체크를 확인하라고 알린다.
-- **CLI deploy:** `vercel deploy --no-wait`이 반환한 URL을 보여준다. `vercel inspect <url>`로 빌드 상태를 확인하고 사용자에게 보고한다.
-- **No-auth fallback:** preview URL과 claim URL을 모두 보여준다:
-  ```
-  Deployment successful!
-
-  Preview URL: https://my-app-abc123.vercel.app
-  Claim URL:   https://vercel.com/claim-deployment?code=...
-
-  View your site at the Preview URL.
-  To transfer this deployment to your Vercel account, visit the Claim URL.
-  ```
-
-배포된 URL을 동작 검증을 위해 curl이나 fetch **하지 말 것**. 그냥 링크를 반환한다.
+폴백 스크립트는 업로드가 접수되면 프리뷰 URL과 claim URL을 JSON으로 출력한다. 종료 코드 0은 프리뷰 URL이 HTTP 2xx를 반환했음을 뜻한다. 종료 코드 2는 확인 미완료를 뜻한다. 두 경우 모두 확보한 URL과 관찰한 상태를 전달한다. Vercel에서 빌드 완료를 확인한 경우에만 완료로 보고한다. 스크립트는 Bash, Git, tar, curl, Python 3을 사용한다. 압축 파일 입력에는 tar 추출 필터를 지원하는 Python이 필요하다.
 
 ---
 
@@ -281,15 +234,9 @@ Deployment failed due to network restrictions. To fix this:
 3. Try deploying again
 ```
 
-### Escalated Network Access, Codex / sandboxed 환경
+### 업로드 확인이 끊겼을 때
 
-sandboxed 환경에서 네트워크 이슈, timeout, DNS 에러, connection reset, 로 배포가 실패하면, 상승된 권한, `sandbox_permissions=require_escalated`, 으로 재실행한다. 초기 CLI 가용성 체크는 escalate 하지 말 것, 실제 deploy 명령만 escalate한다.
-
-사용자에게 안내 예시:
-```
-The deploy needs escalated network access to deploy to Vercel. I can rerun
-the command with escalated permissions: want me to proceed?
-```
+응답을 기다리다 연결이 끊겼으면 기존 배포의 URL, ID 또는 커밋 상태로 접수 여부를 확인한다. 접수된 배포는 같은 대상을 조회해 상태를 확인한다. 네트워크 접근은 현재 세션의 권한을 따른다.
 
 ### CLI Auth Failure
 
@@ -301,38 +248,13 @@ the command with escalated permissions: want me to proceed?
 
 `vercel login`을 사용할 수 없는 CI/CD 또는 비인터랙티브 환경용. 브라우저 인증 대신 `VERCEL_TOKEN` 환경 변수를 사용한다.
 
-### Vercel Token 위치
+### 자격 증명 확인
 
-다음 시나리오를 순서대로 진행한다:
-
-**A. `VERCEL_TOKEN`이 이미 환경에 있음**
-```bash
-printenv VERCEL_TOKEN
-```
-
-**B. `.env` 파일의 `VERCEL_TOKEN`에 있음**
-```bash
-grep '^VERCEL_TOKEN=' .env 2>/dev/null
-export VERCEL_TOKEN=$(grep '^VERCEL_TOKEN=' .env | cut -d= -f2-)
-```
-
-**C. `.env`에서 다른 이름의 토큰**: Vercel 토큰은 `vca_`로 시작
-```bash
-grep -i 'vercel' .env 2>/dev/null
-export VERCEL_TOKEN=$(grep '^<VARIABLE_NAME>=' .env | cut -d= -f2-)
-```
-
-**D. 토큰을 찾을 수 없음**: 사용자에게 vercel.com/account/tokens에서 토큰을 만들도록 요청
-
-### Critical: `--token` 플래그 사용 금지
+CI 비밀 저장소나 프로젝트에서 사용하는 환경 로더로 토큰을 주입한다. 셸 추적을 끄고 설정 여부만 확인한다. `vercel whoami`로 인증된 계정을 확인한다.
 
 ```bash
-# Bad — token visible in shell history and process listings
-vercel deploy --token "vca_abc123"
-
-# Good — CLI reads VERCEL_TOKEN from environment
-export VERCEL_TOKEN="vca_abc123"
-vercel deploy
+set +x
+test -n "${VERCEL_TOKEN:-}" && echo 'VERCEL_TOKEN is set'
 ```
 
 ### 프로젝트 및 팀 위치, `.vercel/` 디렉토리 건너뛰기
@@ -359,7 +281,7 @@ echo "$PROJECT_URL" | sed 's|https://vercel.com/||' | cut -d/ -f1
 ### 빠른 토큰 배포, link 불필요
 
 ```bash
-vercel deploy -y --no-wait --scope <team-slug>
+vercel deploy --environment=preview -y --no-wait --scope <team-slug>
 ```
 
 ### 환경 변수 관리, Token 사용
@@ -376,14 +298,14 @@ vercel env rm VAR_NAME --scope <team-slug> -y
 
 **Token을 찾을 수 없음:**
 ```bash
-printenv | grep -i vercel
-grep -i vercel .env 2>/dev/null
+set +x
+test -n "${VERCEL_TOKEN:-}" || echo 'VERCEL_TOKEN is missing'
 ```
 
 **인증 에러**, `Authentication required`:
 - 토큰이 만료되었거나 유효하지 않을 수 있음
 - 검증: `vercel whoami`, env에서 `VERCEL_TOKEN` 사용
-- 사용자에게 새 토큰 요청
+- 사용자에게 기존 비밀 저장소에서 토큰을 갱신하도록 안내한다
 
 **잘못된 팀:**
 ```bash

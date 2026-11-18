@@ -10,7 +10,7 @@ metadata:
 
 Deploy any project to Vercel. **Always deploy as preview**, not production, unless the user explicitly asks for production.
 
-The goal is to get the user into the best long-term setup: their project linked to Vercel with git-push deploys. Every method below tries to move the user closer to that state.
+Use the project and deployment environment the user requested.
 
 ## Step 1: Gather Project State
 
@@ -37,7 +37,7 @@ If the user belongs to multiple teams, present all available team slugs as a bul
 Pass the team slug via `--scope` on all subsequent CLI commands, `vercel deploy`, `vercel link`, `vercel inspect`, etc.:
 
 ```bash
-vercel deploy [path] -y --no-wait --scope <team-slug>
+vercel deploy [path] --environment=preview -y --no-wait --scope <team-slug>
 ```
 
 If the project is already linked, `.vercel/project.json` or `.vercel/repo.json` exists, the `orgId` in those files determines the team, no need to ask again. If there is only one team, or just a personal account, skip the prompt and use it directly.
@@ -52,47 +52,18 @@ Either file means the project is linked. Check for both.
 
 ## Step 2: Choose a Deploy Method
 
-### Linked, `.vercel/` exists + has git remote → Git Push
+### Linked project
 
-This is the ideal state. The project is linked and has git integration.
-
-1. **Ask the user before pushing.** Never push without explicit approval:
-   ```
-   This project is connected to Vercel via git. I can commit and push to
-   trigger a deployment. Want me to proceed?
-   ```
-
-2. **Commit and push:**
-   ```bash
-   git add .
-   git commit -m "deploy: <description of changes>"
-   git push
-   ```
-   Vercel automatically builds from the push. Non-production branches get preview deployments; the production branch, usually `main`, gets a production deployment.
-
-3. **Retrieve the preview URL.** If the CLI is authenticated:
-   ```bash
-   sleep 5
-   vercel ls --format json
-   ```
-   The JSON output has a `deployments` array. Find the latest entry, its `url` field is the preview URL.
-
-   If the CLI is not authenticated, tell the user to check the Vercel dashboard or the commit status checks on their git provider for the preview URL.
-
----
-
-### Linked, `.vercel/` exists + no git remote → `vercel deploy`
-
-The project is linked but there's no git repo. Deploy directly with the CLI.
+Use the CLI to deploy a preview from the working tree on any branch. If the user specifically requests a Git deployment, verify the configured production branch and Git integration in Vercel first. A push to the production branch requires an explicit production request and authorization for the push. When Git deployment is authorized, identify the result by project, environment, and commit SHA.
 
 ```bash
-vercel deploy [path] -y --no-wait
+vercel deploy [path] --environment=preview -y --no-wait
 ```
 
 Use `--no-wait` so the CLI returns immediately with the deployment URL instead of blocking until the build finishes, builds can take a while. Then check on the deployment status with:
 
 ```bash
-vercel inspect <deployment-url>
+vercel inspect <deployment-url> --wait --timeout=5m
 ```
 
 For production deploys, only if user explicitly asks:
@@ -111,7 +82,7 @@ The CLI is working but the project isn't linked yet. This is the opportunity to 
 2. **Once a team is selected, proceed directly to linking.** Tell the user what will happen but do not ask for separate confirmation:
    ```
    Linking this project to <team name> on Vercel. This will create a Vercel
-   project to deploy to and enable automatic deployments on future git pushes.
+   project or associate this directory with the chosen existing project.
    ```
 
 3. **If a git remote exists**, use repo-based linking with the selected team scope:
@@ -126,9 +97,7 @@ The CLI is working but the project isn't linked yet. This is the opportunity to 
    ```
    This prompts the user to select or create a project. It creates `.vercel/project.json`.
 
-4. **Then deploy using the best available method:**
-   - If a git remote exists → ask, then commit and push, the Git Push method's approval gate above applies; step 2's "do not ask for separate confirmation" covers linking only, never a commit or push
-   - If no git remote → `vercel deploy [path] -y --no-wait --scope <team-slug>`, then `vercel inspect <url>` to check status
+4. Deploy the preview with the CLI and inspect the URL it returns.
 
 ---
 
@@ -155,7 +124,7 @@ The Vercel CLI isn't set up at all.
    vercel link --scope <team-slug>          # if no git remote
    ```
 
-5. **Deploy** using the best available method, git push if a remote exists. In that case **ask first**: the Git Push method's approval gate applies here too. Otherwise use `vercel deploy -y --no-wait --scope <team-slug>`, then `vercel inspect <url>` to check status.
+5. Deploy with the CLI and inspect the URL it returns.
 
 ---
 
@@ -170,6 +139,8 @@ bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh [path]
 **Arguments:**
 - `path` - Directory to deploy, or a `.tgz` file, defaults to current directory
 
+For an archive containing one top level directory, use that directory as the deployment root when it contains `package.json`, `vercel.json`, `.vercelignore`, or an HTML page. Other archives retain their top level layout.
+
 **Examples:**
 ```bash
 # Deploy current directory
@@ -182,9 +153,7 @@ bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh /path/to/project
 bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh /path/to/project.tgz
 ```
 
-The script auto-detects the framework from `package.json`, packages the project, excluding `node_modules`, `.git`, `.env`, uploads it, and waits for the build to complete.
-
-**Tell the user:** "Your deployment is ready at [previewUrl]. Claim it at [claimUrl] to manage your deployment."
+The script applies the project’s `.vercelignore` before uploading. It prints the deployment response on acceptance. Use the exit status and output guidance below to report verification.
 
 ---
 
@@ -199,7 +168,7 @@ The script auto-detects the framework from `package.json`, packages the project,
 
 2. **If `vercel` is installed**, try deploying with the CLI:
    ```bash
-   vercel deploy [path] -y --no-wait
+   vercel deploy [path] --environment=preview -y --no-wait
    ```
 
 3. **If `vercel` is not installed, or the CLI fails with "No existing credentials found"**, use the fallback script:
@@ -216,11 +185,8 @@ The script auto-detects the framework from `package.json`, packages the project,
    bash "$skill_dir/scripts/deploy-codex.sh" /path/to/project.tgz
    ```
 
-The script handles framework detection, packaging, and deployment. It waits for the build to complete and returns JSON with `previewUrl` and `claimUrl`.
+The script applies the project’s `.vercelignore` before uploading. It prints the deployment response on acceptance. Use the exit status and output guidance below to report verification.
 
-**Tell the user:** "Your deployment is ready at [previewUrl]. Claim it at [claimUrl] to manage your deployment."
-
-**Escalated network access:** Only escalate the actual deploy command if sandboxing blocks the network call, `sandbox_permissions=require_escalated`. Do **not** escalate the `command -v vercel` check.
 
 ---
 
@@ -248,22 +214,9 @@ Codex runs in a sandbox. Check if the CLI is available first, then fall back to 
 
 ## Output
 
-Always show the user the deployment URL.
+For a CLI deployment, inspect its exact URL or ID with `vercel inspect <url> --wait --timeout=5m`. Report the observed build state. For a Git deployment, inspect the commit check for the target environment.
 
-- **Git push:** Use `vercel ls --format json` to find the preview URL. If the CLI isn't authenticated, tell the user to check the Vercel dashboard or commit status checks.
-- **CLI deploy:** Show the URL returned by `vercel deploy --no-wait`. Use `vercel inspect <url>` to check build status and report it to the user.
-- **No-auth fallback:** Show both the preview URL and the claim URL:
-  ```
-  Deployment successful!
-
-  Preview URL: https://my-app-abc123.vercel.app
-  Claim URL:   https://vercel.com/claim-deployment?code=...
-
-  View your site at the Preview URL.
-  To transfer this deployment to your Vercel account, visit the Claim URL.
-  ```
-
-**Do not** curl or fetch the deployed URL to verify it works. Just return the link.
+The fallback prints JSON with the preview and claim URLs after the upload is accepted. Exit 0 indicates the preview endpoint returned HTTP 2xx. Exit 2 means verification is incomplete. Share the URLs and the observed status in either case. Report the build as ready only when Vercel confirms that state. The scripts use Bash, Git, tar, curl and Python 3. Archive inputs require Python’s tar extraction filters.
 
 ---
 
@@ -281,15 +234,9 @@ Deployment failed due to network restrictions. To fix this:
 3. Try deploying again
 ```
 
-### Escalated Network Access, Codex / sandboxed environments
+### Interrupted uploads
 
-If deployment fails due to network issues, timeouts, DNS errors, connection resets, in a sandboxed environment, rerun with escalated permissions, `sandbox_permissions=require_escalated`. Do not escalate the initial CLI availability check, only escalate the actual deploy command.
-
-Example guidance to the user:
-```
-The deploy needs escalated network access to deploy to Vercel. I can rerun
-the command with escalated permissions: want me to proceed?
-```
+If a connection drops while waiting for a response, use the deployment URL, ID or commit check to determine whether the upload was accepted. Resume verification on the existing deployment when available. Follow the network permissions of the current session.
 
 ### CLI Auth Failure
 
@@ -301,38 +248,13 @@ If `vercel login` or `vercel deploy` fails with authentication errors, fall back
 
 For CI/CD or non-interactive environments where `vercel login` cannot be used. Uses `VERCEL_TOKEN` env var instead of browser auth.
 
-### Locate the Vercel Token
+### Check credentials
 
-Work through these scenarios in order:
-
-**A. `VERCEL_TOKEN` already in environment**
-```bash
-printenv VERCEL_TOKEN
-```
-
-**B. Token in `.env` file under `VERCEL_TOKEN`**
-```bash
-grep '^VERCEL_TOKEN=' .env 2>/dev/null
-export VERCEL_TOKEN=$(grep '^VERCEL_TOKEN=' .env | cut -d= -f2-)
-```
-
-**C. Token under different name in `.env`**: Vercel tokens start with `vca_`
-```bash
-grep -i 'vercel' .env 2>/dev/null
-export VERCEL_TOKEN=$(grep '^<VARIABLE_NAME>=' .env | cut -d= -f2-)
-```
-
-**D. No token found**: ask the user to create one at vercel.com/account/tokens
-
-### Critical: Never Use `--token` Flag
+Supply the credential through the CI secret store or the project’s existing trusted environment loader. Check its presence with shell tracing disabled. Use `vercel whoami` to verify the resulting identity.
 
 ```bash
-# Bad — token visible in shell history and process listings
-vercel deploy --token "vca_abc123"
-
-# Good — CLI reads VERCEL_TOKEN from environment
-export VERCEL_TOKEN="vca_abc123"
-vercel deploy
+set +x
+test -n "${VERCEL_TOKEN:-}" && echo 'VERCEL_TOKEN is set'
 ```
 
 ### Locate Project and Team, Skip `.vercel/` Directory
@@ -359,7 +281,7 @@ echo "$PROJECT_URL" | sed 's|https://vercel.com/||' | cut -d/ -f1
 ### Quick Token Deploy, no linking needed
 
 ```bash
-vercel deploy -y --no-wait --scope <team-slug>
+vercel deploy --environment=preview -y --no-wait --scope <team-slug>
 ```
 
 ### Managing Environment Variables, with Token
@@ -376,14 +298,14 @@ vercel env rm VAR_NAME --scope <team-slug> -y
 
 **Token not found:**
 ```bash
-printenv | grep -i vercel
-grep -i vercel .env 2>/dev/null
+set +x
+test -n "${VERCEL_TOKEN:-}" || echo 'VERCEL_TOKEN is missing'
 ```
 
 **Authentication error**, `Authentication required`:
 - Token may be expired or invalid
 - Verify: `vercel whoami`, uses `VERCEL_TOKEN` from env
-- Ask the user for a fresh token
+- Have the user refresh the secret in the configured credential store
 
 **Wrong team:**
 ```bash
