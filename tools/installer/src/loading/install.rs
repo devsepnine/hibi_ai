@@ -24,17 +24,7 @@ fn handle_process_completion(app: &mut App, channels: &mut ProcessingChannels) {
                     if err_msg.contains("Cancelled by user") {
                         app.processing_log
                             .push("[WARN] Cancelled by user".to_string());
-                        if !app.is_removing {
-                            app.processing_log
-                                .push("[INFO] Cleaning up cancelled installation...".to_string());
-                        }
                         app.processing_queue.clear();
-                    } else if err_msg.contains("timed out") {
-                        app.processing_log.push(format!("[ERR] {}", err_msg));
-                        if !app.is_removing {
-                            app.processing_log
-                                .push("[INFO] Cleaning up timed out installation...".to_string());
-                        }
                     } else {
                         app.processing_log.push(format!("[ERR] {}", err_msg));
                     }
@@ -120,7 +110,12 @@ fn check_refresh_completion(app: &mut App, refresh_rx: &Receiver<Result<RefreshR
             }
             app.apply_components_refresh(components);
         }
-        Ok(Ok(RefreshResult::Mcp(m))) => app.apply_mcp_refresh(m),
+        Ok(Ok(RefreshResult::Mcp(servers, warning))) => {
+            app.apply_mcp_refresh(servers);
+            if let Some(warning) = warning {
+                app.processing_log.push(format!("[WARN] {warning}"));
+            }
+        }
         Ok(Ok(RefreshResult::Plugins(p))) => app.apply_plugins_refresh(p),
         // InitialLoad is only sent by start_loading_thread which feeds
         // handle_loading_view, not this consumer. Treat the unexpected

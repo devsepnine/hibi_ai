@@ -19,13 +19,16 @@ pub fn items(app: &App) -> Column<'_, Message> {
                 item.status.display(),
                 &item.source_name,
                 format!(
-                    "{} · {} · {}",
+                    "{} · {}{}",
                     item.def.category,
                     item.def.description,
-                    if item.def.env.is_empty() {
-                        "No credentials required".to_owned()
+                    if item.def.inputs().next().is_some() {
+                        format!(
+                            " · Requires {}",
+                            item.def.inputs().collect::<Vec<_>>().join(", ")
+                        )
                     } else {
-                        format!("Requires {}", item.def.env.join(", "))
+                        String::new()
                     }
                 ),
             ));

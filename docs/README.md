@@ -18,7 +18,7 @@ hibi_ai/
 │   ├── commands/           # 슬래시 커맨드 28개 (+ -ko 미러)
 │   ├── skills/             # 스킬 30개 (+ 각 SKILL-ko.md)
 │   ├── hooks/              # 라이프사이클 훅 5개 — 전부 deprecated
-│   ├── mcps/mcps.yaml      # MCP 서버 정의 21개
+│   ├── mcps/mcps.yaml      # MCP 서버 정의 10개
 │   ├── plugins/plugins.yaml# 플러그인 마켓플레이스 4개 / 플러그인 28개
 │   ├── output-styles/      # 출력 스타일 (hibi_default)
 │   ├── statusline/         # 상태 표시줄 바이너리 (macOS/Linux/Windows)
@@ -149,9 +149,29 @@ hibi_ai/
 
 `src/hooks/`의 5개인 `inject_guide`, `load-context`, `persist-session`, `preserve-context`, `suggest-compact`는 모두 `hook.yaml`에 `deprecated: true`가 표시돼 있고, 인스톨러가 기존 설치본에서 자동 제거한다. 키워드·컨텍스트 주입은 네이티브 Skill 시스템이 대체한다.
 
-### MCP 서버 21개
+### MCP 서버 10개
 
-`src/mcps/mcps.yaml`에 정의된다. 문서 조회는 `context7`, `cloudflare-docs`, `sveltejs`, `next-devtools`, 브라우저는 `playwright`, `firecrawl`, 협업은 `atlassian`, `atlassian-remote`, `github`, `sentry`, 데이터는 `supabase`, `clickhouse`, 배포·인프라는 `vercel`, `railway`, `cloudflare-workers-builds`, `cloudflare-workers-bindings`, `cloudflare-observability`, 기타는 `sequential-thinking`, `memory`, `shadcn-ui`, `magic`이다.
+`src/mcps/mcps.yaml`에서 설치할 서버를 고른다.
+
+| 작업 | 서버 | 선택 기준 |
+|---|---|---|
+| 라이브러리 문서와 프레임워크 | `context7`, `next-devtools`, `sveltejs`, `shadcn-ui` | Context7은 버전별 문서 조회에 쓴다. 나머지는 프로젝트의 기술에 맞춰 고른다. |
+| 브라우저 탐색 | `playwright` | 여러 화면을 오가며 브라우저 상태를 유지할 때 쓴다. |
+| 기록 | `memory`, `sequential-thinking` | 지식 그래프 보존과 사고 단계 기록 중 필요한 쪽을 고른다. |
+| 협업과 장애 조사 | `atlassian-remote`, `sentry` | Jira와 Confluence Cloud에는 Atlassian 공식 원격 서버를 쓴다. |
+| 데이터 조회 | `clickhouse` | ClickHouse Cloud에서 MCP를 활성화한 뒤 연결한다. |
+
+Claude에서 Context7, Playwright, Atlassian Cloud, Sentry 플러그인을 쓰면 해당 MCP도 함께 등록된다. 같은 서비스에는 설치 경로 하나를 선택한다.
+
+Context7 API 키를 쓰는 경우 설치기를 실행하기 전에 `CONTEXT7_API_KEY`를 설정하고 Claude 또는 Codex를 실행하는 환경에도 제공한다. 설치기는 키가 있을 때 변수 이름만 등록하며, 키가 없으면 일반 HTTP 연결을 등록한다. 인증 방식을 바꾸려면 해당 연결을 다시 등록한다.
+
+Codex가 OAuth 로그인을 요구하면 설치 결과에 표시된 `codex mcp login 서버이름`을 실행한다. Claude에서는 `/mcp`에서 연결 상태와 로그인을 확인한다.
+
+Atlassian Cloud는 `atlassian-remote`를 선택한 뒤 브라우저에서 Atlassian 계정으로 로그인한다. Codex에서는 `codex mcp login atlassian-remote`로, Claude Code에서는 `/mcp`로 로그인을 시작할 수 있다.
+
+Memory에는 사용자 소유 디렉터리의 JSONL 파일 절대 경로를 지정한다. 기존 파일의 심볼릭 링크를 선택하면 설치기는 링크가 가리키는 파일 경로를 등록한다. 기존 그래프를 보존하려면 서버를 종료하고 기존 데이터 파일을 백업한 뒤 보관할 위치로 복사해 그 경로를 선택한다.
+
+MCP 또는 플러그인 설치를 취소하면 설치기는 실행 중인 CLI를 중단하고 목록을 갱신한다. CLI가 취소 전에 등록을 마쳤다면 목록에서 확인하고 필요할 때 직접 제거한다. Codex에서는 이미 등록한 이름을 건너뛰므로 기존 설정과 도구 권한을 보존한다. 기존 등록은 카탈로그 갱신 뒤에도 남는다. 이름이 같은 MCP를 교체할 때는 기존 연결의 스코프와 설정을 확인하고 해당 연결을 제거한 뒤 다시 설치한다. 목록에서 빠진 서버를 직접 정리하려면 `codex mcp remove 서버이름` 또는 `claude mcp remove --scope 스코프 서버이름`을 사용한다. Claude의 로컬 스코프는 등록한 프로젝트 디렉터리에서 명령을 실행한다.
 
 ### 플러그인: 마켓플레이스 4개, 플러그인 28개
 

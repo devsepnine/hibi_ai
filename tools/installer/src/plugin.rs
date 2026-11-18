@@ -1,5 +1,6 @@
 #[derive(Clone, Debug, PartialEq)]
 pub enum PluginStatus {
+    Unknown,
     Installed,
     NotInstalled,
 }
@@ -7,6 +8,7 @@ pub enum PluginStatus {
 impl PluginStatus {
     pub fn display(&self) -> &str {
         match self {
+            Self::Unknown => "unknown",
             Self::Installed => "installed",
             Self::NotInstalled => "not installed",
         }
@@ -19,6 +21,12 @@ pub struct PluginDef {
     pub marketplace: String, // marketplace name (e.g., "claude-plugins-official")
     pub source: String,      // marketplace source URL
     pub comment: Option<String>,
+}
+
+impl PluginDef {
+    pub fn id(&self) -> String {
+        format!("{}@{}", self.name, self.marketplace)
+    }
 }
 
 #[derive(Clone, Debug)]

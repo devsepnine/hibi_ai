@@ -151,9 +151,9 @@
   - 데이터: 카탈로그 `src/mcps/mcps.yaml`, 설치 여부는 `tools/installer/src/fs/scanner/mcp.rs` → `get_installed_claude_servers` 가 `mcp list` 출력에서 읽는다
 - **테스트**: `tools/installer/src/fs/scanner/validation.rs`, `tools/installer/src/fs/mod.rs`
 - **함정**: Windows 에서 모든 MCP 가 not installed 로 보임 → npm 설치 CLI 의 `.cmd` shim 을 못 찾아 `mcp list` 가 비었다, 지금은 PATH 를 직접 뒤진다, 근거: `e06dad2`
-- **함정**: CLI 를 못 찾아도 경고 없이 전부 not installed → `MCP scan failed` 경고를 스캔 결과에서 버린다, 근거: `tools/installer/src/loading/initial_load.rs` → `start_loading_thread`
+- **함정**: CLI로 등록 상태를 조회할 수 없으면 목록에 `unknown`을 표시한다. Claude 로컬 스코프에서는 선택한 프로젝트 디렉터리에서 목록을 다시 조회한다
 - **함정**: mcps.yaml 에 넣은 서버가 목록에 없음 → 이름 · URL · 명령 검증에 실패한 항목은 조용히 빠진다, 근거: `tools/installer/src/fs/scanner/mcp.rs` → `scan_with_installed`
-- **함정**: Codex 에서 o 로 local 을 골라도 효과 없음 → Codex 분기는 scope 와 project_path 를 쓰지 않는다, 근거: `tools/installer/src/fs/installer/mcp.rs` → `install_mcp_server`
+- **함정**: Codex는 사용자 스코프를 사용한다. 설치 직전에 기존 등록을 조회하며 이름이 같으면 건너뛴다
 - **공유 의존**: `tools/installer/src/fs/mod.rs` → `create_cli_command`, `tools/installer/src/fs/scanner/validation.rs`
 - **관련**: `mcp-env-input`, `install-progress`
 
@@ -166,11 +166,11 @@
 - **코드 경로**:
   - UI: `tools/installer/src/ui/env_input.rs` → `render`
   - 상태 / 핸들러: `tools/installer/src/cli/mod.rs` → `handle_env_input`
-  - 상태 / 핸들러: `tools/installer/src/app/processing.rs` → `complete_install_setup` 가 셸 환경에 없는 변수만 묻는다
-  - 데이터: 값은 메모리에만 있다가 `tools/installer/src/process_exec.rs` → `prepare` 를 거쳐 `-e KEY=VALUE` 인자로 넘어간다
+  - 상태 / 핸들러: `tools/installer/src/app/processing.rs` → `complete_install_setup` 가 사용할 수 있는 환경 값 또는 앞서 입력한 값이 없는 항목을 묻는다
+  - 데이터: Memory 저장 경로는 stdio 서버의 환경변수로 기록한다. Context7 키를 설정하면 HTTP 인증에 클라이언트 환경변수 이름을 사용한다. Atlassian Cloud는 원격 서버에서 OAuth로 인증한다
 - **테스트**: `tools/installer/src/cli/tests.rs`
 - **함정**: 값을 비운 채 Enter 를 누르면 아무 일도 없음 → 빈 값은 무시한다, 근거: `tools/installer/src/app/input.rs` → `env_input_submit`
-- **함정**: env 가 필요한 MCP 를 둘 이상 고르면 두 번째는 값 없이 설치됨 → 첫 서버의 입력이 끝나면 다른 서버를 다시 확인하지 않고 진행하며 값은 그 첫 서버에만 붙는다, 근거: `tools/installer/src/app/processing.rs` → `continue_mcp_install`
+- **함정**: 여러 서버를 고르면 입력은 서버별로 보관하며 다음 서버의 필수 입력까지 확인한 뒤 설치한다, 근거: `tools/installer/src/app/processing.rs` → `continue_mcp_install`
 - **공유 의존**: `tools/installer/src/process_exec.rs`
 - **관련**: `mcp-list`, `install-progress`
 
@@ -183,9 +183,9 @@
 - **코드 경로**:
   - UI: `tools/installer/src/ui/plugin_list.rs` → `render`
   - 상태 / 핸들러: `tools/installer/src/fs/installer/plugin.rs` → `install_plugin`, 마켓플레이스 등록은 `tools/installer/src/fs/installer/mcp.rs` → `ensure_marketplace_added`
-  - 데이터: 카탈로그 `src/plugins/plugins.yaml` 을 `tools/installer/src/plugin.rs` → `parse_plugins_yaml` 로 읽고, 설치 여부는 `tools/installer/src/fs/scanner/plugin.rs` → `get_installed_plugins` 가 ~/.claude/settings.json 의 `enabledPlugins` 에서 읽는다
+  - 데이터: 카탈로그 `src/plugins/plugins.yaml` 을 `tools/installer/src/plugin.rs` → `parse_plugins_yaml` 로 읽고, 설치 여부는 `tools/installer/src/fs/scanner/plugin.rs` → `get_installed_plugins` 가 Claude 설정 디렉터리의 `plugins/installed_plugins.json`에서 사용자 스코프 기록을 읽는다
 - **테스트**: `tools/installer/src/plugin.rs`, `tools/installer/src/fs/scanner/validation.rs`
-- **함정**: 설치했지만 꺼 둔 플러그인이 not installed 로 보임 → `enabledPlugins` 값이 true 인 것만 설치로 센다, 근거: `tools/installer/src/fs/scanner/plugin.rs` → `get_installed_plugins`
+- **함정**: 같은 이름의 플러그인은 마켓플레이스로 구분한다. 설치 기록이 있는 플러그인은 비활성화해도 `installed`로 표시된다. 이전 형식에서는 사용자 설정의 `enabledPlugins`를 참조한다
 - **함정**: plugins.yaml 의 항목이 목록에 없음 → 이름 · 마켓플레이스 검증 실패 항목은 조용히 빠진다, 근거: `tools/installer/src/fs/scanner/plugin.rs` → `scan_plugins`
 - **공유 의존**: `tools/installer/src/fs/installer/process.rs`
 - **관련**: `install-progress`
@@ -194,7 +194,7 @@
 
 - **위치**: `i` 또는 `r` 뒤 본문 자리의 진행 화면, 위 제목 · `Progress` 막대 · `Log` 목록. MCP · Plugins 는 그 전에 `Preflight` 스피너가 뜬다
 - **별칭**: 설치, 제거, 진행률, 로그, 설치 중, 취소, CLI not found, q 안 먹힘
-- **UI 문구**: `"Checking {} availability..."`, `"Cannot start {}: {}"`, `"Preflight thread crashed"`, `"CLI reported: {}"`, `"Starting installation of {} items..."`, `"Starting removal of {} items..."`, `"✓ Complete"`, `"Refreshing status..."`, `"Installing..."`, `"Removing..."`, `"Progress"`, `"Log"`, `"[OK] {} complete!"`, `"[OK] Status refresh complete!"`, `"[WARN] Cancelling current operation..."`, `"[WARN] Cancelled by user"`, `"[INFO] Cleaning up cancelled installation..."`, `"[ERR] Process thread crashed"`, `"[ERROR] Refresh failed: {}"`, `"CLI not found in PATH"`, `"Installation timed out after {}s (cleanup may be incomplete)"`, `"Cancelled"`
+- **UI 문구**: `"Checking {} availability..."`, `"Cannot start {}: {}"`, `"Preflight thread crashed"`, `"CLI reported: {}"`, `"Starting installation of {} items..."`, `"Starting removal of {} items..."`, `"✓ Complete"`, `"Refreshing status..."`, `"Installing..."`, `"Removing..."`, `"Progress"`, `"Log"`, `"[OK] {} complete!"`, `"[OK] Status refresh complete!"`, `"[WARN] Cancelling current operation..."`, `"[WARN] Cancelled by user"`, `"[ERR] Process thread crashed"`, `"[ERROR] Refresh failed: {}"`, `"CLI not found in PATH"`, `"Timed out after {}s trying to {} {}"`, `"Cancelled"`
 - **컨트롤**: `"install selected"` → `install_selected`, `"remove selected"` → `remove_selected`, 진행 중 Esc → `handle_installing_input` 가 취소 신호, 완료 후 Enter · q · Esc → `close_processing`, Preflight 중 Esc → `handle_preflighting_input`
 - **코드 경로**:
   - UI: `tools/installer/src/ui/installing.rs` → `render`, Preflight 상자는 `tools/installer/src/ui/mod.rs` → `render_preflighting_screen`

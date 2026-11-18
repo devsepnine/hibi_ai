@@ -41,7 +41,9 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
 
             let status_style = match p.status {
                 PluginStatus::Installed => Style::default().fg(app.theme.success()),
-                PluginStatus::NotInstalled => Style::default().fg(app.theme.text_muted()),
+                PluginStatus::Unknown | PluginStatus::NotInstalled => {
+                    Style::default().fg(app.theme.text_muted())
+                }
             };
 
             // First line: checkbox, name, status, source tag

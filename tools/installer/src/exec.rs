@@ -4,10 +4,24 @@
 
 use std::io::Read;
 use std::process::{Command, Output, Stdio};
-use std::time::Duration;
+use std::sync::mpsc::{self, Receiver, RecvTimeoutError};
+use std::thread;
+use std::time::{Duration, Instant};
 
 use anyhow::Result;
+use command_group::CommandGroup;
 use wait_timeout::ChildExt;
+
+// Read both pipes while the CLI runs. A large MCP inventory can fill one before it exits.
+fn drain(mut pipe: impl Read + Send + 'static) -> Receiver<std::io::Result<Vec<u8>>> {
+    let (tx, rx) = mpsc::channel();
+    thread::spawn(move || {
+        let mut bytes = Vec::new();
+        let result = pipe.read_to_end(&mut bytes).map(|_| bytes);
+        let _ = tx.send(result);
+    });
+    rx
+}
 
 /// Run `command` and return its output, or `None` when it outlives
 /// `timeout_secs`, in which case the child is killed rather than orphaned.
@@ -24,33 +38,45 @@ pub fn run_with_timeout(
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .spawn();
+        .group_spawn();
     let mut child = match spawned {
         Ok(child) => child,
         Err(err) => return Err(on_spawn_error(command, err)),
     };
 
-    let Some(status) = child.wait_timeout(Duration::from_secs(timeout_secs))? else {
-        let _ = child.kill();
-        let _ = child.wait();
-        return Ok(None);
+    let stdout = drain(child.inner().stdout.take().expect("stdout was piped"));
+    let stderr = drain(child.inner().stderr.take().expect("stderr was piped"));
+    let timeout = Duration::from_secs(timeout_secs);
+    let start = Instant::now();
+    let capture = || -> Result<Option<Output>> {
+        let Some(status) = child.inner().wait_timeout(timeout)? else {
+            return Ok(None);
+        };
+        let read = |rx: Receiver<std::io::Result<Vec<u8>>>| -> Result<Option<Vec<u8>>> {
+            match rx.recv_timeout(timeout.saturating_sub(start.elapsed())) {
+                Ok(output) => Ok(Some(output?)),
+                Err(RecvTimeoutError::Timeout) => Ok(None),
+                Err(RecvTimeoutError::Disconnected) => anyhow::bail!("CLI output reader stopped"),
+            }
+        };
+        let Some(stdout) = read(stdout)? else {
+            return Ok(None);
+        };
+        let Some(stderr) = read(stderr)? else {
+            return Ok(None);
+        };
+        Ok(Some(Output {
+            status,
+            stdout,
+            stderr,
+        }))
     };
-
-    // A pipe that fails after exit still yields what was captured; callers
-    // decide on `status` first.
-    let mut stdout = Vec::new();
-    let mut stderr = Vec::new();
-    if let Some(mut pipe) = child.stdout.take() {
-        let _ = pipe.read_to_end(&mut stdout);
+    let output = capture();
+    if !matches!(output, Ok(Some(_))) {
+        let _ = child.kill();
+        let _ = child.inner().wait_timeout(Duration::from_secs(1));
     }
-    if let Some(mut pipe) = child.stderr.take() {
-        let _ = pipe.read_to_end(&mut stderr);
-    }
-    Ok(Some(Output {
-        status,
-        stdout,
-        stderr,
-    }))
+    output
 }
 
 #[cfg(test)]
@@ -72,6 +98,20 @@ mod tests {
                 .contains("a_finished_command_returns_its_output"),
             "listing should name this test"
         );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn an_inherited_output_pipe_cannot_extend_the_command_timeout() {
+        let mut cmd = Command::new("sh");
+        cmd.args(["-c", "sleep 15 & exit 0"]);
+        let started = Instant::now();
+        assert!(
+            run_with_timeout(&mut cmd, 1, |_, e| e.into())
+                .unwrap()
+                .is_none()
+        );
+        assert!(started.elapsed() < Duration::from_secs(10));
     }
 
     /// Not a real test: the timeout test below relaunches this binary to

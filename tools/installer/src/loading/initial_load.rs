@@ -17,6 +17,7 @@ pub(crate) fn start_loading_thread(app: &App, refresh_tx: &Sender<Result<Refresh
     let sources = app.sources.clone();
     let dest_dir = app.dest_dir.clone();
     let target_cli = app.target_cli.unwrap_or(TargetCli::Claude);
+    let project = app.local_mcp_project().map(std::path::PathBuf::from);
 
     thread::spawn(move || {
         let result = super::worker_result(|| {
@@ -37,7 +38,8 @@ pub(crate) fn start_loading_thread(app: &App, refresh_tx: &Sender<Result<Refresh
             }
 
             let components = fs::scanner::scan_all_sources(&sources, &dest_dir, target_cli);
-            let mcp_result = fs::scanner::scan_all_mcp_sources(&sources, target_cli);
+            let mcp_result =
+                fs::scanner::scan_all_mcp_sources(&sources, target_cli, project.as_deref());
             let plugins = fs::scanner::scan_all_plugin_sources(&sources);
 
             let result = match (components, mcp_result, plugins) {
@@ -84,22 +86,35 @@ pub(crate) fn tick_loading(app: &mut App, refresh_rx: &Receiver<Result<RefreshRe
         })) => {
             app.finish_loading(components, mcp_servers, plugins, cleaned_items);
         }
-        // The refresh channel is shared with start_refresh_thread, but
-        // that thread only runs from the Installing view; the Loading
-        // view should never see a Components/Mcp/Plugins variant. If
-        // somehow one arrives, bail back to CLI selection rather than
-        // half-populating the screen.
+        Ok(Ok(RefreshResult::Mcp(mut servers, warning))) if app.refreshing => {
+            for server in &mut servers {
+                server.selected = app
+                    .mcp_servers
+                    .iter()
+                    .any(|previous| previous.def.name == server.def.name && previous.selected);
+            }
+            app.mcp_servers = servers;
+            app.reset_visible_list_cursors();
+            app.refreshing = false;
+            app.current_view = View::List;
+            if let Some(warning) = warning {
+                app.status_message = Some(warning);
+            }
+        }
         Ok(Ok(_unexpected)) => {
             app.status_message = Some("Unexpected refresh payload during load".to_string());
+            app.refreshing = false;
             app.current_view = View::CliSelection;
         }
         Ok(Err(e)) => {
             app.status_message = Some(format!("Error loading: {}", e));
+            app.refreshing = false;
             app.current_view = View::CliSelection;
         }
         Err(TryRecvError::Empty) => {}
         Err(TryRecvError::Disconnected) => {
             app.status_message = Some("Loading failed".to_string());
+            app.refreshing = false;
             app.current_view = View::CliSelection;
         }
     }

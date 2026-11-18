@@ -65,6 +65,7 @@ impl App {
                     server.def.url.as_deref().unwrap_or_default(),
                 ];
                 fields.extend(server.def.env.iter().map(String::as_str));
+                fields.extend(server.def.setup.as_ref().map(|setup| setup.variable()));
                 query.matches(&fields)
             })
             .collect()
@@ -324,6 +325,36 @@ mod tests {
                 assert_eq!(app.components[0].source_path, source_path);
                 assert_eq!(app.components[0].dest_path, dest_path);
             }
+        }
+    }
+
+    #[test]
+    fn bundled_servers_are_searchable_by_setup_and_category() {
+        use crate::mcp::{McpCatalog, McpStatus};
+        let catalog: McpCatalog =
+            serde_yaml_bw::from_str(include_str!("../../../../src/mcps/mcps.yaml")).unwrap();
+        let mut app = fresh_app();
+        app.mcp_servers = catalog
+            .servers
+            .into_iter()
+            .map(|def| McpServer::new(def, McpStatus::NotInstalled))
+            .collect();
+        for (query, expected) in [
+            ("MEMORY_FILE_PATH", vec!["memory"]),
+            ("CONTEXT7_API_KEY", vec!["context7"]),
+            ("github", vec![]),
+            ("atlassian", vec!["atlassian-remote"]),
+            ("framework", vec!["next-devtools", "sveltejs"]),
+        ] {
+            app.set_search_query(query.into());
+            assert_eq!(
+                app.visible_mcp_servers()
+                    .iter()
+                    .map(|(_, s)| s.def.name.as_str())
+                    .collect::<Vec<_>>(),
+                expected,
+                "{query}"
+            );
         }
     }
 

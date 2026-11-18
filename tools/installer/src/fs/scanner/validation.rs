@@ -1,4 +1,4 @@
-use crate::mcp::McpServerDef;
+use crate::mcp::{McpServerDef, McpSetup, McpType};
 
 /// Pattern for safe identifiers: alphanumeric, underscore, hyphen. Must not start with `-`.
 pub(super) fn is_safe_identifier(s: &str) -> bool {
@@ -46,6 +46,32 @@ pub(super) fn validate_mcp_server(server: &McpServerDef) -> Option<String> {
                 "MCP server '{}': command contains disallowed shell metacharacters",
                 server.name
             ));
+        }
+    }
+
+    if let Some(setup) = &server.setup {
+        let http = matches!(server.r#type, Some(McpType::Http));
+        let valid_var = |s: &str| {
+            s.bytes()
+                .next()
+                .is_some_and(|b| b == b'_' || b.is_ascii_alphabetic())
+                && s.bytes().all(|b| b == b'_' || b.is_ascii_alphanumeric())
+        };
+        let valid = match setup {
+            McpSetup::Bearer { variable, .. } => {
+                http && server.url.is_some() && valid_var(variable)
+            }
+            McpSetup::FileEnv { variable } => {
+                !http && server.command.is_some() && valid_var(variable)
+            }
+        };
+        if !valid
+            || (http && !server.env.is_empty())
+            || setup
+                .input()
+                .is_some_and(|input| server.env.iter().any(|key| key == input))
+        {
+            return Some(format!("Invalid MCP setup for {}", server.name));
         }
     }
 
@@ -120,10 +146,8 @@ mod tests {
     #[test]
     fn test_is_safe_command_valid() {
         assert!(is_safe_command("npx -y @upstash/context7-mcp"));
-        assert!(is_safe_command("uvx mcp-atlassian"));
-        assert!(is_safe_command(
-            "npx -y @supabase/mcp-server-supabase@latest --project-ref=YOUR_PROJECT_REF"
-        ));
+        assert!(is_safe_command("uvx example-server"));
+        assert!(is_safe_command("npx -y example-mcp@latest --mode=local"));
     }
 
     #[test]
@@ -152,6 +176,7 @@ mod tests {
             url: None,
             category: "docs".to_string(),
             env: vec![],
+            setup: None,
         };
         assert!(validate_mcp_server(&def).is_none());
     }
@@ -166,6 +191,7 @@ mod tests {
             url: None,
             category: "test".to_string(),
             env: vec![],
+            setup: None,
         };
         assert!(validate_mcp_server(&def).is_some());
     }
@@ -180,6 +206,7 @@ mod tests {
             url: Some("file:///etc/passwd".to_string()),
             category: "test".to_string(),
             env: vec![],
+            setup: None,
         };
         assert!(validate_mcp_server(&def).is_some());
     }
@@ -194,6 +221,7 @@ mod tests {
             url: None,
             category: "test".to_string(),
             env: vec![],
+            setup: None,
         };
         assert!(validate_mcp_server(&def).is_some());
     }

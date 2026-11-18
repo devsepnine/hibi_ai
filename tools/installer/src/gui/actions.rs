@@ -176,7 +176,7 @@ impl Runtime {
         match action {
             Action::ToggleTheme => app.theme.toggle(),
             Action::SelectTarget(target) if app.current_view == View::CliSelection => {
-                select_environment(app, target)?;
+                app.select_cli(target)?;
                 loading::start_loading_thread(app, &self.channels.refresh_tx);
             }
             Action::SelectTab(tab)
@@ -330,14 +330,6 @@ impl Runtime {
             }
         }
     }
-}
-
-fn select_environment(app: &mut crate::app::App, target: TargetCli) -> anyhow::Result<()> {
-    app.select_cli(target)?;
-    if target == TargetCli::Codex {
-        app.mcp_scope = crate::mcp::McpScope::User;
-    }
-    Ok(())
 }
 
 fn self_busy_view(app: &crate::app::App) -> bool {
@@ -623,7 +615,7 @@ mod tests {
         app.current_view = View::CliSelection;
         app.target_cli = Some(TargetCli::Claude);
         app.mcp_scope = crate::mcp::McpScope::Local;
-        select_environment(&mut app, TargetCli::Codex).unwrap();
+        app.select_cli(TargetCli::Codex).unwrap();
         assert_eq!(app.mcp_scope, crate::mcp::McpScope::User);
         assert_eq!(app.target_cli, Some(TargetCli::Codex));
         assert_eq!(app.current_view, View::Loading);

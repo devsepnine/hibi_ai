@@ -19,7 +19,11 @@ impl App {
         let indices: Vec<usize> = if self.tab == Tab::McpServers {
             self.visible_mcp_servers()
                 .into_iter()
-                .filter(|(_, m)| m.selected)
+                .filter(|(_, m)| {
+                    m.selected
+                        && !(self.target_cli == Some(crate::target::TargetCli::Codex)
+                            && m.status == crate::mcp::McpStatus::Installed)
+                })
                 .map(|(i, _)| i)
                 .collect()
         } else if self.tab == Tab::Plugins {
@@ -37,7 +41,19 @@ impl App {
         };
 
         if indices.is_empty() {
-            self.status_message = Some("No items selected".to_string());
+            self.status_message = Some(
+                if self.tab == Tab::McpServers
+                    && self
+                        .visible_mcp_servers()
+                        .iter()
+                        .any(|(_, server)| server.selected)
+                {
+                    "Selected MCP servers are already registered"
+                } else {
+                    "No items selected"
+                }
+                .into(),
+            );
             return Ok(());
         }
 
@@ -117,16 +133,24 @@ impl App {
                 if let Some(server) = self.mcp_servers.get(idx) {
                     let missing: Vec<String> = server
                         .def
-                        .env
-                        .iter()
-                        .filter(|e| {
-                            std::env::var(e).is_err()
-                                && !self
-                                    .mcp_env_values
-                                    .get(&idx)
-                                    .is_some_and(|values| values.iter().any(|(name, _)| name == *e))
+                        .inputs()
+                        .filter(|&name| {
+                            let entered = self
+                                .mcp_env_values
+                                .get(&idx)
+                                .is_some_and(|values| values.iter().any(|(key, _)| key == name));
+                            let inherited = std::env::var(name).is_ok_and(|value| {
+                                !value.is_empty()
+                                    && server
+                                        .def
+                                        .setup
+                                        .as_ref()
+                                        .filter(|s| s.input() == Some(name))
+                                        .is_none_or(|s| s.accepts(&value))
+                            });
+                            !entered && !inherited
                         })
-                        .cloned()
+                        .map(str::to_owned)
                         .collect();
 
                     if !missing.is_empty() {
@@ -293,6 +317,17 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn codex_batch_skips_installed_entries_before_prompting() {
+        let mut app = queued_mcp_batch();
+        app.target_cli = Some(crate::target::TargetCli::Codex);
+        app.mcp_servers[0].status = crate::mcp::McpStatus::Installed;
+        app.install_selected().unwrap();
+        assert_eq!(app.processing_queue, vec![1]);
+        app.complete_install_setup().unwrap();
+        assert_eq!(app.env_input_server_idx, Some(1));
+    }
 
     fn queued_mcp_batch() -> App {
         let mut app = super::super::test_support::fresh_app();

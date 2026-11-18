@@ -24,7 +24,7 @@ use settings::{
 };
 
 // Re-export public API
-pub use mcp::{McpInstallConfig, install_mcp_server, remove_mcp_server};
+pub use mcp::{McpInstallConfig, McpRegistration, install_mcp_server, remove_mcp_server};
 pub use plugin::{install_plugin, remove_plugin};
 pub use renamed::auto_cleanup_renamed_skills;
 pub use settings::{

@@ -52,7 +52,7 @@ Source control is always available. For the rest, check which MCP servers this s
 | Long-form docs | Confluence, `docs/adr/`, design docs in the repo | rationale written before the code |
 | Error tracking | Sentry MCP | the exceptions behind a guard, retry, or null check |
 | Analytics | ClickHouse MCP | where a threshold or flag value came from |
-| Observability | `cloudflare-observability` or another metrics MCP, when present | the runtime signal a timeout or rate limit reacts to |
+| Observability | A metrics MCP available in the project | the runtime signal a timeout or rate limit reacts to |
 
 Launch every matching investigator in one message, one `Agent` per source, each given the code anchor, the user's question, and the tiers from `references/epistemics.md`. An investigator that finds nothing still reports what it searched. Skip a category only for a written reason: no source is available, or the source is provably irrelevant, such as error tracking for a build script.
 

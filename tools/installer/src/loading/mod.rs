@@ -16,7 +16,7 @@ pub(crate) use channels::ProcessingChannels;
 pub(crate) use initial_load::{handle_loading_view, start_loading_thread};
 pub(crate) use install::handle_installing_view;
 pub(crate) use preflight::handle_preflighting_view;
-pub(crate) use scan::RefreshResult;
+pub(crate) use scan::{RefreshResult, start_refresh_thread};
 
 #[cfg(feature = "gui")]
 pub(crate) use initial_load::tick_loading;

@@ -52,7 +52,7 @@ gh pr view <n> --json title,body,comments,reviews,closingIssuesReferences
 | Long-form docs | Confluence, `docs/adr/`, 저장소 안의 설계 문서 | 코드보다 먼저 적힌 근거 |
 | Error tracking | Sentry MCP | 가드, 재시도, null 체크 뒤에 있는 예외 |
 | Analytics | ClickHouse MCP | 임계값이나 플래그 값의 출처 |
-| Observability | 있다면 `cloudflare-observability`나 다른 메트릭 MCP | 타임아웃이나 레이트 리밋이 반응하는 런타임 신호 |
+| Observability | 프로젝트에서 사용할 수 있는 메트릭 MCP | 타임아웃이나 레이트 리밋이 반응하는 런타임 신호 |
 
 해당하는 조사자를 모두 한 메시지에서 띄운다. 출처마다 `Agent` 하나씩이고, 각자에게 코드 앵커, 사용자의 질문, `references/epistemics.md`의 티어를 준다. 아무것도 못 찾은 조사자도 무엇을 검색했는지는 보고한다. 카테고리를 건너뛰는 것은 서면 사유가 있을 때만이다. 쓸 수 있는 출처가 없거나, 빌드 스크립트에 에러 추적처럼 출처가 명백히 무관한 경우다.
 

@@ -33,9 +33,21 @@ pub(crate) fn dispatch_key(
         app::View::EnvInput => handle_env_input(app, code),
         app::View::ProjectPath => {
             handle_project_path_input(app, code);
+            if app.current_view == app::View::List && code == KeyCode::Enter {
+                app.current_view = app::View::Loading;
+                loading::start_refresh_thread(app, refresh_tx);
+            }
             Ok(())
         }
-        app::View::List => handle_list_input(app, code),
+        app::View::List => {
+            let old_scope = app.mcp_scope;
+            handle_list_input(app, code)?;
+            if app.current_view == app::View::List && old_scope != app.mcp_scope {
+                app.current_view = app::View::Loading;
+                loading::start_refresh_thread(app, refresh_tx);
+            }
+            Ok(())
+        }
         app::View::Diff => handle_diff_input(app, code),
         app::View::Help => handle_help_input(app, code),
         app::View::ConfirmExit => {

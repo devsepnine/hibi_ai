@@ -36,7 +36,7 @@ pub(crate) enum RefreshResult {
     /// Refresh limited to MCP servers. Always shells out to the CLI
     /// (`mcp list`) and is the slow path — only run when the user
     /// actually installed/removed an MCP server.
-    Mcp(Vec<mcp::McpServer>),
+    Mcp(Vec<mcp::McpServer>, Option<String>),
     /// Refresh limited to plugins (filesystem only).
     Plugins(Vec<plugin::Plugin>),
 }
@@ -70,13 +70,14 @@ impl RefreshScope {
 /// (filesystem-only). Now we look at `app.tab` to pick the single scan
 /// that's actually relevant, dropping non-MCP refresh latency from
 /// "several seconds" to "tens of milliseconds".
-pub(super) fn start_refresh_thread(app: &mut App, refresh_tx: &Sender<Result<RefreshResult>>) {
+pub(crate) fn start_refresh_thread(app: &mut App, refresh_tx: &Sender<Result<RefreshResult>>) {
     app.refreshing = true;
 
     let tx_clone = refresh_tx.clone();
     let sources = app.sources.clone();
     let dest_dir = app.dest_dir.clone();
     let target_cli = app.target_cli.unwrap_or(TargetCli::Claude);
+    let project = app.local_mcp_project().map(std::path::PathBuf::from);
     let scope = RefreshScope::for_tab(app.tab);
 
     thread::spawn(move || {
@@ -95,8 +96,10 @@ pub(super) fn start_refresh_thread(app: &mut App, refresh_tx: &Sender<Result<Ref
                     }
                 })
             }
-            RefreshScope::Mcp => fs::scanner::scan_all_mcp_sources(&sources, target_cli)
-                .map(|(servers, _warning)| RefreshResult::Mcp(servers)),
+            RefreshScope::Mcp => {
+                fs::scanner::scan_all_mcp_sources(&sources, target_cli, project.as_deref())
+                    .map(|(servers, warning)| RefreshResult::Mcp(servers, warning))
+            }
             RefreshScope::Plugins => {
                 fs::scanner::scan_all_plugin_sources(&sources).map(RefreshResult::Plugins)
             }

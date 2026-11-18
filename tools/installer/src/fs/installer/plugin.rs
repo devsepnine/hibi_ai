@@ -2,18 +2,10 @@ use anyhow::Result;
 use std::sync::mpsc::Receiver;
 
 use super::mcp::ensure_marketplace_added;
-use super::process::{ProcessConfig, run_cleanup_command, spawn_cancelable_process};
+use super::process::{ProcessConfig, spawn_cancelable_process};
 use crate::fs::create_cli_command;
 use crate::plugin::Plugin;
 use crate::target::TargetCli;
-
-/// Cleanup helper: try to remove plugin without blocking
-/// Returns true if cleanup succeeded, false otherwise
-fn cleanup_plugin_installation(plugin: &Plugin) -> bool {
-    let mut command = create_cli_command(TargetCli::Claude);
-    command.args(["plugin", "uninstall", &plugin.def.name]);
-    run_cleanup_command(&mut command)
-}
 
 pub fn install_plugin(plugin: &Plugin, timeout_secs: u64, cancel_rx: &Receiver<()>) -> Result<()> {
     ensure_marketplace_added(
@@ -23,11 +15,9 @@ pub fn install_plugin(plugin: &Plugin, timeout_secs: u64, cancel_rx: &Receiver<(
         cancel_rx,
     )?;
 
-    let plugin_ref = format!("{}@{}", plugin.def.name, plugin.def.marketplace);
     let mut command = create_cli_command(TargetCli::Claude);
-    command.args(["plugin", "install", &plugin_ref]);
+    command.args(["plugin", "install", &plugin.def.id()]);
 
-    let plugin_clone = plugin.clone();
     spawn_cancelable_process(
         &mut command,
         ProcessConfig {
@@ -35,14 +25,13 @@ pub fn install_plugin(plugin: &Plugin, timeout_secs: u64, cancel_rx: &Receiver<(
             cancel_rx,
             item_name: &plugin.def.name,
             action: "install plugin",
-            cleanup: Some(Box::new(move || cleanup_plugin_installation(&plugin_clone))),
         },
     )
 }
 
 pub fn remove_plugin(plugin: &Plugin, timeout_secs: u64, cancel_rx: &Receiver<()>) -> Result<()> {
     let mut command = create_cli_command(TargetCli::Claude);
-    command.args(["plugin", "uninstall", &plugin.def.name]);
+    command.args(["plugin", "uninstall", &plugin.def.id()]);
 
     spawn_cancelable_process(
         &mut command,
@@ -51,7 +40,6 @@ pub fn remove_plugin(plugin: &Plugin, timeout_secs: u64, cancel_rx: &Receiver<()
             cancel_rx,
             item_name: &plugin.def.name,
             action: "remove plugin",
-            cleanup: None,
         },
     )
 }

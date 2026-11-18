@@ -246,6 +246,9 @@ impl App {
     pub fn select_cli(&mut self, cli: TargetCli) -> Result<()> {
         self.target_cli = Some(cli);
         self.dest_dir = cli.get_dest_dir()?;
+        if cli == TargetCli::Codex {
+            self.mcp_scope = McpScope::User;
+        }
 
         // Set available tabs based on CLI
         self.available_tabs = Tab::for_cli(cli);

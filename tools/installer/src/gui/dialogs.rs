@@ -41,11 +41,14 @@ pub fn view(app: &App, follow_log: bool) -> Element<'_, Message> {
             form(
                 "Configure your MCP server",
                 &step,
-                "Enter the required value to continue. It is hidden while you type.",
+                app.current_setup_input().map_or(
+                    "Enter the required value to continue. It is hidden while you type.",
+                    |setup| setup.hint(),
+                ),
                 app.current_env_var().unwrap_or("Value"),
                 text_input("Enter value", &app.env_input_buffer)
                     .style(styles::input)
-                    .secure(true)
+                    .secure(app.current_setup_input().is_none())
                     .on_input(|value| Message::Action(Action::SetEnvInput(value)))
                     .on_submit(Message::Action(Action::Key(KeyCode::Enter)))
                     .padding(14)
@@ -169,7 +172,7 @@ pub fn close(busy: bool) -> Element<'static, Message> {
             })
             .size(24),
             text(if busy {
-                "Active work will be cancelled. The window closes after cleanup finishes."
+                "The window closes when the active operation stops."
             } else {
                 "Pending selections will be discarded."
             })

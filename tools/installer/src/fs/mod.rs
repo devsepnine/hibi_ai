@@ -7,6 +7,36 @@ use crate::target::TargetCli;
 use anyhow::Result;
 use std::process::{Command, Stdio};
 
+/// Read registrations immediately before a Codex add, which can replace an entire existing entry.
+pub(crate) fn codex_mcp_names() -> Result<Vec<String>> {
+    #[derive(serde::Deserialize)]
+    struct Entry {
+        name: String,
+    }
+    let mut command = create_cli_command(TargetCli::Codex);
+    command.args(["mcp", "list", "--json"]);
+    let stdout = mcp_list_output(&mut command, "codex mcp list --json")?;
+    let entries: Vec<Entry> = serde_json::from_slice(&stdout).map_err(|error| {
+        anyhow::anyhow!(
+            "Invalid Codex MCP list at line {}, column {}. Check `codex mcp list --json`.",
+            error.line(),
+            error.column()
+        )
+    })?;
+    Ok(entries.into_iter().map(|entry| entry.name).collect())
+}
+
+fn mcp_list_output(command: &mut Command, invocation: &str) -> Result<Vec<u8>> {
+    let output = run_with_timeout(command, 30)?;
+    // CLI diagnostics can quote a configuration line containing an authorization header.
+    anyhow::ensure!(
+        output.status.success(),
+        "MCP lookup failed ({}). Run `{invocation}` to inspect the client configuration.",
+        output.status
+    );
+    Ok(output.stdout)
+}
+
 /// Strip `\r` bytes so that CRLF and LF files compare as equal.
 /// This avoids false "Modified" status when the same content is checked out
 /// with different git `autocrlf` settings.
@@ -154,6 +184,17 @@ pub(crate) fn run_with_timeout(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn failed_mcp_inventory_does_not_replay_cli_diagnostics() {
+        let mut cmd = Command::new(std::env::current_exe().unwrap());
+        cmd.arg("--synthetic-private-config-value");
+        let error = mcp_list_output(&mut cmd, "codex mcp list --json")
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("codex mcp list --json"));
+        assert!(!error.contains("synthetic-private-config-value"));
+    }
 
     #[test]
     #[cfg(not(windows))]

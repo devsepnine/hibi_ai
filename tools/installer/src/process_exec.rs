@@ -36,10 +36,7 @@ pub(crate) fn get_item_name(app: &App, idx: usize) -> String {
             .map(|s| s.def.name.clone())
             .unwrap_or_default()
     } else if app.tab == Tab::Plugins {
-        app.plugins
-            .get(idx)
-            .map(|p| p.def.name.clone())
-            .unwrap_or_default()
+        app.plugins.get(idx).map(|p| p.def.id()).unwrap_or_default()
     } else {
         app.components
             .get(idx)
@@ -54,11 +51,7 @@ pub(crate) fn prepare(app: &App, idx: usize) -> Option<ProcessData> {
     if app.tab == Tab::McpServers {
         let server = app.mcp_servers.get(idx)?.clone();
         let env_values = app.mcp_env_values.get(&idx).cloned().unwrap_or_default();
-        let project_path = if app.mcp_scope == mcp::McpScope::Local {
-            Some(app.mcp_project_path.clone())
-        } else {
-            None
-        };
+        let project_path = app.local_mcp_project().map(str::to_owned);
         Some(ProcessData::McpServer {
             server,
             scope: app.mcp_scope,
@@ -95,26 +88,40 @@ pub(crate) fn execute(
             let name = server.def.name.clone();
             let timeout = if is_removing { 30 } else { 120 };
 
-            let result = if is_removing {
-                fs::installer::remove_mcp_server(&server, target_cli, timeout, &cancel_rx)
-            } else {
-                fs::installer::install_mcp_server(
+            if is_removing {
+                let result = fs::installer::remove_mcp_server(
                     &server,
-                    fs::installer::McpInstallConfig {
-                        scope,
-                        project_path: project_path.as_deref(),
-                        env_values: &env_values,
-                        target_cli,
-                        timeout_secs: timeout,
-                        cancel_rx: &cancel_rx,
-                    },
-                )
-            };
-
-            format_result(&name, is_removing, result)
+                    target_cli,
+                    scope,
+                    project_path.as_deref(),
+                    timeout,
+                    &cancel_rx,
+                );
+                return format_result(&name, true, result);
+            }
+            let result = fs::installer::install_mcp_server(
+                &server,
+                fs::installer::McpInstallConfig {
+                    scope,
+                    project_path: project_path.as_deref(),
+                    env_values: &env_values,
+                    target_cli,
+                    timeout_secs: timeout,
+                    cancel_rx: &cancel_rx,
+                },
+            )?;
+            match result {
+                fs::installer::McpRegistration::AlreadyRegistered => {
+                    Ok(format!("[SKIP] {name} is already registered."))
+                }
+                fs::installer::McpRegistration::Registered(hint) => Ok(format!(
+                    "[OK] Registered {name}{}",
+                    hint.map(|s| format!(". {s}")).unwrap_or_default()
+                )),
+            }
         }
         ProcessData::Plugin { plugin } => {
-            let name = plugin.def.name.clone();
+            let name = plugin.def.id();
             let timeout = if is_removing { 30 } else { 60 };
 
             let result = if is_removing {

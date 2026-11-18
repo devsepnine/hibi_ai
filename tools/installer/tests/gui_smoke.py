@@ -50,7 +50,14 @@ class Desktop:
         stub.mkdir(exist_ok=True)
         for name in ("claude", "codex"):
             path = stub / name
-            path.write_text("#!/bin/sh\ncase \"$*\" in\n*--version*) echo gui-smoke-fixture;;\n*list*) echo '';;\n*) echo 'External CLI operations are disabled in this smoke test' >&2; exit 1;;\nesac\n")
+            path.write_text("""#!/bin/sh
+case "$*" in
+    --version) echo gui-smoke-fixture ;;
+    *"list --json") echo '[]' ;;
+    *list*) echo '' ;;
+    *) echo 'External CLI operations are disabled in this smoke test' >&2; exit 1 ;;
+esac
+""")
             path.chmod(0o755)
         env = os.environ.copy()
         env.update(HOME=str(self.home), DISPLAY=self.args.display, WAYLAND_DISPLAY="",
@@ -339,12 +346,12 @@ class Desktop:
         self.key("1")
         for _ in range(9): self.key("Down")
         self.key("2")
-        self.search("FIRECRAWL_API_KEY")
+        self.search("MEMORY_FILE_PATH")
         self.expect("1 result")
-        self.find("firecrawl", (220, 250, 1120, 640))
-        self.click_text("firecrawl", (220, 250, 1120, 640)); self.key("space")
+        self.find("memory", (220, 250, 1120, 640))
+        self.click_text("memory", (220, 250, 1120, 640)); self.key("space")
         self.expect("1 selected")
-        self.search("docs")
+        self.search("framework")
         self.expect("2 results")
         self.expect("0 selected")
         self.key("a")

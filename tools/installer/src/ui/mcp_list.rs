@@ -43,7 +43,9 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
 
             let status_style = match m.status {
                 McpStatus::Installed => Style::default().fg(app.theme.success()),
-                McpStatus::NotInstalled => Style::default().fg(app.theme.text_muted()),
+                McpStatus::Unknown | McpStatus::NotInstalled => {
+                    Style::default().fg(app.theme.text_muted())
+                }
             };
 
             // First line: checkbox, name, status, category, env warning, source tag
@@ -58,7 +60,7 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
                     format!(" [{}]", m.def.category),
                     Style::default().fg(app.theme.accent_primary()),
                 ),
-                if !m.def.env.is_empty() {
+                if m.def.inputs().next().is_some() {
                     Span::styled(" ⚠ env", Style::default().fg(app.theme.warning()))
                 } else {
                     Span::raw("")

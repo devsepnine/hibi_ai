@@ -24,6 +24,12 @@ impl App {
             .get(self.env_input_current)
             .cloned()
             .ok_or_else(|| anyhow::anyhow!("No environment variable is awaiting a value"))?;
+        if let Some(setup) = self.current_setup_input() {
+            if !setup.accepts(&self.env_input_buffer) {
+                self.status_message = Some(setup.hint().into());
+                return Ok(());
+            }
+        }
         let value = self.env_input_buffer.clone();
         self.env_input_values.push((var_name, value));
         self.env_input_buffer.clear();
@@ -50,13 +56,35 @@ impl App {
             .map(|s| s.as_str())
     }
 
+    pub fn current_setup_input(&self) -> Option<&crate::mcp::McpSetup> {
+        let setup = self
+            .mcp_servers
+            .get(self.env_input_server_idx?)?
+            .def
+            .setup
+            .as_ref()?;
+        self.current_env_var()
+            .filter(|&key| setup.input() == Some(key))
+            .map(|_| setup)
+    }
+
     pub fn current_env_server_name(&self) -> Option<&str> {
         self.env_input_server_idx
             .and_then(|idx| self.mcp_servers.get(idx))
             .map(|s| s.def.name.as_str())
     }
 
+    pub(crate) fn local_mcp_project(&self) -> Option<&str> {
+        (self.target_cli == Some(crate::target::TargetCli::Claude)
+            && self.mcp_scope == McpScope::Local)
+            .then_some(self.mcp_project_path.as_str())
+    }
+
     pub fn toggle_mcp_scope(&mut self) {
+        if self.target_cli == Some(crate::target::TargetCli::Codex) {
+            self.status_message = Some("Codex MCP uses user scope.".into());
+            return;
+        }
         self.mcp_scope = self.mcp_scope.toggle();
         if self.mcp_scope == McpScope::Local {
             // Show project path input dialog

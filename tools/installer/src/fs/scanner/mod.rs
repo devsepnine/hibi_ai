@@ -128,15 +128,24 @@ pub fn scan_all_sources(
 pub fn scan_all_mcp_sources(
     sources: &[ResolvedSource],
     target_cli: TargetCli,
+    project: Option<&Path>,
 ) -> Result<(Vec<McpServer>, Option<String>)> {
     let (installed, warning) = match target_cli {
-        TargetCli::Claude => mcp::get_installed_claude_servers(),
-        TargetCli::Codex => mcp::get_installed_codex_servers(),
+        TargetCli::Claude => mcp::get_installed_claude_servers(project),
+        TargetCli::Codex => match crate::fs::codex_mcp_names() {
+            Ok(names) => (names, None),
+            Err(error) => (Vec::new(), Some(format!("Codex MCP scan failed: {error}"))),
+        },
     };
 
     let servers = merge_scanned(
         sources,
-        |source| mcp::scan_with_installed(&source.path, &installed),
+        |source| {
+            mcp::scan_with_installed(
+                &source.path,
+                warning.is_none().then_some(installed.as_slice()),
+            )
+        },
         |s| s.def.name.clone(),
         |s, label| s.source_name = label.to_string(),
     )?;
@@ -146,10 +155,11 @@ pub fn scan_all_mcp_sources(
 
 /// Scan plugins from all sources. Later sources override earlier ones.
 pub fn scan_all_plugin_sources(sources: &[ResolvedSource]) -> Result<Vec<Plugin>> {
+    let installed = plugin::get_installed_plugins();
     merge_scanned(
         sources,
-        |source| plugin::scan_plugins(&source.path),
-        |p| p.def.name.clone(),
+        |source| plugin::scan_plugins(&source.path, installed.as_ref()),
+        |p| p.def.id(),
         |p, label| p.source_name = label.to_string(),
     )
 }

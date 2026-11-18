@@ -14,6 +14,7 @@ pub(crate) fn make_mcp_server() -> McpServer {
             url: None,
             category: "util".to_string(),
             env: Vec::new(),
+            setup: None,
         },
         McpStatus::NotInstalled,
     )

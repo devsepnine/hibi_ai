@@ -62,7 +62,11 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
         Line::from(vec![
             Span::styled("  Value: ", Style::default().fg(app.theme.text_secondary())),
             Span::styled(
-                &app.env_input_buffer,
+                if app.current_setup_input().is_some() {
+                    app.env_input_buffer.clone()
+                } else {
+                    "*".repeat(app.env_input_buffer.chars().count())
+                },
                 Style::default().fg(app.theme.text_primary()),
             ),
             Span::styled(
@@ -73,7 +77,7 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
             ),
         ]),
         Line::from(""),
-        Line::from(""),
+        Line::from(app.current_setup_input().map_or("", |setup| setup.hint())),
         Line::from(vec![Span::styled(
             "  [Enter] Submit  [Esc] Cancel",
             Style::default().fg(app.theme.text_muted()),

@@ -1,133 +1,61 @@
 servers:
-  # Documentation & Research
   - name: context7
-    description: "라이브러리 문서 검색 (Context7)"
-    command: "npx -y @upstash/context7-mcp"
-    category: docs
-
-  - name: cloudflare-docs
-    description: "Cloudflare 문서 검색"
+    description: "라이브러리 버전별 문서 조회. Claude에서는 context7 플러그인과 택일"
     type: http
-    url: "https://docs.mcp.cloudflare.com/mcp"
+    url: "https://mcp.context7.com/mcp"
+    setup:
+      kind: bearer
+      variable: CONTEXT7_API_KEY
+      if_set: true
     category: docs
 
-  # Reasoning & Thinking
   - name: sequential-thinking
-    description: "순차적 사고 (Chain of Thought)"
+    description: "사고 단계를 도구 호출로 기록하는 작업용"
     command: "npx -y @modelcontextprotocol/server-sequential-thinking"
     category: reasoning
 
   - name: memory
-    description: "세션 간 메모리 유지"
+    description: "세션 간 지식 그래프. 보관할 JSONL 파일의 절대 경로 지정"
     command: "npx -y @modelcontextprotocol/server-memory"
+    setup:
+      kind: file_env
+      variable: MEMORY_FILE_PATH
     category: reasoning
 
-  # Framework Support
   - name: next-devtools
-    description: "Next.js 개발 지원"
+    description: "Next.js 16 이상에서 실행 중인 개발 서버 진단"
     command: "npx -y next-devtools-mcp@latest"
     category: framework
 
   - name: sveltejs
-    description: "SvelteKit 개발 지원"
+    description: "Svelte와 SvelteKit 프로젝트의 문서 조회 및 코드 검사"
     command: "npx -y @sveltejs/mcp"
     category: framework
 
-  # UI Components
   - name: shadcn-ui
-    description: "shadcn/ui 컴포넌트"
-    command: "npx shadcn@latest mcp"
+    description: "shadcn/ui 프로젝트의 레지스트리와 컴포넌트 조회"
+    command: "npx -y shadcn@latest mcp"
     category: ui
 
-  - name: magic
-    description: "Magic UI 컴포넌트"
-    command: "npx -y @magicuidesign/mcp@latest"
-    category: ui
-
-  # Automation
   - name: playwright
-    description: "브라우저 자동화 (Playwright)"
+    description: "브라우저 상태를 유지하며 화면 탐색. Claude에서는 playwright 플러그인과 택일"
     command: "npx -y @playwright/mcp@latest"
     category: automation
 
-  - name: firecrawl
-    description: "웹 스크래핑 및 크롤링"
-    command: "npx -y firecrawl-mcp"
-    category: automation
-    env:
-      - FIRECRAWL_API_KEY
-
-  # Productivity
-  - name: atlassian
-    description: "Jira/Confluence 연동"
-    command: "uvx mcp-atlassian"
-    category: productivity
-    env:
-      - CONFLUENCE_URL
-      - CONFLUENCE_USERNAME
-      - CONFLUENCE_API_TOKEN
-      - JIRA_URL
-      - JIRA_USERNAME
-      - JIRA_API_TOKEN
-
-
   - name: atlassian-remote
-    description: "official atlassian-remote"
-    command: "atlassian-remote --transport sse https://mcp.atlassian.com/v1/mcp"
+    description: "Jira와 Confluence Cloud OAuth 연결. Claude에서는 atlassian 플러그인과 택일"
+    type: http
+    url: "https://mcp.atlassian.com/v2/mcp"
     category: productivity
-    env:
-
-  - name: github
-    description: "GitHub 저장소/이슈/PR 관리"
-    command: "npx -y @modelcontextprotocol/server-github"
-    category: productivity
-    env:
-      - GITHUB_PERSONAL_ACCESS_TOKEN
 
   - name: sentry
-    description: "Sentry 에러 모니터링 및 이슈 분석 (OAuth 로그인)"
+    description: "Sentry 장애 이벤트 조사. Claude에서는 sentry 플러그인과 택일"
     type: http
     url: "https://mcp.sentry.dev/mcp"
     category: productivity
 
-  # Database & Backend
-  - name: supabase
-    description: "Supabase 데이터베이스 작업"
-    command: "npx -y @supabase/mcp-server-supabase@latest --project-ref=YOUR_PROJECT_REF"
-    category: database
-
   - name: clickhouse
-    description: "ClickHouse 분석 쿼리"
+    description: "ClickHouse Cloud 서비스에서 MCP를 활성화한 뒤 분석 데이터 조회"
     type: http
     url: "https://mcp.clickhouse.cloud/mcp"
     category: database
-
-  # Deployment & Infrastructure
-  - name: vercel
-    description: "Vercel 배포 및 프로젝트 관리"
-    type: http
-    url: "https://mcp.vercel.com"
-    category: deployment
-
-  - name: railway
-    description: "Railway 배포"
-    command: "npx -y @railway/mcp-server"
-    category: deployment
-
-  - name: cloudflare-workers-builds
-    description: "Cloudflare Workers 빌드"
-    type: http
-    url: "https://builds.mcp.cloudflare.com/mcp"
-    category: deployment
-
-  - name: cloudflare-workers-bindings
-    description: "Cloudflare Workers 바인딩"
-    type: http
-    url: "https://bindings.mcp.cloudflare.com/mcp"
-    category: deployment
-
-  - name: cloudflare-observability
-    description: "Cloudflare 로그/모니터링"
-    type: http
-    url: "https://observability.mcp.cloudflare.com/mcp"
-    category: deployment

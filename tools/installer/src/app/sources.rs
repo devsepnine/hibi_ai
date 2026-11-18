@@ -202,6 +202,7 @@ impl App {
         let source_dir = self.source_dir.clone();
         let dest_dir = self.dest_dir.clone();
         let target_cli = self.target_cli;
+        let project = self.local_mcp_project().map(std::path::PathBuf::from);
         let (result_tx, result_rx) = mpsc::channel::<SyncPayload>();
         let (cancel_tx, cancel_rx) = mpsc::channel::<()>();
         self.source_sync_rx = Some(result_rx);
@@ -216,9 +217,10 @@ impl App {
             let rescan = target_cli.and_then(|cli| {
                 let components =
                     scanner::scan_all_sources(&report.resolved, &dest_dir, cli).ok()?;
-                let mcp_servers = scanner::scan_all_mcp_sources(&report.resolved, cli)
-                    .map(|(servers, _)| servers)
-                    .unwrap_or_default();
+                let mcp_servers =
+                    scanner::scan_all_mcp_sources(&report.resolved, cli, project.as_deref())
+                        .map(|(servers, _)| servers)
+                        .unwrap_or_default();
                 let plugins =
                     scanner::scan_all_plugin_sources(&report.resolved).unwrap_or_default();
                 Some(RescanResult {

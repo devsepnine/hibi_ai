@@ -94,7 +94,7 @@ pub(super) fn progress(app: &App, follow_log: bool) -> Element<'_, Message> {
     let title = if app.current_view == View::Preflighting {
         "Checking requirements"
     } else if app.cancelling {
-        "Cancelling and cleaning up"
+        "Cancelling operation"
     } else if app.refreshing {
         "Refreshing installed state"
     } else if app.processing_complete
