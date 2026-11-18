@@ -1,4 +1,7 @@
+#[macro_use]
+mod locale;
 mod actions;
+use crate::fs::installer::preferences::Language;
 mod activity;
 mod dialogs;
 mod filters;
@@ -16,12 +19,14 @@ mod source_forms;
 mod sources;
 mod styles;
 mod text_input;
+mod updates;
 #[cfg(test)]
 #[path = "visibility/tests.rs"]
 mod visibility_tests;
+mod window_bar;
 
 use crossterm::event::KeyCode;
-use iced::widget::{Space, button, column, container, row, scrollable, svg, text, tooltip};
+use iced::widget::{button, column, container, row, scrollable, svg, text, tooltip};
 use iced::{Element, Fill, Task, Theme};
 
 use crate::app::{App, View};
@@ -33,6 +38,12 @@ use shortcuts::{scroll_after_key, subscription};
 #[derive(Debug, Clone)]
 pub enum Message {
     Action(Action),
+    Update(updates::Event),
+    Window(window_bar::Command),
+    #[cfg(target_os = "windows")]
+    WindowMoved(iced::Point),
+    #[cfg(target_os = "windows")]
+    TouchWindowDrag(iced::Vector),
     Tick,
     Resized(iced::Size),
     FocusSearch,
@@ -42,22 +53,41 @@ pub enum Message {
 }
 
 pub fn run() -> iced::Result {
+    #[cfg(target_os = "macos")]
+    set_dock_icon();
     iced::application(Runtime::new, update, view)
         .default_font(fonts::interface())
         .title("HIBI AI")
         .theme(theme)
         .subscription(subscription)
-        .window(iced::window::Settings {
-            size: iced::Size::new(1120.0, 780.0),
-            min_size: Some(iced::Size::new(760.0, 560.0)),
-            exit_on_close_request: false,
-            ..Default::default()
-        })
+        .window(window_bar::settings())
         .centered()
         .run()
 }
 
+#[cfg(target_os = "macos")]
+fn set_dock_icon() {
+    use objc2_app_kit::{NSApplication, NSImage};
+    use objc2_foundation::{MainThreadMarker, NSData};
+
+    let main = MainThreadMarker::new().expect("GUI startup runs on the main thread");
+    let data = NSData::with_bytes(include_bytes!("../../assets/hibi.png"));
+    let icon = NSImage::initWithData(main.alloc(), &data).expect("valid Hibi application icon");
+    // SAFETY: Both AppKit objects are accessed on the main thread.
+    unsafe { NSApplication::sharedApplication(main).setApplicationIconImage(Some(&icon)) };
+}
+
 fn update(state: &mut Runtime, message: Message) -> Task<Message> {
+    if state.updater.modal() {
+        match &message {
+            Message::Action(Action::Key(KeyCode::Esc) | Action::RequestClose)
+            | Message::SearchEscape => return updates::handle(state, updates::Event::Dismiss),
+            Message::Action(_) | Message::FocusSearch | Message::FocusResults => {
+                return Task::none();
+            }
+            _ => {}
+        }
+    }
     let focus_navigation = shortcuts::navigation_focus(&message);
     let scroll = match &message {
         Message::Action(Action::Key(key)) => Some(*key),
@@ -71,6 +101,16 @@ fn update(state: &mut Runtime, message: Message) -> Task<Message> {
         _ => None,
     };
     match message {
+        Message::Update(event) => return updates::handle(state, event),
+        Message::Window(command) => return command.run(),
+        #[cfg(target_os = "windows")]
+        Message::WindowMoved(point) => state.window_position = Some(point),
+        #[cfg(target_os = "windows")]
+        Message::TouchWindowDrag(delta) => {
+            if let Some(position) = state.window_position {
+                return window_bar::Command::TouchMove(position + delta).run();
+            }
+        }
         Message::Action(action) => state.dispatch(action),
         Message::Tick => state.tick(),
         Message::Resized(size) => state.window_size = size,
@@ -138,37 +178,38 @@ fn theme(state: &Runtime) -> Theme {
 }
 
 fn view(state: &Runtime) -> Element<'_, Message> {
+    let lang = state.language;
     let compact = state.window_size.height < 680.0;
     let padding = if compact { 14.0 } else { 20.0 };
-    let mut page = column![
-        header(state),
-        iced::widget::rule::horizontal(1).style(styles::divider),
-    ]
-    .spacing(if compact { 10 } else { 16 })
-    .padding(padding);
-    if state.close_requested {
-        page = page.push(dialogs::close(state.busy()));
+    let spacing = if compact { 10 } else { 16 };
+    let mut page = column![].spacing(spacing).padding([0, padding as u16]);
+    if state.updater.modal() {
+        page = page.push(updates::dialog(state));
+    } else if state.close_requested {
+        page = page.push(dialogs::close(lang, state.busy()));
     } else if state.remove_requested {
-        page = page.push(dialogs::remove(state.remove_count));
+        page = page.push(dialogs::remove(lang, state.remove_count));
     } else if let Some(app) = &state.app {
         page = page.push(content(
+            lang,
             app,
             compact,
             state.filter_menu_open,
             state.operation_log.following,
         ));
     } else if state.error.is_none() {
-        page = page.push(container(text("Loading sources and configuration…")).center_y(Fill));
+        page = page
+            .push(container(text(lang.text("Loading sources and configuration…"))).center_y(Fill));
     }
     if let Some(error) = &state.error {
         page = page.push(
             container(
                 column![
-                    text(error).style(text::danger),
+                    text(lang.notice(error)).style(text::danger),
                     button(if state.app.is_some() {
-                        "Dismiss"
+                        lang.text("Dismiss")
                     } else {
-                        "Retry"
+                        lang.text("Retry")
                     })
                     .on_press(Message::Action(if state.app.is_some() {
                         Action::DismissError
@@ -182,25 +223,48 @@ fn view(state: &Runtime) -> Element<'_, Message> {
             .style(container::rounded_box),
         );
     }
-    if let Some(message) = state
+    let message = state
         .app
         .as_ref()
         .filter(|app| !(app.current_view == View::Installing && app.processing_complete))
-        .and_then(|app| app.status_message.as_ref())
-    {
-        page = page
-            .push(container(scrollable(text(message).size(11).style(styles::muted))).max_height(30))
-            .padding(iced::Padding::new(padding).bottom(8));
+        .and_then(|app| app.status_message.as_deref());
+    let mut footer = row![].spacing(12).align_y(iced::Center);
+    if let Some(message) = message {
+        footer = footer.push(
+            container(scrollable(
+                text(lang.notice(message)).size(11).style(styles::muted),
+            ))
+            .max_height(30)
+            .width(Fill),
+        );
     }
+    footer = footer.push(
+        iced::widget::pick_list(
+            [Language::English, Language::Korean, Language::Japanese],
+            Some(lang),
+            |language| Message::Action(Action::SetLanguage(language)),
+        )
+        .text_size(12)
+        .padding([3, 8]),
+    );
+    let version = updates::footer(state);
+    let footer = container(footer.push(version))
+        .padding([0, padding as u16])
+        .align_right(Fill)
+        .center_y(window_bar::HEIGHT);
+    let page = column![window_bar::view(state), page.height(Fill), footer].spacing(spacing);
+    #[cfg(not(target_os = "macos"))]
+    let page = window_bar::resizable(page.height(Fill).into());
     // Include the background in damage tracking when presentation buffers are reused.
-    container(page.height(Fill))
+    container(page)
         .width(Fill)
         .height(Fill)
         .style(|theme: &Theme| container::Style::default().background(theme.palette().background))
         .into()
 }
 
-fn header(state: &Runtime) -> Element<'_, Message> {
+fn theme_button(state: &Runtime) -> Element<'static, Message> {
+    let lang = state.language;
     let dark = !matches!(
         state.app.as_ref().map(|app| app.theme.mode()),
         Some(ThemeMode::Latte)
@@ -210,41 +274,8 @@ fn header(state: &Runtime) -> Element<'_, Message> {
     } else {
         br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z" fill="none" stroke="black" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>"#
     };
-    row![
-        container(text("h").size(23))
-            .width(36)
-            .height(36)
-            .center_x(36)
-            .center_y(36)
-            .style(styles::badge),
-        text("hibi").size(20),
-        text("Configuration manager").size(11).style(styles::muted),
-        Space::new().width(Fill),
-        text(if state.operation_active() {
-            "Working…".to_string()
-        } else {
-            crate::fs::VERSION.to_string()
-        })
-        .size(11)
-        .style(styles::muted),
-        header_button(
-            theme_icon,
-            if dark { "Light theme" } else { "Dark theme" },
-            state.app.is_some().then_some(Action::ToggleTheme),
-        ),
-    ]
-    .spacing(12)
-    .align_y(iced::Center)
-    .into()
-}
-
-fn header_button(
-    icon: &'static [u8],
-    label: &'static str,
-    action: Option<Action>,
-) -> Element<'static, Message> {
-    let enabled = action.is_some();
-    let icon = svg(svg::Handle::from_memory(icon))
+    let enabled = state.app.is_some();
+    let icon = svg(svg::Handle::from_memory(theme_icon))
         .width(18)
         .height(18)
         .style(move |theme: &Theme, _| svg::Style {
@@ -261,8 +292,13 @@ fn header_button(
             .width(36)
             .height(36)
             .style(styles::subtle)
-            .on_press_maybe(action.map(Message::Action)),
-        text(label).size(12),
+            .on_press_maybe(enabled.then_some(Message::Action(Action::ToggleTheme))),
+        text(if dark {
+            lang.text("Light theme")
+        } else {
+            lang.text("Dark theme")
+        })
+        .size(12),
         tooltip::Position::Bottom,
     )
     .gap(6)
@@ -271,14 +307,15 @@ fn header_button(
 }
 
 fn content(
+    lang: Language,
     app: &App,
     compact: bool,
     filter_menu_open: bool,
     follow_log: bool,
 ) -> Element<'_, Message> {
     match app.current_view {
-        View::CliSelection => home::view(app),
-        View::List => list::view(app, compact, filter_menu_open),
+        View::CliSelection => home::view(lang, app),
+        View::List => list::view(lang, app, compact, filter_menu_open),
         View::Sources
         | View::SourceAddType
         | View::SourceAddUrl
@@ -287,8 +324,8 @@ fn content(
         | View::SourceAddRoot
         | View::SourceAddMapTo
         | View::SourceConfirmRemove
-        | View::SourceSyncing => sources::view(app),
-        _ => dialogs::view(app, follow_log),
+        | View::SourceSyncing => sources::view(lang, app),
+        _ => dialogs::view(lang, app, follow_log),
     }
 }
 

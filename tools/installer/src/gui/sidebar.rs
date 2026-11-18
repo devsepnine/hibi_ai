@@ -1,3 +1,4 @@
+use super::Language;
 use crossterm::event::KeyCode;
 use iced::widget::{Space, button, column, container, row, rule, scrollable, svg, text};
 use iced::{Element, Fill};
@@ -5,7 +6,7 @@ use iced::{Element, Fill};
 use super::{Message, actions::Action, key_button, styles};
 use crate::app::{App, FocusArea, Tab, TargetCli};
 
-pub fn view(app: &App) -> Element<'_, Message> {
+pub fn view(lang: Language, app: &App) -> Element<'_, Message> {
     let mut navigation = column![].spacing(4);
     for tab in &app.available_tabs {
         let count = count(app, *tab);
@@ -13,7 +14,7 @@ pub fn view(app: &App) -> Element<'_, Message> {
             button(
                 row![
                     category_icon(*tab),
-                    text(tab.display_name()).size(13),
+                    text(lang.text(tab.display_name())).size(13),
                     Space::new().width(Fill),
                     text(count).size(11).style(styles::muted)
                 ]
@@ -32,10 +33,10 @@ pub fn view(app: &App) -> Element<'_, Message> {
     }
     container(
         column![
-            text("Workspace").size(11).style(styles::muted),
-            workspace(app),
+            text(lang.text("Workspace")).size(11).style(styles::muted),
+            workspace(lang, app),
             rule::horizontal(1).style(styles::divider),
-            text("Components")
+            text(lang.text("Components"))
                 .size(11)
                 .style(if app.focus == FocusArea::Tabs {
                     text::primary
@@ -49,14 +50,18 @@ pub fn view(app: &App) -> Element<'_, Message> {
                 ))
                 .height(Fill),
             rule::horizontal(1).style(styles::divider),
-            key_button("Keyboard shortcuts", KeyCode::Char('?'))
+            key_button(lang.text("Keyboard shortcuts"), KeyCode::Char('?'))
                 .style(styles::subtle)
                 .width(Fill),
-            text(format!(
-                "{} source{}",
-                app.sources.len(),
-                if app.sources.len() == 1 { "" } else { "s" },
-            ))
+            text(match lang {
+                Language::English => format!(
+                    "{} source{}",
+                    app.sources.len(),
+                    if app.sources.len() == 1 { "" } else { "s" }
+                ),
+                Language::Korean => format!("소스 {}개", app.sources.len()),
+                Language::Japanese => format!("ソース {} 件", app.sources.len()),
+            })
             .size(11)
             .style(styles::muted),
         ]
@@ -70,12 +75,12 @@ pub fn view(app: &App) -> Element<'_, Message> {
     .into()
 }
 
-fn workspace(app: &App) -> Element<'_, Message> {
+fn workspace(lang: Language, app: &App) -> Element<'_, Message> {
     let environment = app
         .target_cli
         .as_ref()
         .map(|target| target.display_name())
-        .unwrap_or("Workspace");
+        .unwrap_or(lang.text("Workspace"));
     let mark = if app.target_cli == Some(TargetCli::Claude) {
         "C"
     } else {
@@ -91,7 +96,7 @@ fn workspace(app: &App) -> Element<'_, Message> {
                 .style(styles::badge),
             column![
                 text(environment).size(14),
-                text("Switch CLI").size(10).style(styles::muted),
+                text(lang.text("Switch CLI")).size(10).style(styles::muted),
             ]
             .spacing(3)
             .width(Fill),

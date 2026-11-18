@@ -67,6 +67,9 @@ contents:
       mode: 0644
       owner: root
       group: root
+  - src: tools/installer/assets/hibi.png
+    dst: /usr/share/icons/hicolor/512x512/apps/hibi.png
+    file_info: *data_file
   - src: dist/hibi-linux
     dst: /usr/bin/hibi
     packager: deb

@@ -1,3 +1,4 @@
+use super::Language;
 use crossterm::event::KeyCode;
 use iced::widget::{
     Space, button, column, container, row, rule, scrollable, text, text_input, tooltip,
@@ -7,7 +8,12 @@ use iced::{Element, Fill};
 use super::{Message, actions::Action, filters, key_button, rows, sidebar, styles};
 use crate::app::{App, FocusArea, Tab};
 
-pub fn view(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Message> {
+pub fn view(
+    lang: Language,
+    app: &App,
+    compact: bool,
+    filter_menu_open: bool,
+) -> Element<'_, Message> {
     let (selected, eligible, total) = selection_summary(app);
     let selected_folders = app.selected_folders().len();
     let expand = app.get_tree_view().is_some_and(|tree| {
@@ -16,28 +22,22 @@ pub fn view(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Mes
             .any(|node| node.is_folder() && !node.is_expanded())
     });
     let mut heading =
-        column![text(app.tab.display_name()).size(if compact { 22 } else { 24 })].spacing(5);
+        column![text(lang.text(app.tab.display_name())).size(if compact { 22 } else { 24 })]
+            .spacing(5);
     if !compact {
-        heading = heading.push(text(description(app.tab)).size(12).style(styles::muted));
+        heading = heading.push(
+            text(lang.text(description(app.tab)))
+                .size(12)
+                .style(styles::muted),
+        );
     }
     let mut main = column![
         row![
             heading,
             Space::new().width(Fill),
-            container(
-                text(format!(
-                    "{total} {}",
-                    match (app.search_query.trim().is_empty(), total) {
-                        (true, 1) => "item",
-                        (true, _) => "items",
-                        (false, 1) => "result",
-                        (false, _) => "results",
-                    }
-                ))
-                .size(12)
-            )
-            .padding([5, 9])
-            .style(styles::badge),
+            container(text(lang.result_count(total, !app.search_query.trim().is_empty())).size(12))
+                .padding([5, 9])
+                .style(styles::badge),
         ]
         .align_y(iced::Center),
     ]
@@ -45,49 +45,75 @@ pub fn view(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Mes
     if app.tab.to_component_type().is_some() {
         main = main
             .push(
-                row![search(app), filters::view(app, filter_menu_open)]
-                    .spacing(8)
-                    .align_y(iced::Top),
+                row![
+                    search(lang, app),
+                    filters::view(lang, app, filter_menu_open)
+                ]
+                .spacing(8)
+                .align_y(iced::Top),
             )
             .push(
                 row![
                     key_button(
-                        if expand { "Expand all" } else { "Collapse all" },
+                        if expand {
+                            lang.text("Expand all")
+                        } else {
+                            lang.text("Collapse all")
+                        },
                         KeyCode::Char('E')
                     )
                     .style(styles::secondary),
-                    button(text(format!("Hide selected · {selected_folders}")).size(12))
-                        .padding([7, 10])
-                        .style(styles::secondary)
-                        .on_press_maybe(
-                            (selected_folders > 0)
-                                .then_some(Message::Action(Action::HideSelectedFolders))
-                        ),
-                    button(text(format!("Unhide selected · {selected_folders}")).size(12))
-                        .padding([7, 10])
-                        .style(styles::secondary)
-                        .on_press_maybe(
-                            (selected_folders > 0)
-                                .then_some(Message::Action(Action::UnhideSelectedFolders))
-                        ),
+                    button(
+                        text(localized_format!(
+                            lang,
+                            "Hide selected · {selected_folders}",
+                            "선택한 폴더 숨기기 · {selected_folders}",
+                            "選択したフォルダーを隠す · {selected_folders}"
+                        ))
+                        .size(12)
+                    )
+                    .padding([7, 10])
+                    .style(styles::secondary)
+                    .on_press_maybe(
+                        (selected_folders > 0)
+                            .then_some(Message::Action(Action::HideSelectedFolders))
+                    ),
+                    button(
+                        text(localized_format!(
+                            lang,
+                            "Unhide selected · {selected_folders}",
+                            "선택한 폴더 표시 · {selected_folders}",
+                            "選択したフォルダーを表示 · {selected_folders}"
+                        ))
+                        .size(12)
+                    )
+                    .padding([7, 10])
+                    .style(styles::secondary)
+                    .on_press_maybe(
+                        (selected_folders > 0)
+                            .then_some(Message::Action(Action::UnhideSelectedFolders))
+                    ),
                 ]
                 .spacing(6)
                 .wrap(),
             );
     } else {
-        main = main.push(search(app));
+        main = main.push(search(lang, app));
     }
     if app.tab == Tab::McpServers {
         main = main.push(
             container(
                 row![
                     column![
-                        text(format!(
+                        text(localized_format!(
+                            lang,
                             "Installation scope: {}",
+                            "설치 범위: {}",
+                            "インストール範囲: {}",
                             if app.target_cli == Some(crate::app::TargetCli::Codex) {
-                                "user"
+                                lang.text("user")
                             } else {
-                                app.mcp_scope.display()
+                                lang.text(app.mcp_scope.display())
                             }
                         ))
                         .size(13),
@@ -95,7 +121,7 @@ pub fn view(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Mes
                     ]
                     .spacing(3),
                     Space::new().width(Fill),
-                    key_button("Change scope", KeyCode::Char('o'))
+                    key_button(lang.text("Change scope"), KeyCode::Char('o'))
                         .style(styles::subtle)
                         .on_press_maybe(
                             (app.target_cli != Some(crate::app::TargetCli::Codex))
@@ -116,11 +142,17 @@ pub fn view(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Mes
         };
         main = main.push(
             row![
-                text(format!("Default: {}", default.unwrap_or("Not set")))
-                    .size(12)
-                    .style(styles::muted),
-                key_button("Set default", KeyCode::Char('s')).style(styles::subtle),
-                key_button("Clear default", KeyCode::Char('u')).style(styles::subtle),
+                text(localized_format!(
+                    lang,
+                    "Default: {}",
+                    "기본값: {}",
+                    "既定値: {}",
+                    default.unwrap_or(lang.text("Not set"))
+                ))
+                .size(12)
+                .style(styles::muted),
+                key_button(lang.text("Set default"), KeyCode::Char('s')).style(styles::subtle),
+                key_button(lang.text("Clear default"), KeyCode::Char('u')).style(styles::subtle),
             ]
             .spacing(8)
             .wrap(),
@@ -128,7 +160,7 @@ pub fn view(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Mes
     }
     let table = column![
         row![
-            text("Component")
+            text(lang.text("Component"))
                 .size(11)
                 .style(if app.focus == FocusArea::Content {
                     text::primary
@@ -136,11 +168,11 @@ pub fn view(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Mes
                     styles::muted
                 }),
             Space::new().width(Fill),
-            text("Status").size(11).style(styles::muted)
+            text(lang.text("Status")).size(11).style(styles::muted)
         ]
         .padding([10, 16]),
         rule::horizontal(1).style(styles::divider),
-        scrollable(rows::items(app))
+        scrollable(rows::items(lang, app))
             .id("component-list")
             .height(Fill),
     ];
@@ -148,29 +180,29 @@ pub fn view(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Mes
     let controls = column![
         rule::horizontal(1).style(styles::divider),
         row![
-            selection_label(app, selected),
+            selection_label(lang, app, selected),
             Space::new().width(Fill),
             key_button(
                 if selected > 0 && selected == total {
-                    "Clear selection"
+                    lang.text("Clear selection")
                 } else {
-                    "Select all"
+                    lang.text("Select all")
                 },
                 KeyCode::Char('a')
             )
             .style(styles::subtle)
             .on_press_maybe((total > 0).then_some(command('a'))),
-            key_button("Diff", KeyCode::Char('d'))
+            key_button(lang.text("Diff"), KeyCode::Char('d'))
                 .style(styles::secondary)
                 .on_press_maybe(
                     app.selected_component_index()
                         .is_some()
                         .then_some(command('d'))
                 ),
-            key_button("Remove", KeyCode::Char('r'))
+            key_button(lang.text("Remove"), KeyCode::Char('r'))
                 .style(styles::danger)
                 .on_press_maybe((selected > 0).then_some(command('r'))),
-            key_button("Install", KeyCode::Char('i'))
+            key_button(lang.text("Install"), KeyCode::Char('i'))
                 .padding([9, 18])
                 .on_press_maybe((eligible > 0).then_some(command('i'))),
         ]
@@ -178,15 +210,15 @@ pub fn view(app: &App, compact: bool, filter_menu_open: bool) -> Element<'_, Mes
         .align_y(iced::Center),
     ]
     .spacing(10);
-    row![sidebar::view(app), main.push(controls).height(Fill)]
+    row![sidebar::view(lang, app), main.push(controls).height(Fill)]
         .spacing(18)
         .height(Fill)
         .into()
 }
 
-fn search(app: &App) -> Element<'_, Message> {
+fn search(lang: Language, app: &App) -> Element<'_, Message> {
     let mut field = row![super::text_input::current_modifiers(
-        text_input("Search this category…", &app.search_query)
+        text_input(lang.text("Search this category…"), &app.search_query)
             .id("component-search")
             .size(13)
             .padding([10, 12])
@@ -198,7 +230,7 @@ fn search(app: &App) -> Element<'_, Message> {
     .align_y(iced::Center);
     if !app.search_query.is_empty() {
         field = field.push(
-            button(text("Clear").size(12))
+            button(text(lang.text("Clear")).size(12))
                 .style(styles::subtle)
                 .on_press(Message::Action(Action::ClearSearch)),
         );
@@ -206,10 +238,18 @@ fn search(app: &App) -> Element<'_, Message> {
     field.width(Fill).into()
 }
 
-fn selection_label(app: &App, selected: usize) -> Element<'_, Message> {
+fn selection_label(lang: Language, app: &App, selected: usize) -> Element<'_, Message> {
     let label = column![
-        text(format!("{selected} selected")).size(13),
-        text("In this view").size(10).style(styles::muted),
+        text(localized_format!(
+            lang,
+            "{selected} selected",
+            "{selected}개 선택됨",
+            "{selected} 件選択中"
+        ))
+        .size(13),
+        text(lang.text("In this view"))
+            .size(10)
+            .style(styles::muted),
     ]
     .spacing(3);
     if let Some(details) = focused_details(app) {

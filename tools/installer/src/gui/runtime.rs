@@ -7,12 +7,16 @@ use crate::app::{App, View};
 use crate::loading::{self, ProcessingChannels};
 
 pub struct Runtime {
+    pub(super) updater: super::updates::State,
+    pub language: super::Language,
     pub app: Option<App>,
     pub error: Option<String>,
     pub close_requested: bool,
     pub remove_requested: bool,
     pub remove_count: usize,
     pub should_close: bool,
+    #[cfg(target_os = "windows")]
+    pub window_position: Option<iced::Point>,
     pub window_size: iced::Size,
     pub filter_menu_open: bool,
     pub(super) operation_log: super::activity::LogScroll,
@@ -27,17 +31,26 @@ impl Runtime {
     pub fn new() -> Self {
         let mut runtime = Self::empty();
         runtime.start_initialization();
+        #[cfg(windows)]
+        if let Ok(detail) = std::env::var("HIBI_UPDATE_FAILURE") {
+            runtime.updater =
+                super::updates::State::Failed("Update failed", detail.chars().take(500).collect());
+        }
         runtime
     }
 
     pub(super) fn empty() -> Self {
         Self {
+            updater: Default::default(),
+            language: super::Language::English,
             app: None,
             error: None,
             close_requested: false,
             remove_requested: false,
             remove_count: 0,
             should_close: false,
+            #[cfg(target_os = "windows")]
+            window_position: None,
             window_size: iced::Size::new(1120.0, 780.0),
             filter_menu_open: false,
             operation_log: Default::default(),
@@ -53,9 +66,15 @@ impl Runtime {
         let (tx, rx) = mpsc::channel();
         self.init_rx = Some(rx);
         self.error = None;
+        let settings = crate::fs::installer::preferences::load();
+        self.language = settings
+            .as_ref()
+            .ok()
+            .and_then(|saved| saved.language)
+            .unwrap_or_else(|| super::Language::preferred(sys_locale::get_locales()));
         thread::spawn(move || {
             let result = App::new().map(|mut app| {
-                super::preferences::restore(&mut app);
+                super::preferences::restore(&mut app, settings);
                 app
             });
             let _ = tx.send(result);
@@ -77,9 +96,13 @@ impl Runtime {
     }
 
     pub fn tick(&mut self) {
+        if matches!(self.updater,super::updates::State::Current(at) if at.elapsed() >= std::time::Duration::from_secs(4))
+        {
+            self.updater = Default::default();
+        }
         self.poll_initialization();
         if let Some(Err(error)) = self.appearance.tick() {
-            self.error = Some(format!("Could not save appearance settings: {error:#}"));
+            self.error = Some(format!("Could not save display settings: {error:#}"));
         }
         let Some(app) = self.app.as_mut() else {
             if self.closing && !self.busy() {

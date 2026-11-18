@@ -1,6 +1,6 @@
 [package]
 name = "hibi_ai"
-version = "1.25.0"
+version = "2.0.0-beta"
 edition = "2024"
 rust-version = "1.89"
 
@@ -10,9 +10,31 @@ path = "src/main.rs"
 
 [features]
 default = ["gui"]
-gui = ["dep:iced"]
+gui = [
+    "dep:base64",
+    "dep:dunce",
+    "dep:flate2",
+    "dep:iced",
+    "dep:libc",
+    "dep:minisign-verify",
+    "dep:objc2-app-kit",
+    "dep:objc2-foundation",
+    "dep:reqwest",
+    "dep:semver",
+    "dep:sys-locale",
+    "dep:tar",
+    "dep:winresource",
+    "dep:zip",
+]
 
 [dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls"], optional = true }
+minisign-verify = { version = "0.2", optional = true }
+semver = { version = "1", optional = true }
+tar = { version = "0.4", optional = true }
+flate2 = { version = "1", optional = true }
+zip = { version = "4.6", default-features = false, features = ["deflate-flate2-zlib-rs"], optional = true }
+sys-locale = { version = "0.3", optional = true }
 iced = { version = "0.14", optional = true, default-features = false, features = ["advanced", "tokio", "tiny-skia", "crisp", "svg", "x11", "wayland"] }
 # TUI
 ratatui = "0.30"
@@ -47,6 +69,20 @@ anyhow = "1.0"
 # Subprocess lifecycle
 wait-timeout = "0.2"
 command-group = "5"
+
+[target.'cfg(windows)'.dependencies]
+base64 = { version = "0.22", optional = true }
+dunce = { version = "1", optional = true }
+
+[target.'cfg(unix)'.dependencies]
+libc = { version = "0.2", optional = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-app-kit = { version = "0.2.2", optional = true, features = ["NSApplication", "NSImage"] }
+objc2-foundation = { version = "0.2.2", optional = true, features = ["NSData", "NSThread"] }
+
+[build-dependencies]
+winresource = { version = "0.1.31", optional = true, default-features = false }
 
 [profile.release]
 opt-level = 3

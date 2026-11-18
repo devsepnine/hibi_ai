@@ -1,3 +1,4 @@
+use super::Language;
 use crossterm::event::KeyCode;
 use iced::widget::{Column, Space, button, column, container, row, scrollable, text, text_input};
 use iced::{Element, Fill};
@@ -10,43 +11,38 @@ use super::{
 };
 use crate::app::{App, View};
 
-pub fn view(app: &App, follow_log: bool) -> Element<'_, Message> {
+pub fn view(lang: Language, app: &App, follow_log: bool) -> Element<'_, Message> {
     match app.current_view {
         View::Loading => card(
             column![
-                text("PREPARING YOUR ENVIRONMENT")
-                    .size(11)
+                text(lang.text("Finding your components")).size(24),
+                text(lang.text("Scanning connected libraries and checking installed configuration."))
                     .style(styles::muted),
-                text("Finding your components").size(24),
-                text("Scanning connected libraries and checking installed configuration.")
-                    .style(styles::muted),
-                text("This may take a moment.")
+                text(lang.text("This may take a moment."))
                     .size(13)
                     .style(styles::muted),
             ]
             .spacing(18),
         ),
-        View::Preflighting | View::Installing => progress(app, follow_log),
-        View::Diff => diff(app),
+        View::Preflighting | View::Installing => progress(lang, app, follow_log),
+        View::Diff => diff(lang, app),
         View::EnvInput => {
-            let server = app.current_env_server_name().unwrap_or("MCP server");
-            let step = format!(
-                "{}  /  VALUE {} OF {}",
-                server,
+            let server = app.current_env_server_name().unwrap_or(lang.text("MCP server"));
+            let label = localized_format!(lang, "{} · {} of {}", "{0} · {2}개 중 {1}번째", "{0} · 全{2}件中{1}件目",
+                app.current_env_var().unwrap_or(lang.text("Value")),
                 app.env_input_current
                     .saturating_add(1)
                     .min(app.env_input_vars.len()),
                 app.env_input_vars.len()
             );
-            form(
-                "Configure your MCP server",
-                &step,
+            form(lang,
+                &localized_format!(lang, "Configure {server}", "{server} 설정", "{server} の設定"),
                 app.current_setup_input().map_or(
-                    "Enter the required value to continue. It is hidden while you type.",
-                    |setup| setup.hint(),
+                    lang.text("Enter the required value to continue. It is hidden while you type."),
+                    |setup| lang.text(setup.hint()),
                 ),
-                app.current_env_var().unwrap_or("Value"),
-                text_input("Enter value", &app.env_input_buffer)
+                &label,
+                text_input(lang.text("Enter value"), &app.env_input_buffer)
                     .style(styles::input)
                     .secure(app.current_setup_input().is_none())
                     .on_input(|value| Message::Action(Action::SetEnvInput(value)))
@@ -56,11 +52,10 @@ pub fn view(app: &App, follow_log: bool) -> Element<'_, Message> {
                     .into(),
             )
         }
-        View::ProjectPath => form(
-            "Choose a project directory",
-            "MCP  /  LOCAL SCOPE",
-            "The MCP server will be available in this project's local configuration.",
-            "Project directory",
+        View::ProjectPath => form(lang,
+            lang.text("Choose a project directory"),
+            lang.text("The MCP server will be available in this project's local configuration."),
+            lang.text("Project directory"),
             text_input("/path/to/project", &app.project_path_buffer)
                 .style(styles::input)
                 .on_input(|value| Message::Action(Action::SetProjectPath(value)))
@@ -69,26 +64,26 @@ pub fn view(app: &App, follow_log: bool) -> Element<'_, Message> {
                 .size(15)
                 .into(),
         ),
-        View::ConfirmExit => confirm(
-            "Leave this environment?",
-            "Your pending selections in every category will be cleared. Installed components stay in place.",
-            "Discard selections",
+        View::ConfirmExit => confirm(lang,
+            lang.text("Leave this environment?"),
+            lang.text("Your pending selections in every category will be cleared. Installed components stay in place."),
+            lang.text("Discard selections"),
         ),
         View::ConfirmHide => {
             let mut description = String::from(
-                "These folders will be hidden from the component list and excluded from install and remove actions. Their files stay in place.\n\n",
+                lang.text("These folders will be hidden from the component list and excluded from install and remove actions. Their files stay in place."),
             );
             if let Some(pending) = &app.hide_confirmation {
+                description.push_str("\n\n");
                 description.push_str(&pending.folders.join("\n"));
-                description.push_str(&format!(
-                    "\n\n{} selected files will be unchecked.",
+                description.push_str(&localized_format!(lang, "\n\n{} selected files will be unchecked.", "\n\n선택한 파일 {}개의 선택을 해제합니다.", "\n\n選択した {} 件のファイルの選択を解除します。",
                     pending.selected_files
                 ));
             }
-            confirm("Hide folders?", &description, "Hide folders")
+            confirm(lang, lang.text("Hide folders?"), &description, lang.text("Hide folders"))
         }
-        View::Help => help(),
-        _ => text("Select an environment to get started.")
+        View::Help => help(lang),
+        _ => text(lang.text("Select an environment to get started."))
             .style(styles::muted)
             .into(),
     }
@@ -118,22 +113,21 @@ pub(super) fn neutral<'a>(label: &'a str, action: Action) -> iced::widget::Butto
 }
 
 fn form<'a>(
+    lang: Language,
     title: &str,
-    step: &str,
     hint: &str,
     label: &str,
     input: Element<'a, Message>,
 ) -> Element<'a, Message> {
     card(
         column![
-            text(step.to_owned()).size(11).style(styles::muted),
             text(title.to_owned()).size(24),
             text(hint.to_owned()).style(styles::muted),
             column![text(label.to_owned()).size(13), input].spacing(8),
             row![
-                neutral("Cancel", Action::Cancel),
+                neutral(lang.text("Cancel"), Action::Cancel),
                 Space::new().width(Fill),
-                key_button("Continue", KeyCode::Enter).padding([10, 20])
+                key_button(lang.text("Continue"), KeyCode::Enter).padding([10, 20])
             ]
             .spacing(12),
         ]
@@ -141,14 +135,18 @@ fn form<'a>(
     )
 }
 
-fn confirm(title: &str, description: &str, label: &str) -> Element<'static, Message> {
+fn confirm(
+    lang: Language,
+    title: &str,
+    description: &str,
+    label: &str,
+) -> Element<'static, Message> {
     card(
         column![
-            text("CONFIRM ACTION").size(11).style(styles::muted),
             text(title.to_owned()).size(24),
             text(description.to_owned()).size(14).style(styles::muted),
             row![
-                neutral("Keep working", Action::Cancel),
+                neutral(lang.text("Keep working"), Action::Cancel),
                 Space::new().width(Fill),
                 button(text(label.to_owned()))
                     .style(styles::primary)
@@ -161,26 +159,25 @@ fn confirm(title: &str, description: &str, label: &str) -> Element<'static, Mess
     )
 }
 
-pub fn close(busy: bool) -> Element<'static, Message> {
+pub fn close(lang: Language, busy: bool) -> Element<'static, Message> {
     card(
         column![
-            text("CLOSE HIBI AI").size(11).style(styles::muted),
             text(if busy {
-                "Stop the current operation?"
+                lang.text("Stop the current operation?")
             } else {
-                "Ready to close?"
+                lang.text("Ready to close?")
             })
             .size(24),
             text(if busy {
-                "The window closes when the active operation stops."
+                lang.text("The window closes when the active operation stops.")
             } else {
-                "Pending selections will be discarded."
+                lang.text("Pending selections will be discarded.")
             })
             .style(styles::muted),
             row![
-                neutral("Keep working", Action::DismissClose),
+                neutral(lang.text("Keep working"), Action::DismissClose),
                 Space::new().width(Fill),
-                button("Close application")
+                button(lang.text("Close application"))
                     .style(styles::destructive)
                     .padding([10, 16])
                     .on_press(Message::Action(Action::ConfirmClose))
@@ -191,17 +188,16 @@ pub fn close(busy: bool) -> Element<'static, Message> {
     )
 }
 
-pub fn remove(count: usize) -> Element<'static, Message> {
+pub fn remove(lang: Language, count: usize) -> Element<'static, Message> {
     card(column![
-        text("REMOVE COMPONENTS").size(11).style(styles::muted),
-        text(format!("Remove {count} selected items?")).size(24),
-        text("This removes the selected installed items in the current category from this environment, including selected external files.").style(styles::muted),
-        text("This action cannot be undone.").size(13).style(text::danger),
-        row![neutral("Cancel", Action::CancelRemove), Space::new().width(Fill), button("Remove items").style(styles::destructive).padding([10,16]).on_press(Message::Action(Action::ConfirmRemove))].spacing(12),
+        text(localized_format!(lang, "Remove {count} selected items?", "선택한 항목 {count}개를 제거할까요?", "選択した {count} 件を削除しますか？")).size(24),
+        text(lang.text("This removes the selected installed items in the current category from this environment, including selected external files.")).style(styles::muted),
+        text(lang.text("This action cannot be undone.")).size(13).style(text::danger),
+        row![neutral(lang.text("Cancel"), Action::CancelRemove), Space::new().width(Fill), button(lang.text("Remove items")).style(styles::destructive).padding([10,16]).on_press(Message::Action(Action::ConfirmRemove))].spacing(12),
     ].spacing(20))
 }
 
-fn help() -> Element<'static, Message> {
+fn help(lang: Language) -> Element<'static, Message> {
     let groups = [
         (
             "Search",
@@ -272,9 +268,10 @@ fn help() -> Element<'static, Message> {
             ][..],
         ),
     ];
+
     let mut contents = Column::new().spacing(24);
     for (heading, shortcuts) in groups {
-        let mut section = column![text(heading).size(16)].spacing(10);
+        let mut section = column![text(lang.text(heading)).size(16)].spacing(10);
         for &(key, description) in shortcuts {
             section = section.push(
                 row![
@@ -282,7 +279,7 @@ fn help() -> Element<'static, Message> {
                         .padding([5, 9])
                         .width(110)
                         .style(styles::surface),
-                    text(description).size(14).width(Fill)
+                    text(lang.text(description)).size(14).width(Fill)
                 ]
                 .spacing(16)
                 .align_y(iced::Center),
@@ -291,8 +288,8 @@ fn help() -> Element<'static, Message> {
         contents = contents.push(section);
     }
     column![
-        row![text("Keyboard shortcuts").size(28), Space::new().width(Fill), neutral("Back", Action::Back)].spacing(12).align_y(iced::Center),
-        text("Click to focus a row. Use its checkbox to select it. Input fields support selection and paste; shortcuts pause while typing.").size(14).style(styles::muted),
+        row![text(lang.text("Keyboard shortcuts")).size(28), Space::new().width(Fill), neutral(lang.text("Back"), Action::Back)].spacing(12).align_y(iced::Center),
+        text(lang.text("Click to focus a row. Use its checkbox to select it. Input fields support selection and paste; shortcuts pause while typing.")).size(14).style(styles::muted),
         container(scrollable(contents).id("help").height(Fill)).padding(24).style(styles::surface).height(Fill),
     ].spacing(18).height(Fill).into()
 }

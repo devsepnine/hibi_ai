@@ -3,6 +3,7 @@ Type=Application
 Name=Hibi AI
 Comment=Manage Claude Code and Codex configurations
 Exec=hibi
+Icon=hibi
 Terminal=false
 Categories=Development;Utility;
 StartupNotify=true

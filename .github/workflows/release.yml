@@ -18,7 +18,7 @@ env:
 
 jobs:
   verify:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.ver.outputs.version }}
     steps:
@@ -32,7 +32,7 @@ jobs:
           sudo apt-get install -y \
             libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libwayland-dev \
             libx11-dev libxcursor-dev libxi-dev libxrandr-dev pkg-config \
-            xvfb xauth python3-xlib python3-pil tesseract-ocr tesseract-ocr-eng fonts-dejavu-core
+            minisign xvfb xauth x11-utils python3-xlib python3-pil tesseract-ocr tesseract-ocr-eng fonts-dejavu-core
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: tools/installer
@@ -64,6 +64,9 @@ jobs:
             echo "::error::Release version ($VERSION) does not match tools/installer/Cargo.toml version ($CARGO_VERSION). Bump it (and run cargo update -w) first."
             exit 1
           fi
+          test "$(git rev-parse "refs/tags/v${VERSION}^{commit}")" = "$(git rev-parse HEAD)" || {
+            echo "::error::Select the existing release tag at the build commit"; exit 1;
+          }
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Check prose, architecture rules, formatting, and tests
@@ -74,6 +77,8 @@ jobs:
           cargo test --locked --manifest-path tools/installer/Cargo.toml
           cargo test --locked --manifest-path tools/installer/Cargo.toml --no-default-features
 
+      - name: Exercise signed update and rollback with two native builds
+        run: xvfb-run -a python3 tools/installer/tests/update_smoke.py
       - name: Exercise desktop GUI with isolated configuration
         run: |
           cargo build --locked --manifest-path tools/installer/Cargo.toml
@@ -115,6 +120,9 @@ jobs:
         with:
           workspaces: tools/installer
           key: ${{ matrix.platform }}
+      - name: Exercise native Windows update and rollback
+        if: runner.os == 'Windows'
+        run: cargo test --locked --manifest-path tools/installer/Cargo.toml fs::update
       - name: Build native desktop installer
         shell: bash
         run: bash tools/installer/build.sh "${{ matrix.platform }}"
@@ -143,7 +151,7 @@ jobs:
 
   release:
     needs: [verify, build, build-alpine]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
@@ -163,12 +171,31 @@ jobs:
         run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.49.0
       - name: Package release archives
         run: bash package.sh
+      - name: Install release signing tool
+        run: sudo apt-get update && sudo apt-get install -y minisign
+      - name: Sign and verify checksums
+        env:
+          HIBI_UPDATE_SECRET_KEY: ${{ secrets.HIBI_UPDATE_SECRET_KEY }}
+          VERSION: ${{ needs.verify.outputs.version }}
+        run: |
+          set -eu
+          umask 077
+          key="$(mktemp)"
+          trap 'rm -f "$key"' EXIT
+          test -n "$HIBI_UPDATE_SECRET_KEY"
+          printf '%s\n' "$HIBI_UPDATE_SECRET_KEY" > "$key"
+          unset HIBI_UPDATE_SECRET_KEY
+          sums="release/v${VERSION}/checksums.txt"
+          minisign -Sm "$sums" -s "$key" < /dev/null
+          minisign -Vm "$sums" -p tools/installer/assets/update.pub
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           RESOLVED_VERSION: ${{ needs.verify.outputs.version }}
         run: |
           VERSION="$RESOLVED_VERSION"
+          flags=(--verify-tag)
+          if [[ "$VERSION" == *-* ]]; then flags+=(--prerelease --latest=false); fi
           gh release create "v${VERSION}" \
             "release/v${VERSION}"/*.tar.gz \
             "release/v${VERSION}"/*.zip \
@@ -176,5 +203,6 @@ jobs:
             "release/v${VERSION}"/*.rpm \
             "release/v${VERSION}"/*.apk \
             "release/v${VERSION}/checksums.txt" \
-            --title "v${VERSION}" \
+            "release/v${VERSION}/checksums.txt.minisig" \
+            "${flags[@]}" --title "v${VERSION}" \
             --generate-notes

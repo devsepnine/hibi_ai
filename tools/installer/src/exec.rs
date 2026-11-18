@@ -23,6 +23,17 @@ fn drain(mut pipe: impl Read + Send + 'static) -> Receiver<std::io::Result<Vec<u
     rx
 }
 
+/// A relaunched application or desktop opener must survive the current GUI.
+#[cfg(feature = "gui")]
+pub(crate) fn launch(command: &mut Command) -> Result<()> {
+    command
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()?;
+    Ok(())
+}
+
 /// Run `command` and return its output, or `None` when it outlives
 /// `timeout_secs`, in which case the child is killed rather than orphaned.
 ///

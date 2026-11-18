@@ -13,20 +13,37 @@ pub enum Appearance {
     Light,
 }
 
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Language {
+    #[default]
+    #[serde(rename = "en")]
+    English,
+    #[serde(rename = "ko")]
+    Korean,
+    #[serde(rename = "ja")]
+    Japanese,
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize)]
+pub struct Preferences {
+    pub appearance: Option<Appearance>,
+    pub language: Option<Language>,
+}
+
 fn path() -> Result<PathBuf> {
     Ok(crate::paths::require_home_dir()?.join(".hibi/preferences.json"))
 }
 
-pub fn load() -> Result<Option<Appearance>> {
+pub fn load() -> Result<Preferences> {
     load_from(&path()?)
 }
 
-pub fn save(appearance: Appearance) -> Result<()> {
-    save_to(&path()?, appearance)
+pub fn save(settings: Preferences) -> Result<()> {
+    save_to(&path()?, settings)
 }
 
-pub fn load_from(path: &Path) -> Result<Option<Appearance>> {
-    appearance_from(&read_object(path)?)
+fn load_from(path: &Path) -> Result<Preferences> {
+    serde_json::from_value(Value::Object(read_object(path)?)).context("Invalid display preferences")
 }
 
 fn read_object(path: &Path) -> Result<Map<String, Value>> {
@@ -39,25 +56,43 @@ fn read_object(path: &Path) -> Result<Map<String, Value>> {
         .with_context(|| format!("Invalid preferences at {}", path.display()))
 }
 
-fn appearance_from(object: &Map<String, Value>) -> Result<Option<Appearance>> {
-    object
-        .get("appearance")
-        .map(|value| serde_json::from_value(value.clone()).context("Invalid appearance preference"))
-        .transpose()
-}
-
-pub fn save_to(path: &Path, appearance: Appearance) -> Result<()> {
+fn save_to(path: &Path, settings: Preferences) -> Result<()> {
     let path = match fs::symlink_metadata(path) {
         Ok(metadata) if metadata.file_type().is_symlink() => fs::canonicalize(path)?,
         Ok(_) => path.to_path_buf(),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => path.to_path_buf(),
         Err(error) => return Err(error).context("Cannot inspect preferences"),
     };
-    let mut object = read_object(&path)?;
-    appearance_from(&object)?;
-    object.insert("appearance".into(), serde_json::to_value(appearance)?);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    // Theme and language can be edited by different installer windows.
+    // Lock a stable sibling because saving replaces the preferences file.
+    let lock = OpenOptions::new()
+        .create(true)
+        .truncate(false)
+        .read(true)
+        .write(true)
+        .open(path.with_extension("lock"))
+        .context("Cannot open display preferences lock")?;
+    lock.lock().context("Cannot lock display preferences")?;
+    let result = write_settings(&path, settings);
+    lock.unlock().context("Cannot unlock display preferences")?;
+    result
+}
+
+fn write_settings(path: &Path, settings: Preferences) -> Result<()> {
+    let mut object = read_object(path)?;
+    serde_json::from_value::<Preferences>(Value::Object(object.clone()))
+        .context("Invalid display preferences")?;
+    if let Some(appearance) = settings.appearance {
+        object.insert("appearance".into(), serde_json::to_value(appearance)?);
+    }
+    if let Some(language) = settings.language {
+        object.insert("language".into(), serde_json::to_value(language)?);
+    }
     let bytes = serde_json::to_vec_pretty(&object)?;
-    let permissions = match fs::metadata(&path) {
+    let permissions = match fs::metadata(path) {
         Ok(metadata) => {
             if metadata.permissions().readonly() {
                 anyhow::bail!("Preferences are read only: {}", path.display());
@@ -67,9 +102,6 @@ pub fn save_to(path: &Path, appearance: Appearance) -> Result<()> {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
         Err(error) => return Err(error).context("Cannot inspect preference permissions"),
     };
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)?;
-    }
     static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let serial = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let stamp = std::time::SystemTime::now()
@@ -88,7 +120,7 @@ pub fn save_to(path: &Path, appearance: Appearance) -> Result<()> {
         .with_context(|| format!("Cannot create {}", temporary.display()))?;
     let pending = PendingPreference(temporary);
     write_staged(file, &bytes, permissions)?;
-    fs::rename(&pending.0, &path).with_context(|| format!("Cannot save {}", path.display()))
+    fs::rename(&pending.0, path).with_context(|| format!("Cannot save {}", path.display()))
 }
 
 fn write_staged(mut file: File, bytes: &[u8], permissions: Option<fs::Permissions>) -> Result<()> {
@@ -111,6 +143,13 @@ impl Drop for PendingPreference {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn appearance(value: Appearance) -> Preferences {
+        Preferences {
+            appearance: Some(value),
+            language: None,
+        }
+    }
 
     struct Fixture(PathBuf);
 
@@ -160,7 +199,7 @@ mod tests {
     #[test]
     fn missing_preferences_have_no_override_and_create_no_file() {
         let fixture = Fixture::new();
-        assert_eq!(load_from(&fixture.path()).unwrap(), None);
+        assert_eq!(load_from(&fixture.path()).unwrap().appearance, None);
         assert!(!fixture.path().exists());
         assert_eq!(fs::read_dir(&fixture.0).unwrap().count(), 0);
     }
@@ -169,13 +208,40 @@ mod tests {
     fn each_appearance_roundtrips_and_unknown_fields_survive() {
         let fixture = Fixture::new();
         fs::write(fixture.path(), br#"{"future":{"enabled":true},"count":7}"#).unwrap();
-        for appearance in [Appearance::Dark, Appearance::Light, Appearance::Dark] {
-            save_to(&fixture.path(), appearance).unwrap();
-            assert_eq!(load_from(&fixture.path()).unwrap(), Some(appearance));
+        for mode in [Appearance::Dark, Appearance::Light, Appearance::Dark] {
+            save_to(&fixture.path(), appearance(mode)).unwrap();
+            assert_eq!(load_from(&fixture.path()).unwrap().appearance, Some(mode));
             let value: Value = serde_json::from_slice(&fs::read(fixture.path()).unwrap()).unwrap();
             assert_eq!(value["future"]["enabled"], true);
             assert_eq!(value["count"], 7);
             fixture.assert_no_temporary_file();
+        }
+    }
+
+    #[test]
+    fn language_roundtrips_without_changing_appearance_or_future_fields() {
+        let fixture = Fixture::new();
+        fs::write(fixture.path(), br#"{"appearance":"dark","future":true}"#).unwrap();
+        assert_eq!(load_from(&fixture.path()).unwrap().language, None);
+        for language in [Language::Korean, Language::Japanese, Language::English] {
+            save_to(
+                &fixture.path(),
+                Preferences {
+                    language: Some(language),
+                    appearance: None,
+                },
+            )
+            .unwrap();
+            save_to(&fixture.path(), appearance(Appearance::Light)).unwrap();
+            assert_eq!(
+                load_from(&fixture.path()).unwrap(),
+                Preferences {
+                    language: Some(language),
+                    appearance: Some(Appearance::Light)
+                }
+            );
+            let stored: Value = serde_json::from_slice(&fs::read(fixture.path()).unwrap()).unwrap();
+            assert_eq!(stored["future"], true);
         }
     }
 
@@ -187,10 +253,11 @@ mod tests {
             b"[]",
             br#"{"appearance":"unknown","other":1}"#,
             br#"{"appearance":false}"#,
+            br#"{"language":"unsupported"}"#,
         ] {
             fs::write(fixture.path(), bytes).unwrap();
             assert!(load_from(&fixture.path()).is_err());
-            assert!(save_to(&fixture.path(), Appearance::Dark).is_err());
+            assert!(save_to(&fixture.path(), appearance(Appearance::Dark)).is_err());
             assert_eq!(fs::read(fixture.path()).unwrap(), bytes);
             fixture.assert_no_temporary_file();
         }
@@ -204,9 +271,12 @@ mod tests {
         let mut permissions = fs::metadata(fixture.path()).unwrap().permissions();
         permissions.set_readonly(true);
         fs::set_permissions(fixture.path(), permissions).unwrap();
-        assert!(save_to(&fixture.path(), Appearance::Dark).is_err());
+        assert!(save_to(&fixture.path(), appearance(Appearance::Dark)).is_err());
         assert_eq!(fs::read(fixture.path()).unwrap(), bytes);
-        assert_eq!(load_from(&fixture.path()).unwrap(), Some(Appearance::Light));
+        assert_eq!(
+            load_from(&fixture.path()).unwrap().appearance,
+            Some(Appearance::Light)
+        );
         fixture.assert_no_temporary_file();
     }
 
@@ -216,21 +286,24 @@ mod tests {
         use std::os::unix::fs::PermissionsExt;
         let fixture = Fixture::new();
         let target = fixture.0.join("actual.json");
-        save_to(&target, Appearance::Dark).unwrap();
+        save_to(&target, appearance(Appearance::Dark)).unwrap();
         assert_eq!(
             fs::metadata(&target).unwrap().permissions().mode() & 0o777,
             0o600
         );
         fs::set_permissions(&target, fs::Permissions::from_mode(0o640)).unwrap();
         std::os::unix::fs::symlink(&target, fixture.path()).unwrap();
-        save_to(&fixture.path(), Appearance::Light).unwrap();
+        save_to(&fixture.path(), appearance(Appearance::Light)).unwrap();
         assert!(
             fs::symlink_metadata(fixture.path())
                 .unwrap()
                 .file_type()
                 .is_symlink()
         );
-        assert_eq!(load_from(&target).unwrap(), Some(Appearance::Light));
+        assert_eq!(
+            load_from(&target).unwrap().appearance,
+            Some(Appearance::Light)
+        );
         assert_eq!(
             fs::metadata(target).unwrap().permissions().mode() & 0o777,
             0o640

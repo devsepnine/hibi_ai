@@ -120,7 +120,7 @@ pub(super) fn scroll_after_key(app: &App, key: KeyCode) -> Task<Message> {
 
 pub(super) fn subscription(state: &Runtime) -> Subscription<Message> {
     let events = iced::event::listen_with(|event, status, _| event_message(event, status));
-    if state.busy() {
+    if state.busy() || matches!(state.updater, super::updates::State::Current(_)) {
         Subscription::batch([
             events,
             iced::time::every(Duration::from_millis(50)).map(|_| Message::Tick),
@@ -136,6 +136,17 @@ pub(super) fn event_message(event: iced::Event, status: iced::event::Status) -> 
         iced::Event::Window(iced::window::Event::CloseRequested)
     ) {
         return Some(Message::Action(Action::RequestClose));
+    }
+    #[cfg(target_os = "windows")]
+    if let iced::Event::Window(
+        iced::window::Event::Moved(point)
+        | iced::window::Event::Opened {
+            position: Some(point),
+            ..
+        },
+    ) = &event
+    {
+        return Some(Message::WindowMoved(*point));
     }
     if let iced::Event::Window(iced::window::Event::Resized(size)) = event {
         return Some(Message::Resized(size));

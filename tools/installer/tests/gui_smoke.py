@@ -60,7 +60,7 @@ esac
 """)
             path.chmod(0o755)
         env = os.environ.copy()
-        env.update(HOME=str(self.home), DISPLAY=self.args.display, WAYLAND_DISPLAY="",
+        env.update(LANGUAGE="en", HOME=str(self.home), DISPLAY=self.args.display, WAYLAND_DISPLAY="",
                    XDG_CONFIG_HOME=str(self.home / ".config"), XDG_CACHE_HOME=str(self.home / ".cache"),
                    XDG_DATA_HOME=str(self.home / ".local/share"), PATH=f"{stub}:/usr/bin:/bin")
         self.log = (self.artifacts / "application.log").open("a")
@@ -200,8 +200,7 @@ esac
 
     def click_theme(self):
         geometry = self.window.get_geometry()
-        padding = 14 if geometry.height < 680 else 20
-        self.click(geometry.width - padding - 18, padding + 18)
+        self.click(geometry.width - 4 - 8 - 18, 4 + 18)
 
     def expect_theme(self, theme):
         deadline = time.monotonic() + 8

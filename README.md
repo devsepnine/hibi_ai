@@ -49,6 +49,14 @@ scoop bucket add hibi-ai https://github.com/devsepnine/scoop-bucket
 scoop install hibi-ai
 ```
 
+### GUI 업데이트
+
+v2에서는 오른쪽 아래 버전을 눌러 업데이트를 확인합니다. 새 버전을 선택하면 설치 후 앱이 다시 열립니다. 베타는 다음 베타와 정식판을, 정식판은 다음 정식판을 확인합니다.
+
+첫 베타는 GitHub Releases에서 운영체제에 맞는 아카이브를 받아 폴더째 풀고 그 안의 `hibi` 또는 `hibi.exe`를 실행하세요. 직접 업데이트를 쓰려면 압축을 푼 폴더 이름과 내용을 유지하세요. Linux에서 사용자 전용 경로에 `install.sh`로 설치한 경우에도 직접 업데이트할 수 있습니다. 앱은 서명을 검증하고 실행 파일과 번들 설정을 함께 교체합니다. 이전 번들은 설치 폴더 옆의 `.hibi-update-*` 폴더에 보관합니다.
+
+Homebrew와 Scoop으로 설치한 정식판은 GUI에서 해당 패키지 관리자로 업데이트합니다. Linux 시스템 패키지를 설치한 경우에는 릴리스 페이지에서 새 패키지를 선택합니다.
+
 ### Manual Installation
 
 1. Download the latest release for your platform from [Releases](https://github.com/devsepnine/hibi_ai/releases/latest)

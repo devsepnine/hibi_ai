@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="1.25.0"
+VERSION="2.0.0-beta"
 NAME="hibi-ai"
 
 echo "📦 Packaging ${NAME} v${VERSION}..."
@@ -24,33 +24,17 @@ for binary in hibi hibi.exe hibi-linux hibi-linux-musl; do
     fi
 done
 
-# Copy statusline from src
-echo "  - Copying statusline..."
-rm -rf "$DIST_DIR/statusline"
-cp -r src/statusline "$DIST_DIR/"
-
-# Copy hooks from src
-echo "  - Copying hooks..."
-rm -rf "$DIST_DIR/hooks"
-cp -r src/hooks "$DIST_DIR/"
-
-# Copy config directories from src
-echo "  - Copying configuration directories..."
-for dir in agents commands skills mcps plugins output-styles; do
-    if [ -d "src/$dir" ]; then
-        # cp -r overwrites but never deletes, so a file dropped from src/ would
-        # linger in an existing dist/ and ship in the release. statusline and
-        # hooks above already clear their target for the same reason.
-        rm -rf "$DIST_DIR/$dir"
-        cp -r "src/$dir" "$DIST_DIR/"
-    fi
+bundle_dirs=(agents commands skills hooks mcps plugins output-styles statusline)
+bundle_files=(settings.json CLAUDE.md AGENTS.md)
+echo "  - Copying bundled configuration..."
+for dir in "${bundle_dirs[@]}"; do
+    # Start with an empty destination so deleted components stay out of the release.
+    rm -rf "$DIST_DIR/$dir"
+    cp -R "src/$dir" "$DIST_DIR/"
 done
-
-# Copy config files from src
-echo "  - Copying configuration files..."
-cp src/settings.json "$DIST_DIR/" 2>/dev/null || true
-cp src/CLAUDE.md "$DIST_DIR/" 2>/dev/null || true
-cp src/AGENTS.md "$DIST_DIR/" 2>/dev/null || true
+for file in "${bundle_files[@]}"; do
+    cp "src/$file" "$DIST_DIR/"
+done
 
 # Strip Korean reference files (-ko) from the bundle. The installer scanner
 # skips them at install time (stem ends with "-ko"), so they are never
@@ -76,6 +60,7 @@ for PLATFORM in "macos" "linux" "linux-musl" "windows"; do
     PKG_DIR="${RELEASE_DIR}/${PKG_NAME}"
 
     mkdir -p "$PKG_DIR"
+    echo "$VERSION" > "$PKG_DIR/.hibi-bundle"
 
     # Copy binary
     if [ "$PLATFORM" = "windows" ]; then
@@ -88,17 +73,9 @@ for PLATFORM in "macos" "linux" "linux-musl" "windows"; do
         cp "$DIST_DIR/hibi-linux" "$PKG_DIR/hibi"
     fi
 
-    # Copy all config directories from dist
-    for dir in agents commands skills hooks mcps plugins output-styles statusline; do
-        if [ -d "$DIST_DIR/$dir" ]; then
-            cp -r "$DIST_DIR/$dir" "$PKG_DIR/"
-        fi
+    for item in "${bundle_dirs[@]}" "${bundle_files[@]}"; do
+        cp -R "$DIST_DIR/$item" "$PKG_DIR/"
     done
-
-    # Copy config files from dist
-    cp "$DIST_DIR/settings.json" "$PKG_DIR/" 2>/dev/null || true
-    cp "$DIST_DIR/CLAUDE.md" "$PKG_DIR/" 2>/dev/null || true
-    cp "$DIST_DIR/AGENTS.md" "$PKG_DIR/" 2>/dev/null || true
 
     # Create archive
     cd "$PROJECT_ROOT/$RELEASE_DIR"
@@ -122,7 +99,12 @@ if command -v nfpm >/dev/null 2>&1; then
     echo ""
     echo "📦 Creating Linux packages (deb/rpm/apk)..."
     for PACKAGER in deb rpm apk; do
-        VERSION="$VERSION" nfpm pkg --config nfpm.yaml --packager "$PACKAGER" --target "$RELEASE_DIR/"
+        package_version="$VERSION"
+        if [[ "$PACKAGER" == apk && "$VERSION" =~ ^(.+)-beta\.([0-9]+)$ ]]; then
+            # Alpine numbers its beta suffix directly, for example 2.0.0_beta1.
+            package_version="${BASH_REMATCH[1]}-beta${BASH_REMATCH[2]}"
+        fi
+        VERSION="$package_version" nfpm pkg --config nfpm.yaml --packager "$PACKAGER" --target "$RELEASE_DIR/"
         echo "✅ Created: ${PACKAGER} package"
     done
 else

@@ -13,6 +13,9 @@ pub(super) fn interface() -> Font {
                 "Malgun Gothic",
                 "Apple SD Gothic Neo",
                 "NanumGothic",
+                "Noto Sans CJK JP",
+                "Yu Gothic UI",
+                "Hiragino Sans",
             ],
             Font::DEFAULT,
         )

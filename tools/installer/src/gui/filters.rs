@@ -1,3 +1,4 @@
+use super::Language;
 use iced::widget::{
     Column, Space, button, checkbox, column, container, radio, row, rule, scrollable, svg, text,
 };
@@ -7,7 +8,7 @@ use super::{Message, actions::Action, styles};
 use crate::app::{App, ComponentFilter, HiddenVisibility};
 mod dropdown;
 
-pub(super) fn view(app: &App, open: bool) -> Element<'_, Message> {
+pub(super) fn view(lang: Language, app: &App, open: bool) -> Element<'_, Message> {
     let active = [
         ComponentFilter::Modified,
         ComponentFilter::External,
@@ -18,9 +19,14 @@ pub(super) fn view(app: &App, open: bool) -> Element<'_, Message> {
     .count()
         + usize::from(app.hidden_visibility.shows_hidden());
     let label = if active == 0 {
-        "Filters · Default".into()
+        lang.text("Filters · Default").into()
     } else {
-        format!("Filters · {active}")
+        localized_format!(
+            lang,
+            "Filters · {active}",
+            "필터 · {active}",
+            "フィルター · {active}"
+        )
     };
     let anchor = button(
         row![text(label).size(12), Space::new().width(Fill), caret(open)]
@@ -38,10 +44,10 @@ pub(super) fn view(app: &App, open: bool) -> Element<'_, Message> {
     .on_press(Message::Action(Action::ToggleFilterMenu));
     let menu = container(scrollable(
         column![
-            text("Status").size(11).style(styles::muted),
-            status_choices(app),
+            text(lang.text("Status")).size(11).style(styles::muted),
+            status_choices(lang, app),
             rule::horizontal(1).style(styles::divider),
-            visibility_choices(app),
+            visibility_choices(lang, app),
         ]
         .spacing(14),
     ))
@@ -66,7 +72,7 @@ fn caret(open: bool) -> iced::widget::Svg<'static> {
         })
 }
 
-fn status_choices(app: &App) -> Column<'_, Message> {
+fn status_choices(lang: Language, app: &App) -> Column<'_, Message> {
     [
         ComponentFilter::All,
         ComponentFilter::Modified,
@@ -79,9 +85,9 @@ fn status_choices(app: &App) -> Column<'_, Message> {
             checkbox(app.component_filter.contains(filter))
                 .style(styles::check)
                 .label(if filter == ComponentFilter::All {
-                    "Default"
+                    lang.text("Default")
                 } else {
-                    filter.display()
+                    lang.text(filter.display())
                 })
                 .size(14)
                 .text_size(13)
@@ -90,26 +96,36 @@ fn status_choices(app: &App) -> Column<'_, Message> {
     })
 }
 
-fn visibility_choices(app: &App) -> Column<'_, Message> {
+fn visibility_choices(lang: Language, app: &App) -> Column<'_, Message> {
     [
         (
             HiddenVisibility::Exclude,
-            "Visible only",
+            lang.text("Visible only"),
             "visibility-visible",
         ),
         (
             HiddenVisibility::Include,
-            "Include hidden",
+            lang.text("Include hidden"),
             "visibility-include",
         ),
-        (HiddenVisibility::Only, "Hidden only", "visibility-only"),
+        (
+            HiddenVisibility::Only,
+            lang.text("Hidden only"),
+            "visibility-only",
+        ),
     ]
     .into_iter()
     .fold(
         column![
-            text(format!("Visibility · {} hidden", app.hidden_folder_count()))
-                .size(10)
-                .style(styles::muted)
+            text(localized_format!(
+                lang,
+                "Visibility · {} hidden",
+                "표시 범위 · 숨긴 폴더 {}개",
+                "表示範囲 · 非表示 {} 件",
+                app.hidden_folder_count()
+            ))
+            .size(10)
+            .style(styles::muted)
         ]
         .spacing(6)
         .width(Fill),

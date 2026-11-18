@@ -3,21 +3,29 @@ use std::sync::mpsc::{self, Receiver, TryRecvError};
 use anyhow::Result;
 
 use crate::app::App;
-use crate::fs::installer::preferences::{self, Appearance};
+use crate::fs::installer::preferences::{self, Appearance, Language, Preferences};
 use crate::theme::ThemeMode;
 
 #[derive(Default)]
 pub(super) struct Writer {
-    pending: Option<Appearance>,
+    pending: Option<Preferences>,
     running: Option<Receiver<Result<()>>>,
 }
 
 impl Writer {
-    pub fn request(&mut self, mode: ThemeMode) {
-        self.pending = Some(match mode {
+    pub fn request_theme(&mut self, mode: ThemeMode) {
+        self.pending
+            .get_or_insert_with(Preferences::default)
+            .appearance = Some(match mode {
             ThemeMode::Mocha => Appearance::Dark,
             ThemeMode::Latte => Appearance::Light,
         });
+    }
+
+    pub fn request_language(&mut self, language: Language) {
+        self.pending
+            .get_or_insert_with(Preferences::default)
+            .language = Some(language);
     }
 
     pub fn busy(&self) -> bool {
@@ -27,12 +35,12 @@ impl Writer {
     pub fn tick(&mut self) -> Option<Result<()>> {
         let result = self.poll();
         if self.running.is_none()
-            && let Some(appearance) = self.pending.take()
+            && let Some(settings) = self.pending.take()
         {
             let (tx, rx) = mpsc::channel();
             self.running = Some(rx);
             std::thread::spawn(move || {
-                let _ = tx.send(preferences::save(appearance));
+                let _ = tx.send(preferences::save(settings));
             });
         }
         result
@@ -44,7 +52,7 @@ impl Writer {
             Ok(result) => result,
             Err(TryRecvError::Empty) => return None,
             Err(TryRecvError::Disconnected) => Err(anyhow::anyhow!(
-                "Appearance settings worker stopped unexpectedly"
+                "Display settings worker stopped unexpectedly"
             )),
         };
         self.running = None;
@@ -52,23 +60,22 @@ impl Writer {
     }
 }
 
-pub(super) fn restore(app: &mut App) {
-    match preferences::load() {
-        Ok(Some(appearance)) => {
-            let dark = appearance == Appearance::Dark;
-            if dark != (app.theme.mode() == ThemeMode::Mocha) {
+pub(super) fn restore(app: &mut App, settings: Result<Preferences>) {
+    match settings {
+        Ok(settings) => {
+            if let Some(appearance) = settings.appearance
+                && (appearance == Appearance::Dark) != (app.theme.mode() == ThemeMode::Mocha)
+            {
                 app.theme.toggle();
             }
         }
-        Ok(None) => {}
         Err(error) => {
-            let warning = format!("Could not load appearance settings: {error:#}");
-            if let Some(message) = app.status_message.as_mut() {
+            let warning = format!("Could not load display settings: {error:#}");
+            let message = app.status_message.get_or_insert_with(String::new);
+            if !message.is_empty() {
                 message.push_str("; ");
-                message.push_str(&warning);
-            } else {
-                app.status_message = Some(warning);
             }
+            message.push_str(&warning);
         }
     }
 }
@@ -84,10 +91,18 @@ mod tests {
             running: Some(rx),
             pending: None,
         };
-        writer.request(ThemeMode::Mocha);
-        writer.request(ThemeMode::Latte);
+        writer.request_language(Language::Japanese);
+        writer.request_theme(ThemeMode::Mocha);
+        writer.request_language(Language::Korean);
+        writer.request_theme(ThemeMode::Latte);
         assert!(writer.tick().is_none());
-        assert_eq!(writer.pending, Some(Appearance::Light));
+        assert_eq!(
+            writer.pending,
+            Some(Preferences {
+                appearance: Some(Appearance::Light),
+                language: Some(Language::Korean)
+            })
+        );
         assert!(writer.busy());
         drop(tx);
     }

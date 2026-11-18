@@ -2,6 +2,8 @@ pub mod diff;
 pub mod installer;
 pub mod manifest;
 pub mod scanner;
+#[cfg(feature = "gui")]
+pub(crate) mod update;
 
 use crate::target::TargetCli;
 use anyhow::Result;

@@ -16,6 +16,7 @@ import select
 import shutil
 import signal
 import struct
+import sys
 import subprocess
 import tempfile
 import termios
@@ -63,8 +64,22 @@ def terminal(binary, cwd, env, quit_at_picker=False):
         fcntl.ioctl(0, termios.TIOCSCTTY, 0)
 
     try:
+        command = [str(binary), "--tui"]
+        if os.uname().sysname == "Darwin":
+            # Darwin revokes the slave PTY when its session leader exits.
+            # Keep the session alive until the child's terminal flags are checked.
+            command = [sys.executable, "-c", """
+import subprocess, sys, termios
+before = termios.tcgetattr(0)
+result = subprocess.run(sys.argv[1:]).returncode
+after = termios.tcgetattr(0)
+# PENDIN is the Darwin kernel's pending input state after cooked mode resumes.
+before[3] &= ~termios.PENDIN
+after[3] &= ~termios.PENDIN
+sys.exit(result if before == after else 90)
+""", *command]
         process = subprocess.Popen(
-            [str(binary), "--tui"], cwd=cwd, env=env,
+            command, cwd=cwd, env=env,
             stdin=slave, stdout=slave, stderr=slave,
             close_fds=True, preexec_fn=establish_terminal,
         )
@@ -102,7 +117,10 @@ def terminal(binary, cwd, env, quit_at_picker=False):
                                  + output.decode(errors="replace")[-1200:])
 
         result = bytes(output)
-        assert termios.tcgetattr(slave) == before, "Terminal input flags were not restored"
+        if os.uname().sysname == "Darwin":
+            assert process.returncode != 90, result.decode(errors="replace")[-1800:]
+        else:
+            assert termios.tcgetattr(slave) == before, "Terminal input flags were not restored"
         assert b"\x1b[?1049h" in result, "Terminal never entered alternate screen"
         assert b"\x1b[?1049l" in result, "Terminal never left alternate screen"
         assert b"\x1b[?25h" in result, "Cursor visibility was not restored"
@@ -117,7 +135,8 @@ def terminal(binary, cwd, env, quit_at_picker=False):
         if process is not None and process.poll() is None:
             os.killpg(process.pid, signal.SIGKILL)
             process.wait(timeout=5)
-        termios.tcsetattr(slave, termios.TCSANOW, before)
+        if os.uname().sysname != "Darwin":
+            termios.tcsetattr(slave, termios.TCSANOW, before)
         os.close(master)
         os.close(slave)
 
@@ -153,7 +172,7 @@ def main():
             if "precedes" in name:
                 assert b"Syncing sources" not in output
             results.append({"test": name, "status": "passed"})
-        if gui_enabled:
+        if gui_enabled and os.uname().sysname == "Linux":
             result = subprocess.run(
                 [str(copied)], cwd=isolated, env=env, stdin=subprocess.DEVNULL,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=15, check=False,

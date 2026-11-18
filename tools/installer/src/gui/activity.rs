@@ -1,3 +1,4 @@
+use super::Language;
 use iced::widget::{Column, Space, column, container, progress_bar, row, scrollable, text};
 use iced::{Element, Fill};
 
@@ -37,11 +38,11 @@ impl LogScroll {
     }
 }
 
-pub(super) fn diff(app: &App) -> Element<'_, Message> {
+pub(super) fn diff(lang: Language, app: &App) -> Element<'_, Message> {
     let lines = app
         .diff_content
         .as_deref()
-        .unwrap_or("No differences available.")
+        .unwrap_or(lang.text("No differences available."))
         .lines()
         .fold(Column::new().spacing(3), |lines, line| {
             let style = if line.starts_with('+') {
@@ -54,15 +55,14 @@ pub(super) fn diff(app: &App) -> Element<'_, Message> {
             lines.push(text(line).font(fonts::monospace()).size(13).style(style))
         });
     column![
-        text("Review changes").size(11).style(styles::muted),
         row![
-            text("Compare configuration").size(24),
+            text(lang.text("Compare configuration")).size(24),
             Space::new().width(Fill),
-            neutral("Back to components", Action::Back)
+            neutral(lang.text("Back to components"), Action::Back)
         ]
         .spacing(12)
         .align_y(iced::Center),
-        text("Source content compared with the installed version.")
+        text(lang.text("Source content compared with the installed version."))
             .size(14)
             .style(styles::muted),
         container(
@@ -83,7 +83,7 @@ pub(super) fn diff(app: &App) -> Element<'_, Message> {
     .into()
 }
 
-pub(super) fn progress(app: &App, follow_log: bool) -> Element<'_, Message> {
+pub(super) fn progress(lang: Language, app: &App, follow_log: bool) -> Element<'_, Message> {
     let total = app.processing_total.unwrap_or(app.processing_queue.len());
     let attempted = app.processing_progress.unwrap_or(0).min(total);
     let failed = app
@@ -92,35 +92,43 @@ pub(super) fn progress(app: &App, follow_log: bool) -> Element<'_, Message> {
         .filter(|line| line.starts_with("[ERR]") || line.starts_with("[ERROR]"))
         .count();
     let title = if app.current_view == View::Preflighting {
-        "Checking requirements"
+        lang.text("Checking requirements")
     } else if app.cancelling {
-        "Cancelling operation"
+        lang.text("Cancelling operation")
     } else if app.refreshing {
-        "Refreshing installed state"
+        lang.text("Refreshing installed state")
     } else if app.processing_complete
         && app
             .processing_log
             .iter()
             .any(|line| line.contains("Cancelled by user"))
     {
-        "Operation cancelled"
+        lang.text("Operation cancelled")
     } else if app.processing_complete && failed > 0 {
-        "Completed with errors"
+        lang.text("Completed with errors")
     } else if app.processing_complete {
-        "Operation complete"
+        lang.text("Operation complete")
     } else if app.is_removing {
-        "Removing components"
+        lang.text("Removing components")
     } else {
-        "Installing components"
+        lang.text("Installing components")
     };
     let subtitle = if app.current_view == View::Preflighting {
-        "Checking that your environment is ready. No components have been changed yet.".to_string()
-    } else if app.processing_complete {
-        app.status_message
-            .clone()
-            .unwrap_or_else(|| format!("{attempted} of {total} items attempted · {failed} errors"))
+        lang.text("Checking that your environment is ready. No components have been changed yet.")
+            .to_string()
+    } else if let Some(message) = app
+        .status_message
+        .as_deref()
+        .filter(|_| app.processing_complete)
+    {
+        lang.notice(message).into_owned()
     } else {
-        format!("{attempted} of {total} items attempted · {failed} errors")
+        localized_format!(
+            lang,
+            "{attempted} of {total} items attempted · {failed} errors",
+            "전체 {total}개 중 {attempted}개 처리 · 오류 {failed}개",
+            "全{total}件中{attempted}件を処理 · エラー{failed}件"
+        )
     };
     let logs = app
         .processing_log
@@ -136,7 +144,6 @@ pub(super) fn progress(app: &App, follow_log: bool) -> Element<'_, Message> {
             column.push(text(line).font(fonts::monospace()).size(12).style(style))
         });
     let mut body = column![
-        text("Activity").size(11).style(styles::muted),
         text(title).size(24),
         text(subtitle).size(14).style(styles::muted),
     ]
@@ -145,20 +152,20 @@ pub(super) fn progress(app: &App, follow_log: bool) -> Element<'_, Message> {
         body = body.push(progress_bar(0.0..=total.max(1) as f32, attempted as f32).girth(5));
     }
     let action_button = if app.processing_complete {
-        neutral("Back to components", Action::Back)
+        neutral(lang.text("Back to components"), Action::Back)
     } else {
-        neutral("Cancel operation", Action::Cancel)
+        neutral(lang.text("Cancel operation"), Action::Cancel)
     };
     body.push(
         container(
             column![
                 row![
-                    text("Operation log").size(16),
+                    text(lang.text("Operation log")).size(16),
                     Space::new().width(Fill),
                     text(if app.processing_complete {
-                        "Finished"
+                        lang.text("Finished")
                     } else {
-                        "Live"
+                        lang.text("Live")
                     })
                     .size(11)
                     .style(styles::muted)
@@ -189,9 +196,9 @@ pub(super) fn progress(app: &App, follow_log: bool) -> Element<'_, Message> {
     .push(
         row![
             text(if app.processing_complete {
-                "Review the log before leaving this screen."
+                lang.text("Review the log before leaving this screen.")
             } else {
-                "Cancelling waits for the current operation to stop safely."
+                lang.text("Cancelling waits for the current operation to stop safely.")
             })
             .size(12)
             .style(styles::muted)
@@ -247,7 +254,7 @@ mod tests {
             app.processing_log = (0..80)
                 .map(|index| format!("[OK] {index} {}", "long path/".repeat(30)))
                 .collect();
-            let tree = Tree::new(progress(&app, true).as_widget());
+            let tree = Tree::new(progress(Language::English, &app, true).as_widget());
             Self {
                 app,
                 scroll: LogScroll::default(),
@@ -257,7 +264,7 @@ mod tests {
         }
 
         fn operate(&mut self, operation: &mut dyn Operation<Message>) {
-            let mut element = progress(&self.app, self.scroll.following);
+            let mut element = progress(Language::English, &self.app, self.scroll.following);
             self.tree.diff(element.as_widget());
             let node = element.as_widget_mut().layout(
                 &mut self.tree,
@@ -280,7 +287,7 @@ mod tests {
 
         fn wheel(&mut self, x: f32, y: f32) {
             let (bounds, _, _) = self.observe();
-            let mut element = progress(&self.app, self.scroll.following);
+            let mut element = progress(Language::English, &self.app, self.scroll.following);
             let node = element.as_widget_mut().layout(
                 &mut self.tree,
                 &self.renderer,

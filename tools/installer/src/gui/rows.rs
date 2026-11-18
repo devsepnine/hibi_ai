@@ -1,3 +1,4 @@
+use super::Language;
 use super::{Message, actions::Action, styles};
 use crate::app::{App, HiddenVisibility, Tab};
 use crate::tree::TreeNode;
@@ -6,12 +7,13 @@ use iced::{Element, Fill};
 
 const ROW_HEIGHT: f32 = 40.0;
 
-pub fn items(app: &App) -> Column<'_, Message> {
+pub fn items(lang: Language, app: &App) -> Column<'_, Message> {
     let mut rows = Column::new().spacing(2).padding(6).width(Fill);
     let mut count = 0;
     if app.tab == Tab::McpServers {
         for (index, item) in app.visible_mcp_servers() {
             rows = rows.push(file(
+                lang,
                 index,
                 item.selected,
                 index == app.mcp_index,
@@ -23,8 +25,11 @@ pub fn items(app: &App) -> Column<'_, Message> {
                     item.def.category,
                     item.def.description,
                     if item.def.inputs().next().is_some() {
-                        format!(
+                        localized_format!(
+                            lang,
                             " · Requires {}",
+                            " · 필요: {}",
+                            " · 必須: {}",
                             item.def.inputs().collect::<Vec<_>>().join(", ")
                         )
                     } else {
@@ -37,6 +42,7 @@ pub fn items(app: &App) -> Column<'_, Message> {
     } else if app.tab == Tab::Plugins {
         for (index, item) in app.visible_plugins() {
             rows = rows.push(file(
+                lang,
                 index,
                 item.selected,
                 index == app.plugin_index,
@@ -79,13 +85,13 @@ pub fn items(app: &App) -> Column<'_, Message> {
                             text(name).size(13),
                             Space::new().width(Fill),
                             text(if app.is_folder_hidden(path) {
-                                "hidden"
+                                lang.text("hidden")
                             } else if tree.is_folder_any_selected(node_index, &app.components)
                                 && !tree.is_folder_all_selected(node_index, &app.components)
                             {
-                                "partial selection"
+                                lang.text("partial selection")
                             } else {
-                                "folder"
+                                lang.text("folder")
                             })
                             .size(11)
                             .style(styles::muted)
@@ -118,7 +124,7 @@ pub fn items(app: &App) -> Column<'_, Message> {
                                 hook.event,
                                 hook.description.as_deref().unwrap_or(""),
                                 if hook.is_deprecated() {
-                                    " · deprecated"
+                                    lang.text(" · deprecated")
                                 } else {
                                     ""
                                 }
@@ -126,6 +132,7 @@ pub fn items(app: &App) -> Column<'_, Message> {
                         })
                         .unwrap_or_else(|| item.name.clone());
                     file(
+                        lang,
                         index,
                         item.selected,
                         tree.cursor == index,
@@ -151,25 +158,25 @@ pub fn items(app: &App) -> Column<'_, Message> {
     if count == 0 {
         let mut empty = column![
             text(if !app.search_query.trim().is_empty() {
-                "No matching items"
+                lang.text("No matching items")
             } else if app.hidden_visibility == HiddenVisibility::Only
                 && app.tab.to_component_type().is_some()
             {
-                "No hidden items in this view"
+                lang.text("No hidden items in this view")
             } else {
-                "Nothing to show here yet"
+                lang.text("Nothing to show here yet")
             })
             .size(20),
-            text(
+            text(lang.text(
                 "Try another search, change the status filter, or choose another visibility mode."
-            )
+            ))
             .size(13)
             .style(styles::muted),
         ]
         .spacing(8);
         if !app.search_query.is_empty() {
             empty = empty.push(
-                button("Clear search")
+                button(lang.text("Clear search"))
                     .style(styles::subtle)
                     .on_press(Message::Action(Action::ClearSearch)),
             );
@@ -180,6 +187,7 @@ pub fn items(app: &App) -> Column<'_, Message> {
 }
 
 fn file<'a>(
+    lang: Language,
     index: usize,
     selected: bool,
     focused: bool,
@@ -197,19 +205,18 @@ fn file<'a>(
     )
     .width(Fill)
     .clip(true);
-    let status_badge =
-        container(text(status).size(11))
-            .padding([3, 7])
-            .style(move |theme: &iced::Theme| {
-                let mut style = styles::badge(theme);
-                style.text_color = Some(match status {
-                    "new" | "not installed" => theme.palette().primary,
-                    "modified" => theme.palette().warning,
-                    "installed" | "managed" => theme.palette().success,
-                    _ => styles::muted(theme).color.unwrap_or(theme.palette().text),
-                });
-                style
+    let status_badge = container(text(lang.text(status)).size(11))
+        .padding([3, 7])
+        .style(move |theme: &iced::Theme| {
+            let mut style = styles::badge(theme);
+            style.text_color = Some(match status {
+                "new" | "not installed" => theme.palette().primary,
+                "modified" => theme.palette().warning,
+                "installed" | "managed" => theme.palette().success,
+                _ => styles::muted(theme).color.unwrap_or(theme.palette().text),
             });
+            style
+        });
     row![
         checkbox(selected)
             .size(15)

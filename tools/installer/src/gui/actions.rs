@@ -26,6 +26,7 @@ pub enum Action {
     SetProjectPath(String),
     SetEnvInput(String),
     ToggleTheme,
+    SetLanguage(super::Language),
     OpenSources,
     SelectSource(usize),
     Back,
@@ -52,6 +53,13 @@ impl Runtime {
             self.filter_menu_open = false;
         }
         match action {
+            Action::SetLanguage(language) => {
+                if !self.closing {
+                    self.language = language;
+                    self.appearance.request_language(language);
+                }
+                return;
+            }
             Action::CloseFilterMenu => {
                 self.filter_menu_open = false;
                 return;
@@ -158,7 +166,7 @@ impl Runtime {
         if let Some(app) = self.app.as_mut()
             && previous_theme != Some(app.theme.mode())
         {
-            self.appearance.request(app.theme.mode());
+            self.appearance.request_theme(app.theme.mode());
         }
         if let Err(error) = result {
             let message = format!("{error:#}");

@@ -1,3 +1,4 @@
+use super::Language;
 use crossterm::event::KeyCode;
 use iced::widget::{Column, Space, button, column, container, row, scrollable, text};
 use iced::{Element, Fill};
@@ -9,19 +10,19 @@ use super::{Message, actions::Action, styles};
 use crate::app::{App, View};
 use crate::source::SourceEntry;
 
-pub fn view(app: &App) -> Element<'_, Message> {
+pub fn view(lang: Language, app: &App) -> Element<'_, Message> {
     let content = match app.current_view {
-        View::Sources => source_list(app),
-        View::SourceAddType => source_type(),
-        View::SourceAddMapTo => map_to(app),
-        View::SourceConfirmRemove => confirm_remove(app),
-        View::SourceSyncing => syncing(app),
-        _ => source_input(app),
+        View::Sources => source_list(lang, app),
+        View::SourceAddType => source_type(lang),
+        View::SourceAddMapTo => map_to(lang, app),
+        View::SourceConfirmRemove => confirm_remove(lang, app),
+        View::SourceSyncing => syncing(lang, app),
+        _ => source_input(lang, app),
     };
     column![
         column![
-            text("Sources").size(28),
-            text("Your component libraries, all in one place.")
+            text(lang.text("Sources")).size(28),
+            text(lang.text("Your component libraries, all in one place."))
                 .size(14)
                 .style(styles::muted)
         ]
@@ -37,17 +38,18 @@ fn key(value: char) -> Message {
     Message::Action(Action::Key(KeyCode::Char(value)))
 }
 
-fn source_list(app: &App) -> Element<'_, Message> {
+fn source_list(lang: Language, app: &App) -> Element<'_, Message> {
     let mut entries = Column::new().spacing(6).width(Fill);
     entries = entries.push(source_row(
+        lang,
         0,
-        "Bundled library".into(),
-        "Included with HIBI AI · Read only".into(),
+        lang.text("Bundled library").into(),
+        lang.text("Included with HIBI AI · Read only").into(),
         app.source_list_index == 0,
         false,
     ));
     for (index, entry) in app.source_entries.iter().enumerate() {
-        let (label, details) = entry_description(entry);
+        let (label, details) = entry_description(lang, entry);
         let stale = match entry {
             SourceEntry::Git { url, .. } => {
                 app.sources.iter().any(|s| s.label == *url && s.is_stale)
@@ -55,6 +57,7 @@ fn source_list(app: &App) -> Element<'_, Message> {
             SourceEntry::Local { .. } => false,
         };
         entries = entries.push(source_row(
+            lang,
             index + 1,
             label,
             details,
@@ -64,42 +67,48 @@ fn source_list(app: &App) -> Element<'_, Message> {
     }
     let can_edit = editable_selection(app).is_some();
     let actions = row![
-        button("Add source")
+        button(lang.text("Add source"))
             .on_press(key('a'))
             .style(styles::primary)
             .padding([10, 16]),
-        button("Sync all")
+        button(lang.text("Sync all"))
             .on_press(key('f'))
             .style(styles::secondary)
             .padding([10, 16]),
         Space::new().width(Fill),
-        text(format!("{} libraries", app.source_entries.len() + 1))
-            .size(13)
-            .style(styles::muted),
+        text(localized_format!(
+            lang,
+            "{} libraries",
+            "라이브러리 {}개",
+            "ライブラリ {} 件",
+            app.source_entries.len() + 1
+        ))
+        .size(13)
+        .style(styles::muted),
     ]
     .spacing(8)
     .align_y(iced::Center);
     let mut panel = column![
         row![
-            text("Connected libraries").size(17),
+            text(lang.text("Connected libraries")).size(17),
             Space::new().width(Fill),
-            text("Selected sources provide your components")
+            text(lang.text("Selected sources provide your components"))
                 .size(12)
                 .style(styles::muted)
         ]
         .spacing(10),
         scrollable(entries).height(Fill),
         row![
-            button("Edit source")
+            button(lang.text("Edit source"))
                 .on_press_maybe(can_edit.then(|| key('e')))
                 .style(styles::secondary)
                 .padding([9, 14]),
-            button("Remove source")
+            button(lang.text("Remove source"))
                 .on_press_maybe(can_edit.then(|| key('r')))
                 .style(styles::danger)
                 .padding([9, 14]),
             Space::new().width(Fill),
-            button("Back")
+            button(lang.text("Back"))
                 .on_press(Message::Action(Action::Back))
                 .style(styles::secondary)
                 .padding([9, 14]),
@@ -110,7 +119,7 @@ fn source_list(app: &App) -> Element<'_, Message> {
     .spacing(18)
     .height(Fill);
     if let Some(status) = &app.source_sync_status {
-        panel = panel.push(scrollable(status_text(status)).height(60));
+        panel = panel.push(scrollable(status_text(lang, status)).height(60));
     }
     column![
         actions,
@@ -125,6 +134,7 @@ fn source_list(app: &App) -> Element<'_, Message> {
 }
 
 fn source_row(
+    lang: Language,
     index: usize,
     label: String,
     details: String,
@@ -138,7 +148,7 @@ fn source_row(
     .spacing(5);
     if stale {
         description = description.push(
-            text("Cached version · Sync to retry")
+            text(lang.text("Cached version · Sync to retry"))
                 .size(12)
                 .style(text::warning),
         );
@@ -149,7 +159,7 @@ fn source_row(
                 .padding(12)
                 .style(styles::surface),
             description.width(Fill),
-            text(if selected { "Selected" } else { "" })
+            text(if selected { lang.text("Selected") } else { "" })
                 .size(11)
                 .style(styles::muted)
         ]
@@ -167,7 +177,7 @@ fn source_row(
     .into()
 }
 
-fn entry_description(entry: &SourceEntry) -> (String, String) {
+fn entry_description(lang: Language, entry: &SourceEntry) -> (String, String) {
     let (label, kind, branch, root, map_to) = match entry {
         SourceEntry::Git {
             url,
@@ -177,7 +187,7 @@ fn entry_description(entry: &SourceEntry) -> (String, String) {
         } => (url.clone(), "Git", branch.as_deref(), root, map_to),
         SourceEntry::Local { path, root, map_to } => (
             path.to_string_lossy().into_owned(),
-            "Local",
+            lang.text("Local"),
             None,
             root,
             map_to,
@@ -185,13 +195,28 @@ fn entry_description(entry: &SourceEntry) -> (String, String) {
     };
     let mut details = vec![kind.to_string()];
     if let Some(branch) = branch {
-        details.push(format!("Branch: {branch}"));
+        details.push(localized_format!(
+            lang,
+            "Branch: {branch}",
+            "브랜치: {branch}",
+            "ブランチ: {branch}"
+        ));
     }
     if let Some(root) = root {
-        details.push(format!("Root: {root}"));
+        details.push(localized_format!(
+            lang,
+            "Root: {root}",
+            "루트: {root}",
+            "ルート: {root}"
+        ));
     }
     if let Some(map_to) = map_to {
-        details.push(format!("Map to: {map_to}"));
+        details.push(localized_format!(
+            lang,
+            "Map to: {map_to}",
+            "대상 유형: {map_to}",
+            "割り当て先: {map_to}"
+        ));
     }
     (label, details.join(" · "))
 }
@@ -213,7 +238,7 @@ mod tests {
         app.source_list_index = usize::MAX;
         assert!(editable_selection(&app).is_none());
         app.current_view = View::SourceConfirmRemove;
-        let _ = view(&app);
+        let _ = view(Language::English, &app);
     }
 
     #[test]
@@ -234,7 +259,7 @@ mod tests {
             View::SourceSyncing,
         ] {
             app.current_view = state;
-            let _ = view(&app);
+            let _ = view(Language::English, &app);
         }
     }
 }

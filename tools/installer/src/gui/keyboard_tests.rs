@@ -49,7 +49,38 @@ fn render_page(state: &Runtime, tree: &mut Tree, renderer: &mut Renderer) -> Vec
         mouse::Cursor::Unavailable,
         &viewport,
     );
-    renderer.screenshot(Size::new(1120, 780), 1.0, Color::from_rgb(1.0, 0.0, 1.0))
+    renderer.screenshot(
+        Size::new(
+            state.window_size.width as u32,
+            state.window_size.height as u32,
+        ),
+        1.0,
+        Color::from_rgb(1.0, 0.0, 1.0),
+    )
+}
+
+#[test]
+fn version_stays_in_the_bottom_right_when_status_appears() {
+    let mut state = runtime();
+    let mut renderer = Renderer::new(Font::default(), Pixels(16.0));
+    let mut tree = Tree::new(super::view(&state).as_widget());
+    for (width, height) in [(760, 560), (1120, 780)] {
+        state.window_size = Size::new(width as f32, height as f32);
+        state.app.as_mut().unwrap().status_message = None;
+        let idle = render_page(&state, &mut tree, &mut renderer);
+        state.app.as_mut().unwrap().status_message = Some("Refreshing components".into());
+        let busy = render_page(&state, &mut tree, &mut renderer);
+        let mut has_version = false;
+        for y in height - 24..height {
+            let start = (y * width + width - 80) * 4;
+            let end = (y + 1) * width * 4;
+            assert_eq!(&idle[start..end], &busy[start..end]);
+            has_version |= idle[start..end]
+                .chunks_exact(4)
+                .any(|pixel| pixel != &idle[..4]);
+        }
+        assert!(has_version);
+    }
 }
 
 #[test]
@@ -79,7 +110,7 @@ fn saving_appearance_does_not_change_the_visible_page() {
     let before = render_page(&state, &mut tree, &mut renderer);
     state
         .appearance
-        .request(state.app.as_ref().unwrap().theme.mode());
+        .request_theme(state.app.as_ref().unwrap().theme.mode());
     assert!(state.busy());
     let saving = render_page(&state, &mut tree, &mut renderer);
     let changed = before.iter().zip(&saving).filter(|(a, b)| a != b).count();
@@ -378,4 +409,107 @@ fn editing_search_keeps_native_cursor_arrows_and_does_not_collapse_folders() {
         iced::event::Status::Captured
     );
     assert!(desktop.app().is_current_folder_expanded());
+}
+
+#[test]
+fn home_panel_and_title_are_centered_after_switching_language() {
+    #[derive(Default)]
+    struct Bounds {
+        panel: Option<Rectangle>,
+        labels: Vec<(String, Rectangle)>,
+    }
+    impl Operation<Message> for Bounds {
+        fn traverse(&mut self, visit: &mut dyn FnMut(&mut dyn Operation<Message>)) {
+            visit(self);
+        }
+        fn container(&mut self, id: Option<&iced::widget::Id>, bounds: Rectangle) {
+            if id == Some(&iced::widget::Id::new("home-panel")) {
+                self.panel = Some(bounds);
+            }
+        }
+        fn text(&mut self, _: Option<&iced::widget::Id>, bounds: Rectangle, value: &str) {
+            self.labels.push((value.into(), bounds));
+        }
+    }
+    let mut desktop = Desktop::new();
+    desktop.state.app.as_mut().unwrap().current_view = View::CliSelection;
+    for size in [Size::new(760.0, 560.0), Size::new(1120.0, 780.0)] {
+        desktop.state.window_size = size;
+        for (lang, title) in [
+            (super::Language::Japanese, "ワークスペースの設定"),
+            (super::Language::Korean, "작업 공간 설정"),
+            (super::Language::English, "Your workspace, configured."),
+        ] {
+            desktop.message(Message::Action(Action::SetLanguage(lang)));
+            let mut bounds = Bounds::default();
+            desktop.operate(&mut bounds);
+            let panel = bounds.panel.unwrap();
+            assert!(
+                (panel.center_x() - size.width / 2.0).abs() <= 1.0,
+                "{panel:?}"
+            );
+            assert!(
+                (panel.center_y() - size.height / 2.0).abs() <= 1.0,
+                "{panel:?}"
+            );
+            let (_, title_bounds) = bounds
+                .labels
+                .iter()
+                .find(|(label, _)| label == title)
+                .unwrap();
+            assert!((title_bounds.center_x() - panel.center_x()).abs() <= 1.0);
+        }
+    }
+}
+
+#[test]
+fn version_button_emits_check_and_update_confirmation_blocks_background_actions() {
+    use super::updates::{Event as Update, State};
+    let mut state = runtime();
+    let area = Rectangle::with_size(state.window_size);
+    let renderer = Renderer::new(Font::default(), Pixels(16.0));
+    let mut element = super::view(&state);
+    let widget = element.as_widget_mut();
+    let mut tree = Tree::new(&*widget);
+    let node = widget.layout(
+        &mut tree,
+        &renderer,
+        &layout::Limits::new(Size::ZERO, area.size()),
+    );
+    let mut messages = Vec::new();
+    for event in [
+        mouse::Event::ButtonPressed(mouse::Button::Left),
+        mouse::Event::ButtonReleased(mouse::Button::Left),
+    ] {
+        widget.update(
+            &mut tree,
+            &Event::Mouse(event),
+            Layout::new(&node),
+            mouse::Cursor::Available(Point::new(area.width - 45.0, area.height - 18.0)),
+            &renderer,
+            &mut clipboard::Null,
+            &mut Shell::new(&mut messages),
+            &area,
+        );
+    }
+    assert!(matches!(
+        messages.as_slice(),
+        [Message::Update(Update::Check)]
+    ));
+    drop(element);
+    state.updater = State::Checking;
+    let offer = crate::fs::update::Offer {
+        version: "2.0.0-beta.1".parse().unwrap(),
+        route: crate::fs::update::Route::Pending,
+    };
+    let _ = super::update(
+        &mut state,
+        Message::Update(Update::Checked(Ok(Some(offer)))),
+    );
+    let _ = super::update(&mut state, Message::Action(Action::Key(KeyCode::Down)));
+    let _ = super::update(&mut state, Message::Update(Update::Confirm));
+    assert_eq!(state.app.as_ref().unwrap().tab, Tab::Skills);
+    assert!(matches!(state.updater, State::Offer(_)));
+    let _ = super::update(&mut state, Message::Action(Action::Key(KeyCode::Esc)));
+    assert!(matches!(state.updater, State::Idle));
 }

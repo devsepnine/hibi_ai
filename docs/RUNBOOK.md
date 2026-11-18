@@ -1,10 +1,18 @@
 # hibi-ai 운영 가이드 RUNBOOK
 
-> 마지막 업데이트: 2026-10-17 · 버전 v1.23.1
+> v2 베타부터 직접 설치본은 서명한 번들로 업데이트한다.
 
 릴리즈는 ~v1.13부터 GitHub Actions로 자동화됐다. 아래 절차는 태그 푸시 이전의 준비와, 워크플로가 끝난 뒤 남는 수동 작업을 다룬다.
 
 ## 릴리즈 절차
+
+### 베타와 서명 키
+
+첫 베타는 `v2.0.0-beta`로 게시하고 다음 베타는 `v2.0.0-beta.1`로 게시한다. 베타 기간에는 Homebrew Formula와 Scoop Manifest가 기존 정식판을 가리킨다. 정식 v2를 게시한 뒤 두 패키지의 버전과 해시를 갱신한다.
+
+앱은 `tools/installer/assets/update.pub`의 minisign 공개키를 내장한다. 운영자가 해당 개인키 파일 전체를 저장소의 Actions Secret `HIBI_UPDATE_SECRET_KEY`에 등록한다. CI는 비대화형 서명 후 같은 공개키로 검증한다. 키가 없거나 일치하지 않으면 배포가 중단된다. 이미 배포한 앱은 내장 키를 신뢰하므로 다음 릴리스에도 같은 키를 쓴다.
+
+`python3 tools/installer/tests/update_smoke.py`는 macOS와 GNU Linux에서 두 버전의 바이너리와 임시 키로 번들 교체, 서명 오류, 손상된 파일, 재실행 실패 후 복구를 검증한다. 베타를 배포한 뒤에는 각 운영체제에서 실제 다음 베타로 업데이트하고 다시 열린 앱에서 버전과 설정을 확인한다.
 
 ### 1. 버전 동기화 3곳
 
@@ -80,18 +88,17 @@ git push origin v1.23.1
 
 ### 4. GitHub Actions 확인
 
-태그 푸시로 `.github/workflows/release.yml`이 트리거된다. 수동 실행은 Actions 탭의 `workflow_dispatch`에서 version을 입력해서도 가능하다.
+태그 푸시로 `.github/workflows/release.yml`이 트리거된다. 수동 실행은 기존 태그와 같은 커밋을 선택하고 태그에서 v를 뺀 버전을 입력한다.
 
 워크플로 단계:
 
 1. 전체 이력 checkout: `lint-arch.py`가 상태 표시줄 소스와 바이너리의 커밋 이력을 비교하므로 `fetch-depth: 0`
 2. 버전 검증: 태그, `package.sh` VERSION, `Cargo.toml` version이 같은지 확인
 3. 검사: `lint-prose.py`, `lint-arch.py`, `cargo fmt --check`, `cargo test`. 하나라도 실패하면 빌드하지 않는다
-4. Rust 크로스 타겟 설치 + `mingw-w64`·`musl-cross`·`nfpm` 설치
-5. cargo 레지스트리·빌드 캐시 복원: `Swatinem/rust-cache@v2`, workspace `tools/installer`
-6. `tools/installer/build.sh`: macOS 러너에서 전 플랫폼 크로스 컴파일
-7. `package.sh`: 아카이브, nfpm으로 만드는 Linux `.deb`/`.rpm`/`.apk`, `checksums.txt`
-8. `gh release create v{VERSION} --generate-notes`
+4. macOS Universal, Windows, GNU Linux, Alpine용 바이너리를 각각 빌드한다.
+5. `package.sh`가 아카이브 네 개와 Linux 패키지 세 개를 만들고 체크섬을 계산한다.
+6. CI가 체크섬에 서명하고 앱에 내장한 공개키로 검증한다.
+7. 기존 태그로 릴리스를 게시한다. 베타에는 prerelease 표시를 붙이고 최신 정식판은 유지한다.
 
 ```bash
 # 진행 상황
@@ -105,11 +112,13 @@ gh release view v1.23.1
 체크리스트:
 
 - [ ] 워크플로 성공
-- [ ] macOS `.tar.gz`, Linux `.tar.gz`, Windows `.zip` 3개 업로드
+- [ ] macOS, GNU Linux, Alpine용 tar 아카이브와 Windows용 zip 업로드
 - [ ] Linux `.deb`/`.rpm`/`.apk` 3개 업로드
-- [ ] `checksums.txt` 업로드 및 내용 확인. 아카이브와 패키지 6종이 모두 포함돼야 한다
+- [ ] `checksums.txt`와 `checksums.txt.minisig` 업로드 확인. 체크섬은 아카이브와 패키지 일곱 개를 포함한다
 
 ### 5. Homebrew Tap 갱신, 수동
+
+정식판은 테스트용 Tap에서 기존 버전을 업그레이드한 뒤 `hibi`로 GUI를 열고 번들 목록을 확인한다. `hibi --tui`로 터미널 진입도 확인한다. Linux에서는 빈 환경에서 GUI 실행에 필요한 라이브러리를 Formula가 제공하는지 확인한다.
 
 ```bash
 cd ../homebrew-brew
@@ -124,6 +133,8 @@ git push origin main
 ```
 
 ### 6. Scoop Bucket 갱신, 수동
+
+테스트용 Bucket에서 기존 버전을 업그레이드하고 새 버전의 GUI와 TUI가 실행되는지 확인한다. GUI 안에서 다음 버전을 선택하면 이전 프로세스가 종료된 후 교체와 재실행이 이뤄져야 한다.
 
 ```bash
 cd ../scoop-bucket
@@ -183,17 +194,13 @@ gh release view v1.23.1 --json assets \
 # 증상
 ::error::Release version (1.23.1) does not match package.sh VERSION (1.15.0).
 
-# 해결
-# 세 곳(Cargo.toml / package.sh / 태그)을 맞춘 뒤 태그를 다시 만든다
-git tag -d v1.23.1
-git push origin :refs/tags/v1.23.1
-# 버전 수정 커밋 후
-git tag v1.23.1 && git push origin v1.23.1
 ```
+
+버전을 수정한 커밋에는 새 버전과 새 태그를 사용한다. 예를 들어 첫 베타 다음 수정은 `v2.0.0-beta.1`로 배포한다.
 
 #### 문제: 검사 단계에서 실패
 
-"Check prose, architecture rules, formatting, and tests" 단계가 실패하면 빌드 전에 멈춘다. 로그에서 실패한 명령을 찾아 로컬에서 같은 명령으로 재현하고, 고친 커밋을 `main`에 푸시한 뒤 위 버전 불일치와 같은 방법으로 태그를 다시 만든다. `cargo fmt` 차이는 `--check` 없이 실행하면 고쳐진다.
+"Check prose, architecture rules, formatting, and tests" 단계가 실패하면 빌드 전에 멈춘다. 로그에서 실패한 명령을 찾아 로컬에서 같은 명령으로 재현하고, 고친 커밋에서 다음 버전 태그를 만든다. `cargo fmt` 차이는 `--check` 없이 실행하면 고쳐진다.
 
 #### 문제: crates.io 네트워크 타임아웃
 
@@ -257,11 +264,7 @@ cd tools/installer && ./build.sh && cd ../..
 
 #### 문제: 체크섬 파일이 비어 있음
 
-```bash
-# 해결
-cd release/v1.23.1
-shasum -a 256 *.tar.gz *.zip > checksums.txt
-```
+네 플랫폼 바이너리와 nfpm이 준비됐는지 확인한 뒤 패키징을 다시 실행한다. 생성한 일곱 파일의 체크섬과 서명은 같은 워크플로 실행에서 게시한다.
 
 ### 설치 문제
 
