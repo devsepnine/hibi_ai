@@ -8,7 +8,6 @@ interface LogContext {
   requestId?: string
   method?: string
   path?: string
-  [key: string]: unknown
 }
 
 class Logger {
@@ -17,19 +16,24 @@ class Logger {
       timestamp: new Date().toISOString(),
       level,
       message,
-      ...context,
+      requestId: context?.requestId,
+      method: context?.method,
+      path: context?.path,
+      userId: context?.userId,
     }
     console.log(JSON.stringify(entry))
   }
   info(msg: string, ctx?: LogContext) { this.log('info', msg, ctx) }
   warn(msg: string, ctx?: LogContext) { this.log('warn', msg, ctx) }
-  error(msg: string, err: Error, ctx?: LogContext) {
-    this.log('error', msg, { ...ctx, error: err.message, stack: err.stack })
+  error(msg: string, ctx?: LogContext) {
+    this.log('error', msg, ctx)
   }
 }
 
 export const logger = new Logger()
 ```
+
+Pass fixed event messages, approved identifiers, HTTP methods, and route templates to this logger. Raw request URLs and exception messages or stacks can contain credentials.
 
 ## Request-Scoped Logging
 
@@ -42,14 +46,14 @@ export async function GET(request: Request) {
   try {
     const markets = await fetchMarkets()
     return NextResponse.json({ success: true, data: markets })
-  } catch (error) {
-    logger.error('Failed to fetch markets', error as Error, { requestId })
+  } catch {
+    logger.error('Failed to fetch markets', { requestId })
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }
 ```
 
-For multi-service traces, propagate the id via the `x-request-id` header and adopt it if present, else generate.
+Propagate the request ID to downstream services. Accept an incoming ID from a trusted gateway that validates its format, or generate one at the boundary.
 
 ## What NOT to Log
 

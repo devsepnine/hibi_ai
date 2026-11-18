@@ -3,40 +3,44 @@
 ## Typed `ApiError`
 
 ```typescript
-class ApiError extends Error {
+export class ApiError extends Error {
   constructor(
-    public statusCode: number,
-    public message: string,
-    public isOperational = true,
+    readonly statusCode: number,
+    message: string,
+    readonly expose = false,
+    options?: ErrorOptions,
   ) {
-    super(message)
+    super(message, options)
     Object.setPrototypeOf(this, ApiError.prototype)
   }
 }
 ```
 
-`isOperational = true` marks expected errors such as validation and not-found. `false` means a bug: log loudly, alert, do not swallow.
+Set `expose` only for a 4xx error with a message written for the client. Keep the original exception in `cause` for server diagnostics.
 
 ## Centralized Handler
 
 ```typescript
 export function errorHandler(error: unknown, req: Request): Response {
-  if (error instanceof ApiError) {
+  if (error instanceof ApiError && error.statusCode >= 400 && error.statusCode < 500) {
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: error.expose ? error.message : 'Request failed' },
       { status: error.statusCode },
     )
   }
   if (error instanceof z.ZodError) {
     return NextResponse.json(
-      { success: false, error: 'Validation failed', details: error.errors },
+      { success: false, error: 'Validation failed' },
       { status: 400 },
     )
   }
-  console.error('Unexpected error:', error)
+  const status = error instanceof ApiError && error.statusCode >= 500 && error.statusCode < 600
+    ? error.statusCode
+    : 500
+  console.error('Unexpected route error', { method: req.method, status })
   return NextResponse.json(
     { success: false, error: 'Internal server error' },
-    { status: 500 },
+    { status },
   )
 }
 
@@ -53,23 +57,30 @@ export async function GET(request: Request) {
 
 ## Retry with Exponential Backoff
 
-Only retry **idempotent** operations: GET, PUT, DELETE. Never retry POST without an idempotency key.
+Retry only when repeating the operation is safe and the failure is transient. Have `isTransient` recognize the retryable failures documented by the service. `maxRetries` counts additional attempts after the first. This Node example caps each backoff at 30 seconds.
 
 ```typescript
-async function fetchWithRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
-  let lastError: Error
-  for (let i = 0; i < maxRetries; i++) {
+import { setTimeout as delay } from 'node:timers/promises'
+
+async function fetchWithRetry<T>(
+  fn: (signal?: AbortSignal) => Promise<T>,
+  options: { isTransient: (error: unknown) => boolean; maxRetries?: number; signal?: AbortSignal },
+): Promise<T> {
+  const { isTransient, maxRetries = 3, signal } = options
+  if (!Number.isSafeInteger(maxRetries) || maxRetries < 0) {
+    throw new RangeError('maxRetries must be a nonnegative safe integer')
+  }
+  for (let retries = 0; ; retries++) {
+    signal?.throwIfAborted()
     try {
-      return await fn()
+      return await fn(signal)
     } catch (error) {
-      lastError = error as Error
-      if (i < maxRetries - 1) {
-        const delay = Math.pow(2, i) * 1000 // 1s, 2s, 4s
-        await new Promise(r => setTimeout(r, delay))
-      }
+      signal?.throwIfAborted()
+      if (error instanceof Error && error.name === 'AbortError') throw error
+      if (retries >= maxRetries || !isTransient(error)) throw error
+      await delay(Math.min(1000 * 2 ** retries, 30_000), undefined, { signal })
     }
   }
-  throw lastError!
 }
 ```
 
@@ -78,4 +89,4 @@ async function fetchWithRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<
 - `try { ... } catch (e) {}`: silent swallow. Always log or rethrow.
 - Returning `null` to mean "error": caller can't distinguish "not found" from "DB down".
 - Throwing strings, like `throw 'oops'`: stack trace is useless. Always `throw new Error(...)` or a subclass.
-- Catching `Error` and re-throwing without context: wrap with `new ApiError(500, 'Failed in X', { cause: e })`.
+- Preserve the cause when adding context to an internal failure with `new ApiError(500, 'Failed in X', false, { cause: e })`.

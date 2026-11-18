@@ -1,0 +1,12 @@
+{
+  "skill_name": "backend-patterns",
+  "evals": [
+    {
+      "id": 1,
+      "name": "shared-market-search-and-missing-lookup",
+      "prompt": "시장 검색 서비스와 MarketRepository 타입을 함께 구현해줘. 검색은 거리 점수가 낮은 순이고 저장소가 돌려주는 시장 배열은 다른 화면에서도 같은 참조로 읽고 있어. ID 조회는 없으면 null이고, 최신 조회와 캐시 허용 조회 모두 지원해야 해.",
+      "expected_output": "The service and repository type-check together. Searching returns markets ordered by distance while another reader retains the original array order. For an absent ID both freshness modes resolve to null without writing a cache entry. A database error still rejects the call.",
+      "files": []
+    }
+  ]
+}

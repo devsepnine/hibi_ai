@@ -35,7 +35,9 @@ DELETE /api/markets/:id       # delete
 
 Rules: resource-based URLs with no verbs, plural nouns, `?key=value` for filter/sort/page, standard status codes 200/201/400/401/403/404/409/429/500.
 
-### Response Envelope
+### Response envelope
+
+Preserve the existing wire contract for clients. For a new API that distinguishes success and failure in the body, the following union is one option.
 
 ```typescript
 type ApiResponse<T> =
@@ -45,13 +47,14 @@ type ApiResponse<T> =
 
 ## Layering
 
-Three-tier separation: **Route → Service → Repository**. Routes parse/validate, services own business logic, repositories own data access. See `references/repo.md` for full Repository + Service + Middleware code samples.
+Check the project architecture for the existing route, domain, and data access boundaries. For a new route, keep parsing and I/O at the boundary so calculations can be tested independently. Use the layers below when the service and repository have distinct responsibilities. [Layering examples](references/repo.md)
 
 ```typescript
 // repo: data access only
 interface MarketRepository {
   findAll(filters?: MarketFilters): Promise<Market[]>
   findById(id: string): Promise<Market | null>
+  findByIds(ids: readonly string[]): Promise<readonly Market[]>
   create(data: CreateMarketDto): Promise<Market>
   update(id: string, data: UpdateMarketDto): Promise<Market>
   delete(id: string): Promise<void>
@@ -88,8 +91,8 @@ for (const m of markets) m.creator = await getUser(m.creator_id)
 
 // Good: 2 queries
 const creators = await getUsers(markets.map(m => m.creator_id))
-const map = new Map(creators.map(c => [c.id, c]))
-markets.forEach(m => { m.creator = map.get(m.creator_id) })
+const usersById = new Map(creators.map(c => [c.id, c]))
+const withCreators = markets.map(m => ({ ...m, creator: usersById.get(m.creator_id) }))
 ```
 
 ### Transactions
@@ -97,10 +100,11 @@ Wrap multi-table writes in a DB function such as Supabase RPC, Postgres `plpgsql
 
 ## Caching
 
-Cache-aside is the default pattern: read cache → miss → DB → backfill cache with TTL → return. Invalidate on write.
+Read from a database that reflects committed writes when the caller needs current data. Use a shared cache for callers that accept stale reads. An older read finishing after invalidation can repopulate the old value for another TTL.
 
 ```typescript
-async function getMarket(id: string) {
+async function getMarket(id: string, freshness: 'current' | 'allow-stale' = 'current'): Promise<Market | null> {
+  if (freshness === 'current') return db.markets.findUnique({ where: { id } })
   const key = `market:${id}`
   const hit = await redis.get(key)
   if (hit) return JSON.parse(hit)
@@ -114,12 +118,11 @@ Full caching repository wrapper, TTL guidelines, invalidation strategies → `re
 
 ## Error Handling
 
-Use a typed `ApiError` + a single `errorHandler` per route. Never swallow errors silently. Retry idempotent calls with exponential backoff.
+Use a typed `ApiError` and a central route error handler. Retry transient failures when repeating the operation is safe, and propagate cancellation promptly.
 
 ```typescript
-class ApiError extends Error {
-  constructor(public statusCode: number, message: string) { super(message) }
-}
+// Both exports come from the error handling module shown in the reference.
+import { ApiError, errorHandler } from './error-handling'
 
 // at route boundary
 try { return NextResponse.json({ success: true, data: await fetchData() }) }
@@ -134,7 +137,7 @@ Centralized handler covering Zod errors and unknown errors, plus `fetchWithRetry
 ```typescript
 export async function requireAuth(request: Request) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '')
-  if (!token) throw new ApiError(401, 'Missing token')
+  if (!token) throw new ApiError(401, 'Missing token', true)
   return jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload
 }
 ```
@@ -147,14 +150,21 @@ Map roles → permissions, gate handlers via `requirePermission('delete')`. One 
 - Reject with 429 + `Retry-After` when exceeded
 - Use Redis for multi-instance deployments; in-memory only for single-process dev
 
+On rejection, the limiter returns the wait until the next permitted request as a whole number of seconds.
+
 ```typescript
-const allowed = await limiter.checkLimit(ip, 100, 60_000) // 100 req/min
-if (!allowed) return NextResponse.json({ success: false, error: 'Rate limited' }, { status: 429 })
+const decision = await limiter.checkLimit(ip, 100, 60_000)
+if (!decision.allowed) {
+  return NextResponse.json(
+    { success: false, error: 'Rate limited' },
+    { status: 429, headers: { 'Retry-After': String(decision.retryAfterSeconds) } },
+  )
+}
 ```
 
 ## Async Work
 
-Offload long tasks over 200ms to a queue; respond immediately. Single-process queue is fine for dev / low volume; production needs Redis-backed BullMQ or an external queue such as SQS or Cloud Tasks.
+Check the response time budget and the impact of losing a job. When work must outlive the request, choose a queue that meets the project’s durability and retry requirements.
 
 ```typescript
 await indexQueue.add({ marketId })
@@ -163,11 +173,11 @@ return NextResponse.json({ success: true, data: { queued: true } })
 
 ## Logging
 
-Always JSON-structured, always include `requestId`, a UUID per request, for tracing. Log levels: `info` / `warn` / `error`. Never log secrets, tokens, or full PII.
+Use the project’s structured logging format and request correlation ID. Keep secrets, tokens, and sensitive personal data out of logs.
 
 ```typescript
-logger.info('Fetching markets', { requestId, method, path })
-logger.error('Failed', err, { requestId })
+logger.info('Fetching markets', { requestId, method: 'GET', path: '/api/markets' })
+logger.error('Failed to fetch markets', { requestId })
 ```
 
 Full `Logger` class, request-id middleware, log-shipping notes → `references/logging.md`.

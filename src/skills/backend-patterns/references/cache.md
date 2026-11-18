@@ -1,17 +1,19 @@
 # Caching Strategies
 
-## Cache-Aside, the default
+## Freshness required by the caller
 
-Read path: cache → on miss, DB → backfill → return. Write path: DB → invalidate cache.
+For a current read, use a database that reflects committed writes. Cache only when the caller accepts stale data. Even after a writer clears the key, a read already in flight can refill it with an older value and a fresh TTL.
 
 ```typescript
-async function getMarketWithCache(id: string): Promise<Market> {
+async function getMarket(id: string, freshness: 'current' | 'allow-stale' = 'current'): Promise<Market | null> {
   const cacheKey = `market:${id}`
-  const cached = await redis.get(cacheKey)
-  if (cached) return JSON.parse(cached)
+  if (freshness === 'allow-stale') {
+    const cached = await redis.get(cacheKey)
+    if (cached) return JSON.parse(cached)
+  }
   const market = await db.markets.findUnique({ where: { id } })
-  if (!market) throw new Error('Market not found')
-  await redis.setex(cacheKey, 300, JSON.stringify(market))
+  if (!market) return null
+  if (freshness === 'allow-stale') await redis.setex(cacheKey, 300, JSON.stringify(market))
   return market
 }
 ```
@@ -21,10 +23,11 @@ async function getMarketWithCache(id: string): Promise<Market> {
 Decorate any repository with a Redis layer, which keeps the cache concern out of business logic.
 
 ```typescript
-class CachedMarketRepository implements MarketRepository {
+class CachedMarketReader {
   constructor(private base: MarketRepository, private redis: RedisClient) {}
 
-  async findById(id: string): Promise<Market | null> {
+  async findById(id: string, freshness: 'current' | 'allow-stale' = 'current'): Promise<Market | null> {
+    if (freshness === 'current') return this.base.findById(id)
     const cached = await this.redis.get(`market:${id}`)
     if (cached) return JSON.parse(cached)
     const market = await this.base.findById(id)
@@ -43,7 +46,7 @@ class CachedMarketRepository implements MarketRepository {
 | Data shape | TTL | Notes |
 |---|---|---|
 | Hot read, rare write, such as config and prices | 30s to 5m | Tolerate small staleness for big QPS win |
-| User profile / session | 5 to 15m | Invalidate on profile edit |
+| Profile display data | 5 to 15 minutes | Invalidate after edits and check access against current state |
 | Aggregations such as counts and leaderboards | 1 to 10m | Recompute lazily |
 | Immutable artifacts such as signed URLs | until expiry | Cache for as long as the resource lives |
 

@@ -78,7 +78,7 @@ const validated = CreateUserSchema.parse(input) // throws on invalid
 
 - [ ] 모든 상태 변경 요청에 CSRF 토큰 또는 double-submit cookie
 - [ ] 세션 쿠키에 `SameSite=Strict`
-- [ ] mutation 엔드포인트는 `POST/PUT/DELETE` 필수, `GET` 금지
+- [ ] 상태 변경은 API 계약에 맞는 `POST`, `PUT`, `PATCH`, `DELETE` 등의 메서드로 처리한다. `GET`과 `HEAD`는 리소스의 상태를 보존한다.
 - [ ] 민감 작업은 Origin / Referer 헤더 검증
 - Refs: [CWE-352](https://cwe.mitre.org/data/definitions/352.html), [OWASP CSRF Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)
 

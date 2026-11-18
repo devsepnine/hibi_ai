@@ -128,6 +128,16 @@ SELECT toStartOfMonth(signup_date) cohort,
 FROM user_activity GROUP BY cohort, months ORDER BY cohort, months;
 ```
 
+### 변경 이력과 현재 상태 구분
+
+`ReplacingMergeTree(version)`에서 같은 정렬 키의 여러 버전은 병합 전까지 함께 존재한다. 예를 들어 `ORDER BY account_id`인 잔액 테이블에서 현재 잔액 합계를 구할 때는 키별 최신 버전을 먼저 선택하고 삭제된 계좌를 제외한다.
+
+```sql
+SELECT sum(amount) FROM account_balances FINAL WHERE is_deleted = 0;
+```
+
+모든 변경 이벤트를 세는 지표에는 별도의 추가 전용 이력 테이블을 사용한다. [ClickHouse CDC 조회 예시](https://clickhouse.com/blog/clickhouse-postgresql-change-data-capture-cdc-part-1)
+
 ## 파이프라인 패턴
 
 - **ETL**: 스케줄에 맞춰 Postgres/MySQL 같은 OLTP에서 추출, 분석 스키마로 변환, 일괄 INSERT.
@@ -143,7 +153,7 @@ FROM user_activity GROUP BY cohort, months ORDER BY cohort, months;
 | Partition | 월별/일별, 적은 개수 | 시간별 또는 사용자별 파티션 |
 | ORDER BY | 자주 필터링되는 컬럼 우선, 카디널리티 고려 | 임의의 컬럼 순서 |
 | Types | `UInt32` 같은 가장 작은 타입, `LowCardinality(String)`, `Enum` | 무조건 `String`, 회피 가능한 `Nullable` |
-| Reads | 컬럼 명시 | `SELECT *`, `FINAL`, 다수의 JOIN |
+| Reads | 필요한 컬럼을 명시하고 현재 상태 집계 전에 버전을 정리 | 불필요한 `SELECT *`와 다수의 JOIN |
 | Writes | 일괄 / async_insert | 행 단위 INSERT 루프 |
 | Ops | 느린 쿼리, 머지, 디스크 사용량 추적 | `system.query_log` 무시 |
 

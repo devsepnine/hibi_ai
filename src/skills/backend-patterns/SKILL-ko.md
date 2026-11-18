@@ -35,7 +35,9 @@ DELETE /api/markets/:id       # delete
 
 규칙: 리소스 기반 URL로 동사 금지, 복수 명사, 필터/정렬/페이지에 `?key=value` 사용, 표준 상태 코드 200/201/400/401/403/404/409/429/500 사용.
 
-### 응답 봉투, 곧 Response Envelope
+### 응답 형식
+
+기존 엔드포인트는 클라이언트와 합의한 응답 형식을 유지한다. 새 API에서 성공과 실패를 응답 본문으로 구분할 때는 아래처럼 표현할 수 있다.
 
 ```typescript
 type ApiResponse<T> =
@@ -45,13 +47,14 @@ type ApiResponse<T> =
 
 ## 레이어링
 
-3계층 분리: **Route → Service → Repository**. 라우트는 파싱/검증, 서비스는 비즈니스 로직, 리포지토리는 데이터 접근을 담당한다. 전체 Repository + Service + Middleware 코드 샘플은 `references/repo.md` 참조.
+프로젝트의 아키텍처 문서에서 라우트, 도메인 로직, 데이터 접근의 경계를 먼저 확인한다. 새 경로에서는 입력 파싱과 I/O를 경계에 두고 계산 로직을 독립적으로 테스트한다. 서비스와 리포지토리를 분리할 책임이 있을 때 아래 구조를 사용한다. [계층별 예시](references/repo-ko.md)
 
 ```typescript
 // repo: data access only
 interface MarketRepository {
   findAll(filters?: MarketFilters): Promise<Market[]>
   findById(id: string): Promise<Market | null>
+  findByIds(ids: readonly string[]): Promise<readonly Market[]>
   create(data: CreateMarketDto): Promise<Market>
   update(id: string, data: UpdateMarketDto): Promise<Market>
   delete(id: string): Promise<void>
@@ -88,8 +91,8 @@ for (const m of markets) m.creator = await getUser(m.creator_id)
 
 // Good: 2 queries
 const creators = await getUsers(markets.map(m => m.creator_id))
-const map = new Map(creators.map(c => [c.id, c]))
-markets.forEach(m => { m.creator = map.get(m.creator_id) })
+const usersById = new Map(creators.map(c => [c.id, c]))
+const withCreators = markets.map(m => ({ ...m, creator: usersById.get(m.creator_id) }))
 ```
 
 ### 트랜잭션
@@ -97,10 +100,11 @@ markets.forEach(m => { m.creator = map.get(m.creator_id) })
 
 ## 캐싱
 
-Cache-aside가 기본 패턴: 캐시 읽기 → 미스 → DB → TTL과 함께 캐시 백필 → 반환. 쓰기 시 무효화한다.
+쓰기 완료 후 최신 값이 필요한 조회는 쓰기를 반영한 DB에서 읽는다. 지연을 허용하는 조회만 공유 캐시를 사용한다. 쓰기 후 키를 삭제해도 이전 조회가 마지막에 끝나면 한 TTL 동안 구버전을 다시 저장할 수 있다.
 
 ```typescript
-async function getMarket(id: string) {
+async function getMarket(id: string, freshness: 'current' | 'allow-stale' = 'current'): Promise<Market | null> {
+  if (freshness === 'current') return db.markets.findUnique({ where: { id } })
   const key = `market:${id}`
   const hit = await redis.get(key)
   if (hit) return JSON.parse(hit)
@@ -114,12 +118,11 @@ async function getMarket(id: string) {
 
 ## 에러 처리
 
-타입화된 `ApiError` + 라우트당 단일 `errorHandler`를 사용한다. 절대 에러를 조용히 삼키지 말 것. 멱등성 호출은 지수 백오프로 재시도한다.
+타입화된 `ApiError`와 중앙 오류 처리기를 사용한다. 반복해도 안전한 작업의 일시적인 오류만 재시도하고 취소는 즉시 전달한다.
 
 ```typescript
-class ApiError extends Error {
-  constructor(public statusCode: number, message: string) { super(message) }
-}
+// ApiError와 errorHandler는 아래 참고 문서의 같은 모듈에서 가져온다.
+import { ApiError, errorHandler } from './error-handling'
 
 // at route boundary
 try { return NextResponse.json({ success: true, data: await fetchData() }) }
@@ -134,7 +137,7 @@ Zod 에러와 unknown 에러를 다루는 중앙 핸들러, 그리고 1s/2s/4s �
 ```typescript
 export async function requireAuth(request: Request) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '')
-  if (!token) throw new ApiError(401, 'Missing token')
+  if (!token) throw new ApiError(401, 'Missing token', true)
   return jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload
 }
 ```
@@ -147,14 +150,21 @@ export async function requireAuth(request: Request) {
 - 초과 시 429 + `Retry-After` 로 거절
 - 다중 인스턴스 배포에는 Redis 사용; 단일 프로세스 dev에서만 in-memory 허용
 
+차단 시 limiter가 다음 요청까지 기다릴 시간을 초 단위 정수로 반환하도록 한다.
+
 ```typescript
-const allowed = await limiter.checkLimit(ip, 100, 60_000) // 100 req/min
-if (!allowed) return NextResponse.json({ success: false, error: 'Rate limited' }, { status: 429 })
+const decision = await limiter.checkLimit(ip, 100, 60_000)
+if (!decision.allowed) {
+  return NextResponse.json(
+    { success: false, error: 'Rate limited' },
+    { status: 429, headers: { 'Retry-After': String(decision.retryAfterSeconds) } },
+  )
+}
 ```
 
 ## 비동기 작업
 
-200ms를 넘는 긴 작업은 큐로 위임하고 즉시 응답한다. 단일 프로세스 큐는 dev / 저용량에는 OK; 프로덕션은 Redis 기반 BullMQ 또는 SQS, Cloud Tasks 같은 외부 큐가 필요하다.
+응답 시간 한도와 작업 유실 시의 영향을 확인한다. 요청 이후에도 실행해야 하는 작업은 프로젝트의 지속성·재시도 요건을 충족하는 큐에 맡긴다.
 
 ```typescript
 await indexQueue.add({ marketId })
@@ -163,11 +173,11 @@ return NextResponse.json({ success: true, data: { queued: true } })
 
 ## 로깅
 
-항상 JSON 구조화, 추적을 위해 항상 요청당 UUID인 `requestId` 포함. 로그 레벨: `info` / `warn` / `error`. 시크릿, 토큰, 또는 전체 PII를 로깅하지 말 것.
+프로젝트의 구조화 로그 형식과 요청 추적 ID를 사용한다. 시크릿, 토큰, 민감한 개인정보는 로그에서 제외한다.
 
 ```typescript
-logger.info('Fetching markets', { requestId, method, path })
-logger.error('Failed', err, { requestId })
+logger.info('Fetching markets', { requestId, method: 'GET', path: '/api/markets' })
+logger.error('Failed to fetch markets', { requestId })
 ```
 
 전체 `Logger` 클래스, request-id 미들웨어, 로그 전송 노트는 `references/logging.md` 참조.

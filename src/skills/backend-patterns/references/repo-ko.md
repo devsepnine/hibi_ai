@@ -5,7 +5,7 @@
 ## Repository, Supabase
 
 ```typescript
-class SupabaseMarketRepository implements MarketRepository {
+class SupabaseMarketQueries implements Pick<MarketRepository, 'findAll' | 'findByIds'> {
   async findAll(filters?: MarketFilters): Promise<Market[]> {
     let query = supabase.from('markets').select('*')
     if (filters?.status) query = query.eq('status', filters.status)
@@ -14,28 +14,34 @@ class SupabaseMarketRepository implements MarketRepository {
     if (error) throw new Error(error.message)
     return data
   }
-  // findById / create / update / delete follow the same pattern
+
+  async findByIds(ids: readonly string[]): Promise<readonly Market[]> {
+    if (ids.length === 0) return []
+    const { data, error } = await supabase.from('markets').select('*').in('id', ids)
+    if (error) throw new Error(error.message)
+    return data
+  }
 }
 ```
 
 ## Service Layer
 
+이 서비스는 프로젝트의 임베딩 함수와 벡터 검색 함수를 사용한다. 이 예시에서 검색 점수는 거리이며 가장 가까운 시장을 먼저 반환한다.
+
 ```typescript
 class MarketService {
-  constructor(private marketRepo: MarketRepository) {}
+  constructor(private marketRepo: Pick<MarketRepository, 'findByIds'>) {}
 
   async searchMarkets(query: string, limit = 10): Promise<Market[]> {
     const embedding = await generateEmbedding(query)
-    const results = await this.vectorSearch(embedding, limit)
+    const results = await vectorSearch(embedding, limit)
     const markets = await this.marketRepo.findByIds(results.map(r => r.id))
-    return markets.sort((a, b) => {
+    return [...markets].sort((a, b) => {
       const sa = results.find(r => r.id === a.id)?.score ?? 0
       const sb = results.find(r => r.id === b.id)?.score ?? 0
       return sa - sb
     })
   }
-
-  private async vectorSearch(embedding: number[], limit: number) { /* ... */ }
 }
 ```
 
@@ -65,7 +71,7 @@ const { data, error } = await supabase.rpc('create_market_with_position', {
   market_data: marketData,
   position_data: positionData,
 })
-if (error) throw new Error('Transaction failed')
+if (error) throw error
 ```
 
 ```sql
@@ -76,8 +82,6 @@ BEGIN
   INSERT INTO markets   VALUES (market_data);
   INSERT INTO positions VALUES (position_data);
   RETURN jsonb_build_object('success', true);
-EXCEPTION WHEN OTHERS THEN
-  RETURN jsonb_build_object('success', false, 'error', SQLERRM);
 END;
 $$;
 ```

@@ -128,6 +128,16 @@ SELECT toStartOfMonth(signup_date) cohort,
 FROM user_activity GROUP BY cohort, months ORDER BY cohort, months;
 ```
 
+### Distinguish change history from current state
+
+A `ReplacingMergeTree(version)` table can hold several versions of one sorting key until a merge. For a balance table with `ORDER BY account_id`, resolve the latest version per account and exclude deleted accounts before summing current balances.
+
+```sql
+SELECT sum(amount) FROM account_balances FINAL WHERE is_deleted = 0;
+```
+
+For a metric that counts every change event, read a separate append only history table. [ClickHouse CDC query examples](https://clickhouse.com/blog/clickhouse-postgresql-change-data-capture-cdc-part-1)
+
 ## Pipeline Patterns
 
 - **ETL**: extract from OLTP sources such as Postgres/MySQL on schedule, transform to analytical schema, batch insert.
@@ -143,7 +153,7 @@ Docs: https://clickhouse.com/docs/en/sql-reference/dictionaries
 | Partition | By month/day, low count | Per-hour or per-user partitions |
 | ORDER BY | Frequent filter columns first, consider cardinality | Random column order |
 | Types | Smallest fit such as `UInt32`, `LowCardinality(String)`, `Enum` | Always-`String`, `Nullable` when avoidable |
-| Reads | Specify columns | `SELECT *`, `FINAL`, many JOINs |
+| Reads | Select required columns and resolve versions before aggregating current state | Unnecessary `SELECT *` and joins |
 | Writes | Batch / async_insert | Per-row INSERT loops |
 | Ops | Track slow queries, merges, disk usage | Ignoring `system.query_log` |
 

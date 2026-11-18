@@ -78,7 +78,7 @@ const validated = CreateUserSchema.parse(input) // throws on invalid
 
 - [ ] CSRF token or double-submit cookie on all state-changing requests
 - [ ] `SameSite=Strict` on session cookies
-- [ ] Mutation endpoints require `POST/PUT/DELETE`, never `GET`
+- [ ] Use the mutation method in the API contract, such as `POST`, `PUT`, `PATCH`, or `DELETE`. Keep resource state unchanged on `GET` and `HEAD`.
 - [ ] Origin / Referer header verified for sensitive ops
 - Refs: [CWE-352](https://cwe.mitre.org/data/definitions/352.html), [OWASP CSRF Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)
 
