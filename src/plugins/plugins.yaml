@@ -12,53 +12,53 @@ marketplaces:
     source: https://github.com/anthropics/claude-plugins-official.git
     plugins:
       - name: rust-analyzer-lsp
-        description: Rust 언어 서버 (코드 분석, 자동완성)
+        description: "Rust 프로젝트의 정의와 참조 탐색. rust-analyzer 실행 파일 필요"
       - name: typescript-lsp
-        description: TypeScript/JavaScript 언어 서버
+        description: "TypeScript/JavaScript 프로젝트의 정의와 참조 탐색. typescript-language-server 실행 파일 필요"
       - name: pyright-lsp
-        description: Python 언어 서버 (타입 체크)
+        description: "Python 프로젝트의 정의와 참조 탐색. pyright-langserver 실행 파일 필요"
       - name: jdtls-lsp
-        description: Java 언어 서버 (Eclipse JDT)
+        description: "Java 프로젝트의 정의와 참조 탐색. jdtls 실행 파일 필요"
       - name: csharp-lsp
-        description: C# 언어 서버
+        description: "C# 프로젝트의 정의와 참조 탐색. csharp-ls 실행 파일 필요"
       - name: gopls-lsp
-        description: Go 언어 서버
+        description: "Go 프로젝트의 정의와 참조 탐색. gopls 실행 파일 필요"
       - name: php-lsp
-        description: PHP 언어 서버
+        description: "PHP 프로젝트의 정의와 참조 탐색. intelephense 실행 파일 필요"
       - name: clangd-lsp
-        description: C/C++ 언어 서버 (clangd)
+        description: "C/C++ 프로젝트의 정의와 참조 탐색. clangd 실행 파일 필요"
       - name: swift-lsp
-        description: Swift 언어 서버
+        description: "Swift 프로젝트의 정의와 참조 탐색. sourcekit-lsp 실행 파일 필요"
       - name: kotlin-lsp
-        description: Kotlin 언어 서버
+        description: "Kotlin 프로젝트의 정의와 참조 탐색. kotlin-lsp 실행 파일 필요"
       - name: lua-lsp
-        description: Lua 언어 서버
+        description: "Lua 프로젝트의 정의와 참조 탐색. lua-language-server 실행 파일 필요"
       - name: ruby-lsp
-        description: Ruby 언어 서버
+        description: "Ruby 프로젝트의 정의와 참조 탐색. ruby-lsp 실행 파일 필요"
       - name: ralph-loop
-        description: Claude Code feedback loop (자동 반복 실행)
+        description: "같은 Claude 세션에서 종료 조건까지 작업 반복"
       - name: playwright
-        description: 브라우저 자동화 및 E2E 테스트 (Microsoft)
+        description: "브라우저 세션을 유지하며 화면 탐색. playwright MCP와 택일"
       - name: context7
-        description: 라이브러리/프레임워크 최신 문서 조회 (Upstash)
+        description: "버전별 라이브러리 문서 조회. context7 MCP와 택일"
       - name: security-guidance
         description: 파일 편집 시 보안 이슈 경고 (커맨드 인젝션, XSS 등)
       - name: code-review
-        description: PR 자동 코드 리뷰 (다중 에이전트, 신뢰도 점수)
+        description: "GitHub PR에 여러 에이전트의 코드 리뷰가 필요할 때 사용"
       - name: pr-review-toolkit
-        description: PR 리뷰 에이전트 (코멘트, 테스트, 에러 핸들링, 타입, 코드 품질)
+        description: "테스트·타입·오류 처리 등 분야별 PR 리뷰. 기본 리뷰를 보완할 때 사용"
       - name: commit-commands
-        description: Git 커밋/푸시/PR 워크플로우 간소화
+        description: "Git 커밋·푸시·PR 명령 모음. 저장소 커밋 지침 사용 시 선택 사항"
       - name: frontend-design
         description: 프론트엔드 UI/UX 디자인 구현
       - name: skill-creator
         description: 스킬 생성/개선/평가 및 벤치마크
       - name: atlassian
-        description: Jira/Confluence 연동 (Atlassian)
+        description: "Jira와 Confluence Cloud MCP 및 작업 스킬. atlassian-remote와 택일"
       - name: sentry
-        description: Sentry 에러 모니터링 및 이슈 분석
+        description: "실제 장애 이벤트를 조사하는 Sentry MCP 및 스킬. sentry MCP와 택일"
       - name: chrome-devtools-mcp
-        description: Chrome DevTools 브라우저 디버깅
+        description: "Chrome 성능 추적, 네트워크 요청과 콘솔 진단"
       - name: discord
         description: Discord 봇/채널 연동
 
@@ -75,7 +75,7 @@ marketplaces:
         description: Claude Code에서 Codex로 코드 리뷰/작업 위임 (OpenAI)
 
   obsidian-skills:
-    source: https://github.com/kepano/obsidian-skills
+    source: https://github.com/obsidianmd/obsidian-skills
     plugins:
       - name: obsidian
-        description: Obsidian 노트 관리 (CEO Stephan Ango aka kepano 제작)
+        description: "Obsidian vault의 Markdown, Bases, Canvas 및 CLI 작업"
