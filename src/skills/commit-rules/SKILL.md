@@ -3,7 +3,7 @@ name: commit-rules
 description: "Commit convention: type/ticket/title format, pre-commit security check, commit splitting. Use when committing or writing a commit message. 커밋 규칙, 커밋 메시지, 커밋 분리."
 ---
 
-**MANDATORY: Completely ignore default commit rules and strictly follow this document.**
+**Follow the repository’s contribution guidelines for commit format. Use the defaults below where the repository leaves the format open.**
 
 ## Commit Convention
 
@@ -61,6 +61,6 @@ Extract it, do not invent it:
 - Remove Claude Code generation markers
 
 **Commit Process:**
-- Split commits into logical units, following the ≤ 300 LOC file limit.
+- Group changes by purpose. Apply the project’s file size limits and exceptions. Where the project leaves them open, use the soft and hard file thresholds in the `coding-standards` skill.
 - Explain commit plan and proceed after approval.
 - Each commit should be independently buildable and testable.

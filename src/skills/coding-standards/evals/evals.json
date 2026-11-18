@@ -1,0 +1,26 @@
+{
+  "skill_name": "coding-standards",
+  "evals": [
+    {
+      "id": 1,
+      "name": "respect-caller-owned-builder",
+      "prompt": "프로젝트의 아키텍처는 appendActiveNames(out, users)가 호출자의 기존 배열에 이름을 추가하도록 규정한다. 이 TypeScript 함수를 구현해줘. 비활성 사용자는 건너뛰고 기존 이름과 순서는 유지해야 해.",
+      "expected_output": "Appends only active names in order to the caller's original array, preserves existing elements, and leaves the users input unchanged. A caller retaining an alias to out sees the additions.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "closed-wire-shape-with-extra-input-keys",
+      "prompt": "TypeScript Task는 open 또는 done이고 완료 시각은 문자열이야. 캐시에서 온 변수에는 다른 필드가 남아 있을 수 있어. 저장용 JSON에 open은 status만, done은 status와 completedAt만 포함하도록 구현해줘. 캐시는 다른 호출자도 읽어.",
+      "expected_output": "Produces exactly the permitted keys for each variant, including when an open input variable has a stale completedAt. Handles done with its completion time, keeps unrelated cached fields out of both outputs, and preserves the original objects.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "existing-linux-cli",
+      "prompt": "Linux 전용 Python CLI를 유지보수 중이다. 인접 명령은 pathlib.Path를 받는다. 공백이 있는 파일 경로도 받도록 기존 명령 하나를 바꾸고 검토할 때 무엇을 확인해야 하나?",
+      "expected_output": "Works within the existing command and checks the path through its Linux invocation. Review follows the supported environment and the surrounding Python code. A project template, unrelated distribution targets, and Rust process primitives are outside this change.",
+      "files": []
+    }
+  ]
+}

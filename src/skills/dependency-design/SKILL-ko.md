@@ -59,7 +59,7 @@ harness 단독으로는 수정에 강한 코드를 만들 수 없다. 어려운 
 ### Layered & Monorepo Architecture: MEDIUM
 
 - `architecture-layer-unidirectional`: 레이어 아키텍처: 단방향 의존, N:N 매핑 주의
-- `architecture-monorepo-apps-to-packages`: Turbo monorepo: apps→packages 단방향, lib→lib 금지
+- `architecture-monorepo-apps-to-packages`: 워크스페이스 경계를 지키고 순환 패키지 의존성을 방지한다
 - `architecture-linear-interconnection`: 상호연결 복잡성 통제: 선형 흐름 + 메시지 제약
 
 ### AI-Friendly Ownership: MEDIUM

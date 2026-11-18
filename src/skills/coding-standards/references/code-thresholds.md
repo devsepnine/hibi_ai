@@ -1,6 +1,6 @@
 # Code Thresholds
 
-Project-wide complexity limits. Two-tier model: **Soft** targets guide design, **Hard** limits block merge.
+Use the project’s documented thresholds and exceptions first. Apply these defaults where the project leaves a choice.
 
 ## Threshold Limits
 
@@ -49,7 +49,7 @@ Exceptions require a top-of-file comment stating the reason. Hard limits still a
 
 ## Refactor Triggers
 
-Apply the **Rule of Three**: repeating a pattern 3+ times signals extraction. Combined with Soft threshold breach, refactor immediately rather than deferring.
+When a function exceeds a soft target and repeats a behavior, check whether those occurrences change together. Extract a helper when you can name the shared responsibility.
 
 ## Related Rules
 

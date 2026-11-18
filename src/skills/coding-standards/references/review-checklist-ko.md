@@ -3,21 +3,23 @@
 > `coding-standards` skill의 참조 문서. SOLID, Clean Code, Functionality,
 > Consistency + security/testing/performance를 강조한다.
 
-리뷰 우선순위는 집행 가중치 순으로 **SOLID → Clean Code → Functionality → Consistency**이고, 그다음 Security / Testing / Performance / Documentation이다. 후순위 카테고리에서 좋은 점수를 받아도 4대 우선순위 중 하나라도 실패하는 변경은 수정 요청해야 한다.
+SOLID, Clean Code, 기능, 일관성을 동등하게 검토한다. 각 발견은 변경이 어긴 계약과 실제 영향을 기준으로 등급을 매긴다.
 
 ## 심각도 범례
 
 작성자가 머지 차단 사유와 후속 작업 가능 사유를 알 수 있도록 모든 발견에 아래 라벨 중 하나를 태그한다.
 
-- **Blocker**: 머지 전 수정 필수. SOLID 위반, 보안 이슈, 깨진 기능, 데이터 race, 리소스 누수, 하드 한도 초과.
-- **Major**: 이번 PR에서 수정. Clean Code 위반, Consistency 위반, 신규 코드의 누락된 테스트, 계획 없는 소프트 한도 초과.
-- **Minor**: 후속 작업 허용. 문서 다듬기, 명명 취향, 성능 마이크로 최적화, 비필수 리팩토링.
+- **Blocker**. 잘못된 결과, 보안 결함, 데이터 경합, 호환성 계약 파기, 예외가 승인되지 않은 하드 한도 초과처럼 머지 전에 해결해야 하는 결함.
+- **Major**. 변경한 코드에서 재현 가능한 유지보수 문제나 중요한 검증 누락. 영향과 필요한 수정을 적는다.
+- **Minor**. 후속 작업이 가능한 개선. 명명이나 문서 개선의 이점을 구체적으로 적는다.
 
-확신이 없으면 Major에서 Blocker로, 위로 기본값을 잡는다.
+심각도가 불확실하면 확인된 영향과 추가로 검증할 조건을 구분한다.
 
 ## 코드 품질
 
-### 크기 한도: soft/hard 단계는 `code-thresholds.md` 참고
+### 크기 한도
+
+프로젝트 한도와 예외를 확인한 뒤, 별도 규칙이 없는 항목에 아래 기본값을 적용한다. [크기 기준](code-thresholds-ko.md)
 - [ ] File size ≤ 300 LOC soft / ≤ 500 LOC hard
 - [ ] Function size ≤ 50 LOC soft / ≤ 80 LOC hard
 - [ ] Parameters ≤ 5 soft / ≤ 7 hard
@@ -27,7 +29,7 @@
 
 ### SOLID Principles
 - [ ] **S**ingle Responsibility: 각 module/class/function은 정확히 한 가지 이유로 변경된다
-- [ ] **O**pen/Closed: 안정된 기존 코드를 수정하지 않고 동작을 확장한다
+- [ ] 외부 구현을 독립적으로 추가하기로 한 경계에서는 기존 호출자가 그대로 동작한다. 도메인이 소유하는 닫힌 변형 집합에 경우를 추가하면 기존 분기를 함께 검토한다.
 - [ ] **L**iskov Substitution: 서브타입은 슈퍼타입의 계약을 지키며, 예상치 못한 오버라이드가 없다
 - [ ] **I**nterface Segregation: 호출자는 절대 사용하지 않는 메서드에 의존하지 않는다
 - [ ] **D**ependency Inversion: 상위 모듈은 구체 구현이 아닌 trait이나 interface 같은 추상에 의존한다
@@ -68,27 +70,19 @@
 - [ ] 관련 실패 시나리오를 정상 동작과 함께 검수하고 근거나 명시적인 한계를 남겼다
 - [ ] 계약에서 요구하는 상태 보존, 정리, 부분 완료 효과, 복구를 확인했다
 
-## 동시성 & 리소스 안전성
+## 동시성과 자원 관리
 
-이 프로젝트는 Rust 스레드 + `mpsc` 채널 + 자식 프로세스를 사용한다. 승인 전에 모든 동시성 접점을 검토한다.
+변경이 도입하거나 사용하는 작업과 자원을 따라간다.
 
-- [ ] 채널 라이프사이클 명시적: `Sender`/`Receiver` drop 지점 식별, 종료 후 dangling producer 없음
-- [ ] `cancel_rx` 협력적 취소 점검이 긴 단계 사이에 배치됨. `source::sync_all_sources` 패턴 참고
-- [ ] `JoinHandle` 처리 명시적: `join()`을 호출하거나, 의도적으로 detach하면서 그 이유를 한 줄 주석으로 명시
-- [ ] `Arc<Mutex<...>>` 스코프가 필요 이상으로 넓지 않음; 잠금은 critical section 동안만 보유
-- [ ] 파일 핸들 / temp dir이 Drop-guard 사용; 정리를 직접 소유하고 프로세스 종료에 의존하지 않음
-- [ ] 자식 프로세스의 라이프타임이 한정됨: cancel 경로에서 timeout 또는 명시적 kill; 고아 좀비 없음
-- [ ] 파이프를 읽는 spawned thread는 자식이 kill되면 자연스럽게 exit하며, 자식 사망 후 blocking read 없음
-- [ ] TUI tick과 background thread 간 공유 상태는 raw mutable reference가 아닌 채널을 통한다
+- [ ] 작업을 시작한 쪽이 정상 완료, 취소, 종료 때 결과와 자원을 어떻게 회수하는지 확인한다.
+- [ ] 채널, 파이프, 잠금을 사용하는 경로에서 송신자나 수신자가 먼저 종료되어도 대기가 끝나는지 확인한다.
+- [ ] 상태를 바꿀 수 있는 소유자를 식별하고, 작업 사이에 공유하는 데이터는 프로젝트의 동기화 방식을 따른다.
 
-## 에러 처리: Rust
+## Rust 오류 처리
 
-- [ ] `unwrap` / `expect`는 invariant가 지역적으로 증명 가능한 곳에서만; panic 메시지는 invariant를 명시
-- [ ] 호출 경계에 `anyhow::Context` 부착되어 체인이 stack trace가 아닌 narrative로 읽힘
-- [ ] 커스텀 에러 타입은 `thiserror`로 명시적 variant 사용; match granularity를 잃는 `Box<dyn Error>` 회피
-- [ ] `Result`가 실제로 처리됨: 외부 상태를 만지는 fallible call에 silent `let _ =` 없음
-- [ ] TUI 코드는 절대 `eprintln!`을 호출하지 않음. alternate screen이 손상되기 때문이다; 에러는 `status_message` 또는 typed channel을 통해 표면화
-- [ ] 토큰, 자격 증명 같은 민감 데이터는 표시 또는 로깅 전 에러 메시지에서 스크럽됨. `sanitize_stderr` 패턴 참고
+- [ ] 복구 가능한 오류는 호출자가 구분해야 하는 정보와 함께 전달한다.
+- [ ] `unwrap`이나 `expect`를 사용한 곳에서 해당 불변 조건이 성립하는지 확인한다.
+- [ ] 오류를 표시하거나 기록하는 경계에서 진단에 필요한 맥락을 보존하고 자격 증명을 제외한다.
 
 ## 일관성 리뷰
 
@@ -100,18 +94,13 @@
 - [ ] 의존성 추가가 기존 스택에 부합; 같은 일을 하는 중복 라이브러리 없음
 - [ ] 문서 톤과 구조가 주변 문서와 일치
 
-## 크로스 플랫폼 고려사항
+## 지원 플랫폼
 
-이 프로젝트는 Homebrew, Scoop, source를 통해 macOS, Linux, Windows에 배포된다. 경로, 명령어, 또는 file I/O를 다루는 변경은 세 플랫폼 모두에 대해 검토되어야 한다.
+프로젝트의 배포 설정과 문서에서 지원 환경을 확인한다. 변경된 동작이 환경에 따라 달라지는 경우 해당 환경에서 계약을 검증한다.
 
-- [ ] 경로 결합은 `Path::join` / `PathBuf` 사용; 하드코딩된 `/` 또는 `\` 구분자 없음; 문자열 결합 없음
-- [ ] `canonicalize()` 사용은 symlink를 포함할 수 있는 경로 비교 시, 예를 들어 macOS `/tmp` → `/private/tmp`
-- [ ] MSYS / Cygwin path 형태인 `/c/Users/...`는 Windows에서 표시 또는 file op 전에 `normalize_git_path`로 정규화
-- [ ] Shell 명령은 `Command::new("tool")`로 직접 호출; **never** `cmd /c ...`. Windows에서 shell injection 위험이 있기 때문이다
-- [ ] 사용자 제공 명령 문자열은 `is_safe_command`를 통과; Unix `&|><;`와 Windows `%^!` 메타문자를 차단
-- [ ] Unix에서 실행 파일 생성 시 파일 권한이 `PermissionsExt::set_mode`로 명시적으로 설정됨; Windows는 안전하게 무시
-- [ ] 비교 시 line ending 허용: `normalize_line_endings`로 `\r` 제거하여 CRLF vs LF가 "Modified" 상태를 뒤집지 않음
-- [ ] Hook/statusline 경로는 `dest_dir.file_name()`에서 파생; `~/.claude`와 `~/.codex` 타겟 모두 지원
+- [ ] 파일 경로는 호출자가 사용할 형식에 맞게 구성한다. 심볼릭 링크나 대소문자가 경로의 의미를 바꾸는 경우에는 실제 경로로 검사한다.
+- [ ] 프로세스를 실행할 때 실행 파일과 각 인자의 경계를 유지한다. 공백이 있는 경로나 빈 인자가 지원 대상이면 자식 프로세스가 받은 값을 확인한다.
+- [ ] 실행 권한과 줄바꿈을 변환하는 코드는 배포물의 형식과 파일 비교 규칙을 따른다.
 
 ## 보안 리뷰
 

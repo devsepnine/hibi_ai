@@ -17,9 +17,9 @@
     },
     {
       "id": 3,
-      "name": "monorepo-lib-to-lib-promote-node-modules",
+      "name": "monorepo-domain-foundation-cycle",
       "prompt": "Turborepo question. In my monorepo, `packages/domain-billing` needs a helper that currently lives in `packages/lib-format`, and `packages/lib-format` has started importing from `packages/domain-billing` too. The app already depends on both. Lint isn't complaining yet. Is this layering fine?",
-      "expected_output": "Flags the lib<->lib (cross-package) cycle as a layering violation. States the rule that dependencies must stay unidirectional: app -> packages is fine, and within packages a domain may depend on a lib, but a lib must not depend back on a domain. Recommends breaking the cycle and, for a shared lib that other packages consume, treating it as a published/external dependency: move lib-format so it is consumed via node_modules (workspace package boundary) rather than reaching sideways into another package's source, or extract the truly shared piece into its own leaf lib that both depend on. Should reference enforcing the boundary (workspace dependency declaration / dependency-cruiser or eslint boundary rule) rather than relying on convention.",
+      "expected_output": "Identifies the domain-billing and lib-format cycle, including the foundation importing its domain consumer. Moves the domain-specific dependency to its owner or extracts the common contract so both packages depend on it without a cycle. A declared acyclic dependency through a foundation package’s public API is valid when project rules allow it. Publishing is optional.",
       "files": []
     },
     {
@@ -55,6 +55,13 @@
       "name": "stamp-coupling-pass-whole-object",
       "prompt": "Is it fine that `sendWelcomeEmail(user: User)` takes the whole User object but only uses `user.email` and `user.firstName`? It's convenient because callers already have a User.",
       "expected_output": "Names this as stamp coupling: the function receives a whole structured object but uses only a couple of fields, so it is coupled to the entire User shape unnecessarily. Explains the cost (harder to reuse/test, changes to unused User fields can still force the function to move; the signature hides the real data dependency). Recommends narrowing the dependency to what is actually used — pass email and firstName directly, or accept a small purpose-built type (e.g. EmailRecipient) — to reduce coupling strength toward data coupling. Should treat this as a milder smell than control/content coupling but still worth tightening, and may note the trade-off if a stable contract type is intentionally desired.",
+      "files": []
+    },
+    {
+      "id": 9,
+      "name": "allow-acyclic-foundation-dependency",
+      "prompt": "프로젝트에서는 기반 패키지끼리 공개 API로 의존할 수 있다. api-client가 transport를 workspace 의존성으로 선언해 쓰고, transport는 역으로 의존하지 않는다. 이 이유만으로 transport를 외부에 배포해야 할까?",
+      "expected_output": "Accepts the declared public dependency under the project rules, confirms that it stays acyclic, and preserves the existing private workspace distribution.",
       "files": []
     }
   ]

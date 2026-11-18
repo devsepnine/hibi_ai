@@ -35,14 +35,6 @@ interface Repository<T> {
 }
 ```
 
-## Skeleton Projects
+## Project templates
 
-When implementing new functionality:
-1. Search for battle-tested skeleton projects
-2. Use parallel agents to evaluate options:
-   - Security assessment
-   - Extensibility analysis
-   - Relevance scoring
-   - Implementation planning
-3. Clone best match as foundation
-4. Iterate within proven structure
+For a feature in an existing application, follow the surrounding implementation and project guidance. When choosing a starting point for a new project, check the template's dependencies, supported versions, and maintenance against the requirements.

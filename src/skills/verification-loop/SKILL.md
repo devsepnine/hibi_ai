@@ -27,70 +27,36 @@ Before running code, builds, tests, or development servers:
 4. Missing tools can reflect the app's permission tier. Use the available read tools even when execution tools are absent. Do not bypass an explicit permission denial with shell execution.
 5. If the MCP is unavailable, no configuration matches, or execution tools are absent, state the limitation and use an otherwise permitted shell command. Do not create or rewrite saved configurations just to run a check. If a start request has an uncertain outcome, check sessions before retrying or falling back to avoid duplicate processes.
 
-The commands below describe what to verify. Apply this execution setup before choosing how to run them.
+Select commands from the project's documentation, manifest, and CI, then use the execution setup above. If the project has no corresponding step, record `N/A` with the reason and continue with applicable checks.
 
 ## Verification Phases
 
-### Phase 1: Build Verification
-```bash
-# Check if project builds
-npm run build 2>&1 | tail -20
-# OR
-pnpm build 2>&1 | tail -20
-```
+### Phase 1: Build
 
-If build fails, STOP and fix before continuing.
+Run the project build when the artifact requires one. Resolve a failed build before running checks that depend on its output. For a Python CLI run directly from source, exercise its actual entry point.
 
-### Phase 2: Type Check
-```bash
-# TypeScript projects
-npx tsc --noEmit 2>&1 | head -30
+### Phase 2: Type check
 
-# Python projects
-pyright . 2>&1 | head -30
-```
+Use the checker and configuration the project provides, such as its TypeScript type check script or Rust's `cargo check`.
 
-Report all type errors. Fix critical ones before continuing.
+### Phase 3: Lint
 
-### Phase 3: Lint Check
-```bash
-# JavaScript/TypeScript
-npm run lint 2>&1 | head -30
+Run the linters and formatters configured for the affected files.
 
-# Python
-ruff check . 2>&1 | head -30
-```
+### Phase 4: Test suite
 
-### Phase 4: Test Suite
-```bash
-# Run tests with coverage
-npm run test -- --coverage 2>&1 | tail -50
+Exercise the changed behavior with the repository's test runner. Record passed, failed, and skipped tests. When the project sets a coverage threshold, compare the measured result with that threshold.
 
-# Check coverage threshold
-# Target: 80% minimum
-```
+### Phase 5: Security checks
 
-Report:
-- Total tests: X
-- Passed: X
-- Failed: X
-- Coverage: X%
-
-### Phase 5: Security Scan
-```bash
-# Check for secrets
-grep -rn "sk-" --include="*.ts" --include="*.js" . 2>/dev/null | head -10
-grep -rn "api_key" --include="*.ts" --include="*.js" . 2>/dev/null | head -10
-
-# Check for console.log
-grep -rn "console.log" --include="*.ts" --include="*.tsx" src/ 2>/dev/null | head -10
-```
+Follow the data and permission boundaries affected by the change. Check input handling, credential exposure, and logs. Use the repository's scanner where available and select the relevant file types. Report paths only for potential secrets. An `rg` exit code of 1 means no matches. A code of 2 or higher means the scan failed.
 
 ### Phase 6: Diff Review
 ```bash
 # Show what changed
+git status --short
 git diff --stat
-git diff HEAD~1 --name-only
+git diff --cached --stat
 ```
 
 Review each changed file for:
@@ -121,17 +87,19 @@ Exercise the changed behavior directly and read the result:
 
 ## Output Format
 
+When auditing a collection, record which items were inventoried, which contracts were checked together, and which behaviors were executed. For example, compile a caller against the interface its guide links to. In a repeated review, revisit relevant paths that previous rounds did not exercise and report the scope of any zero finding result.
+
 After running all phases, produce a verification report:
 
 ```
 VERIFICATION REPORT
 ==================
 
-Build:     [PASS/FAIL]
-Types:     [PASS/FAIL] (X errors)
-Lint:      [PASS/FAIL] (X warnings)
-Tests:     [PASS/FAIL] (X/Y passed, Z% coverage)
-Security:  [PASS/FAIL] (X issues)
+Build:     [PASS/FAIL/N/A]
+Types:     [PASS/FAIL/N/A] (X errors)
+Lint:      [PASS/FAIL/N/A] (X warnings)
+Tests:     [PASS/FAIL/N/A] (passed, failed, skipped; coverage if measured)
+Security:  [PASS/FAIL/N/A] (X issues)
 Diff:      [X files changed]
 Artifact:  [PASS/FAIL/INCONCLUSIVE] (what was run, what was observed)
 Failure paths: [PASS/FAIL/INCONCLUSIVE/N/A] (scenarios, state after failure, evidence or limits)

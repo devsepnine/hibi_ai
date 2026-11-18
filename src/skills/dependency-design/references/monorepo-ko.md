@@ -109,16 +109,12 @@ lib package는 **foundation layer** 다. business-logic과 data-access 코드가
 ```
 apps/*  ──────────────▶  packages/*          (항상 허용, 단방향)
 packages/<domain>  ───▶  packages/<lib>       (허용, 단방향)
-packages/<lib>     ──╳   packages/<lib>       (지양)
+packages/<lib>     ───▶  packages/<lib>       (프로젝트가 허용하는 비순환 간선)
 ```
 
 - `app → packages`: 항상 단방향, 그 반대는 없다.
 - `packages/<domain> → packages/<lib>`: 단방향. 도메인이 foundation에 기댄다.
-- `packages/<lib> → packages/<lib>`: **지양한다.** lib가 정말로 다른 lib를
-  필요로 한다면, 그 공유 의존성은 `node_modules`에 속한다. 즉, repo 안의 한
-  foundation package가 옆으로 다른 foundation package에 손을 뻗게 두는 대신
-  외부 의존성으로 publish하라. 이렇게 하면 foundation layer가 평평하게 유지되고
-  내부 coupling의 숨은 두 번째 레이어가 생기는 것을 막는다.
+- `packages/<lib> → packages/<lib>`: 워크스페이스 의존성을 선언하고 공개 API를 사용하며 순환을 검사한다. 프로젝트가 말단 패키지 제약을 두었다면 그 제약을 따른다.
 
 전반의 목표는 모든 엣지가 한 방향을 가리키게 하고, 변동성이 크고 도메인을 아는
 코드가 안정적인 foundation 코드에 끌려 들어오지 않게 하는 것이다.
@@ -173,8 +169,7 @@ viewpoint에 비추어 트리를 읽어 보면: `ndxFront`는 동시에 presenta
 interface이자 domain 참여자이자 orchestrator이고, `ndxServer`는 application
 라이프사이클의 orchestrator다. 둘 다 도메인 불변식과 상태를 `packages/ndx`에서
 가져오며, 그 package는 다시 `fetch`나 `socket` 같은 foundation lib에 기댄다.
-어떤 package도 app을 거꾸로 가리키지 않고, 어떤 foundation lib도 다른 lib를
-옆으로 가리키지 않는다.
+이 예시에서 앱을 import하는 패키지는 없다.
 
 ## 코드에서는 이렇게 나타난다
 

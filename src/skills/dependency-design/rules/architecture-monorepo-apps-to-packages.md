@@ -1,14 +1,13 @@
 ---
-title: "Turbo Monorepo: apps -> packages One-Way, No lib -> lib"
+title: "Workspace Package Boundaries"
 impact: HIGH
 impactDescription: a clean apps/packages/lib gradient keeps deploy units independent and stops dependency cycles from forming across the workspace
 tags: architecture, monorepo, turborepo
 ---
 
-## Turbo Monorepo: apps -> packages One-Way, No lib -> lib
+## Workspace Package Boundaries
 
-A Turborepo monorepo is a compound layering applied at the workspace level. Each
-workspace folder plays one role, and dependencies flow in one direction only:
+Check the repository’s architecture and package boundaries first. The following layout assumes apps own deployments and packages supply reusable capabilities.
 
 1. **`apps/*`**: orchestrators that wire `packages` features together, and each
    app is an independently buildable/deployable unit, an application. The rule:
@@ -19,11 +18,7 @@ workspace folder plays one role, and dependencies flow in one direction only:
    business-logic and data-access depend on. `packages/domain -> packages/lib` is
    one-way.
 
-The discouraged edge is **`packages/lib -> packages/lib`**. A foundation package
-should not depend on another foundation package. If `lib2` is general enough to
-be a shared dependency of `lib1`, it does not belong in `packages` at all; it
-belongs in `node_modules`, so publish it or treat it as a third-party dep. Keeping
-`lib` packages leaf-level keeps the foundation flat and acyclic.
+A foundation package may depend on another foundation package when project rules allow that edge, it uses the public API through a declared workspace dependency, and the graph stays acyclic. If the project defines foundation packages as leaves, follow that rule. Publishing is a separate release decision.
 
 Split each domain package into three sub-areas so front and server share exactly
 the contract and nothing more:
@@ -57,50 +52,18 @@ packages/
   fetch        # foundation (lib)
 ```
 
-**Incorrect:**
+A valid workspace dependency from a client package to a transport package:
 
-```jsonc
-// packages/pdfUtil/package.json  — a lib depending on another lib
+```json
 {
-  "name": "@acme/pdfUtil",
+  "name": "@acme/api-client",
   "dependencies": {
-    "@acme/llmApi": "workspace:*"   // lib -> lib: foundation is no longer flat
-  }
-}
-
-// apps/ndxServer/src/index.ts  — an app reaching into another app
-import { renderPdf } from "../../pdfServer/src/render"   // app -> app: forbidden
-```
-
-**Correct:**
-
-```jsonc
-// packages/pdf/server/package.json  — domain depends DOWN on foundation libs
-{
-  "name": "@acme/pdf-server",
-  "dependencies": {
-    "@acme/pdfUtil": "workspace:*",   // domain -> lib, one-way
-    "@acme/fetch": "workspace:*"
-  }
-}
-
-// packages/pdfUtil/package.json  — a foundation lib is a leaf: no workspace deps
-{
-  "name": "@acme/pdfUtil",
-  "dependencies": {
-    "pdf-lib": "^1.17.0"   // truly shared general code lives in node_modules
-  }
-}
-
-// apps/ndxServer/package.json  — app depends DOWN on packages only
-{
-  "name": "ndx-server",
-  "dependencies": {
-    "@acme/ndx-server": "workspace:*",
-    "@acme/llmApi": "workspace:*"
+    "@acme/transport": "workspace:*"
   }
 }
 ```
+
+If `@acme/transport` imports `@acme/api-client` in turn, the graph contains a cycle. Move client-specific behavior back to the client or extract the shared contract below both packages.
 
 For how to structure the components *inside* an app or package, including context,
 compound components, and prop boundaries, see the `composition-patterns` skill.

@@ -1,11 +1,13 @@
 ---
 name: coding-standards
-description: "TS/JS/React/Node coding standards: naming, immutability, error handling, comment rules, code smells, file layout. Use when writing or reviewing code. 코딩 표준, 코드 스타일, 주석 규칙, 코드 리뷰, 클린 코드."
+description: "Design and review code under project conventions: domain types, mutation, boundaries, tests, and comments. Includes TypeScript and JavaScript examples. 코딩 표준, 도메인 모델링, 불변성, 코드 리뷰."
 ---
 
 # Coding Standards & Best Practices
 
 Universal coding standards. Language/framework specifics delegate to sibling skills.
+
+**Before writing code, read the project’s development, coding, and architecture guidance for the area you will change, including any exceptions.** Follow those rules when choosing a design. Where they leave a choice, default to a functional design. During review, check the diff against the applicable rules.
 
 ## Core Principles
 
@@ -14,6 +16,30 @@ Universal coding standards. Language/framework specifics delegate to sibling ski
 - **DRY**: extract shared logic; no copy-paste.
 - **YAGNI**: don't build for speculative needs; refactor when required.
 - **SOLID**: SRP / OCP / LSP / ISP / DIP. One reason to change per module.
+
+## Model one real case at a time
+
+Model valid states explicitly, keep transformations pure where practical, and isolate I/O at the boundary. Apply this default within the scope of the change.
+
+### Model alternatives with a sum type
+
+A product type combines values. A sum type selects one case, whose fields can form a product. For example, a completed task carries both a completion time and a result. An open task carries neither. In TypeScript, give each case a literal `status` and put the required fields on that case.
+
+### Choose a union or an interface
+
+Ask who should change code when a new case appears. If adding a cancelled task should trigger a review of every status handler, use a discriminated union and check exhaustiveness with `never`. If plugins can add handlers and existing callers only invoke a common operation, define that operation in an interface.
+
+### Refine types through tests and usage examples
+
+Start with one real caller. Use a test to pin down its observable result, a usage example to explain its contract, and a type to express the valid inputs. If the example needs a caveat at every call, try parsing that condition once at the boundary. Change the model as the next case teaches you more. For a lookup, distinguish an absent entry from a failed read whenever the caller handles them differently.
+
+### Transfer the guarantee across languages
+
+When porting a design, identify what enforces each assumption in the target language. TypeScript can narrow a parsed union at compile time. JavaScript needs a runtime parser for incoming data. In Python, type hints can guide a checker and a Pydantic model can parse incoming values at runtime. If the project already uses a schema library, let one declaration drive parsing and the value passed to the handler. Keep reflection and decorators inside the adapter when business logic only needs the parsed value.
+
+Apply the same reasoning to mutation. In TypeScript a `readonly` view still permits changes through another writable reference. For a published snapshot, identify who retains writable references to nested data and copy or transfer the parts that must stay stable.
+
+When reviewing AI generated code in an unfamiliar language, follow one value from input through mutation to its result. Predict what happens if the value is missing or another caller changes it. Check the prediction with the compiler or a focused test. Use what the language reveals to revise the design.
 
 ## Naming
 
@@ -35,19 +61,24 @@ Files: `Button.tsx` for PascalCase components, `useAuth.ts` for camelCase with a
 
 ## TypeScript / JavaScript Patterns
 
-### Immutability: CRITICAL
-```typescript
-// Always: spread / new object
-const updated = { ...user, name: 'New' }
-const next = [...items, newItem]
+### Updating shared state and local values
 
-// Never: direct mutation
-user.name = 'New'      // BAD
-items.push(newItem)    // BAD
+Follow the project's state update contract. Copy the changed path when updating a shared snapshot. A function can fill a newly allocated array or builder in place before publishing it.
+
+```typescript
+const updated = { ...user, name: 'New' }
+
+function activeNames(users: readonly { name: string; active: boolean }[]): string[] {
+  const names: string[] = []
+  for (const user of users) {
+    if (user.active) names.push(user.name)
+  }
+  return names
+}
 ```
 
 ### Type Safety
-Make illegal states unrepresentable. The compiler, not a runtime check, should reject them.
+A discriminated union controls which fields a branch can read. TypeScript structural typing still accepts variables with extra fields. If storage or transmission forbids a key, reject it at the boundary or construct a fresh value from the allowed fields.
 
 - **Discriminated unions over optional-field bags**: `{ status: 'done'; completedAt: Date } | { status: 'open' }`, not `{ completed: boolean; completedAt?: Date }`.
 - **`unknown`, never `any`**, for external data. Narrow by discriminant `switch` > `in` > `typeof`/`instanceof` > type guard. A guard such as `isX` must verify its claim. A lying guard is worse than `as`, because the bug hides behind a name that says it is safe.
@@ -81,11 +112,13 @@ try {
 ```
 Never silently swallow with empty `catch {}`. Re-throw with context or handle explicitly.
 
-## Code Smells: must fix
+## Code smells
+
+Use the project’s thresholds first. Crossing a default target calls for a review of responsibilities. Apply the soft targets, hard limits, and exceptions in [Code thresholds](references/code-thresholds.md).
 
 | Smell | Fix |
 |---|---|
-| Function > 50 LOC | Extract helpers, one job per function |
+| Function over 50 LOC | Extract a helper when it has a distinct responsibility |
 | Nesting > 4 levels | Guard clauses / early returns |
 | Magic numbers | Named constants |
 | Long parameter list, more than 5 | Options object |
@@ -181,7 +214,7 @@ test('returns empty array when no markets match query', () => {
   // Arrange / Act / Assert
 })
 ```
-Descriptive names that read as specifications. No `test('works')`. See `tdd-workflow` skill for full TDD loop and 80%+ coverage requirements.
+Name tests after the behavior they demonstrate. Use `tdd-workflow` for tests and coverage requirements appropriate to the risk tier.
 
 ## Self-review after code changes
 
@@ -191,7 +224,7 @@ Use `tdd-workflow` to design the cases and `verification-loop` to record execute
 
 ## File Organization
 
-Many small focused files > few large files. Soft 300 LOC, hard 500 LOC per file; see `references/code-thresholds.md`. Organize by feature/domain, not by type.
+Organize files by project module boundaries and domain responsibility. Apply [Code thresholds](references/code-thresholds.md) when reviewing file length.
 
 ```
 src/
@@ -211,7 +244,7 @@ src/
 | React composition / compound components | `composition-patterns` |
 | React forms, error boundaries, a11y, animations | `references/react-patterns.md` |
 | Full code-review checklist: SOLID, severity, concurrency, cross-platform | `references/review-checklist.md` |
-| Common TS patterns: API response, custom hooks, repository, skeleton projects | `references/patterns.md` |
+| Common TS patterns: API response, custom hooks, repository, project templates | `references/patterns.md` |
 | Code thresholds: file/function LOC, complexity, params, nesting | `references/code-thresholds.md` |
 | Zustand global state | `zustand` |
 | REST/Next.js API design, validation, DB queries | `backend-patterns` |

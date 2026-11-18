@@ -25,11 +25,11 @@ Ensures all code follows TDD principles with comprehensive test coverage.
 
 | Step | Action | Verify |
 |------|--------|--------|
-| 1. User Journey | `As a [role], I want [action], so that [benefit]` | Stakeholder agrees |
-| 2. Write Tests | Cases for normal/edge/error/boundary | `npm test` → FAIL as Red, for the intended reason |
-| 3. Implement | Minimal code to pass | `npm test` → PASS as Green |
-| 4. Refactor | Remove dup, improve names, optimize | Tests stay green |
-| 5. Verify Coverage | `npm run test:coverage` | ≥ 80% on branches/functions/lines |
+| 1. Describe the behavior | Identify the caller and expected outcome | Matches the requirement |
+| 2. Red | Run the failing case with the project's test runner | Fails for the intended behavior |
+| 3. Green | Implement and rerun the same case | Observed result matches the expectation |
+| 4. Refactor | Run the affected tests | Observable behavior stays the same |
+| 5. Verify coverage | Use the project's coverage tool | Compare the measurement with the applicable threshold |
 
 ## Design failure cases before code
 
@@ -90,7 +90,7 @@ test('search returns relevant results', async ({ page }) => {
 
 ## Assertion Strength
 
-Before keeping a test, ask: **would it still pass if the code under test returned `undefined`?** If yes, it observes no behavior and cannot fail for a defect, so rewrite the assertion or delete the test.
+Check that omitting the required behavior or producing a wrong value would fail the test. For an API that returns no value, assert the state or effect its caller observes.
 
 Shapes that pass that check vacuously:
 
@@ -126,18 +126,20 @@ src/
 - [ ] Mock returns realistic shapes, e.g., a 1536-dim embedding vector
 - [ ] Both success and failure paths covered
 - [ ] Failure injection reaches the real operation and asserts its output and state after failure
-- [ ] No real network/DB calls in unit/integration tests
+- [ ] Unit tests use controlled dependencies. An integration test can use an isolated database when it verifies the database contract.
 - [ ] Mocks reset between tests, as in `beforeEach(jest.clearAllMocks)`
 
 ## Coverage Threshold in jest config
 
 ```json
 {
-  "coverageThresholds": {
+  "coverageThreshold": {
     "global": { "branches": 80, "functions": 80, "lines": 80, "statements": 80 }
   }
 }
 ```
+
+The global setting checks the aggregate. For a changed file threshold, compare the changed paths with the per-file coverage report. Include unexecuted new files in coverage collection and check sensitive paths against their own threshold.
 
 **Coverage tiers:**
 - **80% minimum** for tier C and above. D/E may waive, see When a Test Is Impractical.
@@ -160,7 +162,7 @@ src/
 
 Before marking work complete:
 - [ ] Test written FIRST and saw it fail, which proves Red, for the intended reason; a failure from setup, import, or typo is not Red, fix the test first
-- [ ] Every assertion survives the "code under test returns `undefined`" check
+- [ ] The test would fail if the required outcome or effect were missing
 - [ ] Implementation makes test pass without modifying test
 - [ ] Reachable failure and boundary cases selected using [failure case design](#design-failure-cases-before-code), with inapplicable categories explained
 - [ ] Failure cases assert the specific error and promised state preservation, cleanup, and recovery rather than only "throws"
@@ -171,6 +173,8 @@ Before marking work complete:
 - [ ] Completion report names the failing-before run and the passing-after run, or the substitute check and why
 
 ## Continuous Testing
+
+Use the repository's test command. For a Python project using standard unittest discovery, this can be `python3 -m unittest discover`. The examples below apply to npm projects that define the corresponding scripts.
 
 ```bash
 npm test -- --watch              # dev loop

@@ -3,28 +3,24 @@
 > Reference for the `coding-standards` skill. Emphasizes SOLID, Clean Code,
 > Functionality, Consistency, plus security, testing, performance.
 
-Review priorities, in order of enforcement weight: **SOLID → Clean Code →
-Functionality → Consistency**, followed by Security / Testing / Performance /
-Documentation. A change that scores well on later categories but fails any of
-the four priority categories must be sent back for revision.
+Give SOLID, Clean Code, functionality, and consistency equal weight. Rate each finding by the contract affected and the impact of the defect.
 
 ## Severity Legend
 
 Tag every finding with one of the labels below so the author knows what blocks
 merge vs. what can land as a follow-up.
 
-- **Blocker**: must fix before merge. SOLID violations, security issues,
-  broken functionality, data races, resource leaks, hard-limit overruns.
-- **Major**: fix in this PR. Clean Code violations, Consistency breaks,
-  missing tests for new code, soft-limit overruns with no plan.
-- **Minor**: follow-up acceptable. Doc polish, naming taste, performance
-  micro-opts, non-essential refactors.
+- **Blocker**. A defect that must be resolved before merging, such as an incorrect result, a security defect, a data race, a broken compatibility contract, or a hard limit exceeded without an applicable exception.
+- **Major**. A demonstrable maintainability problem or a significant verification gap in changed code. Describe the impact and the necessary fix.
+- **Minor**. An improvement suitable for follow-up. Identify the concrete benefit of a naming or documentation change.
 
-If unsure, default up, from Major to Blocker, rather than down.
+When severity is uncertain, distinguish confirmed impact from conditions that still need verification.
 
 ## Code Quality
 
-### Size Limits: see `code-thresholds.md` for soft/hard tiers
+### Size limits
+
+Check project limits and exceptions before applying the defaults below. [Code thresholds](code-thresholds.md)
 - [ ] File size ≤ 300 LOC soft / ≤ 500 LOC hard
 - [ ] Function size ≤ 50 LOC soft / ≤ 80 LOC hard
 - [ ] Parameters ≤ 5 soft / ≤ 7 hard
@@ -34,7 +30,7 @@ If unsure, default up, from Major to Blocker, rather than down.
 
 ### SOLID Principles
 - [ ] **S**ingle Responsibility: each module/class/function changes for exactly one reason
-- [ ] **O**pen/Closed: behavior extends without modifying existing stable code
+- [ ] At an extension point for independent implementations, existing callers keep working. For a closed set owned by the domain, adding a case includes reviewing existing branches.
 - [ ] **L**iskov Substitution: subtypes honor the contract of their supertype, with no surprising overrides
 - [ ] **I**nterface Segregation: callers don't depend on methods they never use
 - [ ] **D**ependency Inversion: high-level modules depend on abstractions such as a trait or interface, not concretions
@@ -75,42 +71,19 @@ Apply this pass after coding and when reviewing a PR, even when CI and success t
 - [ ] Relevant failure scenarios reviewed alongside success, with evidence or explicit limits
 - [ ] State preservation, cleanup, partial effects, and recovery checked where the contract requires them
 
-## Concurrency & Resource Safety
+## Concurrency and resource ownership
 
-This project uses Rust threads + `mpsc` channels + child processes. Review
-every concurrent touchpoint before approving.
+Trace the work and resources that the change starts or uses.
 
-- [ ] Channel lifecycle explicit: `Sender`/`Receiver` drop points identified,
-      no dangling producers after shutdown
-- [ ] `cancel_rx` cooperative cancellation check placed between long phases
-      following the `source::sync_all_sources` pattern
-- [ ] `JoinHandle` disposition explicit: either `join()` or intentionally
-      detached with a one-line comment stating why
-- [ ] No `Arc<Mutex<...>>` scope wider than necessary; hold the lock only
-      across the critical section
-- [ ] File handles / temp dirs use Drop-guard; own the cleanup, don't rely on
-      the process exiting
-- [ ] Child processes have bounded lifetime: timeout or explicit kill on the
-      cancel path; no orphaned zombies
-- [ ] Spawned threads that read pipes exit naturally when the child is killed
-      with no blocking reads past child death
-- [ ] Shared state between TUI tick and background thread goes through channels,
-      not raw mutable references
+- [ ] Identify who observes completion, handles cancellation, and releases resources at shutdown.
+- [ ] Where code uses channels, pipes, or locks, check that waiting can finish if a producer or consumer exits early.
+- [ ] Identify who can mutate shared state and check that access follows the project's synchronization model.
 
-## Error Handling: Rust
+## Rust error handling
 
-- [ ] `unwrap` / `expect` only where an invariant is locally provable; panic
-      messages name the invariant
-- [ ] `anyhow::Context` attached at call boundaries so the chain reads like a
-      narrative, not a stack trace
-- [ ] Custom error types use `thiserror` with explicit variants; avoid
-      `Box<dyn Error>` which loses match granularity
-- [ ] `Result` is actually handled; no silent `let _ =` on fallible calls
-      that touch external state
-- [ ] TUI code never calls `eprintln!`, which corrupts the alternate screen; errors
-      surface through `status_message` or typed channels
-- [ ] Sensitive data such as tokens and credentials scrubbed from error messages
-      before display or logging, following the `sanitize_stderr` pattern
+- [ ] Return recoverable errors with the information callers need to distinguish outcomes.
+- [ ] Check the local invariant behind each use of `unwrap` or `expect`.
+- [ ] Preserve diagnostic context and exclude credentials when displaying or logging an error.
 
 ## Consistency Review
 
@@ -122,28 +95,13 @@ every concurrent touchpoint before approving.
 - [ ] Dependency additions fit the existing stack; no duplicate libraries for the same job
 - [ ] Documentation tone and structure match surrounding docs
 
-## Cross-platform Considerations
+## Supported platforms
 
-This project ships to macOS, Linux, and Windows via Homebrew, Scoop, and source.
-Any change that touches paths, commands, or file I/O must be reviewed against
-all three.
+Identify supported environments from the project's release configuration and documentation. If a changed operation differs across those environments, verify the contract on the affected targets.
 
-- [ ] Path joins use `Path::join` / `PathBuf`; no hardcoded `/` or `\`
-      separators; no string concatenation
-- [ ] `canonicalize()` used when comparing paths that may contain symlinks
-      for example macOS `/tmp` → `/private/tmp`
-- [ ] MSYS / Cygwin path shapes such as `/c/Users/...` normalized via
-      `normalize_git_path` before display or file ops on Windows
-- [ ] Shell commands invoked via `Command::new("tool")` directly; **never**
-      `cmd /c ...`, because of shell injection risk on Windows
-- [ ] User-provided command strings pass `is_safe_command`, which blocks Unix
-      `&|><;` and Windows `%^!` metacharacters
-- [ ] File permissions set explicitly when creating executables on Unix
-      via `PermissionsExt::set_mode`; Windows ignores safely
-- [ ] Line endings tolerated in comparisons: `normalize_line_endings` strips
-      `\r` so CRLF vs LF does not flip "Modified" status
-- [ ] Hook/statusline paths derive from `dest_dir.file_name()` to support both
-      `~/.claude` and `~/.codex` targets
+- [ ] Build paths in the form callers expect. Exercise real paths when symlinks or case sensitivity affect their meaning.
+- [ ] Preserve executable and argument boundaries. If paths with spaces or empty arguments are supported, check what the child receives.
+- [ ] Apply permission and line ending conversions according to the artifact format and file comparison contract.
 
 ## Security Review
 

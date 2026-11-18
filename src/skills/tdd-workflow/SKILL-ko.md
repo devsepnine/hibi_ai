@@ -25,11 +25,11 @@ description: "Test-first development: success and failure cases, red/green/refac
 
 | Step | Action | Verify |
 |------|--------|--------|
-| 1. User Journey | `As a [role], I want [action], so that [benefit]` | Stakeholder agrees |
-| 2. Write Tests | Cases for normal/edge/error/boundary | `npm test` → FAIL, 즉 Red, 의도한 이유로 |
-| 3. Implement | Minimal code to pass | `npm test` → PASS, 즉 Green |
-| 4. Refactor | Remove dup, improve names, optimize | Tests stay green |
-| 5. Verify Coverage | `npm run test:coverage` | ≥ 80% on branches/functions/lines |
+| 1. 동작 정의 | 호출자와 기대 결과를 식별한다 | 요구사항과 일치한다 |
+| 2. Red | 프로젝트의 테스트 러너로 재현 사례를 실행한다 | 의도한 동작 차이로 실패한다 |
+| 3. Green | 필요한 만큼 구현하고 같은 사례를 실행한다 | 기대 결과를 얻는다 |
+| 4. 리팩토링 | 영향받는 테스트를 실행한다 | 관찰 가능한 동작을 유지한다 |
+| 5. 커버리지 | 프로젝트의 커버리지 도구로 측정한다 | 적용할 기준과 실제 수치를 비교한다 |
 
 ## 구현 전에 실패 사례를 설계한다
 
@@ -90,7 +90,7 @@ test('search returns relevant results', async ({ page }) => {
 
 ## Assertion 강도
 
-테스트를 남기기 전에 묻는다: **테스트 대상 코드가 `undefined`를 반환해도 이 테스트가 통과하는가?** 그렇다면 아무 동작도 관찰하지 않으므로 결함으로 실패할 수 없다. assertion을 다시 쓰거나 테스트를 삭제한다.
+요구한 동작을 빼거나 틀린 값으로 바꾸면 테스트가 실패하는지 확인한다. 반환값이 없는 API는 호출자가 관찰하는 상태나 효과를 검증한다.
 
 이 검사를 공허하게 통과하는 형태:
 
@@ -126,18 +126,20 @@ src/
 - [ ] mock은 현실적인 shape를 반환, 예: 1536-dim embedding 벡터
 - [ ] success path와 failure path 모두 커버
 - [ ] 실제 작업까지 실패를 주입하고 출력과 실패 후 상태를 검증
-- [ ] unit/integration 테스트에 실제 network/DB 호출 금지
+- [ ] 단위 테스트는 의존성을 통제한다. DB 계약을 검증하는 통합 테스트는 격리된 데이터베이스를 사용할 수 있다.
 - [ ] 테스트 사이에 mock reset, 예: `beforeEach(jest.clearAllMocks)`
 
 ## jest config 커버리지 임계치
 
 ```json
 {
-  "coverageThresholds": {
+  "coverageThreshold": {
     "global": { "branches": 80, "functions": 80, "lines": 80, "statements": 80 }
   }
 }
 ```
+
+위 설정은 전체 파일 합계에 적용된다. 변경 파일에 기준이 있으면 변경 목록과 파일별 커버리지 보고서를 대조한다. 실행되지 않은 새 파일도 측정 대상으로 포함하고, 민감 경로의 기준은 해당 파일에서 확인한다.
 
 **커버리지 계층:**
 - 티어 C 이상에 대해 **80% minimum**. D/E는 면제 가능하며, 테스트가 비현실적일 때를 참고한다.
@@ -160,7 +162,7 @@ src/
 
 작업을 완료로 표시하기 전에:
 - [ ] 테스트를 먼저 작성했고 실패를 확인했다. 의도한 이유로 실패해야 Red가 입증된 것이며, setup·import·오타로 인한 실패는 Red가 아니므로 테스트부터 고친다
-- [ ] 모든 assertion이 "테스트 대상이 `undefined` 반환" 검사를 통과한다
+- [ ] 요구한 결과나 효과가 빠지면 테스트가 실패한다
 - [ ] 구현은 테스트를 수정하지 않고 통과시킨다
 - [ ] [실패 사례 설계](#구현-전에-실패-사례를-설계한다)에 따라 도달 가능한 실패와 경계 사례를 고르고, 적용되지 않는 유형의 이유를 설명했다
 - [ ] 실패 사례에서 단순 "throws" 대신 구체적인 오류와 약속한 상태 보존, 정리, 복구를 검증했다
@@ -171,6 +173,8 @@ src/
 - [ ] 완료 보고에 실패-전 실행과 통과-후 실행, 또는 대체 검사와 그 이유를 명시한다
 
 ## 지속적 테스트
+
+저장소의 테스트 명령을 사용한다. 기본 `unittest` 프로젝트에서는 `python3 -m unittest discover`를 사용할 수 있다. 다음은 npm과 해당 스크립트를 사용하는 프로젝트의 예다.
 
 ```bash
 npm test -- --watch              # dev loop

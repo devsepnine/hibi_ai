@@ -1,19 +1,19 @@
 ---
-title: "Turbo Monorepo: apps -> packages One-Way, No lib -> lib"
+title: "Workspace Package Boundaries"
 impact: HIGH
 impactDescription: a clean apps/packages/lib gradient keeps deploy units independent and stops dependency cycles from forming across the workspace
 tags: architecture, monorepo, turborepo
 ---
 
-## Turbo Monorepo: apps -> packages One-Way, No lib -> lib
+## Workspace Package Boundaries
 
-Turborepo 모노레포는 workspace 수준에 적용된 복합 레이어링이다. 각 workspace 폴더는 하나의 역할을 맡고, 의존성은 오직 한 방향으로만 흐른다.
+저장소의 아키텍처와 패키지 경계를 먼저 확인한다. 다음 구조에서는 앱이 배포 단위를 소유하고 패키지가 재사용 가능한 기능을 제공한다.
 
 1. **`apps/*`**: `packages` 기능을 엮는 orchestrator이며, 각 app은 독립적으로 빌드/배포 가능한 단위, 즉 application이다. 규칙은 `app -> packages`가 언제나 one-way라는 것이다. app은 다른 app을 import하지 않는다.
 2. **`packages/<domain>*`**: domain 레이어로, 도메인의 invariant인 business-logic과 도메인의 long-term 상태인 data-access를 담는다.
 3. **`packages/lib*`**: foundation 레이어로, business-logic과 data-access가 의존하는 순수 기능이다. `packages/domain -> packages/lib`는 one-way다.
 
-지양해야 하는 간선은 **`packages/lib -> packages/lib`**이다. foundation package는 다른 foundation package에 의존해서는 안 된다. `lib2`가 `lib1`의 공유 의존성이 될 만큼 충분히 일반적이라면, 그것은 애초에 `packages`에 속하지 않고 `node_modules` 대상이다. 배포하거나 third-party 의존성으로 다룬다. `lib` package를 leaf 수준으로 유지하면 foundation이 평평하고 acyclic하게 유지된다.
+프로젝트가 허용하면 기반 패키지는 다른 기반 패키지의 공개 API를 사용할 수 있다. 워크스페이스 의존성을 선언하고 그래프에 순환이 없는지 확인한다. 프로젝트가 기반 패키지를 말단으로 정했다면 그 규칙을 따른다. 외부 배포 여부는 따로 판단한다.
 
 각 domain package를 세 영역으로 나눠 front와 server가 contract만 정확히 공유하고 그 이상은 공유하지 않도록 한다.
 
@@ -46,50 +46,18 @@ packages/
   fetch        # foundation (lib)
 ```
 
-**Incorrect:**
+클라이언트 패키지에서 통신 패키지를 사용하는 예시:
 
-```jsonc
-// packages/pdfUtil/package.json  — a lib depending on another lib
+```json
 {
-  "name": "@acme/pdfUtil",
+  "name": "@acme/api-client",
   "dependencies": {
-    "@acme/llmApi": "workspace:*"   // lib -> lib: foundation is no longer flat
-  }
-}
-
-// apps/ndxServer/src/index.ts  — an app reaching into another app
-import { renderPdf } from "../../pdfServer/src/render"   // app -> app: forbidden
-```
-
-**Correct:**
-
-```jsonc
-// packages/pdf/server/package.json  — domain depends DOWN on foundation libs
-{
-  "name": "@acme/pdf-server",
-  "dependencies": {
-    "@acme/pdfUtil": "workspace:*",   // domain -> lib, one-way
-    "@acme/fetch": "workspace:*"
-  }
-}
-
-// packages/pdfUtil/package.json  — a foundation lib is a leaf: no workspace deps
-{
-  "name": "@acme/pdfUtil",
-  "dependencies": {
-    "pdf-lib": "^1.17.0"   // truly shared general code lives in node_modules
-  }
-}
-
-// apps/ndxServer/package.json  — app depends DOWN on packages only
-{
-  "name": "ndx-server",
-  "dependencies": {
-    "@acme/ndx-server": "workspace:*",
-    "@acme/llmApi": "workspace:*"
+    "@acme/transport": "workspace:*"
   }
 }
 ```
+
+`@acme/transport`가 다시 `@acme/api-client`를 import하면 순환이 생긴다. 클라이언트에만 필요한 동작을 클라이언트로 옮기거나 공통 계약을 두 패키지의 하위 의존성으로 분리한다.
 
 app이나 package *내부*의 컴포넌트 구조, 즉 context, compound component, prop 경계를 어떻게 잡을지는 `composition-patterns` skill을 참고하라.
 

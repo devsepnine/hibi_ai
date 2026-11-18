@@ -50,12 +50,10 @@ Do basic detection here using the patterns below; defer deep OWASP/CWE mapping, 
 
 ## Code Quality: HIGH
 
-- Large functions, over 50 lines
-- Large files, over 800 lines
-- Deep nesting, over 4 levels
+- Compare function size, file size, and nesting with the project’s thresholds. Where the project leaves a choice, use the defaults and exceptions in `coding-standards`.
 - Missing error handling, such as try/catch
 - console.log statements
-- Mutation patterns
+- Mutation of shared state that violates the caller's ownership contract. Check local builders and explicit in-place APIs against their intended behavior.
 - Missing tests for new code
 - Comments that restate what the code says. Code is the spec, so the fix is a refactor by rename or extract, not a better comment
 - Stale comments contradicting current behavior
@@ -95,7 +93,7 @@ Before a candidate goes in the report, it must survive these:
 - **Caused or exposed by this change**: a pre-existing style or quality issue the diff neither caused nor exposed is not a finding against it. Comments the diff invalidated, per step 3, are caused by it; a pre-existing security or correctness defect in a touched file is still reported.
 - **Nits only**: if only LOW/style nits remain, [APPROVE] and list them as suggestions; do not inflate them into warnings.
 
-Checklist items above, such as missing tests, secrets, and size thresholds, are concrete by definition and skip the first two filters. Never drop a security or correctness candidate without tracing its path.
+Apply the project's rules and the observed behavior to checklist items too. Identify the behavior a missing test should cover and check applicable exceptions to size limits. Trace security and correctness candidates through the affected path.
 
 After the verdict, add **Dismissed** only when you dropped a security or correctness candidate: one line each on why, so the caller can overrule you.
 

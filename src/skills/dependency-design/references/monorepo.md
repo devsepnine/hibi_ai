@@ -115,16 +115,12 @@ client.
 ```
 apps/*  ──────────────▶  packages/*          (always allowed, one-way)
 packages/<domain>  ───▶  packages/<lib>       (allowed, one-way)
-packages/<lib>     ──╳   packages/<lib>       (discouraged)
+packages/<lib>     ───▶  packages/<lib>       (when the project allows this acyclic edge)
 ```
 
 - `app → packages`: always one-way, never the reverse.
 - `packages/<domain> → packages/<lib>`: one-way; domains lean on foundations.
-- `packages/<lib> → packages/<lib>`: **discouraged.** If a lib genuinely needs
-  another lib, that shared dependency belongs in `node_modules`, that is, publish
-  it as an external dependency rather than letting one in-repo foundation
-  package reach sideways into another. This keeps the foundation layer flat and
-  prevents a hidden second layer of internal coupling.
+- `packages/<lib> → packages/<lib>`: declare the workspace dependency, import its public API, and check for cycles. Apply a leaf-only rule when the project defines one.
 
 The aim throughout is to keep every edge pointing in one direction and to stop
 volatile, domain-aware code from being dragged in by stable foundation code.
@@ -180,8 +176,7 @@ Reading the tree against the viewpoints: `ndxFront` is simultaneously a
 presentation interface, a domain participant, and an orchestrator; `ndxServer`
 is an application-lifecycle orchestrator. Both pull domain invariants and state
 from `packages/ndx`, which in turn rests on foundation libs like `fetch` and
-`socket`. No package points back up at an app, and no foundation lib points
-sideways at another.
+`socket`. In this example no package imports an app.
 
 ## How this shows up in code
 

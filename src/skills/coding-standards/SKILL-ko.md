@@ -1,11 +1,13 @@
 ---
 name: coding-standards
-description: "TS/JS/React/Node coding standards: naming, immutability, error handling, comment rules, code smells, file layout. Use when writing or reviewing code. 코딩 표준, 코드 스타일, 주석 규칙, 코드 리뷰, 클린 코드."
+description: "Design and review code under project conventions: domain types, mutation, boundaries, tests, and comments. Includes TypeScript and JavaScript examples. 코딩 표준, 도메인 모델링, 불변성, 코드 리뷰."
 ---
 
 # 코딩 표준 & 모범 사례
 
 범용 코딩 표준. 언어/프레임워크 특화 사항은 자매 skill에 위임한다.
+
+**코드를 작성하기 전에 프로젝트의 개발·코딩 지침과 아키텍처 문서에서 변경 대상에 적용되는 규칙과 예외를 확인한다.** 설계는 그 규칙을 따르고, 선택이 열려 있는 부분에서는 함수형 설계를 기본값으로 삼는다. 리뷰할 때는 변경한 코드를 해당 규칙과 대조한다.
 
 ## 핵심 원칙
 
@@ -14,6 +16,30 @@ description: "TS/JS/React/Node coding standards: naming, immutability, error han
 - **DRY**: 공통 로직 추출; 복사-붙여넣기 금지.
 - **YAGNI**: 추측성 요구를 위해 만들지 말 것; 필요해질 때 리팩토링한다.
 - **SOLID**: SRP / OCP / LSP / ISP / DIP. 모듈당 변경 이유는 하나.
+
+## 실제 사례 하나로 모델 다듬기
+
+유효한 상태를 명시하고, 가능한 곳에서는 데이터 변환을 순수 함수로 작성하며, 입출력은 경계에 모은다. 이 기본값은 이번 변경 범위 안에서 적용한다.
+
+### 합 타입으로 상태 모델링하기
+
+곱 타입은 여러 값을 함께 담고, 합 타입은 여러 경우 중 하나를 표현한다. 두 타입은 조합할 수 있다. 예를 들어 완료한 작업에는 완료 시각과 결과가 모두 필요하고, 진행 중인 작업에는 둘 다 없다. TypeScript에서는 각 경우에 고유한 `status` 리터럴을 두고 그 경우에 필요한 필드를 함께 선언한다.
+
+### 유니온과 인터페이스 선택하기
+
+새 경우가 생기면 어느 코드를 함께 바꿔야 하는지 묻는다. 취소 상태를 추가할 때 모든 상태 처리기를 검토해야 한다면 판별 유니온을 쓰고 `never`로 빠진 분기를 확인한다. 플러그인이 처리기를 추가할 수 있고 기존 호출자는 공통 연산만 수행하면 된다면 그 연산을 인터페이스로 정의한다.
+
+### 테스트와 사용 예시로 타입 다듬기
+
+실제 호출자 하나에서 시작한다. 테스트에는 호출자가 관찰할 결과를, 사용 예시에는 API의 계약을, 타입에는 허용되는 입력을 표현한다. 예시를 쓸 때 호출할 때마다 같은 주의사항을 설명해야 한다면, 입력 경계에서 그 조건을 한 번 파싱해 타입에 담을 수 있는지 본다. 다음 사례에서 새 조건이 드러나면 모델을 고친다. 예를 들어 조회 결과가 없는 경우와 읽기에 실패한 경우에 호출자의 대응이 다르면 둘을 구분한다.
+
+### 다른 언어에서 같은 조건을 보장하는 방법 찾기
+
+설계를 옮길 때는 각 조건을 대상 언어에서 무엇이 보장하는지 확인한다. TypeScript는 파싱한 유니온을 컴파일 시점에 좁힐 수 있다. JavaScript는 외부 입력을 실행 시점에 파싱해야 한다. Python에서는 타입 힌트를 정적 검사에 쓰고 Pydantic 모델로 실행 중 입력을 파싱할 수 있다. 프로젝트가 이미 스키마 라이브러리를 쓰면 하나의 선언으로 입력을 파싱하고 그 값을 처리 함수에 전달한다. 업무 로직이 파싱된 값만 쓰면 리플렉션과 데코레이터는 어댑터 안에 둔다.
+
+변경 가능성도 같은 방식으로 살핀다. TypeScript에서 한 참조가 `readonly`여도 다른 참조로 같은 객체를 변경할 수 있다. 스냅샷을 외부에 전달한다면 누가 중첩 데이터의 쓰기 참조를 갖고 있는지 확인하고, 값이 유지되어야 하는 부분을 복사하거나 소유권을 넘긴다.
+
+익숙하지 않은 언어로 AI가 작성한 코드를 리뷰할 때는 입력값 하나가 어디서 바뀌고 어떤 결과로 돌아오는지 직접 따라간다. 값이 없거나 다른 호출자가 변경하면 어떻게 될지 예측하고, 컴파일러나 작은 테스트로 확인한다. 예측과 실제가 달랐던 지점을 다음 설계에 반영한다.
 
 ## 명명
 
@@ -35,19 +61,24 @@ const DEBOUNCE_DELAY_MS = 500
 
 ## TypeScript / JavaScript 패턴
 
-### 불변성: CRITICAL
-```typescript
-// Always: spread / new object
-const updated = { ...user, name: 'New' }
-const next = [...items, newItem]
+### 공유 상태와 지역 값의 변경
 
-// Never: direct mutation
-user.name = 'New'      // BAD
-items.push(newItem)    // BAD
+프로젝트의 상태 갱신 계약을 따른다. 공유 스냅샷을 갱신할 때는 변경하는 경로만 복사한다. 함수 안에서 새로 만든 배열이나 빌더는 외부에 전달하기 전까지 직접 채울 수 있다.
+
+```typescript
+const updated = { ...user, name: 'New' }
+
+function activeNames(users: readonly { name: string; active: boolean }[]): string[] {
+  const names: string[] = []
+  for (const user of users) {
+    if (user.active) names.push(user.name)
+  }
+  return names
+}
 ```
 
 ### 타입 안전성
-불가능한 상태를 표현할 수 없게 만든다. 런타임 검사가 아니라 컴파일러가 거부해야 한다.
+판별 유니온은 각 분기에서 읽을 수 있는 필드를 정한다. TypeScript의 구조적 타입 검사에서는 추가 필드가 있는 변수도 전달할 수 있다. 저장이나 전송 시 특정 키가 없어야 하면 경계에서 그 키를 거부하거나 허용한 필드로 새 값을 구성한다.
 
 - **optional 필드 묶음 대신 discriminated union**: `{ completed: boolean; completedAt?: Date }`가 아니라 `{ status: 'done'; completedAt: Date } | { status: 'open' }`.
 - 외부 데이터는 **`any`가 아니라 `unknown`**. 내로잉 우선순위: discriminant `switch` > `in` > `typeof`/`instanceof` > type guard. `isX` 같은 guard는 주장을 실제로 검증해야 한다. 거짓 guard는 `as`보다 나쁘다. 안전하다고 말하는 이름 뒤에 버그가 숨기 때문이다.
@@ -81,11 +112,13 @@ try {
 ```
 빈 `catch {}`로 조용히 삼키지 말 것. 컨텍스트와 함께 다시 throw하거나 명시적으로 처리한다.
 
-## 코드 스멜: 반드시 수정
+## 코드 스멜
+
+프로젝트가 정한 기준을 먼저 적용한다. 아래 기본 수치를 넘기면 함수의 책임을 검토한다. 소프트 목표와 하드 한도, 예외는 [크기 기준](references/code-thresholds-ko.md)을 따른다.
 
 | Smell | Fix |
 |---|---|
-| 함수가 50 LOC 초과 | helper 추출, 함수당 한 가지 일 |
+| 함수가 50 LOC 초과 | 별도 책임이 드러나면 추출한다 |
 | 중첩 > 4단계 | guard clause / 조기 반환 |
 | 매직 넘버 | 명명된 상수 |
 | 긴 파라미터 목록, 5개 초과 | options 객체 |
@@ -181,7 +214,7 @@ test('returns empty array when no markets match query', () => {
   // Arrange / Act / Assert
 })
 ```
-명세처럼 읽히는 서술적 이름. `test('works')` 같은 건 금지. 전체 TDD 루프와 80%+ 커버리지 요구사항은 `tdd-workflow` skill 참조.
+테스트 이름으로 관찰할 동작을 설명한다. 위험 등급에 맞는 테스트와 커버리지 기준은 `tdd-workflow`를 따른다.
 
 ## 코드 변경 후 셀프리뷰
 
@@ -191,7 +224,7 @@ test('returns empty array when no markets match query', () => {
 
 ## 파일 조직화
 
-작고 집중된 다수의 파일 > 큰 파일 소수. 파일당 soft 300 LOC, hard 500 LOC이며 `references/code-thresholds.md`를 참조한다. 타입이 아닌 feature/domain 으로 조직한다.
+파일은 프로젝트의 모듈 경계와 도메인 책임에 맞춰 구성한다. 파일 길이를 검토할 때 [크기 기준](references/code-thresholds-ko.md)을 참고한다.
 
 ```
 src/
@@ -211,7 +244,7 @@ src/
 | React 컴포지션 / compound components | `composition-patterns` |
 | React 폼, 에러 바운더리, a11y, 애니메이션 | `references/react-patterns.md` |
 | 전체 코드 리뷰 체크리스트: SOLID, severity, concurrency, cross-platform | `references/review-checklist.md` |
-| 공통 TS 패턴: API 응답, 커스텀 훅, repository, skeleton 프로젝트 | `references/patterns.md` |
+| 공통 TS 패턴: API 응답, 커스텀 훅, repository, 프로젝트 템플릿 | `references/patterns.md` |
 | 코드 임계값: 파일/함수 LOC, 복잡도, 파라미터, 중첩 | `references/code-thresholds.md` |
 | Zustand 전역 상태 | `zustand` |
 | REST/Next.js API 설계, 검증, DB 쿼리 | `backend-patterns` |

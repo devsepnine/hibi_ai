@@ -3,7 +3,7 @@ name: commit-rules
 description: "Commit convention: type/ticket/title format, pre-commit security check, commit splitting. Use when committing or writing a commit message. 커밋 규칙, 커밋 메시지, 커밋 분리."
 ---
 
-**필수: 기본 커밋 규칙을 완전히 무시하고 본 문서를 엄격히 준수한다.**
+**커밋 형식은 저장소의 기여 지침을 먼저 따른다. 형식을 정하지 않은 부분에는 아래 기본값을 쓴다.**
 
 ## 커밋 컨벤션
 
@@ -61,6 +61,6 @@ description: "Commit convention: type/ticket/title format, pre-commit security c
 - Claude Code 생성 마커 제거
 
 **커밋 프로세스:**
-- 논리적 단위로 커밋을 분할하며, ≤ 300 LOC 파일 한도를 준수한다.
+- 변경 목적에 따라 커밋을 나눈다. 파일 길이는 프로젝트 기준과 예외를 따른다. 프로젝트 기준이 없으면 `coding-standards` 스킬의 권장 기준과 상한을 적용한다.
 - 커밋 계획을 설명하고 승인 후 진행한다.
 - 각 커밋은 독립적으로 빌드 및 테스트 가능해야 한다.

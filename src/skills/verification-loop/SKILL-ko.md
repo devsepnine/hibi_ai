@@ -27,70 +27,36 @@ Phase 1~6은 대리 지표다: build·타입 체크·테스트가 green이면 �
 4. 도구가 없는 이유는 앱의 권한 등급일 수 있다. 실행 도구가 없어도 제공되는 조회 도구를 활용한다. 명시적으로 거부된 권한을 셸 실행으로 우회하지 않는다.
 5. MCP를 사용할 수 없거나, 맞는 설정이 없거나, 실행 도구가 없으면 한계를 밝히고 별도로 허용된 셸 명령을 사용한다. 검증 한 번을 위해 저장된 설정을 만들거나 덮어쓰지 않는다. 시작 요청의 결과가 불확실하면 재시도나 대체 실행 전에 세션을 확인해 프로세스 중복을 피한다.
 
-아래 명령은 검증할 내용을 보여준다. 실행 방법을 선택하기 전에 이 준비 절차를 적용한다.
+검사 명령은 프로젝트 문서, 매니페스트, CI에서 선택하고 위 절차로 실행한다. 해당 단계가 없는 프로젝트는 이유와 함께 `N/A`로 표시하고 적용되는 검사를 계속한다.
 
 ## 검증 단계
 
-### Phase 1: Build Verification
-```bash
-# Check if project builds
-npm run build 2>&1 | tail -20
-# OR
-pnpm build 2>&1 | tail -20
-```
+### Phase 1: 빌드
 
-빌드가 실패하면 STOP, 진행 전에 고친다.
+배포에 빌드가 필요하면 프로젝트의 빌드 명령을 실행한다. 빌드에 의존하는 검사는 빌드 실패를 해결한 뒤 실행한다. 소스에서 바로 실행하는 Python CLI는 실제 CLI 진입점을 검증한다.
 
-### Phase 2: Type Check
-```bash
-# TypeScript projects
-npx tsc --noEmit 2>&1 | head -30
+### Phase 2: 타입 검사
 
-# Python projects
-pyright . 2>&1 | head -30
-```
+프로젝트가 구성한 검사기와 설정을 사용한다. 예를 들어 TypeScript의 타입 검사 스크립트나 Rust의 `cargo check`를 실행한다.
 
-모든 type 에러를 보고한다. 진행 전에 critical한 것들을 수정한다.
+### Phase 3: 린트
 
-### Phase 3: Lint Check
-```bash
-# JavaScript/TypeScript
-npm run lint 2>&1 | head -30
+프로젝트에서 해당 파일에 적용하는 린터와 포매터를 실행한다.
 
-# Python
-ruff check . 2>&1 | head -30
-```
+### Phase 4: 테스트
 
-### Phase 4: Test Suite
-```bash
-# Run tests with coverage
-npm run test -- --coverage 2>&1 | tail -50
+저장소의 테스트 러너로 변경된 동작을 확인한다. 통과, 실패, 건너뛴 테스트 수를 기록한다. 커버리지 기준이 있으면 프로젝트가 설정한 한도와 측정 결과를 비교한다.
 
-# Check coverage threshold
-# Target: 80% minimum
-```
+### Phase 5: 보안 검사
 
-보고:
-- Total tests: X
-- Passed: X
-- Failed: X
-- Coverage: X%
-
-### Phase 5: Security Scan
-```bash
-# Check for secrets
-grep -rn "sk-" --include="*.ts" --include="*.js" . 2>/dev/null | head -10
-grep -rn "api_key" --include="*.ts" --include="*.js" . 2>/dev/null | head -10
-
-# Check for console.log
-grep -rn "console.log" --include="*.ts" --include="*.tsx" src/ 2>/dev/null | head -10
-```
+변경된 데이터와 권한 경계를 따라 입력 처리, 자격 증명 노출, 로그를 확인한다. 저장소 스캐너가 있으면 대상 파일 형식에 맞춰 실행한다. 시크릿 후보는 경로만 보고한다. `rg`의 종료 코드 1은 일치 없음이고 2 이상은 검사 오류다.
 
 ### Phase 6: Diff Review
 ```bash
 # Show what changed
+git status --short
 git diff --stat
-git diff HEAD~1 --name-only
+git diff --cached --stat
 ```
 
 변경된 각 파일에 대해 검토:
@@ -121,17 +87,19 @@ git diff HEAD~1 --name-only
 
 ## 출력 포맷
 
+여러 항목을 전수 검토할 때는 목록 확인, 연관된 계약 대조, 실제 실행의 범위를 각각 기록한다. 예를 들어 상세 예제의 호출자를 진입 문서에 선언된 인터페이스와 함께 컴파일한다. 반복 리뷰에서는 이전 회차에 빠진 관련 경로를 확인하고, 결함이 0건이면 그 판정이 적용되는 범위를 적는다.
+
 모든 phase를 실행한 후 검증 보고서를 산출한다:
 
 ```
 VERIFICATION REPORT
 ==================
 
-Build:     [PASS/FAIL]
-Types:     [PASS/FAIL] (X errors)
-Lint:      [PASS/FAIL] (X warnings)
-Tests:     [PASS/FAIL] (X/Y passed, Z% coverage)
-Security:  [PASS/FAIL] (X issues)
+Build:     [PASS/FAIL/N/A]
+Types:     [PASS/FAIL/N/A] (X errors)
+Lint:      [PASS/FAIL/N/A] (X warnings)
+Tests:     [PASS/FAIL/N/A] (passed, failed, skipped; coverage if measured)
+Security:  [PASS/FAIL/N/A] (X issues)
 Diff:      [X files changed]
 Artifact:  [PASS/FAIL/INCONCLUSIVE] (what was run, what was observed)
 Failure paths: [PASS/FAIL/INCONCLUSIVE/N/A] (scenarios, state after failure, evidence or limits)

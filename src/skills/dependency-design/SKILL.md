@@ -59,7 +59,7 @@ Reach for the matching reference when the situation below appears.
 ### Layered & Monorepo Architecture: MEDIUM
 
 - `architecture-layer-unidirectional`: Layered architecture: one-way dependency, watch N:N mapping
-- `architecture-monorepo-apps-to-packages`: Turbo monorepo: apps→packages one-way, no lib→lib
+- `architecture-monorepo-apps-to-packages`: Respect workspace boundaries and keep package dependencies acyclic
 - `architecture-linear-interconnection`: Control interconnection complexity: linear flow + message constraints
 
 ### AI-Friendly Ownership: MEDIUM
