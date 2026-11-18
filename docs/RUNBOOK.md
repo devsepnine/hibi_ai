@@ -8,7 +8,7 @@
 
 ### 베타와 서명 키
 
-첫 베타는 `v2.0.0-beta`로 게시하고 다음 베타는 `v2.0.0-beta.1`로 게시한다. 베타 기간에는 Homebrew Formula와 Scoop Manifest가 기존 정식판을 가리킨다. 정식 v2를 게시한 뒤 두 패키지의 버전과 해시를 갱신한다.
+`v2.0.0-beta` 태그는 GUI 검증에서 중단됐다. 첫 공개 베타에는 `v2.0.0-beta.1` 태그를 사용한다. 베타 기간에는 Homebrew Formula와 Scoop Manifest가 기존 정식판을 가리킨다. 정식 v2를 게시한 뒤 두 패키지의 버전과 해시를 갱신한다.
 
 앱은 `tools/installer/assets/update.pub`의 minisign 공개키를 내장한다. 운영자가 해당 개인키 파일 전체를 저장소의 Actions Secret `HIBI_UPDATE_SECRET_KEY`에 등록한다. CI는 비대화형 서명 후 같은 공개키로 검증한다. 키가 없거나 일치하지 않으면 배포가 중단된다. 이미 배포한 앱은 내장 키를 신뢰하므로 다음 릴리스에도 같은 키를 쓴다.
 

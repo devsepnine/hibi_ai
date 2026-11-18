@@ -82,10 +82,11 @@ esac
             time.sleep(.1)
         raise TimeoutError("Installer did not open its X11 window")
 
-    def capture(self):
-        self.window.warp_pointer(8, 8)
-        self.d.sync()
-        time.sleep(.08)
+    def capture(self, *, park_pointer=True):
+        if park_pointer:
+            self.window.warp_pointer(8, 8)
+            self.d.sync()
+            time.sleep(.08)
         geometry = self.window.get_geometry()
         raw = self.window.get_image(0, 0, geometry.width, geometry.height, X.ZPixmap, 0xffffffff)
         return Image.frombytes("RGB", (geometry.width, geometry.height), raw.data, "raw", "BGRX")
@@ -154,16 +155,33 @@ esac
         return " ".join(word["text"] for word in self.words())
 
     def expect(self, label, timeout=8):
+        return self.expect_any((label,), timeout)
+
+    def expect_any(self, labels, timeout=8):
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            if normalized(label) in normalized(self.text()):
-                return
+            screen = normalized(self.text())
+            for label in labels:
+                if normalized(label) in screen:
+                    return label
             time.sleep(.1)
         self.screenshot("failure")
-        raise AssertionError(f"Expected text {label!r}; recognized: {self.text()}")
+        raise AssertionError(f"Expected one of {labels!r}; recognized: {self.text()}")
 
     def find(self, label, region=None):
-        words = self.words()
+        deadline = time.monotonic() + 8
+        while True:
+            words = self.words()
+            bounds = self.label_bounds(words, label, region)
+            if bounds is not None:
+                return bounds
+            if time.monotonic() >= deadline:
+                recognized = " ".join(word["text"] for word in words)
+                raise AssertionError(f"Could not locate {label!r}; recognized: {recognized}")
+            time.sleep(.1)
+
+    @staticmethod
+    def label_bounds(words, label, region):
         wanted = normalized(label)
         for index, first in enumerate(words):
             if region and not (region[0] <= first["x"] <= region[2] and region[1] <= first["y"] <= region[3]):
@@ -181,7 +199,6 @@ esac
                     return first["x"], first["y"], right-first["x"], bottom-first["y"]
                 if not wanted.startswith(phrase):
                     break
-        raise AssertionError(f"Could not locate {label!r}; recognized: {self.text()}")
 
     def click(self, x, y):
         self.window.warp_pointer(round(x), round(y))
@@ -205,12 +222,25 @@ esac
     def expect_theme(self, theme):
         deadline = time.monotonic() + 8
         while time.monotonic() < deadline:
-            dark = sum(self.capture().getpixel((0, 0))) < 300
+            dark = sum(self.capture(park_pointer=False).getpixel((0, 0))) < 300
             if dark == (theme == "dark"):
                 return
             time.sleep(.1)
         self.screenshot("failure")
         raise AssertionError(f"Expected {theme} theme")
+
+    def expect_scroll(self, before, label):
+        # Both scroll panes fill the center of the window below the dialog title.
+        viewport = (before.width // 8, before.height // 4,
+                    before.width * 7 // 8, before.height * 3 // 4)
+        previous = before.crop(viewport)
+        deadline = time.monotonic() + 8
+        while time.monotonic() < deadline:
+            current = self.capture(park_pointer=False).crop(viewport)
+            if ImageChops.difference(previous, current).getbbox():
+                return
+            time.sleep(.1)
+        raise AssertionError(f"{label} did not scroll")
 
     def key(self, name, shift=False, control=False, logo=False):
         controlcode = self.d.keysym_to_keycode(XK.string_to_keysym("Control_L"))
@@ -408,9 +438,9 @@ esac
 
     def back_to_home(self):
         self.click_text("Switch CLI")
-        if "leavethisenvironment" in normalized(self.text()):
+        if self.expect_any(("Your workspace", "Leave this environment")) == "Leave this environment":
             self.click_text("Discard selections")
-        self.expect("Your workspace")
+            self.expect("Your workspace")
 
     def wait_for_appearance(self, appearance):
         deadline = time.monotonic() + 8
@@ -494,7 +524,7 @@ esac
         self.expect("Compare configuration")
         before = self.capture()
         self.key("Down"); self.key("Down")
-        assert ImageChops.difference(before, self.capture()).getbbox(), "Diff did not scroll"
+        self.expect_scroll(before, "Diff")
         self.passed("06-diff-keyboard-scroll")
         self.click_text("Back to components")
         self.click_text("Install", (220, 300, 1120, 780))
@@ -551,9 +581,9 @@ esac
         self.expect("Selection")
         before = self.capture()
         for _ in range(8): self.key("Down")
-        assert ImageChops.difference(before, self.capture()).getbbox(), "Help did not scroll"
+        self.expect_scroll(before, "Help")
         self.passed("10-help-keyboard-scroll")
-        self.click_text("Back", (800, 70, 1120, 200))
+        self.click_text("Back")
         self.resize(760, 560)
         self.expect("Install")
         self.passed("11-minimum-window")
@@ -587,7 +617,7 @@ esac
         self.passed("15-empty-local-path")
         self.click_text("Cancel")
         self.expect("Bundled library")
-        self.click_text("Back", (850, 600, 1120, 780))
+        self.click_text("Back")
         self.expect("Your workspace")
         self.click_theme()
         self.expect_theme("dark")
