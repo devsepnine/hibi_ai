@@ -98,7 +98,7 @@ p.primary.base.text         // readable text on primary.base background
 p.danger.weak.color         // subtle danger tint
 ```
 
-**Rule of thumb**: pair a background color with its `.text` sibling. `p.primary.base.color` as background + `p.primary.base.text` as foreground always has sufficient contrast.
+**Rule of thumb**: pair a background color with its `.text` sibling. `p.primary.base.color` as background + `p.primary.base.text` as foreground uses the pair chosen by the theme. Verify contrast when overriding the palette.
 
 ## Container Custom Style
 
@@ -129,9 +129,8 @@ container(content)
 When the built-in themes don't match your brand, define a palette and build a `Theme::custom`:
 
 ```rust
-use iced::theme::{Custom, Palette};
+use iced::theme::Palette;
 use iced::{Color, Theme};
-use std::sync::Arc;
 
 fn brand_theme() -> Theme {
     let palette = Palette {
@@ -176,24 +175,22 @@ iced::application(App::new, App::update, App::view)
 text("let x = 1;").font(font::Font::MONOSPACE)
 ```
 
-## Dark/Light auto-switching
+## Following the system theme
 
-Watch the OS theme via `window::Event`:
+In iced 0.14 read the initial mode with the `iced::system::theme()` task. Subscribe to later changes using the same message. This example uses a light theme when the system has no preference.
 
 ```rust
-window::events().map(Message::WindowEvent)
+fn subscription(&self) -> iced::Subscription<Message> {
+    iced::system::theme_changes().map(Message::SystemThemeChanged)
+}
 
-// in update:
-Message::WindowEvent(window::Event::ThemeChanged(t)) => {
-    self.theme = match t {
-        iced::core::theme::Base::Dark => Theme::Dark,
-        iced::core::theme::Base::Light => Theme::Light,
+fn apply_system_mode(&mut self, mode: iced::theme::Mode) {
+    self.theme = match mode {
+        iced::theme::Mode::Dark => iced::Theme::Dark,
+        iced::theme::Mode::Light | iced::theme::Mode::None => iced::Theme::Light,
     };
-    Task::none()
 }
 ```
-
-API names evolve across 0.13/0.14, so check your version's `window::Event` enum.
 
 ## When to customize vs use built-in
 

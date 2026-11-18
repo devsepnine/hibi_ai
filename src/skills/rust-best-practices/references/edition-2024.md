@@ -2,9 +2,9 @@
 
 ## Overview
 
-Edition 2024 is the latest Rust edition, providing improved ergonomics, better diagnostics, and new language features while maintaining backward compatibility.
+Each Rust crate selects its own edition. When changing an existing crate’s edition, use the migration steps below to check source compatibility.
 
-**Always use Edition 2024 for new projects.**
+Default to Edition 2024 for a new project when the supported toolchain and dependencies permit it. A new workspace member follows the workspace edition policy.
 
 ## Setting Up Edition 2024
 
@@ -39,299 +39,90 @@ Member crates inherit workspace settings:
 # crates/my-crate/Cargo.toml
 [package]
 name = "my-crate"
-version.workspace = true
+version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 ```
 
-## Key Features in Edition 2024
+## Edition and compiler requirements
 
-### 1. Improved Pattern Matching
+### Let chains
 
-**`if let` chains, stabilized**:
+Let chains require Edition 2024 and Rust 1.88 or later. Use nested conditions with an earlier minimum compiler version.
+
 ```rust
-// ✅ Edition 2024: Cleaner conditional logic
-fn process_user(user: Option<User>) {
-    if let Some(user) = user
-        && user.is_active()
-        && user.has_permission("admin") {
-        println!("Admin user: {}", user.name);
-    }
-}
-
-// ❌ Before: Nested if statements
-fn process_user_old(user: Option<User>) {
-    if let Some(user) = user {
-        if user.is_active() {
-            if user.has_permission("admin") {
-                println!("Admin user: {}", user.name);
-            }
-        }
+fn active_name(user: Option<(&str, bool)>) -> Option<&str> {
+    if let Some((name, active)) = user && active {
+        Some(name)
+    } else {
+        None
     }
 }
 ```
 
-**Pattern guards with bindings**:
+### Async methods and opaque return types in traits
+
+Rust 1.75 stabilized native async methods and return position `impl Trait` in traits. Both work in Edition 2021. This caller uses static dispatch. A caller that stores `dyn Source` needs a compatible interface. Its methods could return a pinned boxed future and a boxed iterator, or the project could retain its existing adapter.
+
 ```rust
-// ✅ Edition 2024: Use bindings in guards
-match value {
-    Some(x) if x.is_positive() => println!("Positive: {}", x),
-    Some(x) => println!("Non-positive: {}", x),
-    None => println!("None"),
+trait Source {
+    async fn read(&self) -> usize;
+    fn labels(&self) -> impl Iterator<Item = &str>;
+}
+
+async fn read_count<S: Source>(source: &S) -> usize {
+    source.read().await
 }
 ```
 
-### 2. Async/Await Improvements
+### Async callbacks
 
-**Async fn in traits, stabilized**:
-```rust
-// ✅ Edition 2024: Native async in traits
-trait Repository {
-    async fn find_by_id(&self, id: u64) -> Result<User, Error>;
-    async fn save(&self, user: &User) -> Result<(), Error>;
-}
-
-// Implementation
-struct DatabaseRepo {
-    pool: Pool,
-}
-
-impl Repository for DatabaseRepo {
-    async fn find_by_id(&self, id: u64) -> Result<User, Error> {
-        let user = sqlx::query_as("SELECT * FROM users WHERE id = ?")
-            .bind(id)
-            .fetch_one(&self.pool)
-            .await?;
-        Ok(user)
-    }
-
-    async fn save(&self, user: &User) -> Result<(), Error> {
-        sqlx::query("INSERT INTO users (name, email) VALUES (?, ?)")
-            .bind(&user.name)
-            .bind(&user.email)
-            .execute(&self.pool)
-            .await?;
-        Ok(())
-    }
-}
-```
-
-**Return position impl Trait in traits, RPITIT**:
-```rust
-// ✅ Edition 2024: Cleaner trait definitions
-trait Processor {
-    fn process(&self) -> impl Iterator<Item = String>;
-}
-
-struct TextProcessor;
-
-impl Processor for TextProcessor {
-    fn process(&self) -> impl Iterator<Item = String> {
-        vec!["line1", "line2"].into_iter().map(String::from)
-    }
-}
-```
-
-**Async closures, stable in 1.85+**:
-
-Before 1.85 async closures had to be written as `|x| async move { ... }`
-which produces a nested `Future`-returning closure. 1.85 stabilizes the
-`async |x| { ... }` form, giving callers a direct `AsyncFn` / `AsyncFnMut`
-/ `AsyncFnOnce` trait to work with, less indirection, better borrow
-tracking, and no desugaring surprise around captured state.
+Rust 1.85 stabilized async closures and the `AsyncFn` family. This Edition 2021 example imports `AsyncFnMut` explicitly. The callback borrows its captured total on each call, and `process_items` stops at the first error.
 
 ```rust
-// ✅ Edition 2024 + 1.85: Native async closure
-async fn process_items<F>(items: Vec<Item>, op: F)
-where
-    F: AsyncFn(Item) -> Result<(), Error>,
-{
+use std::ops::AsyncFnMut;
+
+async fn process_items<T, E>(
+    items: impl IntoIterator<Item = T>,
+    mut op: impl AsyncFnMut(T) -> Result<(), E>,
+) -> Result<(), E> {
     for item in items {
         op(item).await?;
     }
+    Ok(())
 }
 
-async fn run(items: Vec<Item>) {
-    let shared = load_shared_state().await;
-
-    // Captures `shared` by reference across awaits — not possible cleanly
-    // with the pre-1.85 `|x| async { ... }` desugaring.
-    process_items(items, async |item| {
-        validate(&shared, &item)?;
-        persist(item).await
-    })
-    .await
-    .unwrap();
-}
-
-// ❌ Before 1.85: Nested future, borrow lifetime headaches
-fn legacy() -> impl Future {
-    async move {
-        let op = |item: Item| async move { persist(item).await };
-        // `op` isn't an AsyncFn — it's a closure that RETURNS a future.
-        // Borrow-tracking for captures across awaits is clunky here.
-    }
+async fn checked_sum(items: &[u8]) -> Result<u8, &'static str> {
+    let mut total = 0u8;
+    process_items(items.iter().copied(), async |item| {
+        total = total.checked_add(item).ok_or("sum overflow")?;
+        Ok(())
+    }).await?;
+    Ok(total)
 }
 ```
 
-Use `async |x| { ... }` when the callback is **consumed** asynchronously
-such as passed into an `async fn` that awaits it. Use the older
-`|x| async move { ... }` only when you actually want a factory that
-produces futures on demand.
+### Constant evaluation
 
-**async fn + `async {}` block capture, clarified in 2024**:
-Edition 2024 tightens rules so captures in `async {}` blocks inherit
-the enclosing function's lifetime contract without surprising
-promotions, prefer `async move` only when you need `'static`.
-
-### 3. Enhanced Error Messages
-
-Edition 2024 provides more detailed, actionable error messages:
+A constant can call a stable `const fn` when its operations support constant evaluation on the project’s minimum Rust version. This example computes the buffer size at compile time and returns `None` on overflow.
 
 ```rust
-// Better borrow checker errors
-fn example() {
-    let mut data = vec![1, 2, 3];
-    let first = &data[0];
-    data.push(4);  // Error now suggests solutions
-    println!("{}", first);
+const fn buffer_size(count: usize, item_size: usize) -> Option<usize> {
+    count.checked_mul(item_size)
 }
 
-// Edition 2024 error:
-// error[E0502]: cannot borrow `data` as mutable because it is also borrowed as immutable
-//   --> src/main.rs:4:5
-//    |
-// 3  |     let first = &data[0];
-//    |                 -------- immutable borrow occurs here
-// 4  |     data.push(4);
-//    |     ^^^^^^^^^^^^ mutable borrow occurs here
-// 5  |     println!("{}", first);
-//    |                    ----- immutable borrow later used here
-//    |
-//    = help: consider cloning the value or restructuring to avoid simultaneous borrows
-```
-
-### 4. Improved Type Inference
-
-**Better closure inference**:
-```rust
-// ✅ Edition 2024: No need for type annotations
-let doubled = vec![1, 2, 3]
-    .iter()
-    .map(|x| x * 2)  // Type inferred automatically
-    .collect::<Vec<_>>();
-
-// Works with complex chains
-let result = data
-    .into_iter()
-    .filter(|x| x.is_valid())
-    .map(|x| x.process())
-    .collect();  // Type inferred from context
-```
-
-### 5. const Improvements
-
-**const fn enhancements**:
-```rust
-// ✅ Edition 2024: More expressions allowed in const fn
-const fn calculate_size(count: usize, item_size: usize) -> usize {
-    // More complex logic allowed
-    if count == 0 {
-        0
-    } else {
-        count * item_size
-    }
-}
-
-const BUFFER_SIZE: usize = calculate_size(100, 64);
-
-// ✅ const traits
-#[const_trait]
-trait MyTrait {
-    fn compute(&self) -> i32;
-}
-
-const fn use_trait<T: ~const MyTrait>(value: &T) -> i32 {
-    value.compute()
-}
-```
-
-### 6. Lifetime Elision Improvements
-
-**Improved lifetime inference**:
-```rust
-// ✅ Edition 2024: Lifetimes inferred in more cases
-impl Database {
-    // No need to specify lifetimes
-    fn query(&self, sql: &str) -> Result<QueryResult> {
-        // Implementation
-    }
-}
-
-// ✅ Works with associated types
-trait Repository {
-    type Item;
-
-    fn find(&self, id: u64) -> Option<&Self::Item>;
-    // Lifetime automatically tied to &self
-}
-```
-
-### 7. Diagnostic Attributes
-
-**Better control over warnings**:
-```rust
-// ✅ Edition 2024: Granular diagnostic control
-#[expect(clippy::unwrap_used, reason = "Guaranteed by initialization")]
-fn safe_unwrap() -> String {
-    let value = Some("hello".to_string());
-    value.unwrap()
-}
-
-// ✅ Diagnostic namespaces
-#[diagnostic::on_unimplemented(
-    message = "the trait `MyTrait` is not implemented for `{Self}`",
-    note = "consider implementing `MyTrait` for `{Self}`"
-)]
-trait MyTrait {}
+const BUFFER_SIZE: Option<usize> = buffer_size(100, 64);
 ```
 
 ## Migration from Earlier Editions
 
 ### From Edition 2021 → 2024
 
-**1. Update Cargo.toml**:
-```toml
-[package]
-edition = "2024"
-rust-version = "1.85"
-```
+For a crate in migration scope, run `cargo fix --edition` under the old edition and review its changes. Then set `edition` to `2024` in `Cargo.toml` and run `cargo test` on the minimum supported Rust version. [Edition migration guide](https://doc.rust-lang.org/edition-guide/editions/transitioning-an-existing-project-to-a-new-edition.html)
 
-**2. Run cargo fix**:
-```bash
-# Automatically applies edition-compatible fixes
-cargo fix --edition
+Optional changes after migration
 
-# Check for additional issues
-cargo clippy
-cargo test
-```
-
-**3. Common migration tasks**:
-
-**Update async trait patterns**:
-```rust
-// ❌ Edition 2021: Using async-trait crate
-#[async_trait]
-trait Service {
-    async fn handle(&self) -> Result<Response>;
-}
-
-// ✅ Edition 2024: Native async traits
-trait Service {
-    async fn handle(&self) -> Result<Response>;
-}
-```
+Before changing an async trait, check for callers that use `dyn Trait`. An edition migration alone does not require replacing the existing macro.
 
 **Simplify pattern matching**:
 ```rust
@@ -353,7 +144,7 @@ if let Some(u) = user && u.is_admin {
 
 ### Compatibility Notes
 
-- **No breaking changes**: Code written for Edition 2021 works in Edition 2024
+- Review code and macros whose meaning changes across editions.
 - **Interoperability**: Edition 2024 crates can depend on earlier editions
 - **Incremental migration**: Update crates one at a time in workspaces
 
@@ -432,12 +223,15 @@ let handler = |req| async move {
 
 ```rust
 // ✅ Compile-time computation
-const fn page_size(level: usize) -> usize {
-    4096 << level
+const fn page_size(level: u32) -> Option<usize> {
+    match 1usize.checked_shl(level) {
+        Some(pages) => pages.checked_mul(4096),
+        None => None,
+    }
 }
 
-const L1_SIZE: usize = page_size(0);  // 4096
-const L2_SIZE: usize = page_size(1);  // 8192
+const L1_SIZE: Option<usize> = page_size(0); // Some(4096)
+const L2_SIZE: Option<usize> = page_size(1); // Some(8192)
 
 // ✅ Const-evaluated collections
 const fn create_lookup() -> [u8; 256] {
@@ -458,7 +252,7 @@ const LOOKUP: [u8; 256] = create_lookup();
 ```rust
 use thiserror::Error;
 
-// ✅ Rich error types with edition 2024 features
+// Derive errors with thiserror.
 #[derive(Error, Debug)]
 pub enum AppError {
     #[error("database error: {0}")]
@@ -669,25 +463,14 @@ async fn process_batch<P: Processor>(processor: &P, items: &[&[u8]]) -> Result<V
 }
 ```
 
-### 3. Inline Optimization
+### Rounding a buffer capacity
+
+Use `checked_next_power_of_two` when rounding a buffer capacity so the caller can handle a result that exceeds the platform’s integer range.
 
 ```rust
-// ✅ Inline small, hot functions
-#[inline]
-const fn is_power_of_two(n: usize) -> bool {
-    n != 0 && (n & (n - 1)) == 0
-}
-
-#[inline(always)]  // Force inline for critical paths
-const fn next_power_of_two(mut n: usize) -> usize {
-    n -= 1;
-    n |= n >> 1;
-    n |= n >> 2;
-    n |= n >> 4;
-    n |= n >> 8;
-    n |= n >> 16;
-    n + 1
-}
+assert_eq!(0usize.checked_next_power_of_two(), Some(1));
+assert_eq!(17usize.checked_next_power_of_two(), Some(32));
+assert_eq!(usize::MAX.checked_next_power_of_two(), None);
 ```
 
 ## Testing in Edition 2024
@@ -695,7 +478,7 @@ const fn next_power_of_two(mut n: usize) -> usize {
 ### Async Tests
 
 ```rust
-// ✅ Native async test support
+// Tokio provides the async test runtime.
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -727,13 +510,13 @@ mod tests {
 ### Recommended Clippy Configuration
 
 ```toml
-# .cargo/config.toml
+# Cargo.toml
 [lints.rust]
 unsafe_code = "forbid"
 missing_docs = "warn"
 
 [lints.clippy]
-# Edition 2024 specific lints
+# Project lint settings
 enum_glob_use = "deny"
 unwrap_used = "deny"
 expect_used = "warn"
@@ -753,8 +536,6 @@ large_types_passed_by_value = "warn"
 edition = "2024"
 max_width = 100
 use_small_heuristics = "Max"
-imports_granularity = "Crate"
-group_imports = "StdExternalCrate"
 ```
 
 ## Security Best Practices
@@ -797,16 +578,7 @@ fn verify_token(provided: &[u8], expected: &[u8]) -> bool {
 
 ## Summary
 
-**Key Advantages of Edition 2024**:
-- ✅ Native async fn in traits
-- ✅ Improved pattern matching with if let chains
-- ✅ Better type inference
-- ✅ Enhanced const fn capabilities
-- ✅ More helpful error messages
-- ✅ Return position impl Trait in traits
-- ✅ Better diagnostic attributes
-
-**Always start new projects with Edition 2024 for the best developer experience and latest language features.**
+After an edition change, verify callers and tests on the minimum supported toolchain.
 
 ## Additional Resources
 

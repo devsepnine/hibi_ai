@@ -1,6 +1,6 @@
 # iced Application Entry Points
 
-iced offers two entry points: the tiny `iced::run` and the full builder `iced::application`. Use the builder the moment you need anything beyond `update`/`view`.
+These entry points target iced 0.14. For a project pinned to 0.13, use the title and initializer signatures in [Migration](migration.md).
 
 ## `iced::run`: smallest possible app
 
@@ -30,23 +30,20 @@ pub fn main() -> iced::Result {
         .title(App::title)
         .theme(App::theme)
         .subscription(App::subscription)
-        .settings(settings())
-        .centered()
+        .window(window_settings())
         .run()
 }
 ```
 
-Every builder method is optional; chain only what applies. Each builder method accepts either a closure or a function pointer that takes `&State`. Both work, whichever reads cleaner.
+The title, theme, and subscription can use functions of the state. Pass window settings to the builder as a value.
 
-### Required triple
+### Initialization, update, and view
+
+The 0.14 initializer takes no arguments and returns a state or a state with an initial task. Capture any configuration in a closure that takes no arguments.
 
 ```rust
-fn new() -> (App, Task<Message>)              // or: fn new(flags: Flags) -> (App, Task<Msg>)
-fn update(&mut self, Message) -> Task<Message>
-fn view(&self) -> Element<'_, Message>
+iced::application(move || App::new(flags.clone()), App::update, App::view)
 ```
-
-The `new` returns a `(State, Task)` so the app can kick off initial async work such as loading config or fetching data without a bootstrapping `Message::Init`.
 
 ### Title
 
@@ -85,29 +82,19 @@ Subscriptions run for as long as they're returned. Stop a subscription by condit
 ## Window & Runtime Settings
 
 ```rust
-use iced::{Size, Settings};
-use iced::window;
+use iced::{window, Size};
 
-fn settings() -> Settings {
-    Settings {
-        window: window::Settings {
-            size: Size::new(1024.0, 720.0),
-            position: window::Position::Centered,
-            min_size: Some(Size::new(640.0, 480.0)),
-            max_size: None,
-            visible: true,
-            resizable: true,
-            decorations: true,
-            transparent: false,
-            icon: None,
-            ..Default::default()
-        },
+fn window_settings() -> window::Settings {
+    window::Settings {
+        size: Size::new(1024.0, 720.0),
+        position: window::Position::Centered,
+        min_size: Some(Size::new(640.0, 480.0)),
         ..Default::default()
     }
 }
 ```
 
-Pass with `.settings(settings())`.
+Pass window size and position with `.window(window_settings())`. Use `.settings(...)` for application settings such as the default font.
 
 **Common knobs**:
 
@@ -119,9 +106,7 @@ Pass with `.settings(settings())`.
 | `resizable` | `false` for fixed-size dialogs |
 | `decorations` | `false` for custom title bars |
 | `transparent` | Required for rounded corners / acrylic backgrounds |
-| `icon` | `Some(window::icon::from_file_data(bytes, None)?)` |
-
-**Don't set**: `flags` and `id` directly. Use the builder's shape; the runtime manages both.
+| `icon` | Enable the iced `image` feature to decode image bytes with `window::icon::from_file_data`. |
 
 ### Builder-level window shortcuts
 
@@ -135,11 +120,11 @@ iced::application(App::new, App::update, App::view)
     .run()
 ```
 
-Use these when the app only needs one or two overrides. Drop down to full `Settings` when you need more than three.
+Use `window::Settings` to pass several window properties together.
 
-## Headless / default-less state
+## State with a custom initializer
 
-If `State` can't implement `Default` because it holds a `Connection`, a `Runtime`, etc., use `iced::application()` with an explicit `new`. For `iced::run`, wrap the state in `Default` by moving non-default fields into `Option<T>` and filling them in the first `update` from `new`.
+Pass an initializer to the builder when constructing the state requires a connection or configuration. The initializer can also return the first task.
 
 ## Multi-window
 

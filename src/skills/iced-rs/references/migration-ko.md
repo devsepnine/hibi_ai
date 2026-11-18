@@ -30,7 +30,17 @@ fn main() -> iced::Result {
 }
 ```
 
-New in 0.13+:
+0.13은 첫 인자로 창 제목을 받는다. 초기 상태와 작업을 만드는 함수는 `run_with`에 전달한다.
+
+```rust
+fn main() -> iced::Result {
+    iced::application(Counter::title, Counter::update, Counter::view)
+        .theme(Counter::theme)
+        .run_with(Counter::new)
+}
+```
+
+0.14는 첫 인자로 앱 초기화 함수를 받는다. 창 제목은 빌더에서 설정한다.
 
 ```rust
 use iced::{Element, Task, Theme, Subscription};
@@ -57,9 +67,9 @@ fn main() -> iced::Result {
 
 - **No more trait**: `update`/`view`/`title`/`theme`이 일반 메서드가 된다. Rust 규칙이 적용된다; 연관 타입 없음.
 - **`Command<T>` → `Task<T>`**: 동일한 의미, 이름만 바뀌었다. 코드베이스 전반에서 교체. `Command::none()` → `Task::none()`, `Command::perform` → `Task::perform`, `Command::batch` → `Task::batch`.
-- **`Executor`**: 사용자 API에서 사라졌다. executor는 `tokio` / `smol` feature 플래그에 의해 선택된다.
-- **`Flags`**: 사라졌다. 초기 state는 `new()`의 반환에 살고; 이전에 `Flags`에 살던 모든 구성은 이제 `application()`에 전달되는 `new` 주변의 closure capture에 산다.
-- **`Sandbox`**: 완전히 제거되었다. async 없는 `Sandbox`를 사용하고 있었다면, 마이그레이션 대상은 여전히 `iced::application()`이다. 그저 `Task::perform`을 사용하지 않을 뿐. 또는 *매우* 최소한의 경우 `iced::run(update, view)`를 사용한다.
+- 기존 `Executor` 연관 타입은 제거됐다. iced 0.14는 Cargo 기능으로 기본 네이티브 실행기를 선택한다. 프로젝트의 자체 실행기는 빌더의 `.executor` 메서드로 지정한다.
+- `Flags`에 보관하던 설정값은 대상 버전의 초기화 함수에서 캡처한다.
+- 기본 상태와 설정을 사용하는 작은 앱은 0.13에서 `iced::run(title, update, view)`, 0.14에서 `iced::run(update, view)`로 실행한다.
 
 ### Mechanical migration checklist
 
@@ -67,7 +77,7 @@ fn main() -> iced::Result {
 2. 메서드를 유지하고; 시그니처를 변경한다:
    - `fn update(&mut self, msg) -> Command<Msg>` → `fn update(&mut self, msg) -> Task<Msg>`
    - 메서드 측의 다른 모든 것은 그대로.
-3. `main`을 교체:
+3. 프로젝트가 고정한 버전에 맞춰 진입점을 선택한다. 다음 예시는 0.14 설정이다.
    ```rust
    fn main() -> iced::Result {
        iced::application(MyApp::new, MyApp::update, MyApp::view)
@@ -144,25 +154,17 @@ iced에는 `f.area()`가 없다. 보인다면 그 코드는 ratatui이지 iced�
 
 ## 0.13 → 0.14
 
-훨씬 작다. 주요 추가:
+위 예시에 따라 진입점을 바꾸고 대상 버전에서 컴파일한다. 진행률을 스트리밍하는 앱은 [비동기 작업](tasks-ko.md)의 0.14 `Task::sip` 예시를 참조한다.
 
-- **`Task::sip`**: 취소와 함께 진행을 스트리밍한다. `references/tasks.md` 참조.
-- **`iced::daemon`**: 메인 윈도우 없는 백그라운드 앱.
-- **Multi-window 개선**: `window::open`이 `(window::Id, Task<Message>)`를 반환한다.
-- **`text_editor`**가 더 풍부한 액션과 undo group을 얻었다.
-- **More themes**: KanagawaWave 등. 일부 릴리스에서는 0.14 이전에 있었으므로 버전 확인.
+## 버전별 기능
 
-Breaking change는 드물다; 대부분의 0.13 코드는 변경 없이 컴파일된다. 릴리스 노트는 짧다. 블로그 포스트를 읽는 대신 훑어본다.
+| 기능 | iced 0.13 | iced 0.14 |
+|---|---|---|
+| `tokio` | Tokio 실행기 | Tokio 실행기 |
+| `async-std` | 사용 가능 | 제거됨. 비동기 의존성과 호환되는 실행기 선택 |
+| `debug` | 사용 가능. 이 기능을 꺼도 앱 빌더는 메시지에 `Debug`를 요구 | 개발 도구를 쓸 때 켜고 메시지에 `Debug` 구현 |
 
-## Feature Flag Renames
-
-| 0.12 feature | 0.13+ feature |
-|---|---|
-| `tokio` | `tokio`, unchanged |
-| `async-std` | 제거됨. `async-std` crate가 그 위에서 동작하는 `smol`을 사용 |
-| `debug` | 기본값에서 제거됨; 명시적 feature 불필요 |
-
-`Cargo.toml`이 `iced/async-std`를 참조한다면 제거한다. 이제 `tokio`나 `smol`에 있다.
+네이티브 iced 0.14의 기본 실행기는 `thread-pool`이다. `tokio`와 `smol`을 함께 켜면 기본 실행기로 Tokio가 선택된다.
 
 ## After Migration: Sanity Check
 
@@ -170,7 +172,7 @@ Breaking change는 드물다; 대부분의 0.13 코드는 변경 없이 컴파�
 - [ ] 모든 `.style(theme::X::Y)` 참조가 이제 `.style(widget::style_fn)`이다
 - [ ] 남은 `Command<Message>` 타입 없음
 - [ ] `impl Application for` / `impl Sandbox for` 없음
-- [ ] `Cargo.toml`이 정확히 `tokio` / `smol` 중 하나를 지정한다
+- [ ] 네이티브 실행기 기능이 비동기 의존성과 호환되며 Linux 빌드에 `x11`이나 `wayland`가 포함됨
 - [ ] 앱이 실행되고 theme 변경이 여전히 작동한다, palette 접근 회귀의 카나리
 
 ## When NOT to migrate

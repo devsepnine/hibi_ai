@@ -24,17 +24,17 @@ Rust용 retained-mode, Elm 아키텍처 GUI 라이브러리. 하나의 `Message`
 
 ## 프로젝트 설정
 
-Rust 1.85+의 edition 2024와 현재 stable `iced`를 사용한다. `iced::application` builder API는 99%의 앱을 커버한다; `iced_runtime`은 고급 임베드용으로 남겨둔다.
+프로젝트가 고정한 에디션과 의존성 버전을 따른다. 새 프로젝트의 최소 Rust 버전은 선택한 의존성의 요구사항을 확인해 정한다. 아래는 설정 예시다.
 
 ```toml
 [package]
 name = "my-iced-app"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.88"
 
 [dependencies]
 iced = { version = "0.14", features = ["tokio", "canvas", "advanced"] }
-# For 0.13, just pin "0.13". API is compatible for everything in this skill.
+# 0.13 프로젝트에서는 고정한 버전의 API를 확인한다.
 ```
 
 알아둘 만한 feature flag:
@@ -42,13 +42,13 @@ iced = { version = "0.14", features = ["tokio", "canvas", "advanced"] }
 | Feature | What it adds |
 |---|---|
 | `tokio` | `Task::perform`을 위해 tokio를 async 런타임으로 사용 |
-| `smol` | 대안 런타임; 정확히 하나만 선택 |
+| `smol` | `tokio`가 꺼져 있을 때 사용하는 네이티브 실행기 |
 | `canvas` | `canvas::Program`, `Geometry`, `Path`, `Frame` |
 | `advanced` | 커스텀 위젯용 저수준 `widget::Widget` trait |
 | `image` / `svg` | 비트맵 / 벡터 이미지 위젯 |
 | `markdown` | `iced::widget::markdown`로 마크다운 렌더 |
 
-`tokio`/`smol` 중 **하나**만 선택한다. 둘 다 활성화하면 의존성을 낭비하고 라이브러리가 다른 것을 선택하면 런타임 충돌을 일으킬 수 있다.
+네이티브 iced 0.14의 기본 기능에는 `thread-pool`이 포함된다. 여러 실행기 기능이 켜지면 iced는 `tokio`, `smol`, `thread-pool` 순으로 선택한다. 비동기 의존성이 요구하는 실행기를 사용한다. Linux에서 기본 기능을 끌 때는 `x11`이나 `wayland` 같은 디스플레이 백엔드를 유지한다.
 
 ## 최소 앱: `iced::run`, state 구조체 불필요
 
@@ -81,7 +81,7 @@ fn view(counter: &u64) -> iced::Element<'_, Message> {
 }
 ```
 
-**이게 동작하는 이유**: `iced::run`은 어떤 `State: Default`와 순수 `update(&mut State, Msg)`, `view(&State) -> Element`도 받는다. 데모와 작은 도구에 좋다. 테마, subscription, async 작업, 윈도우 설정이 필요해지는 순간 `iced::application()`으로 업그레이드한다.
+0.14에서 `iced::run`은 기본 상태를 만들고 `update`가 반환한 작업을 실행할 수 있다. 시작과 동시에 작업을 실행하거나 테마, 구독, 창 설정을 지정하려면 빌더를 사용한다. 0.13 진입점은 [마이그레이션](references/migration-ko.md)을 참조한다.
 
 ## 표준 앱: `iced::application()` builder
 
@@ -171,7 +171,7 @@ fn view(state: &State) -> Element<'_, Message> {
 
 Message enum이 앱의 척추다. 유지보수성을 유지하는 세 가지 규칙:
 
-1. **모든 Message에 `#[derive(Debug, Clone)]`.** 런타임이 이벤트 경계를 가로질러 메시지를 클론한다. 페이로드가 허용하면 `Copy`. iced가 잘 사용한다.
+1. iced 0.14에서는 위젯과 기능에 따라 메시지의 타입 제약이 결정된다. 버튼을 엘리먼트로 변환하려면 `Clone`이 필요하다. 앱을 `debug` 기능으로 실행하면 `Debug`, `time-travel` 기능까지 쓰면 `Clone`도 필요하다.
 2. **사용자가 관찰 가능한 이벤트당 Message variant 하나**, 내부 전이당 하나가 아니다. `ThemeChanged(Theme)` > `InternalMutationA/B/C`.
 3. **하위 모듈의 메시지를 평탄화하지 말고 variant 안에 중첩**시킨다. `Message::Editor(editor::Message)`가 30 variant에서 `Message::EditorKeyPressed / Message::EditorSaved / ...`보다 잘 확장된다.
 
@@ -193,9 +193,22 @@ use iced::Task;
 
 fn update(app: &mut App, message: Message) -> Task<Message> {
     match message {
-        Message::Load => Task::perform(load_config(), Message::Loaded),
-        Message::Loaded(Ok(cfg)) => { app.cfg = cfg; Task::none() }
-        Message::Loaded(Err(e)) => { app.error = Some(e); Task::none() }
+        Message::Load if app.loading => Task::none(),
+        Message::Load => {
+            app.loading = true;
+            app.error = None;
+            Task::perform(load_config(), Message::Loaded)
+        }
+        Message::Loaded(Ok(cfg)) => {
+            app.loading = false;
+            app.cfg = cfg;
+            Task::none()
+        }
+        Message::Loaded(Err(e)) => {
+            app.loading = false;
+            app.error = Some(e);
+            Task::none()
+        }
     }
 }
 ```
@@ -227,7 +240,7 @@ Palette role `primary`/`secondary`/`success`/`danger`/`background` × strength `
 
 ## 성능 빠른 규칙
 
-1. **`view`는 저렴하게 유지**: state가 변할 때마다 매 프레임 실행된다. 핫 루프 안에서 할당이나 포맷팅을 하지 말 것; `update`에서 미리 계산하고 `App`에 캐싱한다.
+1. **`view`는 저렴하게 유지**: 런타임은 메시지를 처리한 후 뷰를 다시 구성한다. 핫 루프 안에서 할당이나 포맷팅을 하지 말 것; `update`에서 미리 계산하고 `App`에 캐싱한다.
 2. **`view`에서 borrow, `update`에서 own.** `Element<'a, Message>`는 `&self`에서 빌리므로, 비싼 owned 데이터를 App 구조체로 옮기고 builder에 참조를 노출한다.
 3. **커스텀 그리기에는 `canvas::Cache`** 사용: `Cache::draw`는 `.clear()`를 호출할 때까지 재 tessellation을 건너뛴다.
 4. **레이아웃을 과도하게 중첩하지 말 것.** 각 `container`/`column`/`row`는 노드다; 5단계 깊이는 OK, 15는 경고 신호.

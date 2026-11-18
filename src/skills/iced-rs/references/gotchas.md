@@ -2,18 +2,17 @@
 
 A catalog of the subtle issues that don't crash at compile time but produce confusing runtime behavior or friction in the code. Each entry: what, why, fix.
 
-## 1. `Message` Must Be `Clone`, And Everything Inside It Too
+## 1. Message bounds depend on the widgets and features
 
-**What**: `#[derive(Debug, Clone)]` on `Message` fails because a variant carries a non-`Clone` type like `std::io::Error` or `reqwest::Error`.
+A button converted to an element needs a clonable message. The `time-travel` feature also requires `Clone` when the app runs, while the `debug` feature requires `Debug`. These are Cargo features. A plain task can return `std::io::Error` directly.
 
-**Why**: The iced runtime clones messages across the event queue. Without `Clone`, the whole app doesn't compile.
-
-**Fix**: Convert errors to `String` at the async boundary, or wrap in `Arc<T>`:
+If the message must implement `Clone`, convert the error into the fields the UI needs or use `Arc` to retain the original error.
 
 ```rust
-async fn fetch() -> Result<String, String> {
-    reqwest::get("...").await
-        .map_err(|e| e.to_string())?       // error → String early
+async fn fetch(url: &str) -> Result<String, String> {
+    reqwest::get(url).await
+        .map_err(|e| e.to_string())?
+        .error_for_status().map_err(|e| e.to_string())?
         .text().await
         .map_err(|e| e.to_string())
 }
@@ -107,54 +106,33 @@ Message::Load => {
 
 See `references/tasks.md`.
 
-## 5. Two Async Runtimes at Once
+## 5. Selecting the native executor
 
-**What**: The app panics at startup with an error about multiple runtime initializations.
-
-**Why**: `Cargo.toml` enabled both `tokio` and `smol` features on `iced`, or one of your transitive deps pulled in the other.
-
-**Fix**: Pick one. Add it explicitly:
+Native iced 0.14 selects Tokio when both `tokio` and `smol` are enabled. For a Tokio dependency, keep the default renderer and platform features and add Tokio.
 
 ```toml
-iced = { version = "0.14", features = ["tokio"], default-features = false }
+iced = { version = "0.14", features = ["tokio"] }
 ```
 
-Then `cargo tree | grep -E "tokio|async-std|smol"` to find stragglers.
+If defaults are disabled, select a renderer, a native executor, and on Linux at least one display backend such as `x11` or `wayland`. Check the resolved features with `cargo tree -e features -i iced`.
 
-## 6. `view` Re-runs Every Frame: Don't Do Work In It
+## 6. Repeated work when rebuilding a view
 
-**What**: UI feels laggy, CPU usage is high, framerate is low with only trivial widgets on screen.
-
-**Why**: `view` is called every frame a redraw happens, usually on each message. If `view` formats strings from scratch, sorts a `Vec`, or reads a file, it multiplies that cost by framerate.
-
-**Fix**: Precompute in `update`, cache on `self`:
+If each rebuild clones and sorts the same list, sort when the input changes and render the stored order.
 
 ```rust
-// Wrong — sort runs every frame
-fn view(&self) -> Element<'_, Message> {
-    let mut items = self.items.clone();
-    items.sort_by_key(|i| i.priority);
-    column(items.iter().map(|i| text(&i.name).into()).collect()).into()
-}
-
-// Right — sort only when data changes
-impl App {
-    fn update(&mut self, msg: Message) -> Task<Message> {
-        if let Message::DataLoaded(items) = msg {
-            let mut items = items;
-            items.sort_by_key(|i| i.priority);
-            self.items = items;
-        }
-        Task::none()
-    }
+Message::DataLoaded(mut items) => {
+    items.sort_by_key(|item| item.priority);
+    self.items = items;
+    Task::none()
 }
 ```
 
-## 7. `Container` Doesn't Fill Unless Told To
+## 7. Centering when a container shrinks to its child
 
 **What**: You wrap something in `container` expecting it to center in the window. It sits in the top-left corner.
 
-**Why**: `container` defaults to `Shrink` on both axes, so it sizes to its child. Centering only works if the container has space to center *within*.
+When a container shrinks to fit its child, there is no spare space on that axis for centering. Give the container room on the axis you want to center.
 
 **Fix**: Give it a Fill-axis explicitly:
 
@@ -188,61 +166,24 @@ button("Submit").on_press_maybe(
 
 **Fix**: Use `tracing` or `log` with a file appender for anything you need post-hoc. Don't try to read stderr from a running GUI.
 
-## 10. Changing Theme in `update` Doesn't Repaint Until Next Message
+## 10. Applying a theme change
 
-**What**: Theme-switch message fires, but the UI doesn't visibly update until the next keystroke or mouse move.
+Update the stored theme in the message handler and have the builder's theme function read that value. The runtime rebuilds the view after processing messages.
 
-**Why**: iced redraws on state change *triggered by a message*. The `theme(&self)` function is called on each frame, but frames only happen on events.
+## 11. Restarting a conditional subscription
 
-**Fix**: The fix is "emit a follow-up message to force a redraw", which iced handles automatically. If you're seeing a stuck frame, you probably have state that isn't tied to a `Message` mutation. Make sure the theme switch *is* going through `update`. If it does, it'll repaint.
+`Subscription::run` identifies the stream by its builder function pointer. Returning the same subscription keeps the worker alive. Omitting it stops the worker, and returning it later starts a new one. Use `Subscription::run_with` to include data in the identity.
 
-For apps that need continuous animation even without user input, add a `time::every` subscription. It delivers frames at a fixed rate and guarantees repaints.
+## 12. Keeping an app alive after all windows close
 
-## 11. Subscription Restarts When the Closure "Shape" Changes
+A regular application exits when its last window closes. For a tray app that waits without a window, use `iced::daemon` and return `iced::exit()` when the app should quit.
 
-**What**: You return a subscription conditionally, and every time the condition flips, the subscription's work restarts, for example the file watcher re-reads and the channel re-opens.
+## 13. Text wrapping width
 
-**Why**: iced diffs subscriptions by their *identity*, meaning the closure's captures and type. A new closure instance is a new subscription.
-
-**Fix**: Keep the subscription's producer function stable across frames. Move the closure to a named `fn` if you find yourself conditionally capturing:
+Where a long line wraps depends on the width available from its parent and the text’s wrapping mode. To cap the line width in a card, set the container’s maximum width.
 
 ```rust
-fn my_watcher_stream() -> Subscription<Message> {
-    Subscription::run(|| { /* ... */ })
-}
-
-fn subscription(&self) -> Subscription<Message> {
-    if self.watching {
-        my_watcher_stream()                  // stable identity
-    } else {
-        Subscription::none()
-    }
-}
-```
-
-## 12. Multi-Window: Windows Close Unexpectedly
-
-**What**: The app uses multiple windows; closing the main window exits the whole process. You wanted a tray-style lingering app.
-
-**Why**: `iced::application()` exits when its primary window closes. For persistent background apps, use `iced::daemon()`, which has no primary window and a lifecycle tied to explicit `iced::exit()`.
-
-**Fix**: Migrate to `iced::daemon` if the app should outlive a single window. See upstream `multi_window` example.
-
-## 13. Text Wrap Not Kicking In
-
-**What**: Long text draws off the right edge instead of wrapping.
-
-**Why**: `text` wraps within its container, but if the container itself is `Shrink` by default, there's no width to wrap *to*.
-
-**Fix**: Set an explicit width somewhere up the chain:
-
-```rust
-// container has no width → text won't wrap
-container(text(long_string))
-
-// width set → text wraps
-container(text(long_string)).width(Fill)
-// or column![..text(long_string)..].width(Fill)
+container(text(long_string)).max_width(480)
 ```
 
 ## 14. Custom Widgets Need the `advanced` Feature

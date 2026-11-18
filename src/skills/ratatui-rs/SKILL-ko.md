@@ -22,13 +22,13 @@ Rust용 immediate-mode 터미널 UI 프레임워크. 이 skill은 프로덕션�
 
 ## 프로젝트 설정
 
-panic-safe 터미널 처리를 위해 Edition 2024, Rust 1.85+, 와 `ratatui::init()`, 0.28+ 추가, 를 사용한다.
+프로젝트가 고정한 에디션과 의존성 버전을 따른다. 새 프로젝트의 최소 Rust 버전은 선택한 의존성의 요구사항을 확인해 정한다. 아래는 설정 예시다.
 
 ```toml
 [package]
 name = "my-tui-app"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.88"
 
 [dependencies]
 ratatui = "0.30"
@@ -208,4 +208,4 @@ f.render_widget(StatusBar { msg: "Ready".into() }, area);
 ## 관련 skill
 
 - 일반 Rust 관용구: `rust-best-practices`
-- 크로스 플랫폼 셸 안전성: `references/cross-platform.md`, 이 skill + `coding-standards`
+- 네이티브 인자 전달과 셸 경계는 [플랫폼별 명령 실행](references/cross-platform.md)을 참고한다.

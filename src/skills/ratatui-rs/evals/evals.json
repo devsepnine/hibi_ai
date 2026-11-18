@@ -18,13 +18,13 @@
       "id": 2,
       "name": "cancelable-background-task",
       "prompt": "ratatui TUI에서 git clone을 백그라운드로 실행하면서, 사용자가 Esc를 누르면 git 프로세스를 죽이고 작업을 취소할 수 있도록 만들어줘. UI는 멈추면 안 되고, clone 중에도 다른 키 입력을 받을 수 있어야 해.",
-      "expected_output": "Spawns child via Command, drains stdout/stderr in threads, polls completion BEFORE checking cancel signal, kills child on cancel, TUI loop uses event::poll, panic-safe terminal init, per-spawn cancel channel isolation.",
+      "expected_output": "Runs the child on a worker, handles output without waiting indefinitely for descendants, checks completion before cancellation, reaps the cancelled child, and keeps the terminal responsive.",
       "files": [],
       "assertions": [
         { "id": "uses-mpsc-channel", "text": "Uses std::sync::mpsc channel (or tokio channel) for cancel signal" },
         { "id": "polls-completion-first", "text": "child completion (wait_timeout/try_wait) checked BEFORE cancel try_recv" },
         { "id": "kills-on-cancel", "text": "On cancel, calls child.kill() and child.wait() (best-effort cleanup)" },
-        { "id": "drains-pipes", "text": "Spawns reader threads on stdout AND stderr to prevent pipe-blocking" },
+        { "id": "bounded-output-wait", "text": "Large output cannot fill an unread pipe. A descendant retaining an output handle cannot indefinitely delay completion or cancellation of the direct child. States which processes cancellation covers." },
         { "id": "tui-stays-responsive", "text": "TUI loop uses event::poll(timeout) so it can drain channels between key events" },
         { "id": "panic-safe-init", "text": "Uses ratatui::init()/restore() (or equivalent panic hook) so a panic during clone restores the terminal" },
         { "id": "drains-before-poll", "text": "In each loop iteration, drains worker events from the channel BEFORE polling keyboard (so background updates show even if user is typing)" }
@@ -33,14 +33,14 @@
     {
       "id": 3,
       "name": "cross-platform-command-spawn",
-      "prompt": "Rust에서 npm install을 호출하는 함수를 만드는데, Windows에서도 동작해야 해. cmd /c는 쓰지 마. 그리고 사용자 입력으로 들어온 문자열을 인자로 분리할 때 Windows의 백슬래시 경로(C:\\Users\\me)도 깨지지 않게 처리해줘.",
-      "expected_output": "Uses cfg(windows)/cfg(not(windows)) to invoke npm.cmd vs npm; never cmd /c. Provides a split_command function that on Windows treats backslashes as literal, on POSIX uses shlex::split.",
+      "prompt": "Rust에서 npm install을 호출하는 함수를 만드는데, Windows에서도 동작해야 해. cmd /c는 쓰지 마. 그리고 사용자 입력으로 들어온 문자열을 인자로 분리할 때 Windows 명령줄 인용 규칙을 지켜줘. 배열로 받은 인자는 그대로 전달해야 해. 공백이나 %!;가 든 로컬 패키지 경로도 지원해줘.",
+      "expected_output": "Uses a native entry point for variable paths, such as the configured Node executable with the installed npm-cli.js script. Passes arguments individually. For text fields, chooses a parser matching the documented syntax and preserves empty arguments, ordinary apostrophes in Windows paths, double-quoted spaces, and backslashes.",
       "files": [],
       "assertions": [
         { "id": "no-cmd-c", "text": "Never uses Command::new(\"cmd\").args([\"/c\", ...])" },
-        { "id": "platform-specific-binary", "text": "Uses #[cfg(windows)] / #[cfg(not(windows))] (or cfg!(windows)) to pick npm.cmd vs npm" },
-        { "id": "windows-aware-split", "text": "split_command function preserves backslashes on Windows (does not treat them as escape characters)" },
-        { "id": "posix-shlex", "text": "On non-Windows, uses shlex::split (or equivalent POSIX-quoting splitter)" }
+        { "id": "platform-specific-binary", "text": "Selects an npm entry point that preserves arbitrary package paths on each supported platform and accounts for batch interpretation on Windows." },
+        { "id": "argument-boundaries", "text": "An already split argv is passed directly. Regression examples preserve an empty value, O'Brien, a path with spaces and backslashes, and Budget 100%!;final.txt as distinct arguments." },
+        { "id": "text-contract", "text": "For a Windows command line field, uses its specified Windows quoting rules. Uses POSIX parsing only for fields that specify POSIX syntax." }
       ]
     },
     {

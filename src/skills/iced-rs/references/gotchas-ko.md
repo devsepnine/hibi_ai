@@ -2,18 +2,17 @@
 
 컴파일 타임에 크래시하지 않지만 혼란스러운 런타임 동작이나 코드 마찰을 일으키는 미묘한 이슈들의 카탈로그이다. 각 항목: what, why, fix.
 
-## 1. `Message` Must Be `Clone`, And Everything Inside It Too
+## 1. 위젯과 기능에 따른 메시지 제약
 
-**What**: 어떤 variant가 `std::io::Error`나 `reqwest::Error` 같은 non-`Clone` 타입을 보유하기 때문에 `Message`에 `#[derive(Debug, Clone)]`이 실패한다.
+버튼을 엘리먼트로 변환하려면 메시지를 복제할 수 있어야 한다. 앱을 실행할 때 `time-travel` 기능은 `Clone`을, `debug` 기능은 `Debug`를 요구한다. 두 기능은 Cargo에서 설정한다. 일반 작업은 `std::io::Error`를 그대로 반환할 수 있다.
 
-**Why**: iced 런타임은 이벤트 큐 전반에 걸쳐 메시지를 clone한다. `Clone` 없이는 전체 앱이 컴파일되지 않는다.
-
-**Fix**: 비동기 경계에서 에러를 `String`으로 변환하거나, `Arc<T>`로 감싼다:
+메시지에 `Clone`이 필요하면 오류를 UI에 필요한 필드로 변환하거나 `Arc`로 원본 오류를 보존한다.
 
 ```rust
-async fn fetch() -> Result<String, String> {
-    reqwest::get("...").await
-        .map_err(|e| e.to_string())?       // error → String early
+async fn fetch(url: &str) -> Result<String, String> {
+    reqwest::get(url).await
+        .map_err(|e| e.to_string())?
+        .error_for_status().map_err(|e| e.to_string())?
         .text().await
         .map_err(|e| e.to_string())
 }
@@ -107,54 +106,33 @@ Message::Load => {
 
 `references/tasks.md` 참조.
 
-## 5. Two Async Runtimes at Once
+## 5. 네이티브 실행기 선택
 
-**What**: 다중 런타임 초기화 에러로 시작 시 앱이 패닉한다.
-
-**Why**: `Cargo.toml`이 `iced`에서 `tokio`와 `smol` 기능을 모두 활성화했거나, 추이적 의존성 중 하나가 다른 것을 가져왔다.
-
-**Fix**: 하나를 선택한다. 명시적으로 추가한다:
+네이티브 iced 0.14에서 `tokio`와 `smol`이 모두 켜져 있으면 Tokio를 선택한다. Tokio 의존성이 있다면 기본 렌더러와 플랫폼 기능을 유지한 채 Tokio를 추가한다.
 
 ```toml
-iced = { version = "0.14", features = ["tokio"], default-features = false }
+iced = { version = "0.14", features = ["tokio"] }
 ```
 
-그런 다음 `cargo tree | grep -E "tokio|async-std|smol"`로 잔재를 찾는다.
+기본 기능을 끈다면 렌더러와 네이티브 실행기를 선택하고, Linux에서는 `x11`이나 `wayland` 중 하나 이상의 디스플레이 백엔드를 켠다. `cargo tree -e features -i iced`로 실제 활성화된 기능을 확인한다.
 
-## 6. `view` Re-runs Every Frame: Don't Do Work In It
+## 6. 뷰를 재구성할 때 반복되는 작업
 
-**What**: UI가 lag를 느끼고 CPU 사용량이 높으며 화면에 사소한 widget만 있는데 framerate가 낮다.
-
-**Why**: `view`는 redraw가 발생하는 매 프레임, 보통 각 message에서 호출된다. `view`가 처음부터 문자열을 포맷하거나 `Vec`를 정렬하거나 파일을 읽는다면, 그 비용을 framerate로 곱한다.
-
-**Fix**: `update`에서 미리 계산하고 `self`에 캐시한다:
+같은 목록을 표시할 때마다 복제하고 정렬한다면 입력이 바뀔 때 정렬해 둔다. 뷰는 저장된 순서대로 표시한다.
 
 ```rust
-// Wrong — sort runs every frame
-fn view(&self) -> Element<'_, Message> {
-    let mut items = self.items.clone();
-    items.sort_by_key(|i| i.priority);
-    column(items.iter().map(|i| text(&i.name).into()).collect()).into()
-}
-
-// Right — sort only when data changes
-impl App {
-    fn update(&mut self, msg: Message) -> Task<Message> {
-        if let Message::DataLoaded(items) = msg {
-            let mut items = items;
-            items.sort_by_key(|i| i.priority);
-            self.items = items;
-        }
-        Task::none()
-    }
+Message::DataLoaded(mut items) => {
+    items.sort_by_key(|item| item.priority);
+    self.items = items;
+    Task::none()
 }
 ```
 
-## 7. `Container` Doesn't Fill Unless Told To
+## 7. 자식 크기에 맞춰진 컨테이너에서 중앙 정렬하기
 
 **What**: 윈도우에서 중앙에 두기 위해 무언가를 `container`로 감쌌다. 좌상단에 자리잡는다.
 
-**Why**: `container`는 두 축 모두 `Shrink`로 기본값이다. 자식 크기에 맞춘다. 중앙 정렬은 컨테이너가 *내부에* 중앙 정렬할 공간이 있을 때만 작동한다.
+자식이 차지한 공간에 딱 맞는 컨테이너에는 중앙 정렬에 쓸 여백이 없다. 중앙 정렬할 축에 공간을 할당한다.
 
 **Fix**: 명시적으로 Fill-axis를 준다:
 
@@ -188,61 +166,24 @@ button("Submit").on_press_maybe(
 
 **Fix**: 사후에 필요한 모든 것에 대해 파일 appender와 함께 `tracing`이나 `log`를 사용한다. 실행 중인 GUI에서 stderr를 읽으려고 하지 마라.
 
-## 10. Changing Theme in `update` Doesn't Repaint Until Next Message
+## 10. 테마 변경
 
-**What**: Theme-switch 메시지가 발사되지만, 다음 키 입력이나 마우스 이동까지 UI가 시각적으로 업데이트되지 않는다.
+테마 설정 메시지에서 앱 상태를 갱신하고 빌더의 테마 함수가 그 값을 읽는지 확인한다. 런타임은 메시지를 처리한 후 뷰를 다시 구성한다.
 
-**Why**: iced는 *메시지에 의해 트리거된* state 변경 시 redraw한다. `theme(&self)` 함수는 매 프레임마다 호출되지만, 프레임은 이벤트에서만 발생한다.
+## 11. 조건부 구독이 다시 시작되는 경우
 
-**Fix**: 수정은 "redraw를 강제하기 위해 follow-up 메시지를 emit"이며, iced가 자동으로 처리한다. 멈춘 프레임이 보인다면, `Message` mutation에 묶이지 않은 state가 있을 수 있다. theme switch가 *실제로* `update`를 통과하는지 확인한다. 그렇다면, repaint된다.
+`Subscription::run`은 스트림을 만드는 함수 포인터로 구독을 식별한다. 같은 구독을 계속 반환하면 작업이 유지된다. 구독을 제외하면 작업이 중단되고, 나중에 다시 반환하면 새로 시작한다. 데이터도 식별에 사용하려면 `Subscription::run_with`에 전달한다.
 
-사용자 입력 없이도 연속 애니메이션이 필요한 앱은 `time::every` subscription을 추가한다. 고정 비율로 프레임을 전달하고 repaint를 보장한다.
+## 12. 모든 창이 닫힌 뒤에도 실행해야 하는 앱
 
-## 11. Subscription Restarts When the Closure "Shape" Changes
+일반 앱은 마지막 창이 닫히면 종료한다. 창 없이 대기하는 트레이 앱은 `iced::daemon`을 사용하고 종료 시점에 `iced::exit()`를 반환한다.
 
-**What**: subscription을 조건부로 반환하고, 조건이 뒤집힐 때마다 subscription의 작업이 재시작된다. 예를 들어 file watcher가 재읽기하고 channel이 재오픈된다.
+## 13. 텍스트 줄바꿈 너비
 
-**Why**: iced는 *identity*로 subscription을 diff한다. 즉 closure의 captures와 type이다. 새 closure 인스턴스는 새 subscription이다.
-
-**Fix**: subscription의 producer 함수를 프레임 간에 안정적으로 유지한다. 조건부로 캡처하고 있다면 closure를 명명된 `fn`으로 옮긴다:
+긴 텍스트가 줄바꿈되는 위치는 부모가 제공하는 너비와 텍스트의 줄바꿈 설정에 따라 달라진다. 카드 안에서 줄바꿈 너비에 상한을 두려면 컨테이너의 최대 너비를 지정한다.
 
 ```rust
-fn my_watcher_stream() -> Subscription<Message> {
-    Subscription::run(|| { /* ... */ })
-}
-
-fn subscription(&self) -> Subscription<Message> {
-    if self.watching {
-        my_watcher_stream()                  // stable identity
-    } else {
-        Subscription::none()
-    }
-}
-```
-
-## 12. Multi-Window: Windows Close Unexpectedly
-
-**What**: 앱이 여러 윈도우를 사용하고; 메인 윈도우를 닫으면 전체 프로세스가 종료된다. 트레이 스타일의 lingering 앱을 원했다.
-
-**Why**: `iced::application()`은 primary 윈도우가 닫힐 때 종료된다. 영구 background 앱은 `iced::daemon()`을 사용한다. primary 윈도우가 없고, lifecycle은 명시적인 `iced::exit()`에 묶인다.
-
-**Fix**: 앱이 단일 윈도우보다 오래 살아야 한다면 `iced::daemon`으로 마이그레이션한다. upstream `multi_window` 예제 참조.
-
-## 13. Text Wrap Not Kicking In
-
-**What**: 긴 텍스트가 wrap되지 않고 오른쪽 가장자리를 벗어나 그려진다.
-
-**Why**: `text`는 컨테이너 내에서 wrap되지만, 컨테이너 자체가 기본값인 `Shrink`라면 wrap *할* 너비가 없다.
-
-**Fix**: 체인 위 어딘가에 명시적 너비를 설정한다:
-
-```rust
-// container has no width → text won't wrap
-container(text(long_string))
-
-// width set → text wraps
-container(text(long_string)).width(Fill)
-// or column![..text(long_string)..].width(Fill)
+container(text(long_string)).max_width(480)
 ```
 
 ## 14. Custom Widgets Need the `advanced` Feature

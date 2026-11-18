@@ -1,6 +1,6 @@
 # iced Tasks: Async the Right Way
 
-A `Task<Message>` is iced's Elm-style "command": something the runtime performs and whose outcome returns as another `Message`. The rule: **never block or `tokio::spawn` inside `update`**. Issue a Task instead. iced clones messages through the runtime and keeps ordering sane.
+Return a `Task<Message>` from `update` to start asynchronous work and route its output back to the application. Keep blocking operations off the UI thread.
 
 ## Basic `Task::perform`
 
@@ -9,7 +9,9 @@ use iced::Task;
 
 fn update(app: &mut App, msg: Message) -> Task<Message> {
     match msg {
+        Message::Load if app.loading => Task::none(),
         Message::Load => {
+            app.error = None;
             app.loading = true;
             Task::perform(fetch_data(), Message::Loaded)
         }
@@ -29,7 +31,7 @@ fn update(app: &mut App, msg: Message) -> Task<Message> {
 async fn fetch_data() -> Result<Data, String> { /* ... */ }
 ```
 
-**Return `Task::none()`** from branches that don't issue work. iced requires every arm to return a `Task`, even if empty.
+This `update` returns a `Task<Message>`, so each branch must return a task. Use `Task::none()` for branches with no work. An update that only changes state can return `()`.
 
 ## Parallel Tasks: `Task::batch`
 
@@ -45,22 +47,32 @@ Message::Initialize => Task::batch([
 
 Don't hand-craft `tokio::join!`. `Task::batch` hands the runtime what it needs to multiplex them.
 
-## Sequencing: `.then(...)`
+## Exit after a successful save
 
-When step B depends on step A's result, chain:
+Return the save result to `update`. Exit on success and keep the draft on screen with an error on failure. The example ignores edits and duplicate save requests until the save finishes. Disable both controls in the view while `app.saving` is true. If editing stays enabled during the save, compare the saved revision with the current revision before exiting.
 
 ```rust
+Message::SaveAndExit | Message::Edited(_) if app.saving => Task::none(),
+Message::Edited(draft) => {
+    app.draft = draft;
+    Task::none()
+}
 Message::SaveAndExit => {
-    Task::perform(save(state.clone()), Message::Saved)
-        .then(|_| iced::exit())
+    app.saving = true;
+    app.error = None;
+    Task::perform(save(app.draft.clone()), Message::Saved)
+}
+Message::Saved(Ok(())) => iced::exit(),
+Message::Saved(Err(error)) => {
+    app.saving = false;
+    app.error = Some(error);
+    Task::none()
 }
 ```
 
-`.then` receives the future's output and returns a new `Task`. Use this sparingly. Prefer a Message round-trip if the result needs to touch state.
-
 ## Stream Progress: `Task::sip`
 
-When a long-running task should report progress during its run, such as downloads or indexing, use `Task::sip`. It takes a stream-producing future, a progress mapper, and a completion mapper:
+Enable the `sipper` feature of iced 0.14 for `Task::sip`. The download in this example returns a sipper with progress values and a final result. Display the error stored in `Failed` and allow a retry from that state.
 
 ```rust
 use iced::{Task, task};
@@ -76,11 +88,14 @@ enum State {
     Idle,
     Downloading { _handle: task::Handle },
     Done,
+    Failed(String),
 }
 
 fn update(app: &mut App, msg: Message) -> Task<Message> {
     match msg {
+        Message::StartDownload if matches!(app.state, State::Downloading { .. }) => Task::none(),
         Message::StartDownload => {
+            app.progress = 0.0;
             let (task, handle) = Task::sip(
                 download_stream("https://example.com/big.zip"),
                 Message::Progress,
@@ -95,7 +110,7 @@ fn update(app: &mut App, msg: Message) -> Task<Message> {
         }
         Message::Progress(p) => { app.progress = p; Task::none() }
         Message::Finished(Ok(())) => { app.state = State::Done; Task::none() }
-        Message::Finished(Err(e)) => { app.error = Some(e); Task::none() }
+        Message::Finished(Err(e)) => { app.state = State::Failed(e); Task::none() }
     }
 }
 ```
@@ -135,7 +150,7 @@ Message::Quit => iced::exit()
 Message::CloseSettings(id) => window::close(id)
 ```
 
-Both return a `Task` so they chain with `.then`.
+Return the close or exit task directly. These effects emit no message for a `Task::then` callback. When a surviving window needs to react to another window closing, subscribe to `window::close_events()`.
 
 ## Command-style side effects without async
 
@@ -149,16 +164,13 @@ Useful inside `.then` for post-completion hooks that don't need await.
 
 ## Async Runtime Choice
 
-iced requires **exactly one** of `tokio` or `smol`:
+Native iced 0.14 needs an executor. Its default features include `thread-pool`. Enable `tokio` for work that requires a Tokio runtime, such as native asynchronous reqwest calls.
 
 ```toml
-iced = { version = "0.14", features = ["tokio"] }     # or "smol"
+iced = { version = "0.14", features = ["tokio"] }
 ```
 
-- **tokio**: pick this if the app uses `reqwest`, `sqlx`, `tokio::fs`, or anything in the tokio ecosystem.
-- **smol**: lighter, fine for self-contained apps. `async-std` crates work.
-
-Enabling both triggers a runtime conflict at startup that doesn't surface until runtime. Pick one, commit, move on.
+If Cargo unifies multiple features, the default native executor uses `tokio`, then `smol`, then `thread-pool` in that order. WebAssembly uses the browser executor. Inspect `cargo tree -e features -i iced_futures` to see the features enabled by dependencies.
 
 ## What NOT to do
 
@@ -201,6 +213,7 @@ Wrap the async result in `Result` and let `update` pattern-match:
 async fn fetch(url: String) -> Result<String, String> {
     reqwest::get(&url).await
         .map_err(|e| e.to_string())?
+        .error_for_status().map_err(|e| e.to_string())?
         .text().await
         .map_err(|e| e.to_string())
 }
@@ -208,8 +221,8 @@ async fn fetch(url: String) -> Result<String, String> {
 #[derive(Debug, Clone)]
 enum Message {
     Fetch,
-    Fetched(Result<String, String>),   // Result is Clone, carries the error
+    Fetched(Result<String, String>),
 }
 ```
 
-Using `String` for the error makes `Clone` trivial, which is required since `Message: Clone`. For richer errors, define your own `Clone + Debug` error type or wrap in `Arc<anyhow::Error>`.
+The status check sends HTTP 4xx and 5xx responses to the error branch. `Task::perform` can carry a nonclonable error directly. When a widget or time travel requires a clonable message, choose a display string, a clonable error type, or `Arc<E>` according to the details callers need.

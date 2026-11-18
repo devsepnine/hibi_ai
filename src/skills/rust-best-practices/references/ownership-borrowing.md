@@ -27,7 +27,7 @@ let s1 = String::from("hello");
 let s2 = s1;  // s1 is moved to s2
 // println!("{}", s1);  // ERROR: s1 is no longer valid
 
-// Copy happens for Copy types (stack-only data)
+// Assignment copies a Copy value even when it resides in a heap allocation.
 let x = 5;
 let y = x;  // x is copied to y
 println!("{}, {}", x, y);  // OK: both are valid
@@ -107,19 +107,23 @@ println!("{}", s);  // "hello world"
 
 2. **References must always be valid**, no dangling references
 
-```rust
-// ❌ ERROR: Cannot have mutable and immutable references simultaneously
-let mut s = String::from("hello");
-let r1 = &s;      // OK
-let r2 = &s;      // OK
-let r3 = &mut s;  // ERROR: cannot borrow as mutable while immutable refs exist
+The compiler reports `E0502` because the shared borrow is used after the write.
 
-// ✅ OK: Non-Lexical Lifetimes (NLL) - references scope ends at last use
-let mut s = String::from("hello");
-let r1 = &s;
-let r2 = &s;
-println!("{} {}", r1, r2);  // r1, r2 last used here
-let r3 = &mut s;  // OK: r1, r2 are no longer active
+```compile_fail,E0502
+let mut text = String::from("hello");
+let view = &text;
+text.push('!');
+println!("{view}");
+```
+
+The mutation is valid after the final read.
+
+```rust
+let mut text = String::from("hello");
+let view = &text;
+println!("{view}");
+text.push('!');
+assert_eq!(text, "hello!");
 ```
 
 ## Common Patterns
@@ -279,10 +283,7 @@ impl Data {
         f2.push(2);
     }
 
-    // ❌ Bad: Cannot borrow self twice
-    // fn bad_process(&mut self) {
-    //     self.helper(&mut self.field1, &mut self.field1);  // ERROR
-    // }
+    // Passing &mut self.field1 twice to Self::helper would create overlapping borrows.
 }
 ```
 
@@ -291,26 +292,18 @@ impl Data {
 ```rust
 use std::borrow::Cow;
 
-// Avoid unnecessary clones with Cow
-fn process_string(s: Cow<str>) -> String {
-    if s.contains("world") {
-        s.into_owned()  // Convert to owned String
-    } else {
-        format!("{} world", s)  // Create new String
+fn ensure_suffix(mut text: Cow<'_, str>) -> Cow<'_, str> {
+    if !text.ends_with(" world") {
+        text.to_mut().push_str(" world");
     }
+    text
 }
 
-// Works with both owned and borrowed
-let owned = String::from("hello");
-process_string(Cow::Owned(owned));
-process_string(Cow::Borrowed("hello"));
-
-// More idiomatic with into()
-fn process_string_v2(s: impl Into<Cow<'static, str>>) -> String {
-    let s = s.into();
-    // ...
-    s.into_owned()
-}
+let unchanged = ensure_suffix(Cow::Borrowed("hello world"));
+assert!(matches!(unchanged, Cow::Borrowed(_)));
+let changed = ensure_suffix(Cow::Borrowed("hello"));
+assert!(matches!(changed, Cow::Owned(_)));
+assert_eq!(changed, "hello world");
 ```
 
 ## Lifetimes
@@ -340,23 +333,23 @@ let result;
 
 ### Lifetime Elision Rules
 
+With one borrowed input, an elided output lifetime follows that input. On a method with a borrowed receiver, it follows the receiver.
+
 ```rust
-// Rule 1: Each parameter gets its own lifetime
-fn first_word(s: &str) -> &str {  // Inferred as:
-// fn first_word<'a>(s: &'a str) -> &'a str
+fn first_word(s: &str) -> &str {
+    s.split_whitespace().next().unwrap_or("")
+}
 
-// Rule 2: If there's exactly one input lifetime, assign it to output
-fn get_part(s: &str, i: usize) -> &str {  // Inferred as:
-// fn get_part<'a>(s: &'a str, i: usize) -> &'a str
+fn get_part(s: &str, byte: usize) -> Option<&str> {
+    s.get(byte..)
+}
 
-// Rule 3: If there's &self or &mut self, its lifetime is assigned to output
 struct Parser {
     text: String,
 }
 
 impl Parser {
-    fn parse(&self) -> &str {  // Inferred as:
-    // fn parse<'a>(&'a self) -> &'a str
+    fn parse(&self) -> &str {
         &self.text
     }
 }
@@ -530,37 +523,28 @@ fn process(data: &[String]) -> Vec<String> {
 
 ### ❌ Unnecessary Lifetime Annotations
 
-```rust
-// Bad - unnecessary complexity
-fn first<'a, 'b>(x: &'a str, _y: &'b str) -> &'a str {
-    x
-}
+When a function returns the first of two borrowed inputs, tie the output lifetime to the first input. The second input can use an elided lifetime.
 
-// Good - simpler
-fn first(x: &str, _y: &str) -> &str {
+```rust
+fn first<'a>(x: &'a str, _y: &str) -> &'a str {
     x
 }
 ```
 
 ### ❌ Fighting the Borrow Checker
 
+A function that mutably borrows a vector can return a reference into it. The caller can mutate the vector again after the last use of that reference.
+
 ```rust
-// Bad - trying to hold references too long
-fn bad_pattern(v: &mut Vec<i32>) -> &i32 {
-    v.push(1);
-    &v[0]  // ERROR: cannot return reference to mutably borrowed data
+fn append(values: &mut Vec<i32>, value: i32) -> &i32 {
+    values.push(value);
+    &values[values.len() - 1]
 }
 
-// Good - return owned value or use indices
-fn good_pattern(v: &mut Vec<i32>) -> i32 {
-    v.push(1);
-    v[0]  // Copy the value
-}
-
-fn good_pattern_index(v: &mut Vec<i32>) -> usize {
-    v.push(1);
-    0  // Return index instead
-}
+let mut values = vec![1];
+let appended = append(&mut values, 2);
+assert_eq!(*appended, 2);
+values.push(3);
 ```
 
 ### ❌ Overusing RefCell

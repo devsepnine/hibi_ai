@@ -30,7 +30,17 @@ fn main() -> iced::Result {
 }
 ```
 
-New in 0.13+:
+In 0.13 the first argument is the title. Supply the initial state and task to `run_with`.
+
+```rust
+fn main() -> iced::Result {
+    iced::application(Counter::title, Counter::update, Counter::view)
+        .theme(Counter::theme)
+        .run_with(Counter::new)
+}
+```
+
+In 0.14 the first argument initializes the application. Set the title on the builder.
 
 ```rust
 use iced::{Element, Task, Theme, Subscription};
@@ -57,9 +67,9 @@ Observations:
 
 - **No more trait**: `update`/`view`/`title`/`theme` become plain methods. Rust rules apply; no associated types.
 - **`Command<T>` → `Task<T>`**: identical semantics, renamed. Replace across the codebase. `Command::none()` → `Task::none()`, `Command::perform` → `Task::perform`, `Command::batch` → `Task::batch`.
-- **`Executor`**: gone from user API. The executor is chosen by the `tokio` / `smol` feature flag.
-- **`Flags`**: gone. Initial state lives in `new()`'s return; any configuration that used to live in `Flags` now lives in a closure capture around the `new` passed to `application()`.
-- **`Sandbox`**: flat-out removed. If you were using a `Sandbox` with no async, the migration target is still `iced::application()`. You just don't use `Task::perform`. Or use `iced::run(update, view)` for the *very* minimal case.
+- The old `Executor` associated type is gone. iced 0.14 selects the default native executor by Cargo features. Use the builder’s `.executor` method when the project supplies its own.
+- Capture configuration previously held in `Flags` in the initializer for your target version.
+- For a small app with default state and settings, 0.13 takes `iced::run(title, update, view)` and 0.14 takes `iced::run(update, view)`.
 
 ### Mechanical migration checklist
 
@@ -67,7 +77,7 @@ Observations:
 2. Keep the methods; change signatures:
    - `fn update(&mut self, msg) -> Command<Msg>` → `fn update(&mut self, msg) -> Task<Msg>`
    - Everything else unchanged on the method side.
-3. Replace the `main`:
+3. Choose the entry point for your pinned version. This example configures 0.14.
    ```rust
    fn main() -> iced::Result {
        iced::application(MyApp::new, MyApp::update, MyApp::view)
@@ -144,25 +154,17 @@ iced doesn't have `f.area()`. If you see that, the code is ratatui, not iced. Ke
 
 ## 0.13 → 0.14
 
-Much smaller. The main additions are:
+Update the entry point as shown above and compile against the target version. For apps that stream progress, see the 0.14 `Task::sip` example in [Tasks](tasks.md).
 
-- **`Task::sip`**: stream progress with cancellation. See `references/tasks.md`.
-- **`iced::daemon`**: background apps with no main window.
-- **Multi-window improvements**: `window::open` returns `(window::Id, Task<Message>)`.
-- **`text_editor`** gained richer actions and undo groups.
-- **More themes**: KanagawaWave etc. predated 0.14 in some releases; check your version.
+## Features by version
 
-Breaking changes are rare; most 0.13 code compiles unchanged. The release notes are short. Skim them rather than reading blog posts.
+| Feature | iced 0.13 | iced 0.14 |
+|---|---|---|
+| `tokio` | Tokio executor | Tokio executor |
+| `async-std` | Available | Removed. Choose an executor compatible with the async dependencies |
+| `debug` | Available. The application builder requires a `Debug` message even with this feature disabled | Enable for developer tools and implement `Debug` on the message |
 
-## Feature Flag Renames
-
-| 0.12 feature | 0.13+ feature |
-|---|---|
-| `tokio` | `tokio`, unchanged |
-| `async-std` | removed. Use `smol`, which `async-std` crates run on top of |
-| `debug` | removed from default; no explicit feature needed |
-
-If `Cargo.toml` references `iced/async-std`, drop it. You're on `tokio` or `smol` now.
+Native iced 0.14 defaults to `thread-pool`. If both `tokio` and `smol` are enabled, the default executor selects Tokio.
 
 ## After Migration: Sanity Check
 
@@ -170,7 +172,7 @@ If `Cargo.toml` references `iced/async-std`, drop it. You're on `tokio` or `smol
 - [ ] All `.style(theme::X::Y)` references are now `.style(widget::style_fn)`
 - [ ] No remaining `Command<Message>` types
 - [ ] No `impl Application for` / `impl Sandbox for`
-- [ ] `Cargo.toml` specifies exactly one of `tokio` / `smol`
+- [ ] Native executor features match the async dependencies and Linux builds include `x11` or `wayland`
 - [ ] App runs and a theme change still works, a canary for palette access regressions
 
 ## When NOT to migrate

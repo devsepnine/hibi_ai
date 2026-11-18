@@ -24,17 +24,17 @@ This SKILL.md is the index. Open the focused reference for the sub-task:
 
 ## Project Setup
 
-Use edition 2024 on Rust 1.85+ and the current stable `iced`. The builder API, `iced::application`, covers 99% of apps; reserve `iced_runtime` for advanced embeds.
+Follow the project’s pinned edition and dependency versions. For a new project, check the selected dependencies when setting the minimum Rust version. The manifest below illustrates one configuration.
 
 ```toml
 [package]
 name = "my-iced-app"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.88"
 
 [dependencies]
 iced = { version = "0.14", features = ["tokio", "canvas", "advanced"] }
-# For 0.13, just pin "0.13". API is compatible for everything in this skill.
+# For a 0.13 project, check the API of the pinned release.
 ```
 
 Feature flags worth knowing:
@@ -42,13 +42,13 @@ Feature flags worth knowing:
 | Feature | What it adds |
 |---|---|
 | `tokio` | Use tokio as the async runtime for `Task::perform` |
-| `smol` | Alternative runtime; pick exactly one |
+| `smol` | Native executor when `tokio` is disabled |
 | `canvas` | `canvas::Program`, `Geometry`, `Path`, `Frame` |
 | `advanced` | Low-level `widget::Widget` trait for custom widgets |
 | `image` / `svg` | Bitmap / vector image widgets |
 | `markdown` | Render markdown with `iced::widget::markdown` |
 
-Pick **one** of `tokio`/`smol`. Enabling both wastes deps and can cause runtime conflicts when a library upstream picks the other.
+On native iced 0.14, the default features include `thread-pool`. When multiple executor features are enabled, iced prefers `tokio`, then `smol`, then `thread-pool`. Match the executor to the async dependencies. On Linux, keep a display backend such as `x11` or `wayland` when disabling defaults.
 
 ## Minimal App: `iced::run`, no state struct needed
 
@@ -81,7 +81,7 @@ fn view(counter: &u64) -> iced::Element<'_, Message> {
 }
 ```
 
-**Why this works**: `iced::run` accepts any `State: Default` plus a pure `update(&mut State, Msg)` and `view(&State) -> Element`. Good for demos and small tools. Upgrade to `iced::application()` the moment you need a theme, subscription, async work, or window config.
+In 0.14, `iced::run` constructs the default state and can run tasks returned from `update`. Use the builder for an initial task, theme, subscription, or window settings. For 0.13 use the entry points in [Migration](references/migration.md).
 
 ## Standard App: `iced::application()` builder
 
@@ -171,7 +171,7 @@ More patterns such as `scrollable`, `pick_list`, `tooltip`, `text_input`, and `c
 
 The message enum is the spine of the app. Three rules keep it maintainable:
 
-1. **`#[derive(Debug, Clone)]` on every Message.** The runtime clones messages across the event boundary. `Copy` where the payload allows. iced happily uses it.
+1. In iced 0.14 the selected widgets and features determine message bounds. Converting a button to an element requires `Clone`. Running the app with `debug` requires `Debug` and with `time-travel` also requires `Clone`.
 2. **One Message variant per user-observable event**, not per internal transition. `ThemeChanged(Theme)` > `InternalMutationA/B/C`.
 3. **Nest sub-modules' messages inside a variant** instead of flattening. `Message::Editor(editor::Message)` scales better than `Message::EditorKeyPressed / Message::EditorSaved / ...` at 30 variants.
 
@@ -193,9 +193,22 @@ use iced::Task;
 
 fn update(app: &mut App, message: Message) -> Task<Message> {
     match message {
-        Message::Load => Task::perform(load_config(), Message::Loaded),
-        Message::Loaded(Ok(cfg)) => { app.cfg = cfg; Task::none() }
-        Message::Loaded(Err(e)) => { app.error = Some(e); Task::none() }
+        Message::Load if app.loading => Task::none(),
+        Message::Load => {
+            app.loading = true;
+            app.error = None;
+            Task::perform(load_config(), Message::Loaded)
+        }
+        Message::Loaded(Ok(cfg)) => {
+            app.loading = false;
+            app.cfg = cfg;
+            Task::none()
+        }
+        Message::Loaded(Err(e)) => {
+            app.loading = false;
+            app.error = Some(e);
+            Task::none()
+        }
     }
 }
 ```
@@ -227,7 +240,7 @@ Palette roles `primary`/`secondary`/`success`/`danger`/`background` × strength 
 
 ## Performance Quick Rules
 
-1. **`view` must stay cheap**: it runs every frame that state changes. Don't allocate or format inside hot loops; precompute in `update` and cache on `App`.
+1. **`view` must stay cheap**: the runtime rebuilds the view after processing messages. Don't allocate or format inside hot loops; precompute in `update` and cache on `App`.
 2. **Borrow in `view`, own in `update`.** `Element<'a, Message>` borrows from `&self`, so move expensive owned data into the App struct and expose references to the builder.
 3. **Use `canvas::Cache`** for custom drawings: `Cache::draw` skips re-tessellation until you call `.clear()`.
 4. **Don't over-nest layouts.** Each `container`/`column`/`row` is a node; 5 levels deep is fine, 15 is a smell.

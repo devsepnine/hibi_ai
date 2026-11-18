@@ -1,6 +1,6 @@
 # iced Tasks: Async the Right Way
 
-`Task<Message>`는 iced의 Elm 스타일 "command"이다: 런타임이 수행하고 그 결과가 다른 `Message`로 반환되는 것. 규칙: **`update` 내부에서 절대 block하거나 `tokio::spawn`하지 마라**. 대신 Task를 발행하라. iced는 런타임을 통해 메시지를 clone하고 순서를 sane하게 유지한다.
+`update`에서 `Task<Message>`를 반환하면 비동기 작업의 결과가 다시 앱에 메시지로 전달된다. UI 스레드에서 블로킹 작업을 수행하지 않는다.
 
 ## Basic `Task::perform`
 
@@ -9,7 +9,9 @@ use iced::Task;
 
 fn update(app: &mut App, msg: Message) -> Task<Message> {
     match msg {
+        Message::Load if app.loading => Task::none(),
         Message::Load => {
+            app.error = None;
             app.loading = true;
             Task::perform(fetch_data(), Message::Loaded)
         }
@@ -29,7 +31,7 @@ fn update(app: &mut App, msg: Message) -> Task<Message> {
 async fn fetch_data() -> Result<Data, String> { /* ... */ }
 ```
 
-작업을 발행하지 않는 분기에서 **`Task::none()`을 반환**한다. iced는 모든 arm이 `Task`를 반환하도록 요구한다, 비어있더라도.
+이 예시의 `update`는 `Task<Message>`를 반환하므로 모든 분기에서 작업을 반환한다. 실행할 일이 없는 분기는 `Task::none()`을 반환한다. 상태만 바꾸는 `update`는 `()`를 반환할 수 있다.
 
 ## Parallel Tasks: `Task::batch`
 
@@ -45,22 +47,32 @@ Message::Initialize => Task::batch([
 
 `tokio::join!`을 직접 만들지 마라. `Task::batch`는 런타임에 그들을 멀티플렉싱하는 데 필요한 것을 제공한다.
 
-## Sequencing: `.then(...)`
+## 저장 결과에 따라 종료하기
 
-step B가 step A의 결과에 의존할 때, chain한다:
+저장 작업의 결과를 `update`에 전달한다. 성공하면 종료하고, 실패하면 편집 중인 내용을 유지한 채 오류를 표시한다. 예시는 저장 중에 들어오는 편집과 중복 저장 요청을 무시한다. `app.saving`이 참인 동안 화면에서도 두 입력을 비활성화한다. 저장 중에도 편집을 허용하는 앱은 종료 전에 저장한 리비전과 현재 리비전을 비교한다.
 
 ```rust
+Message::SaveAndExit | Message::Edited(_) if app.saving => Task::none(),
+Message::Edited(draft) => {
+    app.draft = draft;
+    Task::none()
+}
 Message::SaveAndExit => {
-    Task::perform(save(state.clone()), Message::Saved)
-        .then(|_| iced::exit())
+    app.saving = true;
+    app.error = None;
+    Task::perform(save(app.draft.clone()), Message::Saved)
+}
+Message::Saved(Ok(())) => iced::exit(),
+Message::Saved(Err(error)) => {
+    app.saving = false;
+    app.error = Some(error);
+    Task::none()
 }
 ```
 
-`.then`은 future의 출력을 받고 새 `Task`를 반환한다. 이를 신중히 사용하라. 결과가 state에 닿아야 한다면 Message round-trip을 선호한다.
-
 ## Stream Progress: `Task::sip`
 
-장시간 실행 task가 실행 중에 진행을 보고해야 할 때, 예를 들어 다운로드나 인덱싱일 때 `Task::sip`을 사용한다. stream을 생성하는 future, 진행 매퍼, 완료 매퍼를 받는다:
+iced 0.14에서 `Task::sip`을 쓰려면 `sipper` 기능을 켠다. 이 예시의 다운로드는 진행률과 최종 결과를 전달하는 sipper를 반환한다. `Failed`에 저장된 오류를 표시하고 이 상태에서 재시도를 허용한다.
 
 ```rust
 use iced::{Task, task};
@@ -76,11 +88,14 @@ enum State {
     Idle,
     Downloading { _handle: task::Handle },
     Done,
+    Failed(String),
 }
 
 fn update(app: &mut App, msg: Message) -> Task<Message> {
     match msg {
+        Message::StartDownload if matches!(app.state, State::Downloading { .. }) => Task::none(),
         Message::StartDownload => {
+            app.progress = 0.0;
             let (task, handle) = Task::sip(
                 download_stream("https://example.com/big.zip"),
                 Message::Progress,
@@ -95,7 +110,7 @@ fn update(app: &mut App, msg: Message) -> Task<Message> {
         }
         Message::Progress(p) => { app.progress = p; Task::none() }
         Message::Finished(Ok(())) => { app.state = State::Done; Task::none() }
-        Message::Finished(Err(e)) => { app.error = Some(e); Task::none() }
+        Message::Finished(Err(e)) => { app.state = State::Failed(e); Task::none() }
     }
 }
 ```
@@ -135,7 +150,7 @@ Message::Quit => iced::exit()
 Message::CloseSettings(id) => window::close(id)
 ```
 
-둘 다 `Task`를 반환하므로 `.then`과 chain된다.
+닫기와 종료 작업은 그대로 반환한다. 이 작업은 `Task::then` 콜백에 전달할 메시지를 생성하지 않는다. 다른 창이 닫힌 뒤 남아 있는 창에서 처리할 일이 있으면 `window::close_events()`를 구독한다.
 
 ## Command-style side effects without async
 
@@ -149,16 +164,13 @@ await가 필요 없는 사후 완료 hook에 대해 `.then` 내부에서 유용�
 
 ## Async Runtime Choice
 
-iced는 `tokio` 또는 `smol` 중 **정확히 하나**를 요구한다:
+네이티브 iced 0.14에는 실행기가 필요하다. 기본 기능에는 `thread-pool`이 포함된다. 네이티브 reqwest 비동기 호출처럼 Tokio 런타임이 필요한 작업은 `tokio` 기능을 켠다.
 
 ```toml
-iced = { version = "0.14", features = ["tokio"] }     # or "smol"
+iced = { version = "0.14", features = ["tokio"] }
 ```
 
-- **tokio**: 앱이 `reqwest`, `sqlx`, `tokio::fs`나 tokio 생태계의 무엇이든 사용한다면 이를 선택.
-- **smol**: 더 가벼움, 자기 완결적인 앱에 적합. `async-std` crate가 작동.
-
-둘 다 활성화하면 시작 시 런타임 충돌이 트리거되며 런타임에서야 표면화된다. 하나를 선택하고, 커밋하고, 진행하라.
+Cargo가 여러 기능을 활성화하면 기본 네이티브 실행기는 `tokio`, `smol`, `thread-pool` 순으로 선택된다. WebAssembly에서는 브라우저 실행기를 사용한다. 의존성이 활성화한 기능은 `cargo tree -e features -i iced_futures`로 확인한다.
 
 ## What NOT to do
 
@@ -201,6 +213,7 @@ Message::LoadFile => Task::perform(
 async fn fetch(url: String) -> Result<String, String> {
     reqwest::get(&url).await
         .map_err(|e| e.to_string())?
+        .error_for_status().map_err(|e| e.to_string())?
         .text().await
         .map_err(|e| e.to_string())
 }
@@ -208,8 +221,8 @@ async fn fetch(url: String) -> Result<String, String> {
 #[derive(Debug, Clone)]
 enum Message {
     Fetch,
-    Fetched(Result<String, String>),   // Result is Clone, carries the error
+    Fetched(Result<String, String>),
 }
 ```
 
-에러에 `String`을 사용하면 `Clone`이 사소해진다. `Message: Clone`이므로 필수이다. 더 풍부한 에러는 자체 `Clone + Debug` 에러 타입을 정의하거나 `Arc<anyhow::Error>`로 wrap한다.
+상태 검사는 HTTP 4xx와 5xx 응답을 오류 분기로 보낸다. `Task::perform`은 복제할 수 없는 오류도 그대로 전달한다. 위젯이나 시간 이동 기능에 복제 가능한 메시지가 필요하면 호출자가 요구하는 정보에 따라 표시용 문자열, 복제 가능한 오류 타입 또는 `Arc<E>`를 선택한다.

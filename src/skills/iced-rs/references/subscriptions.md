@@ -1,6 +1,6 @@
 # iced Subscriptions: Listening to the Outside World
 
-A `Subscription<Message>` is a declarative "while this is returned, deliver these messages." Timers, global events, channels: anything the runtime multiplexes over time. Unlike a fire-and-forget `Task` with one outcome, a Subscription keeps producing messages until you stop returning it.
+A `Subscription<Message>` declares which streams the application needs in its current state. A stream produces messages until it ends or the application removes its subscription.
 
 ## The shape
 
@@ -25,7 +25,7 @@ fn subscription(&self) -> Subscription<Message> {
 }
 ```
 
-The ticks arrive as the `Message::Tick` variant. `time::every` gives you an `Instant`. Keep it with `.map(Message::Tick)` if you want the timestamp, or `_ => Message::Tick` if you don't.
+In native iced 0.14, enable `tokio` or `smol` for `time::every`. The default native thread pool has no timer API. The browser backend provides its own timer. Each tick carries an `Instant`. Use `.map(Message::Tick)` when the message stores that timestamp.
 
 Stop the timer by conditionally not returning it:
 
@@ -37,87 +37,76 @@ if self.clock_running {
 }
 ```
 
-The runtime detects the change and shuts the timer down between frames.
+Removing the subscription cancels its producer when the runtime next reconciles the active set.
 
-## Global Events: `event::listen`
+## Keyboard and window interactions
 
-All runtime events, namely keyboard, mouse, window, and touch:
-
-```rust
-use iced::event::{self, Event};
-
-fn subscription(&self) -> Subscription<Message> {
-    event::listen().map(Message::Event)
-}
-```
-
-Then in `update`, pattern-match the event:
+`event::listen()` delivers interactions that widgets left `Ignored`. Use `event::listen_with` to receive the event, capture status, and window ID and choose which events reach the app. Both exclude window redraw requests. The arrow shortcut below respects focused widgets that consume arrow keys.
 
 ```rust
-Message::Event(Event::Keyboard(keyboard::Event::KeyPressed { key, modifiers, .. })) => {
-    match key.as_ref() {
-        keyboard::Key::Named(keyboard::key::Named::Escape) => /* dismiss */,
-        keyboard::Key::Character("s") if modifiers.control() => /* save */,
-        _ => {}
+use iced::{Event, Subscription, event, keyboard, window};
+
+fn arrow_shortcut(event: Event, status: event::Status, _: window::Id) -> Option<Message> {
+    let Event::Keyboard(keyboard::Event::KeyPressed { key, .. }) = event else {
+        return None;
+    };
+    if status == event::Status::Captured {
+        return None;
     }
-    Task::none()
+
+    match key {
+        keyboard::Key::Named(keyboard::key::Named::ArrowUp) => Some(Message::Up),
+        keyboard::Key::Named(keyboard::key::Named::ArrowDown) => Some(Message::Down),
+        _ => None,
+    }
+}
+
+fn shortcuts() -> Subscription<Message> {
+    event::listen_with(arrow_shortcut)
 }
 ```
 
-**Filtering at the subscription**: if you only care about specific events, use `event::listen_with` which passes a filter closure. It's the same thing, just saves an allocation and lets you emit a narrower message type.
-
-## Keyboard-specific
-
-Focused keypress subscriptions, which only fire when your app's window has focus:
-
-```rust
-use iced::keyboard;
-
-keyboard::on_key_press(|key, modifiers| {
-    Some(match key.as_ref() {
-        keyboard::Key::Named(keyboard::key::Named::ArrowUp) => Message::Up,
-        keyboard::Key::Named(keyboard::key::Named::ArrowDown) => Message::Down,
-        _ => return None,                // `None` drops the event
-    })
-})
-```
-
-Return `None` to ignore. This is cleaner than a catch-all match in `update`.
-
-## Mixing Multiple Subscriptions: `Subscription::batch`
+Batch independent producers. Give each shortcut one handler so a key press produces one application action.
 
 ```rust
 fn subscription(&self) -> Subscription<Message> {
     Subscription::batch([
         time::every(Duration::from_millis(500)).map(|_| Message::Tick),
-        event::listen().map(Message::Event),
-        keyboard::on_key_press(key_handler),
+        shortcuts(),
     ])
 }
 ```
 
-Return a batch whenever you have >1 subscription active. Order inside doesn't matter.
+## Channel workers
 
-## Channel-based: `Subscription::run`
-
-For background tasks that produce a *stream* of messages, such as a file watcher or long-running async worker, use `Subscription::run`:
+`Subscription::run` takes a function pointer with no arguments. For a worker that depends on a path, `run_with` uses the builder and the supplied data as its identity. This example reads a file once with Tokio. Enable `tokio` on iced and the `fs` and `io-util` features on the app’s Tokio dependency.
 
 ```rust
 use iced::{Subscription, stream};
-use futures::stream::StreamExt;
+use iced::futures::{SinkExt, Stream, StreamExt};
+use std::path::PathBuf;
+use tokio::io::{AsyncBufReadExt, BufReader};
 
-fn subscription(&self) -> Subscription<Message> {
-    Subscription::run(|| stream::channel(100, |mut output| async move {
-        // long-running work; push into `output` as events happen
-        loop {
-            let event = watcher.next().await;
-            let _ = output.send(Message::FileChanged(event)).await;
+fn read_lines(path: PathBuf) -> impl Stream<Item = Message> {
+    stream::try_channel(16, async move |mut output| {
+        let file = tokio::fs::File::open(path).await?;
+        let mut lines = BufReader::new(file).lines();
+        while let Some(line) = lines.next_line().await? {
+            if output.send(line).await.is_err() {
+                break;
+            }
         }
-    }))
+        Ok::<(), std::io::Error>(())
+    })
+    .map(|result| Message::LogLine(result.map_err(|error| error.to_string())))
+}
+
+fn log_subscription(path: PathBuf) -> Subscription<Message> {
+    Subscription::run_with(path, |path| read_lines(path.clone()))
 }
 ```
 
-The subscription's identity is the function pointer / closure captures. If the same `run` is returned on the next frame, the runtime keeps the existing stream alive. Change what's returned to restart.
+The stream ends at EOF, reports a read error, and stops sending when the receiver closes. Returning the same identity keeps the existing worker. Even after EOF, declaring that identity again does not reopen the file. To restart, change the identity or remove the subscription for an update before adding it again. For a fixed source, `Subscription::run(|| read_lines(PathBuf::from("app.log")))` uses a noncapturing builder.
 
 ## Conditional / dynamic
 
@@ -139,25 +128,28 @@ fn subscription(&self) -> Subscription<Message> {
 
 This pattern, a `Vec<Subscription<Message>>` built conditionally and batched, scales better than nested `if`/`else` returning `Subscription::none()`.
 
-## Window-level events
+## Window events
+
+To confirm before closing, configure the application with `.exit_on_close_request(false)`. For a separately opened window, set `window::Settings::exit_on_close_request` to `false` when opening it. Subscribe to close requests, show the prompt, and issue `window::close(id)` only after confirmation. On cancellation, keep the window open.
 
 ```rust
-use iced::window;
-
-window::resize_events().map(|(id, size)| Message::WindowResized(id, size))
-window::close_requests().map(|id| Message::WindowClosing(id))
+fn window_events() -> Subscription<Message> {
+    Subscription::batch([
+        window::resize_events().map(|(id, size)| Message::WindowResized(id, size)),
+        window::close_requests().map(Message::WindowClosing),
+    ])
+}
 ```
-
-Use `close_requests` to intercept close, to prompt "save changes?", before actually closing the window with `window::close`.
 
 ## Common Patterns
 
 ### Debouncing
 
-A subscription fires constantly; debounce in `update`:
+For text search, debounce the input widget’s change message in `update`. The timer below uses Tokio.
 
 ```rust
-Message::Event(Event::Keyboard(ev)) => {
+Message::QueryChanged(query) => {
+    self.query = query;
     self.pending_search = Some(Instant::now());
     Task::perform(
         async {
@@ -192,5 +184,5 @@ fn subscription(&self) -> Subscription<Message> {
 
 ## What NOT to do
 
-- **Don't do side effects inside a subscription closure.** The closure runs every frame; any I/O will hammer the system. Side effects belong in `Task::perform`.
+- Keep the subscription declaration cheap. Open files and receive events inside the worker stream so I/O follows its lifetime. A one time operation requested by `update` can use `Task::perform`.
 - **Don't rely on subscription order.** `Subscription::batch` merges; ordering across producers isn't guaranteed. If you need ordering, send a seq number in the message.

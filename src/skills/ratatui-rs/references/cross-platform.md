@@ -2,43 +2,24 @@
 
 Most ratatui tutorials assume POSIX. Production TUIs ship to Windows users running Git Bash / MSYS / native cmd, and the assumptions break in subtle ways.
 
-## The Three Things That Always Break on Windows
+## Arguments and paths on Windows
 
-### 1. Backslashes Are NOT Escape Characters
+### Preserve argument boundaries
+
+Accept the executable and its arguments as separate fields. This preserves empty arguments, spaces, apostrophes, and backslashes. Read existing CLI arguments with `std::env::args_os` and use an argument array in new configuration. For existing command strings, use the parser specified by the field’s contract, such as `CommandLineToArgvW` for Windows command line syntax or `shlex` for POSIX quoting.
 
 ```rust
-// shlex::split(r"C:\Users\me") on Windows returns ["C:Usersme"] — backslashes eaten as escapes.
-// You MUST split with Windows semantics on Windows.
+use std::ffi::{OsStr, OsString};
+use std::process::Command;
 
-#[cfg(windows)]
-pub fn split_command(cmd: &str) -> Option<Vec<String>> {
-    let mut args = Vec::new();
-    let mut current = String::new();
-    let mut quote: Option<char> = None;
-
-    for ch in cmd.chars() {
-        match ch {
-            '"' | '\'' if quote == Some(ch) => quote = None,
-            '"' | '\'' if quote.is_none() => quote = Some(ch),
-            ' ' | '\t' if quote.is_none() => {
-                if !current.is_empty() {
-                    args.push(std::mem::take(&mut current));
-                }
-            }
-            _ => current.push(ch),
-        }
-    }
-    if !current.is_empty() { args.push(current); }
-    Some(args)
-}
-
-#[cfg(not(windows))]
-pub fn split_command(cmd: &str) -> Option<Vec<String>> {
-    shlex::split(cmd)
+pub fn build_command(program: &OsStr, args: &[OsString]) -> Command {
+    let mut command = Command::new(program);
+    command.args(args);
+    command
 }
 ```
 
-### 2. MSYS Paths, `/c/Users/...`, Are Not Real Windows Paths
+### MSYS Paths, `/c/Users/...`, Are Not Real Windows Paths
 
 Git for Windows / MSYS represents `C:\Users\me` as `/c/Users/me`. Native Windows APIs, and `std::fs::canonicalize` on Windows, don't understand this form.
 
@@ -59,42 +40,11 @@ pub fn normalize_git_path(p: &str) -> String {
 pub fn normalize_git_path(p: &str) -> String { p.to_string() }
 ```
 
-### 3. Shell Metacharacters Differ
+### Native executables and shell scripts
 
-Unix-only blocklists miss `%`, `^`, `!` for cmd.exe, and Windows-only blocklists miss `;`, `&`, `|`, `<`, `>`, `` ` ``.
+Pass the executable path to `Command::new` and each data argument to `Command::arg` or `Command::args`. A native tool that follows normal argument parsing receives filenames such as `Budget 100%!;final.txt` as one value. Apply the tool’s own rules for options and paths.
 
-```rust
-pub fn is_safe_command(cmd: &str) -> bool {
-    // Block both Unix and Windows shell metacharacters so a single function
-    // works regardless of which shell the user has configured.
-    let unsafe_chars = [
-        // POSIX shells
-        '&', '|', ';', '<', '>', '$', '`', '\n', '\r',
-        // cmd.exe
-        '%', '^', '!',
-    ];
-    !cmd.chars().any(|c| unsafe_chars.contains(&c))
-}
-```
-
-## The Anti-Pattern That Burns Everyone: `cmd /c`
-
-```rust
-// ❌ NEVER DO THIS on Windows. Enables shell injection.
-Command::new("cmd").args(["/c", &user_input]).spawn();
-
-// ✅ Invoke the executable directly. Windows resolves .cmd / .exe via PATHEXT.
-Command::new("npm.cmd").arg("install").spawn();   // Windows
-Command::new("npm").arg("install").spawn();        // POSIX
-```
-
-If you need cross-platform tool invocation, abstract it:
-
-```rust
-fn npm_command() -> Command {
-    if cfg!(windows) { Command::new("npm.cmd") } else { Command::new("npm") }
-}
-```
+Shells and Windows batch files interpret command text. If a tool ships a batch wrapper and accepts arbitrary filenames, choose its native entry point or invoke its interpreter with the trusted script path followed by separate arguments. For npm on Windows, this can be the configured Node executable with the installed `npm-cli.js` path as its first argument.
 
 ## Path Display in the TUI
 
@@ -125,11 +75,11 @@ Use `#[cfg(target_os = "...")]` tests for OS-specific paths:
 mod tests {
     use super::*;
 
-    #[cfg(windows)]
     #[test]
-    fn windows_split_keeps_backslashes() {
-        let args = split_command(r#"foo "C:\path\to\bin" --flag"#).unwrap();
-        assert_eq!(args, vec!["foo", r"C:\path\to\bin", "--flag"]);
+    fn preserves_argument_boundaries() {
+        let args = ["", "O'Brien", "Budget 100%!;final.txt", r"C:\Program Files\Demo"].map(OsString::from);
+        let cmd = build_command(OsStr::new("tool"), &args);
+        assert!(cmd.get_args().eq(args.iter().map(OsString::as_os_str)));
     }
 
     #[cfg(windows)]
@@ -137,21 +87,12 @@ mod tests {
     fn normalizes_msys_path() {
         assert_eq!(normalize_git_path("/c/Users/me"), r"C:\Users\me");
     }
-
-    #[test]
-    fn rejects_shell_metachars() {
-        assert!(!is_safe_command("ls; rm -rf /"));
-        assert!(!is_safe_command("echo %SECRET%"));
-        assert!(is_safe_command("cargo build --release"));
-    }
 }
 ```
 
 ## Summary Checklist
 
-- [ ] No `cmd /c` anywhere
-- [ ] `split_command` cfg-gated for Windows
-- [ ] MSYS path normalization at every external-input boundary, such as git remotes and env vars
-- [ ] `is_safe_command` blocks both `&|;<>$` and `%^!`
-- [ ] Native executable resolution, `npm.cmd` on Windows, `npm` on POSIX
-- [ ] At least one Windows test in CI, GitHub Actions: `runs-on: windows-latest`
+- [ ] Native process calls preserve empty arguments and filename punctuation.
+- [ ] The command identifies any shell or batch interpreter that will parse its arguments.
+- [ ] Convert MSYS notation only for inputs whose contract specifies an MSYS path.
+- [ ] When Windows is supported, run the argument round trip with the actual target program on Windows.

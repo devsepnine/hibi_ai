@@ -19,12 +19,15 @@ T2: your loop checks cancel FIRST, sees the signal, kills the (already-dead) chi
 
 ## Reference Implementation
 
+이 예시는 워커에서 직계 자식을 실행하고 취소 시 그 자식을 종료·회수한다. 자손까지 중지해야 하는 작업에는 운영체제의 프로세스 그룹이나 Job Object가 필요하다. 표준 오류는 `tempfile`의 임시 파일로 받아 자손이 출력 핸들을 상속해도 자식의 종료를 즉시 처리할 수 있다. 실패 시점의 마지막 8 KiB만 읽으며, 실행 중 로그의 디스크 사용량은 별도로 관리한다.
+
 ```rust
-use std::io::{BufRead, BufReader};
+use anyhow::{bail, Context};
+use std::io::{Read, Seek, SeekFrom};
 use std::process::{Command, Stdio};
-use std::sync::mpsc::{Receiver, TryRecvError};
-use std::thread;
+use std::sync::mpsc::Receiver;
 use std::time::Duration;
+use tempfile::NamedTempFile;
 use wait_timeout::ChildExt;
 
 pub struct ProcessConfig {
@@ -36,53 +39,46 @@ pub fn spawn_cancelable_process(
     command: &mut Command,
     config: ProcessConfig,
 ) -> anyhow::Result<()> {
+    let mut diagnostics = NamedTempFile::new()?;
     let mut child = command
         .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()?;
+        .stdout(Stdio::null())
+        .stderr(diagnostics.reopen()?)
+        .spawn()
+        .context("spawn background process")?;
 
-    // Drain stdout/stderr so the child doesn't block on a full pipe.
-    // These threads exit naturally when the child closes its handles
-    // (either normal exit or kill). DO NOT join them yet — see Gotchas.
-    let stdout = child.stdout.take().unwrap();
-    let stderr = child.stderr.take().unwrap();
-    let stdout_thread = thread::spawn(move || {
-        for line in BufReader::new(stdout).lines().flatten() {
-            // forward via channel if you want live output
-            let _ = line;
+    let status = loop {
+        if let Some(status) = child.wait_timeout(config.poll_interval)? {
+            break status;
         }
-    });
-    let stderr_thread = thread::spawn(move || {
-        BufReader::new(stderr).lines().flatten().collect::<Vec<_>>()
-    });
-
-    loop {
-        // (1) COMPLETION CHECK FIRST — wins races against late cancel.
-        match child.wait_timeout(config.poll_interval)? {
-            Some(status) => {
-                let _ = stdout_thread.join();
-                let stderr_lines = stderr_thread.join().unwrap_or_default();
-                if status.success() {
-                    return Ok(());
+        if config.cancel_rx.try_recv().is_ok() {
+            if let Some(status) = child.try_wait()? {
+                break status;
+            }
+            if let Err(error) = child.kill() {
+                if let Some(status) = child.try_wait()? {
+                    break status;
                 }
-                anyhow::bail!("process failed: {}", stderr_lines.join("\n"));
+                return Err(error).context("stop background process");
             }
-            None => {} // still running
+            let status = child.wait().context("reap background process")?;
+            if status.success() {
+                break status;
+            }
+            bail!("cancelled by user");
         }
+    };
 
-        // (2) CANCEL CHECK SECOND.
-        match config.cancel_rx.try_recv() {
-            Ok(()) => {
-                // Best-effort kill; child may have just exited.
-                let _ = child.kill();
-                let _ = child.wait();
-                anyhow::bail!("cancelled by user");
-            }
-            Err(TryRecvError::Empty) => continue,
-            Err(TryRecvError::Disconnected) => continue, // owner dropped, treat as no-cancel
-        }
+    if status.success() {
+        return Ok(());
     }
+    const TAIL_BYTES: u64 = 8192;
+    let end = diagnostics.as_file().metadata()?.len();
+    let start = end.saturating_sub(TAIL_BYTES);
+    diagnostics.seek(SeekFrom::Start(start))?;
+    let mut tail = Vec::new();
+    diagnostics.take(end - start).read_to_end(&mut tail)?;
+    bail!("process failed ({status}): {}", String::from_utf8_lossy(&tail))
 }
 ```
 

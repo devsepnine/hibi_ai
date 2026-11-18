@@ -1,4 +1,4 @@
-# iced Widgets for 0.13 / 0.14
+# iced 0.14 Widgets
 
 Built-in widgets and their idiomatic usage. All examples assume `use iced::widget::*;` where relevant.
 
@@ -8,7 +8,8 @@ Built-in widgets and their idiomatic usage. All examples assume `use iced::widge
 use iced::widget::text;
 
 text("Hello").size(24)                    // plain
-text(counter)                             // any Display
+text(counter)                             // u64
+text(value.to_string())                   // custom Display type
 text!("User: {}", name)                   // formatted (macro)
 text("Warn").style(text::warning)         // styled via built-in function
 ```
@@ -117,14 +118,15 @@ text_input("Type here...", &state.value)
     .size(18)
 ```
 
-- `on_input` disabled form: omit the call to make the input read-only.
-- Multi-line: use `text_editor` instead. It has a proper `Content` type with undo/redo.
+- Omitting `on_input` disables the text input.
+- For multiline editing, store a `text_editor::Content` in the app state.
 - Password: `.secure(true)` masks characters.
 
 ## checkbox / toggler / radio
 
 ```rust
-checkbox("Subscribe", state.subscribed)
+checkbox(state.subscribed)
+    .label("Subscribe")
     .on_toggle(Message::SubscribeToggled);
 
 toggler(state.dark_mode)
@@ -148,12 +150,12 @@ slider(0.0..=100.0, state.volume, Message::VolumeChanged)
 ```
 
 - `Message::VolumeChanged(f32)`: you get the new value directly.
-- `.step(n)` quantizes; omit for continuous.
+- The default step is one. For a fractional range such as `0.0..=1.0`, choose a finer step such as `.step(0.01)`.
 - Vertical form: `vertical_slider(...)`.
 
 ## pick_list
 
-Dropdown from a slice of `Clone + Display + Eq` options:
+Dropdown from a slice of `Clone + PartialEq + ToString` options:
 
 ```rust
 use iced::widget::pick_list;
@@ -192,7 +194,7 @@ tooltip(
 use iced::widget::progress_bar;
 
 progress_bar(0.0..=1.0, state.progress)       // expects value in the given range
-    .height(20.0)
+    .girth(20.0)
 ```
 
 ## image / svg
@@ -224,14 +226,14 @@ For modal dialogs you usually want `stack!` with a dimmed background container o
 Pure spacing when `spacing()` doesn't express the layout cleanly:
 
 ```rust
-use iced::widget::{Space, horizontal_space, vertical_space};
+use iced::widget::{space, Space};
 
-horizontal_space()          // fills remaining horizontal
-vertical_space().height(16) // fixed height gap
-Space::new(20, 0)           // explicit WxH
+let horizontal_gap = space::horizontal();
+let vertical_gap = space::vertical().height(16);
+let fixed_gap = Space::new().width(20).height(0);
 ```
 
-Use `horizontal_space()` inside a `row!` to push siblings apart. This is the "spacer pattern".
+Use `space::horizontal()` inside a 0.14 row to fill the remaining width. In 0.13 the helper is `horizontal_space()`.
 
 ## Length Primitives
 
@@ -247,11 +249,11 @@ use iced::{Fill, Shrink, FillPortion};
 .width(300.0)             // fixed pixels
 ```
 
-**Default rule**: most widgets default to `Shrink` for both width and height. `container` defaults to `Shrink` too, meaning by default it doesn't take remaining space. Set `.width(Fill)` or `.center_x(Fill)` explicitly when you want "fill the parent".
+A container reads its child’s size hint on each axis. A hint of `Fill` or `FillPortion` gives the container `Fill`. Other hints give it `Shrink`.
 
 ## text_editor, multi-line
 
-For multi-line text with undo/redo, selection, keyboard nav:
+For multiline text, selection, and keyboard navigation:
 
 ```rust
 use iced::widget::text_editor;
@@ -267,7 +269,7 @@ text_editor(&state.content)
 Message::Edit(action) => state.content.perform(action)
 ```
 
-This delegates to the widget's internal edit semantics. You don't hand-roll character mutations.
+Apply editing actions with `Content::perform`. If the app needs undo or redo, keep an edit history in the app.
 
 ## Related
 

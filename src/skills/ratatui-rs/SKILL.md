@@ -22,13 +22,13 @@ This SKILL.md is the index. Read the focused reference based on the task:
 
 ## Project Setup
 
-Use Edition 2024, Rust 1.85+, with `ratatui::init()`, added in 0.28+, for panic-safe terminal handling.
+Follow the project’s pinned edition and dependency versions. For a new project, check the selected dependencies when setting the minimum Rust version. The manifest below illustrates one configuration.
 
 ```toml
 [package]
 name = "my-tui-app"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.88"
 
 [dependencies]
 ratatui = "0.30"
@@ -208,4 +208,4 @@ Custom widgets keep `draw(...)` callbacks short and let you unit-test rendering 
 ## Related Skills
 
 - General Rust idioms: `rust-best-practices`
-- Cross-platform shell-safety: `references/cross-platform.md`, this skill + `coding-standards`
+- Native arguments and shell boundaries are covered in [Cross platform commands](references/cross-platform.md).

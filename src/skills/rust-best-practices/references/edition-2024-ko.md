@@ -2,9 +2,9 @@
 
 ## Overview
 
-Edition 2024는 최신 Rust edition으로, 향상된 ergonomics, 더 나은 진단, 새로운 언어 기능을 제공하면서도 backward compatibility를 유지한다.
+Rust 크레이트마다 에디션을 선택한다. 기존 크레이트의 에디션을 올릴 때는 아래 마이그레이션 절차로 소스 호환성을 확인한다.
 
-**새 프로젝트는 항상 Edition 2024를 사용한다.**
+새 프로젝트에서는 지원할 툴체인과 의존성이 허용할 때 Edition 2024를 기본값으로 쓴다. 워크스페이스에 크레이트를 추가하면 해당 워크스페이스의 에디션 정책을 따른다.
 
 ## Setting Up Edition 2024
 
@@ -39,290 +39,90 @@ Member crate는 workspace 설정을 상속한다:
 # crates/my-crate/Cargo.toml
 [package]
 name = "my-crate"
-version.workspace = true
+version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 ```
 
-## Key Features in Edition 2024
+## 에디션과 컴파일러 버전 요건
 
-### 1. Improved Pattern Matching
+### let 체인
 
-**`if let` chains, stabilized**:
+let 체인은 Edition 2024와 Rust 1.88 이상에서 사용할 수 있다. 프로젝트의 최소 지원 버전이 더 낮으면 조건을 중첩한다.
+
 ```rust
-// ✅ Edition 2024: Cleaner conditional logic
-fn process_user(user: Option<User>) {
-    if let Some(user) = user
-        && user.is_active()
-        && user.has_permission("admin") {
-        println!("Admin user: {}", user.name);
-    }
-}
-
-// ❌ Before: Nested if statements
-fn process_user_old(user: Option<User>) {
-    if let Some(user) = user {
-        if user.is_active() {
-            if user.has_permission("admin") {
-                println!("Admin user: {}", user.name);
-            }
-        }
+fn active_name(user: Option<(&str, bool)>) -> Option<&str> {
+    if let Some((name, active)) = user && active {
+        Some(name)
+    } else {
+        None
     }
 }
 ```
 
-**Pattern guards with bindings**:
+### 트레이트의 비동기 메서드와 `impl Trait` 반환
+
+Rust 1.75부터 트레이트에 비동기 메서드와 `impl Trait` 반환형을 선언할 수 있다. 둘 다 Edition 2021에서 동작한다. 예제 호출자는 정적 디스패치를 사용한다. `dyn Source`를 저장하는 호출자는 동적 디스패치가 가능한 인터페이스가 필요하다. 메서드가 각각 `Pin<Box<...>>`로 감싼 future와 `Box`로 감싼 iterator를 반환하게 하거나 프로젝트의 기존 어댑터를 유지할 수 있다.
+
 ```rust
-// ✅ Edition 2024: Use bindings in guards
-match value {
-    Some(x) if x.is_positive() => println!("Positive: {}", x),
-    Some(x) => println!("Non-positive: {}", x),
-    None => println!("None"),
+trait Source {
+    async fn read(&self) -> usize;
+    fn labels(&self) -> impl Iterator<Item = &str>;
+}
+
+async fn read_count<S: Source>(source: &S) -> usize {
+    source.read().await
 }
 ```
 
-### 2. Async/Await Improvements
+### 비동기 콜백
 
-**Async fn in traits, stabilized**:
-```rust
-// ✅ Edition 2024: Native async in traits
-trait Repository {
-    async fn find_by_id(&self, id: u64) -> Result<User, Error>;
-    async fn save(&self, user: &User) -> Result<(), Error>;
-}
-
-// Implementation
-struct DatabaseRepo {
-    pool: Pool,
-}
-
-impl Repository for DatabaseRepo {
-    async fn find_by_id(&self, id: u64) -> Result<User, Error> {
-        let user = sqlx::query_as("SELECT * FROM users WHERE id = ?")
-            .bind(id)
-            .fetch_one(&self.pool)
-            .await?;
-        Ok(user)
-    }
-
-    async fn save(&self, user: &User) -> Result<(), Error> {
-        sqlx::query("INSERT INTO users (name, email) VALUES (?, ?)")
-            .bind(&user.name)
-            .bind(&user.email)
-            .execute(&self.pool)
-            .await?;
-        Ok(())
-    }
-}
-```
-
-**Return position impl Trait in traits, RPITIT**:
-```rust
-// ✅ Edition 2024: Cleaner trait definitions
-trait Processor {
-    fn process(&self) -> impl Iterator<Item = String>;
-}
-
-struct TextProcessor;
-
-impl Processor for TextProcessor {
-    fn process(&self) -> impl Iterator<Item = String> {
-        vec!["line1", "line2"].into_iter().map(String::from)
-    }
-}
-```
-
-**Async closures, stable in 1.85+**:
-
-1.85 이전에는 async closure를 `|x| async move { ... }`로 작성해야 했고, 이는 `Future`를 반환하는 중첩 closure를 생성한다. 1.85는 `async |x| { ... }` 형태를 안정화하여 호출자가 직접 `AsyncFn` / `AsyncFnMut` / `AsyncFnOnce` trait를 사용할 수 있게 한다, 간접 참조 감소, 더 나은 borrow tracking, 캡처된 state 주변에서 desugaring 놀라움 없음.
+Rust 1.85부터 비동기 클로저와 `AsyncFn` 계열 트레이트를 사용할 수 있다. 이 Edition 2021 예제는 `AsyncFnMut`를 명시적으로 가져온다. 콜백은 호출될 때마다 캡처한 누적값을 빌려 갱신하고, `process_items`는 첫 오류에서 멈춘다.
 
 ```rust
-// ✅ Edition 2024 + 1.85: Native async closure
-async fn process_items<F>(items: Vec<Item>, op: F)
-where
-    F: AsyncFn(Item) -> Result<(), Error>,
-{
+use std::ops::AsyncFnMut;
+
+async fn process_items<T, E>(
+    items: impl IntoIterator<Item = T>,
+    mut op: impl AsyncFnMut(T) -> Result<(), E>,
+) -> Result<(), E> {
     for item in items {
         op(item).await?;
     }
+    Ok(())
 }
 
-async fn run(items: Vec<Item>) {
-    let shared = load_shared_state().await;
-
-    // Captures `shared` by reference across awaits — not possible cleanly
-    // with the pre-1.85 `|x| async { ... }` desugaring.
-    process_items(items, async |item| {
-        validate(&shared, &item)?;
-        persist(item).await
-    })
-    .await
-    .unwrap();
-}
-
-// ❌ Before 1.85: Nested future, borrow lifetime headaches
-fn legacy() -> impl Future {
-    async move {
-        let op = |item: Item| async move { persist(item).await };
-        // `op` isn't an AsyncFn — it's a closure that RETURNS a future.
-        // Borrow-tracking for captures across awaits is clunky here.
-    }
+async fn checked_sum(items: &[u8]) -> Result<u8, &'static str> {
+    let mut total = 0u8;
+    process_items(items.iter().copied(), async |item| {
+        total = total.checked_add(item).ok_or("sum overflow")?;
+        Ok(())
+    }).await?;
+    Ok(total)
 }
 ```
 
-callback이 비동기적으로 **소비될 때**, 예: 그것을 await하는 `async fn`에 전달, `async |x| { ... }`을 사용한다. 실제로 future를 요구에 따라 생산하는 factory를 원할 때만 더 오래된 `|x| async move { ... }`을 사용한다.
+### 상수 평가
 
-**async fn + `async {}` block capture, clarified in 2024**:
-Edition 2024는 `async {}` 블록의 capture가 둘러싸는 함수의 lifetime 계약을 놀라운 promotion 없이 상속하도록 규칙을 강화한다, `'static`이 필요할 때만 `async move`를 선호한다.
-
-### 3. Enhanced Error Messages
-
-Edition 2024는 더 자세하고 실행 가능한 에러 메시지를 제공한다:
+프로젝트의 최소 Rust 버전에서 상수 평가를 지원하는 연산으로 작성한 `const fn`은 상수 초기화에 사용할 수 있다. 예제는 컴파일 시점에 버퍼 크기를 계산하며 오버플로가 발생하면 `None`을 반환한다.
 
 ```rust
-// Better borrow checker errors
-fn example() {
-    let mut data = vec![1, 2, 3];
-    let first = &data[0];
-    data.push(4);  // Error now suggests solutions
-    println!("{}", first);
+const fn buffer_size(count: usize, item_size: usize) -> Option<usize> {
+    count.checked_mul(item_size)
 }
 
-// Edition 2024 error:
-// error[E0502]: cannot borrow `data` as mutable because it is also borrowed as immutable
-//   --> src/main.rs:4:5
-//    |
-// 3  |     let first = &data[0];
-//    |                 -------- immutable borrow occurs here
-// 4  |     data.push(4);
-//    |     ^^^^^^^^^^^^ mutable borrow occurs here
-// 5  |     println!("{}", first);
-//    |                    ----- immutable borrow later used here
-//    |
-//    = help: consider cloning the value or restructuring to avoid simultaneous borrows
-```
-
-### 4. Improved Type Inference
-
-**Better closure inference**:
-```rust
-// ✅ Edition 2024: No need for type annotations
-let doubled = vec![1, 2, 3]
-    .iter()
-    .map(|x| x * 2)  // Type inferred automatically
-    .collect::<Vec<_>>();
-
-// Works with complex chains
-let result = data
-    .into_iter()
-    .filter(|x| x.is_valid())
-    .map(|x| x.process())
-    .collect();  // Type inferred from context
-```
-
-### 5. const Improvements
-
-**const fn enhancements**:
-```rust
-// ✅ Edition 2024: More expressions allowed in const fn
-const fn calculate_size(count: usize, item_size: usize) -> usize {
-    // More complex logic allowed
-    if count == 0 {
-        0
-    } else {
-        count * item_size
-    }
-}
-
-const BUFFER_SIZE: usize = calculate_size(100, 64);
-
-// ✅ const traits
-#[const_trait]
-trait MyTrait {
-    fn compute(&self) -> i32;
-}
-
-const fn use_trait<T: ~const MyTrait>(value: &T) -> i32 {
-    value.compute()
-}
-```
-
-### 6. Lifetime Elision Improvements
-
-**Improved lifetime inference**:
-```rust
-// ✅ Edition 2024: Lifetimes inferred in more cases
-impl Database {
-    // No need to specify lifetimes
-    fn query(&self, sql: &str) -> Result<QueryResult> {
-        // Implementation
-    }
-}
-
-// ✅ Works with associated types
-trait Repository {
-    type Item;
-
-    fn find(&self, id: u64) -> Option<&Self::Item>;
-    // Lifetime automatically tied to &self
-}
-```
-
-### 7. Diagnostic Attributes
-
-**Better control over warnings**:
-```rust
-// ✅ Edition 2024: Granular diagnostic control
-#[expect(clippy::unwrap_used, reason = "Guaranteed by initialization")]
-fn safe_unwrap() -> String {
-    let value = Some("hello".to_string());
-    value.unwrap()
-}
-
-// ✅ Diagnostic namespaces
-#[diagnostic::on_unimplemented(
-    message = "the trait `MyTrait` is not implemented for `{Self}`",
-    note = "consider implementing `MyTrait` for `{Self}`"
-)]
-trait MyTrait {}
+const BUFFER_SIZE: Option<usize> = buffer_size(100, 64);
 ```
 
 ## Migration from Earlier Editions
 
 ### From Edition 2021 → 2024
 
-**1. Update Cargo.toml**:
-```toml
-[package]
-edition = "2024"
-rust-version = "1.85"
-```
+마이그레이션 범위에 든 크레이트에서 기존 에디션으로 `cargo fix --edition`을 실행하고 변경을 검토한다. 그 다음 `Cargo.toml`의 `edition`을 `2024`로 바꾸고 지원하는 최소 Rust 버전에서 `cargo test`를 실행한다. [에디션 전환 절차](https://doc.rust-lang.org/edition-guide/editions/transitioning-an-existing-project-to-a-new-edition.html)
 
-**2. Run cargo fix**:
-```bash
-# Automatically applies edition-compatible fixes
-cargo fix --edition
+마이그레이션 후 선택할 수 있는 코드 변경
 
-# Check for additional issues
-cargo clippy
-cargo test
-```
-
-**3. Common migration tasks**:
-
-**Update async trait patterns**:
-```rust
-// ❌ Edition 2021: Using async-trait crate
-#[async_trait]
-trait Service {
-    async fn handle(&self) -> Result<Response>;
-}
-
-// ✅ Edition 2024: Native async traits
-trait Service {
-    async fn handle(&self) -> Result<Response>;
-}
-```
+기존 async trait의 구현 방식을 바꾸기 전에 `dyn Trait`을 쓰는 호출자를 확인한다. 에디션 변경만으로 기존 매크로를 제거할 필요는 없다.
 
 **Simplify pattern matching**:
 ```rust
@@ -344,7 +144,7 @@ if let Some(u) = user && u.is_admin {
 
 ### Compatibility Notes
 
-- **No breaking changes**: Edition 2021용으로 작성된 코드가 Edition 2024에서 작동한다
+- 에디션 전환으로 의미가 달라지는 코드와 매크로는 수동으로 확인한다.
 - **Interoperability**: Edition 2024 crate가 이전 edition에 의존할 수 있다
 - **Incremental migration**: workspace에서 한 번에 하나의 crate를 업데이트한다
 
@@ -423,12 +223,15 @@ let handler = |req| async move {
 
 ```rust
 // ✅ Compile-time computation
-const fn page_size(level: usize) -> usize {
-    4096 << level
+const fn page_size(level: u32) -> Option<usize> {
+    match 1usize.checked_shl(level) {
+        Some(pages) => pages.checked_mul(4096),
+        None => None,
+    }
 }
 
-const L1_SIZE: usize = page_size(0);  // 4096
-const L2_SIZE: usize = page_size(1);  // 8192
+const L1_SIZE: Option<usize> = page_size(0); // Some(4096)
+const L2_SIZE: Option<usize> = page_size(1); // Some(8192)
 
 // ✅ Const-evaluated collections
 const fn create_lookup() -> [u8; 256] {
@@ -449,7 +252,7 @@ const LOOKUP: [u8; 256] = create_lookup();
 ```rust
 use thiserror::Error;
 
-// ✅ Rich error types with edition 2024 features
+// Derive errors with thiserror.
 #[derive(Error, Debug)]
 pub enum AppError {
     #[error("database error: {0}")]
@@ -660,25 +463,14 @@ async fn process_batch<P: Processor>(processor: &P, items: &[&[u8]]) -> Result<V
 }
 ```
 
-### 3. Inline Optimization
+### 정수 용량 올림
+
+버퍼 크기를 2의 거듭제곱으로 올릴 때는 `checked_next_power_of_two`를 사용하면 표현 범위를 넘는 입력을 호출자가 처리할 수 있다.
 
 ```rust
-// ✅ Inline small, hot functions
-#[inline]
-const fn is_power_of_two(n: usize) -> bool {
-    n != 0 && (n & (n - 1)) == 0
-}
-
-#[inline(always)]  // Force inline for critical paths
-const fn next_power_of_two(mut n: usize) -> usize {
-    n -= 1;
-    n |= n >> 1;
-    n |= n >> 2;
-    n |= n >> 4;
-    n |= n >> 8;
-    n |= n >> 16;
-    n + 1
-}
+assert_eq!(0usize.checked_next_power_of_two(), Some(1));
+assert_eq!(17usize.checked_next_power_of_two(), Some(32));
+assert_eq!(usize::MAX.checked_next_power_of_two(), None);
 ```
 
 ## Testing in Edition 2024
@@ -686,7 +478,7 @@ const fn next_power_of_two(mut n: usize) -> usize {
 ### Async Tests
 
 ```rust
-// ✅ Native async test support
+// Tokio provides the async test runtime.
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -718,13 +510,13 @@ mod tests {
 ### Recommended Clippy Configuration
 
 ```toml
-# .cargo/config.toml
+# Cargo.toml
 [lints.rust]
 unsafe_code = "forbid"
 missing_docs = "warn"
 
 [lints.clippy]
-# Edition 2024 specific lints
+# Project lint settings
 enum_glob_use = "deny"
 unwrap_used = "deny"
 expect_used = "warn"
@@ -744,8 +536,6 @@ large_types_passed_by_value = "warn"
 edition = "2024"
 max_width = 100
 use_small_heuristics = "Max"
-imports_granularity = "Crate"
-group_imports = "StdExternalCrate"
 ```
 
 ## Security Best Practices
@@ -788,16 +578,7 @@ fn verify_token(provided: &[u8], expected: &[u8]) -> bool {
 
 ## Summary
 
-**Key Advantages of Edition 2024**:
-- ✅ Native async fn in traits
-- ✅ if let chain으로 향상된 패턴 매칭
-- ✅ 더 나은 type inference
-- ✅ 향상된 const fn 능력
-- ✅ 더 도움이 되는 에러 메시지
-- ✅ Return position impl Trait in traits
-- ✅ 더 나은 진단 attribute
-
-**최고의 개발자 경험과 최신 언어 기능을 위해 항상 새 프로젝트를 Edition 2024로 시작한다.**
+에디션을 변경했다면 지원하는 최소 툴체인으로 기존 호출자와 테스트를 검증한다.
 
 ## Additional Resources
 

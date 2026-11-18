@@ -1,4 +1,4 @@
-# iced Widgets for 0.13 / 0.14
+# iced 0.14 위젯
 
 빌트인 widget과 그 관용적 사용법. 모든 예제는 적절히 `use iced::widget::*;`를 가정한다.
 
@@ -8,7 +8,8 @@
 use iced::widget::text;
 
 text("Hello").size(24)                    // plain
-text(counter)                             // any Display
+text(counter)                             // u64
+text(value.to_string())                   // custom Display type
 text!("User: {}", name)                   // formatted (macro)
 text("Warn").style(text::warning)         // styled via built-in function
 ```
@@ -117,14 +118,15 @@ text_input("Type here...", &state.value)
     .size(18)
 ```
 
-- `on_input` disabled 형태: 호출을 생략하여 input을 read-only로 만든다.
-- 다중 라인: 대신 `text_editor`를 사용한다. undo/redo가 있는 적절한 `Content` 타입을 가진다.
+- `on_input`을 생략하면 입력 위젯이 비활성화된다.
+- 여러 줄을 편집하려면 앱 상태에 `text_editor::Content`를 둔다.
 - 비밀번호: `.secure(true)`가 문자를 마스킹한다.
 
 ## checkbox / toggler / radio
 
 ```rust
-checkbox("Subscribe", state.subscribed)
+checkbox(state.subscribed)
+    .label("Subscribe")
     .on_toggle(Message::SubscribeToggled);
 
 toggler(state.dark_mode)
@@ -148,12 +150,12 @@ slider(0.0..=100.0, state.volume, Message::VolumeChanged)
 ```
 
 - `Message::VolumeChanged(f32)`: 새 값을 직접 받는다.
-- `.step(n)`이 양자화한다; 연속을 위해 생략한다.
+- 기본 간격은 1이다. `0.0..=1.0`에서 소수 값을 선택하려면 `.step(0.01)`처럼 더 작은 간격을 지정한다.
 - 수직 형태: `vertical_slider(...)`.
 
 ## pick_list
 
-`Clone + Display + Eq` 옵션의 슬라이스로부터 드롭다운:
+`Clone + PartialEq + ToString` 옵션의 슬라이스로부터 드롭다운:
 
 ```rust
 use iced::widget::pick_list;
@@ -192,7 +194,7 @@ tooltip(
 use iced::widget::progress_bar;
 
 progress_bar(0.0..=1.0, state.progress)       // expects value in the given range
-    .height(20.0)
+    .girth(20.0)
 ```
 
 ## image / svg
@@ -224,14 +226,14 @@ stack![
 `spacing()`이 레이아웃을 깔끔하게 표현하지 못할 때 순수 spacing:
 
 ```rust
-use iced::widget::{Space, horizontal_space, vertical_space};
+use iced::widget::{space, Space};
 
-horizontal_space()          // fills remaining horizontal
-vertical_space().height(16) // fixed height gap
-Space::new(20, 0)           // explicit WxH
+let horizontal_gap = space::horizontal();
+let vertical_gap = space::vertical().height(16);
+let fixed_gap = Space::new().width(20).height(0);
 ```
 
-`row!` 내에서 형제를 분리하는 데 `horizontal_space()`를 사용한다. 이를 "spacer 패턴"이라 한다.
+0.14에서 `row!`의 남은 가로 공간을 채우려면 `space::horizontal()`을 사용한다. 0.13에서는 `horizontal_space()`를 사용한다.
 
 ## Length Primitives
 
@@ -247,11 +249,11 @@ use iced::{Fill, Shrink, FillPortion};
 .width(300.0)             // fixed pixels
 ```
 
-**기본 규칙**: 대부분의 widget은 width와 height 모두 `Shrink`로 기본값이다. `container`도 `Shrink`로 기본값이다. 즉, 기본적으로 남은 공간을 차지하지 않는다. "부모를 채우기"를 원할 때 `.width(Fill)` 또는 `.center_x(Fill)`을 명시적으로 설정한다.
+컨테이너는 축마다 자식의 크기 힌트를 확인한다. 힌트가 `Fill` 또는 `FillPortion`이면 기본값은 `Fill`이고 나머지는 `Shrink`다.
 
 ## text_editor, multi-line
 
-undo/redo, 선택, 키보드 이동이 있는 다중 라인 텍스트:
+여러 줄 입력, 선택, 키보드 이동을 지원하는 편집기:
 
 ```rust
 use iced::widget::text_editor;
@@ -267,7 +269,7 @@ text_editor(&state.content)
 Message::Edit(action) => state.content.perform(action)
 ```
 
-이는 widget의 내부 편집 의미에 위임한다. 문자 mutation을 직접 만들지 않는다.
+`Content::perform`으로 편집 동작을 적용한다. 실행 취소와 다시 실행이 필요하면 앱에서 편집 이력을 관리한다.
 
 ## Related
 

@@ -21,6 +21,13 @@
       "prompt": "배포 중인 Rust 컬렉션 API를 명명 가이드로 리뷰해줘. get(&self, index: usize) -> Option<&Item>과 iter(&self) -> Iter가 있어. 호환성을 깨는 변경은 요청하지 않았어.",
       "expected_output": "Accepts indexed get as a legitimate getter exception and checks the borrowing semantics and corresponding iterator type. Does not demand renaming get solely because ordinary field getters omit get_. Preserves the published API and checks compatibility before suggesting a rename. Uses the official naming reference without treating rustfmt success as naming verification.",
       "files": []
+    },
+    {
+      "id": 4,
+      "name": "closed-status-open-exporters",
+      "prompt": "프로젝트는 작업 상태를 대기와 완료로 정했고 완료 상태에는 결과 경로가 필요하다. 파일로 내보내는 기능은 다른 crate에서 새 구현을 추가할 수 있어야 한다. 새 상태를 놓친 처리기가 컴파일 때 드러나고, 내보내기 구현을 추가해도 기존 호출자가 계속 동작하도록 설계해줘.",
+      "expected_output": "Models statuses and their required payloads as a closed enum. Adding another status makes an existing exhaustive handler fail to compile. Uses a trait for independently supplied exporters. A separate crate can implement the trait and pass its exporter to the existing caller without editing the caller.",
+      "files": []
     }
   ]
 }

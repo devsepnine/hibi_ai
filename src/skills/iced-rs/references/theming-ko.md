@@ -98,7 +98,7 @@ p.primary.base.text         // readable text on primary.base background
 p.danger.weak.color         // subtle danger tint
 ```
 
-**Rule of thumb**: 배경색을 `.text` 형제와 짝짓는다. 배경으로 `p.primary.base.color` + 전경으로 `p.primary.base.text`는 항상 충분한 대비를 가진다.
+**Rule of thumb**: 배경색을 `.text` 형제와 짝짓는다. 배경으로 `p.primary.base.color` + 전경으로 `p.primary.base.text`를 쓰면 테마가 지정한 조합을 사용한다. 팔레트를 덮어쓰면 대비를 확인한다.
 
 ## Container Custom Style
 
@@ -129,9 +129,8 @@ container(content)
 빌트인 테마가 브랜드와 맞지 않을 때, palette를 정의하고 `Theme::custom`을 빌드한다:
 
 ```rust
-use iced::theme::{Custom, Palette};
+use iced::theme::Palette;
 use iced::{Color, Theme};
-use std::sync::Arc;
 
 fn brand_theme() -> Theme {
     let palette = Palette {
@@ -176,24 +175,22 @@ iced::application(App::new, App::update, App::view)
 text("let x = 1;").font(font::Font::MONOSPACE)
 ```
 
-## Dark/Light auto-switching
+## 시스템 테마 따르기
 
-`window::Event`를 통해 OS theme를 watch한다:
+iced 0.14에서 초기 모드는 `iced::system::theme()` 작업으로 읽는다. 실행 중 변경은 같은 메시지로 구독한다. 다음 예시는 시스템에 선호 설정이 없을 때 밝은 테마를 사용한다.
 
 ```rust
-window::events().map(Message::WindowEvent)
+fn subscription(&self) -> iced::Subscription<Message> {
+    iced::system::theme_changes().map(Message::SystemThemeChanged)
+}
 
-// in update:
-Message::WindowEvent(window::Event::ThemeChanged(t)) => {
-    self.theme = match t {
-        iced::core::theme::Base::Dark => Theme::Dark,
-        iced::core::theme::Base::Light => Theme::Light,
+fn apply_system_mode(&mut self, mode: iced::theme::Mode) {
+    self.theme = match mode {
+        iced::theme::Mode::Dark => iced::Theme::Dark,
+        iced::theme::Mode::Light | iced::theme::Mode::None => iced::Theme::Light,
     };
-    Task::none()
 }
 ```
-
-API 이름은 0.13/0.14 사이에 진화하므로 버전의 `window::Event` enum을 확인한다.
 
 ## When to customize vs use built-in
 

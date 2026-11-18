@@ -6,7 +6,7 @@ For visualizations, games, plots, or any UI iced's built-in widgets don't expres
 iced = { version = "0.14", features = ["canvas"] }
 ```
 
-The model: you implement `canvas::Program<Message>` for a type, and iced calls your `draw` method with a `Frame` you paint into. A `Cache` memoizes the painted geometry across frames when inputs don't change.
+iced calls `canvas::Program::draw` with the renderer and bounds. The program creates a frame or draws into the frame provided by a cache.
 
 ## Minimal Canvas
 
@@ -43,17 +43,16 @@ impl canvas::Program<Message> for Diagram {
         &self,
         _state: &(),
         renderer: &Renderer,
-        theme: &Theme,
+        _theme: &Theme,
         bounds: Rectangle,
         _cursor: mouse::Cursor,
     ) -> Vec<Geometry> {
         let geometry = self.cache.draw(renderer, bounds.size(), |frame| {
-            let palette = theme.extended_palette();
             let center = frame.center();
             let radius = frame.width().min(frame.height()) / 4.0;
 
             let circle = Path::circle(center, radius);
-            frame.fill(&circle, palette.primary.strong.color);
+            frame.fill(&circle, iced::Color::from_rgb(0.2, 0.5, 1.0));
 
             let diameter = Path::line(
                 Point::new(center.x - radius, center.y),
@@ -63,7 +62,7 @@ impl canvas::Program<Message> for Diagram {
                 &diameter,
                 Stroke::default()
                     .with_width(3.0)
-                    .with_color(palette.background.base.color),
+                    .with_color(iced::Color::BLACK),
             );
         });
         vec![geometry]
@@ -78,7 +77,7 @@ enum Message {}
 
 ### `Canvas::new(program)`
 
-Pass any `&impl canvas::Program<Message>`. You usually pass `self`. Canvas takes `&self`, not `&mut`, so mutation during draw is not allowed. That's enforced by `draw` taking `&self`.
+Pass the program with `Canvas::new(self)` when the view borrows it. The draw method borrows the program, and the cache uses interior mutability to store geometry.
 
 ### `type State`
 
@@ -86,13 +85,13 @@ Pass any `&impl canvas::Program<Message>`. You usually pass `self`. Canvas takes
 
 ### `Cache`
 
-`Cache::draw(renderer, size, closure)` runs the closure only if the cache is dirty; otherwise it returns the memoized geometry. Invalidate explicitly when inputs change:
+`Cache::draw(renderer, size, closure)` runs the closure only if the cache is dirty; otherwise it returns the memoized geometry. Size changes invalidate the cached geometry. Clear it when other drawing inputs change, including data and theme colors.
 
 ```rust
 // In your update or a callback on the canvas
 fn update(&mut self, msg: Message) {
     match msg {
-        Message::DataChanged => {
+        Message::DataChanged(new_data) => {
             self.data = new_data;
             self.cache.clear();             // force repaint next frame
         }
@@ -101,7 +100,7 @@ fn update(&mut self, msg: Message) {
 }
 ```
 
-Without a `Cache`, draw runs on every frame. That is fine for simple drawings, expensive for heavy ones.
+Without a cache, each call to `draw` rebuilds the geometry. For a simple shape this can cost less than maintaining a cache.
 
 ## The `Frame` API
 
@@ -141,8 +140,8 @@ frame.fill_text(canvas::Text {
     color: Color::BLACK,
     size: 18.0.into(),
     font: iced::Font::MONOSPACE,
-    horizontal_alignment: alignment::Horizontal::Left,
-    vertical_alignment: alignment::Vertical::Top,
+    align_x: iced::widget::text::Alignment::Left,
+    align_y: iced::alignment::Vertical::Top,
     ..canvas::Text::default()
 });
 ```
@@ -165,7 +164,7 @@ frame.fill(&path, Color::from_rgb(0.4, 0.7, 0.4));
 frame.with_save(|frame| {
     frame.translate(iced::Vector::new(100.0, 100.0));
     frame.rotate(std::f32::consts::FRAC_PI_4);
-    frame.scale(1.5);
+    frame.scale(1.5_f32);
     // draw here — transform is popped after with_save returns
     frame.fill(&Path::rectangle(Point::ORIGIN, Size::new(50.0, 50.0)), Color::BLACK);
 });
@@ -178,37 +177,72 @@ frame.with_save(|frame| {
 For interactive canvases, implement `update` and, optionally, `mouse_interaction`:
 
 ```rust
+use iced::{Point, Rectangle, Renderer, Theme, mouse};
+use iced::widget::Action;
+use iced::widget::canvas::{self, Geometry, Path, Stroke};
+
+struct Board;
+
+#[derive(Default)]
+struct InteractionState {
+    drag_start: Option<Point>,
+}
+
+#[derive(Debug, PartialEq)]
+enum Message {
+    DragStarted(Point),
+    Dragging(Point),
+    DragEnded(Point),
+    DragCancelled,
+}
+
 impl canvas::Program<Message> for Board {
     type State = InteractionState;
+
+    fn draw(
+        &self,
+        state: &Self::State,
+        renderer: &Renderer,
+        _theme: &Theme,
+        bounds: Rectangle,
+        cursor: mouse::Cursor,
+    ) -> Vec<Geometry> {
+        let mut frame = canvas::Frame::new(renderer, bounds.size());
+        if let (Some(start), Some(end)) = (state.drag_start, cursor.position_in(bounds)) {
+            frame.stroke(&Path::line(start, end), Stroke::default());
+        }
+        vec![frame.into_geometry()]
+    }
 
     fn update(
         &self,
         state: &mut Self::State,
-        event: canvas::Event,
+        event: &canvas::Event,
         bounds: Rectangle,
         cursor: mouse::Cursor,
-    ) -> (canvas::event::Status, Option<Message>) {
-        use canvas::event::Status;
+    ) -> Option<Action<Message>> {
         use mouse::Event as Mouse;
 
-        let Some(pos) = cursor.position_in(bounds) else {
-            return (Status::Ignored, None);
-        };
-
-        match event {
+        let message = match event {
             canvas::Event::Mouse(Mouse::ButtonPressed(mouse::Button::Left)) => {
+                let pos = cursor.position_in(bounds)?;
                 state.drag_start = Some(pos);
-                (Status::Captured, Some(Message::DragStarted(pos)))
+                Message::DragStarted(pos)
             }
             canvas::Event::Mouse(Mouse::CursorMoved { .. }) if state.drag_start.is_some() => {
-                (Status::Captured, Some(Message::Dragging(pos)))
+                Message::Dragging(cursor.position_in(bounds)?)
             }
             canvas::Event::Mouse(Mouse::ButtonReleased(mouse::Button::Left)) => {
-                state.drag_start = None;
-                (Status::Captured, Some(Message::DragEnded(pos)))
+                state.drag_start.take()?;
+                cursor.position_in(bounds).map_or(Message::DragCancelled, Message::DragEnded)
             }
-            _ => (Status::Ignored, None),
-        }
+            canvas::Event::Window(iced::window::Event::Unfocused) => {
+                state.drag_start.take()?;
+                return Some(Action::publish(Message::DragCancelled));
+            }
+            _ => return None,
+        };
+        Some(Action::publish(message).and_capture())
     }
 
     fn mouse_interaction(
@@ -228,7 +262,7 @@ impl canvas::Program<Message> for Board {
 }
 ```
 
-**Return `Status::Captured`** when you handle an event so iced doesn't route it to other widgets. Return `Status::Ignored` to let it bubble.
+In iced 0.14, `update` borrows the event and returns `Option<Action<Message>>`. Apply `.and_capture()` to handled mouse events. This example cancels a drag on release outside the canvas or loss of window focus, and ignores releases without an active drag.
 
 ## Multiple Layers
 

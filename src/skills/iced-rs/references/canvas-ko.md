@@ -6,7 +6,7 @@
 iced = { version = "0.14", features = ["canvas"] }
 ```
 
-모델: 타입에 대해 `canvas::Program<Message>`를 구현하고, iced가 페인팅할 `Frame`을 주는 `draw` 메서드를 호출한다. `Cache`는 입력이 변경되지 않을 때 프레임 간에 페인팅된 geometry를 메모이즈한다.
+iced는 `canvas::Program::draw`에 렌더러와 영역을 전달한다. 프로그램은 프레임을 만들거나 캐시로부터 프레임을 받아 그린다.
 
 ## Minimal Canvas
 
@@ -43,17 +43,16 @@ impl canvas::Program<Message> for Diagram {
         &self,
         _state: &(),
         renderer: &Renderer,
-        theme: &Theme,
+        _theme: &Theme,
         bounds: Rectangle,
         _cursor: mouse::Cursor,
     ) -> Vec<Geometry> {
         let geometry = self.cache.draw(renderer, bounds.size(), |frame| {
-            let palette = theme.extended_palette();
             let center = frame.center();
             let radius = frame.width().min(frame.height()) / 4.0;
 
             let circle = Path::circle(center, radius);
-            frame.fill(&circle, palette.primary.strong.color);
+            frame.fill(&circle, iced::Color::from_rgb(0.2, 0.5, 1.0));
 
             let diameter = Path::line(
                 Point::new(center.x - radius, center.y),
@@ -63,7 +62,7 @@ impl canvas::Program<Message> for Diagram {
                 &diameter,
                 Stroke::default()
                     .with_width(3.0)
-                    .with_color(palette.background.base.color),
+                    .with_color(iced::Color::BLACK),
             );
         });
         vec![geometry]
@@ -78,7 +77,7 @@ enum Message {}
 
 ### `Canvas::new(program)`
 
-어떤 `&impl canvas::Program<Message>`든 전달한다. 보통 `self`를 전달한다. Canvas는 `&mut`가 아니라 `&self`를 받으므로 draw 중에 mutation은 허용되지 않는다. `draw`가 `&self`를 받는 것으로 강제된다.
+프로그램은 보통 `Canvas::new(self)`로 전달한다. `draw`는 프로그램을 공유 참조로 받으며, 캐시는 내부 가변성으로 지오메트리를 저장한다.
 
 ### `type State`
 
@@ -86,13 +85,13 @@ enum Message {}
 
 ### `Cache`
 
-`Cache::draw(renderer, size, closure)`는 캐시가 dirty할 때만 closure를 실행한다; 그렇지 않으면 메모이즈된 geometry를 반환한다. 입력 변경 시 명시적으로 invalidate한다:
+`Cache::draw(renderer, size, closure)`는 캐시가 dirty할 때만 closure를 실행한다; 그렇지 않으면 메모이즈된 geometry를 반환한다. 크기가 바뀌면 캐시된 지오메트리가 갱신된다. 데이터나 테마 색처럼 다른 그리기 입력이 바뀌면 캐시를 비운다.
 
 ```rust
 // In your update or a callback on the canvas
 fn update(&mut self, msg: Message) {
     match msg {
-        Message::DataChanged => {
+        Message::DataChanged(new_data) => {
             self.data = new_data;
             self.cache.clear();             // force repaint next frame
         }
@@ -101,7 +100,7 @@ fn update(&mut self, msg: Message) {
 }
 ```
 
-`Cache` 없이는 draw가 매 프레임 실행된다. 간단한 그림에는 괜찮지만 무거운 그림에는 비싸다.
+캐시가 없으면 `draw`를 호출할 때마다 지오메트리를 다시 만든다. 단순한 도형은 캐시를 관리하는 것보다 다시 그리는 편이 저렴할 수 있다.
 
 ## The `Frame` API
 
@@ -141,8 +140,8 @@ frame.fill_text(canvas::Text {
     color: Color::BLACK,
     size: 18.0.into(),
     font: iced::Font::MONOSPACE,
-    horizontal_alignment: alignment::Horizontal::Left,
-    vertical_alignment: alignment::Vertical::Top,
+    align_x: iced::widget::text::Alignment::Left,
+    align_y: iced::alignment::Vertical::Top,
     ..canvas::Text::default()
 });
 ```
@@ -165,7 +164,7 @@ frame.fill(&path, Color::from_rgb(0.4, 0.7, 0.4));
 frame.with_save(|frame| {
     frame.translate(iced::Vector::new(100.0, 100.0));
     frame.rotate(std::f32::consts::FRAC_PI_4);
-    frame.scale(1.5);
+    frame.scale(1.5_f32);
     // draw here — transform is popped after with_save returns
     frame.fill(&Path::rectangle(Point::ORIGIN, Size::new(50.0, 50.0)), Color::BLACK);
 });
@@ -178,37 +177,72 @@ frame.with_save(|frame| {
 인터랙티브 캔버스의 경우 `update`와, 선택적으로 `mouse_interaction`을 구현한다:
 
 ```rust
+use iced::{Point, Rectangle, Renderer, Theme, mouse};
+use iced::widget::Action;
+use iced::widget::canvas::{self, Geometry, Path, Stroke};
+
+struct Board;
+
+#[derive(Default)]
+struct InteractionState {
+    drag_start: Option<Point>,
+}
+
+#[derive(Debug, PartialEq)]
+enum Message {
+    DragStarted(Point),
+    Dragging(Point),
+    DragEnded(Point),
+    DragCancelled,
+}
+
 impl canvas::Program<Message> for Board {
     type State = InteractionState;
+
+    fn draw(
+        &self,
+        state: &Self::State,
+        renderer: &Renderer,
+        _theme: &Theme,
+        bounds: Rectangle,
+        cursor: mouse::Cursor,
+    ) -> Vec<Geometry> {
+        let mut frame = canvas::Frame::new(renderer, bounds.size());
+        if let (Some(start), Some(end)) = (state.drag_start, cursor.position_in(bounds)) {
+            frame.stroke(&Path::line(start, end), Stroke::default());
+        }
+        vec![frame.into_geometry()]
+    }
 
     fn update(
         &self,
         state: &mut Self::State,
-        event: canvas::Event,
+        event: &canvas::Event,
         bounds: Rectangle,
         cursor: mouse::Cursor,
-    ) -> (canvas::event::Status, Option<Message>) {
-        use canvas::event::Status;
+    ) -> Option<Action<Message>> {
         use mouse::Event as Mouse;
 
-        let Some(pos) = cursor.position_in(bounds) else {
-            return (Status::Ignored, None);
-        };
-
-        match event {
+        let message = match event {
             canvas::Event::Mouse(Mouse::ButtonPressed(mouse::Button::Left)) => {
+                let pos = cursor.position_in(bounds)?;
                 state.drag_start = Some(pos);
-                (Status::Captured, Some(Message::DragStarted(pos)))
+                Message::DragStarted(pos)
             }
             canvas::Event::Mouse(Mouse::CursorMoved { .. }) if state.drag_start.is_some() => {
-                (Status::Captured, Some(Message::Dragging(pos)))
+                Message::Dragging(cursor.position_in(bounds)?)
             }
             canvas::Event::Mouse(Mouse::ButtonReleased(mouse::Button::Left)) => {
-                state.drag_start = None;
-                (Status::Captured, Some(Message::DragEnded(pos)))
+                state.drag_start.take()?;
+                cursor.position_in(bounds).map_or(Message::DragCancelled, Message::DragEnded)
             }
-            _ => (Status::Ignored, None),
-        }
+            canvas::Event::Window(iced::window::Event::Unfocused) => {
+                state.drag_start.take()?;
+                return Some(Action::publish(Message::DragCancelled));
+            }
+            _ => return None,
+        };
+        Some(Action::publish(message).and_capture())
     }
 
     fn mouse_interaction(
@@ -228,7 +262,7 @@ impl canvas::Program<Message> for Board {
 }
 ```
 
-이벤트를 처리할 때 **`Status::Captured`를 반환**하여 iced가 다른 widget으로 라우팅하지 않도록 한다. bubble하도록 하려면 `Status::Ignored`를 반환한다.
+iced 0.14의 `update`는 이벤트를 빌려서 `Option<Action<Message>>`를 반환한다. 처리한 마우스 이벤트에는 `.and_capture()`를 적용한다. 예시는 영역 밖에서 놓거나 창이 포커스를 잃으면 드래그를 취소하고, 진행 중인 드래그가 없으면 놓기 이벤트를 무시한다.
 
 ## Multiple Layers
 

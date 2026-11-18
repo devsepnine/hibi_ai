@@ -9,13 +9,45 @@ metadata:
 
 Idiomatic, safe, performant Rust across five areas: ownership, errors, async, testing, project structure.
 
+**Before writing code, read the project’s development, coding, and architecture guidance for the area you will change, including any exceptions.** Follow those rules when choosing a design. Where they leave a choice, default to a functional design. During review, check the diff against the applicable rules.
+
+## Choose a representation from the caller
+
+Model valid states explicitly, keep transformations pure where practical, and isolate I/O at the boundary. Apply this default within the scope of the change.
+
+### When to choose an enum over a trait
+
+Model alternatives with an enum when the domain defines the full set. For example, `enum Task { Open, Done { completed_at: Timestamp } }` requires a timestamp only for completed tasks. Match each variant explicitly. Adding `Cancelled` then produces a compiler error at every match that needs a new arm. If plugins must add implementations independently and callers only need a shared operation, define a trait for that operation.
+
+An enum can also own methods shared by its variants. Put a shared operation there when callers would otherwise repeat the same match. Use `Option<T>` for absence and `Result<T, E>` for a failure the caller must handle. Try one success and one failure at a call site, then revise the type, test, and usage example together. When reviewing generated Rust, follow a value through that call before accepting the proposed abstraction.
+
+### Choose dispatch for the collection
+
+For two cases, a boolean branch suffices when each case needs no extra data. For mixed values with distinct payloads, match the enum. If a batch contains one concrete type, a generic function over `&[T]` can use static dispatch for that type throughout the loop. Use `dyn Trait` for implementations chosen at runtime. TypeScript and Python generics can describe the same collection constraint. Their type arguments alone do not generate specialized machine code.
+
+### Separate construction from shared reads
+
+When two components need mutable access, trace who constructs the data and who only reads it afterward. Finish mutation during construction when possible. If two callers genuinely need independent values, a small clone can keep both APIs simple. When they need shared updates, give the write operation an explicit owner.
+
+### Model cycles and lifetimes together
+
+For a tree with parent links, children may own their descendants and hold a weak link back. A cycle of strong `Rc` links keeps nodes alive, and `RefCell` moves borrow checks to runtime. When nodes share a lifetime, consider an arena that owns the nodes and represents edges with IDs. A packed vector can reduce individual allocations and improve locality when traversal follows storage order. If slots are reused, check generations so stale IDs cannot reach new nodes. For repeated node names, interning adds a lookup and can save space independently of the arena.
+
+### Parse once with a declarative framework
+
+Serde derives generate serialization and deserialization implementations during compilation. With clap derive, a typed CLI declaration can also supply help text from doc comments. At runtime, parse the actual input, enforce domain constraints in the conversion, and pass the resulting value to the handler. Prefer the framework’s existing derive when it expresses the contract. A custom macro brings its own syntax, diagnostics, and maintenance cost.
+
+### Measure which designs become feasible
+
+Set a budget from the feature, such as the memory available for a searchable JSON index or the latency of an interactive query. Measure a simple implementation on representative data. If a hash lookup, clone, allocation, or indirect call dominates, change that part and measure the whole operation again. Include index construction and peak memory in the comparison. A result that fits the budget can make an in memory design feasible. Keep the simpler representation while it meets the budget.
+
 ## Style and API naming
 
 When writing or reviewing Rust, use [Style and API naming](references/style-and-api-naming.md). It links the official formatting and naming rules and gives focused review checks. Follow the repository's toolchain, edition, and formatter configuration. The nightly documentation URL is not an instruction to upgrade them. Check ownership and cost when naming conversions; a formatter cannot validate those meanings. Before renaming an existing public API, check callers and compatibility.
 
 ## Default Configuration: Edition 2024
 
-ALWAYS use Edition 2024 for new projects.
+Default to Edition 2024 for a new project when the supported toolchain and dependencies permit it. A new workspace member follows the workspace edition policy.
 
 ```toml
 [package]
@@ -29,7 +61,7 @@ edition = "2024"
 resolver = "2"
 ```
 
-Edition 2024 brings: native `async fn` in traits, drops `async-trait`, `if let` chains, RPITIT, better lifetime elision, improved const fn, sharper diagnostics. See [edition-2024.md](references/edition-2024.md).
+Check both the edition and the minimum compiler version. For example, let chains require Edition 2024 and Rust 1.88 or later. [Edition settings](references/edition-2024.md)
 
 ## 1. Ownership & Borrowing
 

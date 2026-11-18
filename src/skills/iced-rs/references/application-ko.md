@@ -1,6 +1,6 @@
 # iced Application Entry Points
 
-iced는 두 가지 entry point를 제공한다: 작은 `iced::run`과 풀 빌더 `iced::application`. `update`/`view` 이상의 무언가가 필요하면 즉시 빌더를 사용한다.
+다음 진입점은 iced 0.14 기준이다. 0.13을 사용하는 프로젝트는 [마이그레이션](migration-ko.md)에서 제목과 초기화 함수를 전달하는 위치를 확인한다.
 
 ## `iced::run`: smallest possible app
 
@@ -30,23 +30,20 @@ pub fn main() -> iced::Result {
         .title(App::title)
         .theme(App::theme)
         .subscription(App::subscription)
-        .settings(settings())
-        .centered()
+        .window(window_settings())
         .run()
 }
 ```
 
-모든 빌더 메서드는 선택적이다; 해당하는 것만 chain한다. 각 빌더 메서드는 closure 또는 `&State`를 받는 함수 포인터를 받는다. 둘 다 작동하니 더 깔끔하게 읽히는 쪽을 사용한다.
+제목, 테마, 구독은 상태를 읽는 함수로 설정할 수 있다. 창 설정은 완성된 값을 빌더에 전달한다.
 
-### Required triple
+### 초기화, 갱신, 뷰
+
+0.14 초기화 함수는 인자 없이 상태 또는 상태와 첫 작업을 반환한다. 설정값이 필요한 경우 인자 없는 클로저에서 캡처한다.
 
 ```rust
-fn new() -> (App, Task<Message>)              // or: fn new(flags: Flags) -> (App, Task<Msg>)
-fn update(&mut self, Message) -> Task<Message>
-fn view(&self) -> Element<'_, Message>
+iced::application(move || App::new(flags.clone()), App::update, App::view)
 ```
-
-`new`가 `(State, Task)`를 반환하므로 부트스트래핑 `Message::Init` 없이 앱이 설정 로드나 데이터 fetch 같은 초기 비동기 작업을 시작할 수 있다.
 
 ### Title
 
@@ -85,29 +82,19 @@ Subscription은 반환되는 동안 실행된다. batch에서 조건부로 제�
 ## Window & Runtime Settings
 
 ```rust
-use iced::{Size, Settings};
-use iced::window;
+use iced::{window, Size};
 
-fn settings() -> Settings {
-    Settings {
-        window: window::Settings {
-            size: Size::new(1024.0, 720.0),
-            position: window::Position::Centered,
-            min_size: Some(Size::new(640.0, 480.0)),
-            max_size: None,
-            visible: true,
-            resizable: true,
-            decorations: true,
-            transparent: false,
-            icon: None,
-            ..Default::default()
-        },
+fn window_settings() -> window::Settings {
+    window::Settings {
+        size: Size::new(1024.0, 720.0),
+        position: window::Position::Centered,
+        min_size: Some(Size::new(640.0, 480.0)),
         ..Default::default()
     }
 }
 ```
 
-`.settings(settings())`로 전달.
+창 크기와 위치는 빌더의 `.window(window_settings())`로 전달한다. 기본 글꼴처럼 앱 전체에 적용할 값은 `.settings(...)`에 전달한다.
 
 **Common knobs**:
 
@@ -119,9 +106,7 @@ fn settings() -> Settings {
 | `resizable` | 고정 크기 다이얼로그는 `false` |
 | `decorations` | 커스텀 타이틀바는 `false` |
 | `transparent` | 둥근 모서리 / acrylic 배경에 필요 |
-| `icon` | `Some(window::icon::from_file_data(bytes, None)?)` |
-
-**Don't set**: `flags`와 `id`를 직접 설정하지 않는다. 빌더 형식을 사용한다. 런타임이 둘 다 관리한다.
+| `icon` | 이미지 파일을 읽는 `window::icon::from_file_data`에는 iced의 `image` 기능이 필요하다. |
 
 ### Builder-level window shortcuts
 
@@ -135,11 +120,11 @@ iced::application(App::new, App::update, App::view)
     .run()
 ```
 
-앱이 한두 개의 override만 필요할 때 이를 사용한다. 세 개 이상이 필요하면 전체 `Settings`로 떨어진다.
+창 설정을 함께 전달할 때는 `window::Settings`를 사용한다.
 
-## Headless / default-less state
+## 초기화에 데이터가 필요한 상태
 
-`State`가 `Default`를 구현할 수 없다면, 예를 들어 `Connection`, `Runtime` 등을 보유한다면, 명시적 `new`를 가진 `iced::application()`을 사용한다. `iced::run`의 경우, non-default 필드를 `Option<T>`로 옮기고 `new`에서 첫 `update`에 채워 넣어 state를 `Default`로 감싼다.
+연결이나 설정값으로 상태를 생성하는 앱은 빌더에 초기화 함수를 전달한다. 초기화 함수는 첫 작업도 함께 반환할 수 있다.
 
 ## Multi-window
 
