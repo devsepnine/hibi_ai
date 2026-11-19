@@ -81,6 +81,8 @@ Exercise the changed behavior directly and read the result:
 
 - Read the actual value, not a cached or derived representation such as a file mtime, an agent's self-report, or an old screenshot.
 - When the changed flow has a reachable failure, exercise a representative failure as well as success and inspect the promised state after failure. Use isolated data and controlled dependencies. If this cannot be run, report `INCONCLUSIVE` and the missing evidence; explain `N/A` when no failure scenario applies.
+- For a changed UI flow, exercise the normal path and each distinct user-visible failure state affected by the change. Verify the visible message, whether the action is enabled, and whether the request or state change occurred as expected. Exercise recovery when the UI offers it. Use the project's browser test setup. Use local mocks when a real external call falls outside the scope of verification. When real integration is in scope, verify it in the authorized test environment. Report which dependencies were mocked.
+- Capture the success screen and each error screen as soon as the assertions for that screen pass. Capture errors while the message and affected controls are visible, before correcting input, retrying, dismissing, or navigating. Use synthetic data, give files names that identify the scenario and browser, open the images to check that they show the intended state, and link them alongside the test results. Record any UI state you could not exercise or capture.
 - When a check fails, suspect the observation method before the system.
 - Prefer a script that re-runs the comparison over a one-time look; keep its output as the evidence.
 - Never hand the user a check you could have run. If it truly cannot run here, for example with no device or no credentials, mark it `INCONCLUSIVE` and say what would settle it. `INCONCLUSIVE`, or a check run in a different environment than the one changed, is `NOT READY`.
@@ -103,6 +105,7 @@ Security:  [PASS/FAIL/N/A] (X issues)
 Diff:      [X files changed]
 Artifact:  [PASS/FAIL/INCONCLUSIVE] (what was run, what was observed)
 Failure paths: [PASS/FAIL/INCONCLUSIVE/N/A] (scenarios, state after failure, evidence or limits)
+UI evidence: (links to success and failure screenshots when applicable)
 
 Overall:   [READY/NOT READY/PARTIAL] for PR
 

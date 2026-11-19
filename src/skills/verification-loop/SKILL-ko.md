@@ -81,6 +81,8 @@ git diff --cached --stat
 
 - 캐시되거나 파생된 표현, 예를 들어 파일 mtime, 에이전트의 자기 보고, 오래된 스크린샷이 아니라 실제 값을 읽는다.
 - 변경한 흐름에 도달 가능한 실패가 있으면 정상 동작과 대표 실패를 함께 실행하고 약속한 실패 후 상태를 관찰한다. 격리된 데이터와 제어할 수 있는 의존성을 쓴다. 실행할 수 없으면 `INCONCLUSIVE`와 부족한 근거를 보고하고, 적용할 실패 시나리오가 없으면 이유와 함께 `N/A`로 표시한다.
+- UI 흐름을 변경했다면 정상 흐름과 변경의 영향을 받는 서로 다른 실패 상태를 각각 실행한다. 화면에 표시된 문구, 동작 버튼의 활성 여부, 요청이나 상태 변경이 예상대로 일어났는지 확인한다. UI가 복구 수단을 제공하면 복구도 실행한다. 프로젝트의 브라우저 테스트 환경을 사용한다. 실제 외부 호출이 검증 범위를 벗어나면 로컬 Mock을 사용한다. 실제 연동이 검증 범위에 포함되면 승인된 테스트 환경에서 확인한다. 어떤 의존성을 Mock으로 대체했는지 보고한다.
+- 정상 화면과 각 오류 화면은 해당 화면의 검증 조건을 충족하는 즉시 캡처한다. 입력 수정, 재시도, 닫기, 화면 이동 전에 오류 문구와 관련 컨트롤이 함께 보이는 상태를 저장한다. 테스트용 데이터를 사용하고 파일명에 시나리오와 브라우저를 표시한다. 이미지를 열어 의도한 상태가 보이는지 확인하고 테스트 결과에 링크한다. 실행하거나 캡처하지 못한 UI 상태도 기록한다.
 - 확인이 실패하면 시스템보다 관찰 방법을 먼저 의심한다.
 - 한 번 눈으로 보기보다 비교를 다시 돌릴 수 있는 스크립트를 선호하고, 그 출력을 증거로 남긴다.
 - 직접 돌릴 수 있는 확인을 사용자에게 넘기지 않는다. 기기나 자격증명이 없어 여기서 정말 실행할 수 없다면 `INCONCLUSIVE`로 표시하고 무엇이 판정할지 적는다. `INCONCLUSIVE`이거나 변경된 곳과 다른 환경에서 실행한 확인은 `NOT READY`다.
@@ -103,6 +105,7 @@ Security:  [PASS/FAIL/N/A] (X issues)
 Diff:      [X files changed]
 Artifact:  [PASS/FAIL/INCONCLUSIVE] (what was run, what was observed)
 Failure paths: [PASS/FAIL/INCONCLUSIVE/N/A] (scenarios, state after failure, evidence or limits)
+UI evidence: (links to success and failure screenshots when applicable)
 
 Overall:   [READY/NOT READY/PARTIAL] for PR
 
