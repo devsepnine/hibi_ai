@@ -1,6 +1,6 @@
 ---
 name: technical-writing
-description: "Technical writing: clear actors, actions, and terms; point first; Diátaxis; no dashes or parentheses. Use for docs, READMEs, reports, technical explanations, skills, and agent text. 기술 문서 작성·리뷰, AI 문체 제거."
+description: "Write and edit docs, tickets, reports, handoffs, explanations, skills, and agent updates. Preserve meaning and intent, put the point first, and apply Diátaxis. 기술 문서 작성·퇴고, AI 문체 제거."
 ---
 
 # Technical Writing
@@ -16,6 +16,16 @@ description: "Technical writing: clear actors, actions, and terms; point first; 
 - **규칙이 문장을 더 나쁘게 만들면 다른 방법으로 문장을 고친다.** 규칙은 독자를 위한 것이다. 모든 규칙을 지켰는데 기계가 쓴 것처럼 읽히는 문장은 실패한 것이다.
 
 동의어나 설명 대신 실제 심볼, 파일, 플래그, 커맨드 이름을 쓴다.
+
+## 글로 전달하는 산출물은 내보내기 전에 퇴고한다
+
+글로 작성한 산출물을 전달하거나 게시하기 전에 독자의 입장에서 초안을 살핀다. 새 초안은 요청과 근거에 맞는지 확인한다. 기존 글을 고칠 때는 작성자의 핵심 의미와 의도를 유지한다. 사실, 요구사항, 약속, 불확실성도 보존한다. 의미를 유지하면서 글이 나아진다면 표현을 바꾸고 문장이나 문단의 구조도 적극적으로 다듬는다.
+
+- **명확성.** 무엇을 가리키는지 모호한 부분을 분명히 하고 겹치는 표현을 정리한다.
+- **가독성.** 여러 내용을 담은 긴 문장을 나누고 문단마다 초점을 분명히 한다.
+- **논리성.** 독자가 이해하는 데 필요한 순서로 문장과 문단을 잇는다. 조건은 해당 주장과 함께 둔다.
+- **간결성.** 반복과 군더더기를 덜어 핵심이 잘 드러나게 한다.
+- **자연스러움.** 산출물의 언어로 처음부터 끝까지 읽어 보고 어색하거나 틀에 박힌 표현을 다듬는다.
 
 ## 산출물 언어
 
@@ -90,6 +100,7 @@ description: "Technical writing: clear actors, actions, and terms; point first; 
 
 ## 넘기기 전에
 
+- [ ] 의도한 의미를 유지하면서 다섯 가지 기준으로 퇴고했다
 - [ ] 문서가 Diátaxis 모드 하나다
 - [ ] 모든 문장이 메커니즘, 사실, 지시 중 하나를 말한다
 - [ ] 빠진 사실을 지어내지 않고 행위자와 행동, 지칭 대상을 분명하게 썼다

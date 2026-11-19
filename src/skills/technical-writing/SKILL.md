@@ -1,6 +1,6 @@
 ---
 name: technical-writing
-description: "Technical writing: clear actors, actions, and terms; point first; Diátaxis; no dashes or parentheses. Use for docs, READMEs, reports, technical explanations, skills, and agent text. 기술 문서 작성·리뷰, AI 문체 제거."
+description: "Write and edit docs, tickets, reports, handoffs, explanations, skills, and agent updates. Preserve meaning and intent, put the point first, and apply Diátaxis. 기술 문서 작성·퇴고, AI 문체 제거."
 ---
 
 # Technical Writing
@@ -16,6 +16,16 @@ Three rules sit above the rest:
 - **When a rule makes a sentence worse, fix the sentence another way.** The rules serve the reader. A sentence that obeys every rule and reads like a machine wrote it has failed.
 
 Write the real symbol, file, flag, or command name, not a synonym or a description of it.
+
+## Revise written deliverables before sharing
+
+Before handing off or publishing a written deliverable, review the draft as the intended reader. For a new draft, check it against the request and evidence. When revising existing text, preserve the author's core meaning and intent. Keep facts, requirements, commitments, and uncertainty intact. Rewrite expressions and restructure sentences or paragraphs when that improves the text without changing its meaning.
+
+- **Clarity.** Resolve ambiguous references and remove redundant wording.
+- **Readability.** Split overloaded sentences and give each paragraph a clear purpose.
+- **Logical flow.** Connect sentences and paragraphs in the order the reader needs. Keep conditions with the claims they qualify.
+- **Concision.** Cut repetition and filler so the main point is easy to find.
+- **Naturalness.** Read the draft through in the artifact's language and smooth awkward or formulaic phrasing.
 
 ## Artifact language
 
@@ -90,6 +100,7 @@ The same rules apply to Korean text, with these additions:
 
 ## Before handing back
 
+- [ ] Reviewed the deliverable for clarity, readability, logical flow, concision, and naturalness without changing the intended meaning
 - [ ] The document is one Diátaxis mode
 - [ ] Every sentence names a mechanism, a fact, or an instruction
 - [ ] Actors, actions, and references are clear without inventing missing facts
