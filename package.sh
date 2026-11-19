@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="2.0.0-beta.3"
+VERSION="2.0.0-beta.4"
 NAME="hibi-ai"
 
 echo "📦 Packaging ${NAME} v${VERSION}..."
@@ -99,6 +99,7 @@ for PLATFORM in "macos" "linux" "linux-musl" "windows"; do
     # Create archive
     cd "$PROJECT_ROOT/$RELEASE_DIR"
     if [ "$PLATFORM" = "windows" ]; then
+        python3 "$PROJECT_ROOT/tools/installer/package-windows.py" "$VERSION" "$PKG_NAME" "Hibi-${VERSION}-windows-x64.msi"
         zip -q -r "${PKG_NAME}.zip" "$PKG_NAME"
         echo "✅ Created: ${PKG_NAME}.zip"
     else
@@ -140,7 +141,7 @@ shopt -s nullglob
 for package in *'~'*.deb *'~'*.rpm; do
     mv -- "$package" "${package//\~/.}"
 done
-ARTIFACTS=(*.tar.gz *.zip *.dmg *.deb *.rpm *.apk)
+ARTIFACTS=(*.tar.gz *.zip *.dmg *.msi *.deb *.rpm *.apk)
 shopt -u nullglob
 if [ ${#ARTIFACTS[@]} -gt 0 ]; then
     if command -v sha256sum >/dev/null 2>&1; then
@@ -155,7 +156,7 @@ cd "$PROJECT_ROOT"
 echo ""
 echo "🎉 Packaging complete!"
 echo ""
-ls -lh "$RELEASE_DIR"/*.{tar.gz,zip,dmg,deb,rpm,apk} 2>/dev/null || true
+ls -lh "$RELEASE_DIR"/*.{tar.gz,zip,dmg,msi,deb,rpm,apk} 2>/dev/null || true
 echo ""
 echo "Checksums:"
 cat "$RELEASE_DIR/checksums.txt"

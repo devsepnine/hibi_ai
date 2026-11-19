@@ -42,6 +42,10 @@ The apk is unsigned; verify any package against `checksums.txt` from the same re
 
 The packages install the binary to `/usr/bin/hibi` and bundled configs to `/usr/share/hibi`.
 
+### Windows installer
+
+Download the x64 MSI from the [release assets](https://github.com/devsepnine/hibi_ai/releases), run it, then open Hibi from the Start menu. Use the ZIP for a portable installation.
+
 ### Scoop, Windows
 
 ```bash

@@ -220,14 +220,14 @@ cargo test --manifest-path tools/installer/Cargo.toml   # 151 tests
 
 1. `tools/installer/Cargo.toml`과 `package.sh`의 버전을 올린다. `cargo update -w`도 함께 실행한다
 2. 커밋 → `main` 푸시 → 태그 `v{VERSION}` 푸시
-3. `.github/workflows/release.yml`이 태그에서 트리거된다. 태그 == `package.sh` VERSION == `Cargo.toml` version을 검증하고, `lint-prose.py`, `lint-arch.py`, `cargo fmt --check`, `cargo test`를 통과한 뒤 nfpm 설치 → 전 플랫폼 빌드 → `package.sh` → 아카이브, Linux `.deb`·`.rpm`·`.apk`, `checksums.txt`를 담아 GitHub Release 발행
+3. `.github/workflows/release.yml`이 태그에서 트리거된다. 태그 == `package.sh` VERSION == `Cargo.toml` version을 검증하고, `lint-prose.py`, `lint-arch.py`, `cargo fmt --check`, `cargo test`를 통과한 뒤 nfpm 설치 → 전 플랫폼 빌드 → `package.sh` → 아카이브, Windows MSI, Linux `.deb`·`.rpm`·`.apk`, `checksums.txt`를 담아 GitHub Release 발행
 4. 릴리즈 후 **수동**: `homebrew-brew/Formula/hibi.rb`와 `scoop-bucket/hibi-ai.json` 갱신
 
 상세 절차·트러블슈팅·롤백은 [RUNBOOK.md](RUNBOOK.md).
 
 ### 패키징
 
-`./package.sh`는 `src/`의 설정 디렉터리와 바이너리를 `dist/`로 모아 플랫폼별 아카이브를 만든다. `nfpm`이 있으면 `nfpm.yaml`로 Linux `.deb`·`.rpm`·`.apk`도 만들고, 없으면 경고만 내고 건너뛴다. 마지막으로 만든 아카이브와 패키지 전부의 SHA256을 `checksums.txt`에 쓴다. `-ko.md` 파일은 이 단계에서 제거된다.
+`./package.sh`는 `src/`의 설정 디렉터리와 바이너리를 `dist/`로 모아 플랫폼별 아카이브를 만든다. 전체 릴리스 패키징에는 Windows MSI를 생성하는 `wixl`이 필요하다. `nfpm`이 있으면 `nfpm.yaml`로 Linux `.deb`·`.rpm`·`.apk`도 만들고, 없으면 경고만 내고 건너뛴다. 마지막으로 만든 아카이브와 패키지 전부의 SHA256을 `checksums.txt`에 쓴다. `-ko.md` 파일은 이 단계에서 제거된다.
 
 ## 설치 방법
 

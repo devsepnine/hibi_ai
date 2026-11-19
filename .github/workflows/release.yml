@@ -180,6 +180,8 @@ jobs:
           cache: false
       - name: Install nfpm
         run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.49.0
+      - name: Install MSI packaging tool
+        run: sudo apt-get update && sudo apt-get install -y wixl
       - name: Package release archives
         run: bash package.sh
       - name: Install release signing tool
@@ -211,6 +213,7 @@ jobs:
             "release/v${VERSION}"/*.tar.gz \
             "release/v${VERSION}"/*.zip \
             "release/v${VERSION}"/*.dmg \
+            "release/v${VERSION}"/*.msi \
             "release/v${VERSION}"/*.deb \
             "release/v${VERSION}"/*.rpm \
             "release/v${VERSION}"/*.apk \

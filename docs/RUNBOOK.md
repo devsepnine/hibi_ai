@@ -96,7 +96,7 @@ git push origin v1.23.1
 2. 버전 검증: 태그, `package.sh` VERSION, `Cargo.toml` version이 같은지 확인
 3. 검사: `lint-prose.py`, `lint-arch.py`, `cargo fmt --check`, `cargo test`. 하나라도 실패하면 빌드하지 않는다
 4. macOS Universal, Windows, GNU Linux, Alpine용 바이너리를 각각 빌드한다.
-5. macOS 러너가 아이콘을 포함한 `Hibi.app`을 로컬 서명하고 설치용 DMG와 업데이트용 ZIP을 만든다. `package.sh`가 두 파일과 운영체제별 아카이브 네 개, Linux 패키지 세 개의 체크섬을 계산한다.
+5. macOS 러너가 아이콘을 포함한 `Hibi.app`을 로컬 서명하고 설치용 DMG와 업데이트용 ZIP을 만든다. `package.sh`가 두 파일과 운영체제별 아카이브 네 개, Windows용 MSI, Linux 패키지 세 개의 체크섬을 계산한다.
 6. CI가 체크섬에 서명하고 앱에 내장한 공개키로 검증한다.
 7. 기존 태그로 릴리스를 게시한다. 베타에는 prerelease 표시를 붙이고 최신 정식판은 유지한다.
 
@@ -112,9 +112,9 @@ gh release view v1.23.1
 체크리스트:
 
 - [ ] 워크플로 성공
-- [ ] macOS 앱 DMG와 ZIP, 터미널용 tar 아카이브, GNU Linux와 Alpine용 tar 아카이브, Windows용 ZIP 업로드
+- [ ] macOS 앱 DMG와 ZIP, 터미널용 tar 아카이브, GNU Linux와 Alpine용 tar 아카이브, Windows용 MSI와 ZIP 업로드
 - [ ] Linux `.deb`/`.rpm`/`.apk` 3개 업로드
-- [ ] `checksums.txt`와 `checksums.txt.minisig` 업로드 확인. 체크섬은 설치 및 업데이트 파일 아홉 개를 포함한다
+- [ ] `checksums.txt`와 `checksums.txt.minisig` 업로드 확인. 체크섬은 설치 및 업데이트 파일 열 개를 포함한다
 
 ### 5. Homebrew Tap 갱신, 수동
 
