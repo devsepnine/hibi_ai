@@ -40,7 +40,7 @@ apk add --allow-untrusted hibi-ai_*.apk      # Alpine (unsigned package)
 
 The apk is unsigned; verify any package against `checksums.txt` from the same release before installing.
 
-The packages install the binary to `/usr/bin/hibi` and bundled configs to `/usr/share/hibi`.
+The packages install the binary to `/usr/bin/hibi` and bundled configs to `/usr/share/hibi`. On RHEL 9, enable the repositories that provide the desktop libraries, including AppStream.
 
 ### Windows installer
 
@@ -116,7 +116,7 @@ cargo build --manifest-path tools/installer/Cargo.toml --no-default-features
 ```
 
 `--help`, `--version`, `--sync`는 창을 열지 않고 실행합니다.
-Linux GNU 릴리즈는 glibc 2.35 이상이 필요합니다. Alpine은 별도의 musl 바이너리를 사용합니다.
+Linux GNU 릴리즈는 glibc 2.34 이상이 필요합니다. Alpine은 별도의 musl 바이너리를 사용합니다.
 deb, rpm, apk 패키지는 GUI 실행에 필요한 라이브러리와 기본 글꼴을 함께 설치합니다.
 
 ### Multi-Source Support

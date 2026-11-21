@@ -25,6 +25,36 @@ need() {
     command -v "$1" >/dev/null 2>&1 || fail "required tool not found: $1"
 }
 
+path_exists() {
+    [ -e "$1" ] || [ -L "$1" ]
+}
+
+finish() {
+    status=$?
+    trap - EXIT
+    trap '' HUP INT TERM
+    if [ "$activating" = yes ] && [ ! -L "$staged_link/hibi" ] &&
+        [ "$(readlink "$bin/hibi" 2>/dev/null)" = "$lib/hibi" ]; then
+        committed=yes
+    fi
+    if [ "$committed" = no ] && [ -n "$stage" ]; then
+        if [ "$activating" = yes ] && [ ! -d "$stage/next" ] && path_exists "$lib"; then
+            mv -T "$lib" "$stage/failed" || status=1
+        fi
+        if path_exists "$previous"; then
+            if path_exists "$lib" || ! mv -T "$previous" "$lib"; then
+                echo "hibi-install: error: recover the previous installation from $previous" >&2
+                status=1
+            fi
+        fi
+    fi
+    [ "$committed" = no ] || rm -rf "$previous"
+    [ -z "$staged_link" ] || rm -rf "$staged_link"
+    [ -z "$stage" ] || rm -rf "$stage"
+    rm -rf "$tmpdir"
+    exit "$status"
+}
+
 verify_checksum() {
     dir="$1"
     file="$2"
@@ -64,6 +94,7 @@ main() {
 
     need curl
     need tar
+    need flock
 
     if [ -n "${HIBI_VERSION:-}" ]; then
         version="${HIBI_VERSION#v}"
@@ -83,7 +114,14 @@ main() {
     base_url="https://github.com/$REPO/releases/download/v${version}"
 
     tmpdir="$(mktemp -d)"
-    trap 'rm -rf "$tmpdir"' EXIT
+    stage=
+    staged_link=
+    committed=no
+    activating=no
+    trap finish EXIT
+    trap 'exit 129' HUP
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
 
     curl -fsSL "$base_url/checksums.txt" -o "$tmpdir/checksums.txt"
     if [ "$platform" = "linux-musl" ]; then
@@ -104,17 +142,30 @@ main() {
     tar xzf "$tmpdir/${name}.tar.gz" -C "$tmpdir"
     [ -f "$tmpdir/$name/hibi" ] || fail "unexpected archive layout: $name/hibi is missing"
 
+    mkdir -p -- "$prefix"
+    prefix="$(CDPATH= cd -- "$prefix" && pwd -P)"
     lib="${prefix}/lib/hibi-ai"
+    previous="$prefix/lib/.hibi-install-previous"
     bin="${prefix}/bin"
     mkdir -p "${prefix}/lib" "$bin"
-    # Stage next to the target (same filesystem) so the swap cannot strand the
-    # user without a working install if anything before it fails.
-    rm -rf "$lib.new"
-    mv "$tmpdir/$name" "$lib.new"
-    rm -rf "$lib"
-    mv "$lib.new" "$lib"
-    chmod +x "$lib/hibi"
-    ln -sf "$lib/hibi" "$bin/hibi"
+    exec 9>>"${prefix}/lib/.hibi-update.lock"
+    flock -n 9 || fail "another installation is using $prefix"
+    if path_exists "$previous"; then
+        path_exists "$lib" && fail "previous installation saved at $previous; move it aside before retrying"
+        mv -T "$previous" "$lib"
+    fi
+    stage="$(mktemp -d "$prefix/lib/.hibi-install.XXXXXXXX")"
+    staged_link="$(mktemp -d "$bin/.hibi-install.XXXXXXXX")"
+    mv -T "$tmpdir/$name" "$stage/next"
+    chmod +x "$stage/next/hibi"
+    ln -s "$lib/hibi" "$staged_link/hibi"
+    if path_exists "$lib"; then
+        mv -T "$lib" "$previous"
+    fi
+    activating=yes
+    mv -T "$stage/next" "$lib"
+    mv -fT "$staged_link/hibi" "$bin/hibi"
+    committed=yes
 
     echo "hibi v${version} installed: $bin/hibi"
 

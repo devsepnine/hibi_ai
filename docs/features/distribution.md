@@ -11,7 +11,8 @@
 - **코드 경로**:
   - 상태 / 핸들러: `install.sh` → `main` 이 OS · 아키텍처 확인, 버전 결정, 다운로드, `verify_checksum`, 설치 순으로 간다
   - 데이터: 기본 위치는 ~/.local, 실제 파일은 lib/hibi-ai 아래, bin/hibi 는 그 심볼릭 링크
-- **테스트**: none
+  - 데이터: 설치 스크립트는 `flock`으로 같은 경로의 설치와 업데이트를 조정한다. 기존 번들은 새 번들과 실행 링크가 준비될 때까지 별도 디렉터리에 보관한다.
+- **테스트**: `tools/installer/tests/install_smoke.py`가 상대 설치 경로, 교체 실패 후 이전 실행 파일, 재시도를 확인한다.
 - **함정**: macOS 나 Windows 에서 install.sh 가 바로 실패 → 리눅스만 받고 나머지는 brew · scoop 으로 보낸다, 근거: `install.sh` → `main`
 - **함정**: ARM 리눅스에서 `unsupported architecture` → 릴리즈가 x86_64 만 싣는다, 근거: `install.sh` → `main`
 - **함정**: Alpine은 GNU 바이너리를 실행할 수 없다. `install.sh`는 체크섬에 별도 musl 압축이 있으면 그 압축을 고른다. 이전 릴리즈는 기존 Linux 압축의 정적 musl 바이너리를 사용한다.
@@ -30,6 +31,8 @@
   - 상태 / 핸들러: `package.sh` 가 `src/` 를 dist 로 복사하고 `-ko.md` 를 지운 뒤 플랫폼별 tar.gz · zip 과 nfpm 패키지, 체크섬을 만든다
   - 데이터: 리눅스 패키지 배치는 `nfpm.yaml` → `contents`, 버전은 `package.sh` → `VERSION`
   - 데이터: deb와 rpm은 GNU 바이너리, apk는 동적 musl 바이너리를 싣는다. 패키지는 X11과 Wayland 라이브러리 의존성과 데스크톱 실행 항목을 포함한다.
+- **호환성**: GNU 릴리즈는 AlmaLinux 9에서 빌드하며 glibc 2.34 이상을 사용한다. 릴리즈 워크플로는 Fedora, AlmaLinux, Debian, Alpine에서 완성된 패키지의 설치와 업그레이드를 검사한다.
+- **Windows 검사**: 릴리즈 워크플로는 Windows Installer에서 MSI 설치와 업그레이드를 실행한다. 업그레이드 실패 뒤 이전 설치가 복구되는지도 확인한다.
 - **테스트**: 임시 픽스처로 플랫폼 압축 네 개와 네이티브 패키지 세 개, apk 바이너리 구분, 의존성, 한국어 미러 제외, 체크섬을 검증했다. 실제 네이티브 바이너리 빌드는 릴리즈 러너에서 확인한다.
 - **함정**: src 에서 지운 파일이 릴리즈 압축에 남아 있음 → `cp -r` 은 덮기만 하고 지우지 않아서 dist 를 먼저 비우도록 고쳤다, 근거: `13e146d`
 - **함정**: 새 최상위 컴포넌트 디렉터리를 만들었는데 deb · rpm 에 없음 → `package.sh` 의 두 복사 목록과 `nfpm.yaml` 의 contents 가 디렉터리를 하나씩 나열한다, 근거: `nfpm.yaml` → `contents`

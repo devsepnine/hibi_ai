@@ -21,7 +21,7 @@ umask: 0022
 overrides:
   deb:
     depends:
-      - libc6 (>= 2.35)
+      - libc6 (>= 2.34)
       - libgcc-s1
       - libxkbcommon0
       - libxkbcommon-x11-0
@@ -35,12 +35,12 @@ overrides:
       - libxrandr2
   rpm:
     depends:
-      - glibc >= 2.35
+      - glibc >= 2.34
       - libgcc
       - libxkbcommon
       - libxkbcommon-x11
-      - wayland-libs-client
-      - wayland-libs-cursor
+      - libwayland-client.so.0()(64bit)
+      - libwayland-cursor.so.0()(64bit)
       - libX11
       - libX11-xcb
       - dejavu-sans-fonts

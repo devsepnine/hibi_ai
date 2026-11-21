@@ -39,6 +39,9 @@ def build(version, payload, output):
                    Version=product_version(version), UpgradeCode=str(UPGRADE_CODE))
     node(product, "Package", InstallerVersion="500", Compressed="yes", InstallScope="perMachine")
     node(product, "MajorUpgrade", DowngradeErrorMessage="A newer version of Hibi is installed.")
+    # Windows Installer can restore the old product only within the upgrade transaction.
+    sequence = node(product, "InstallExecuteSequence")
+    node(sequence, "RemoveExistingProducts", After="InstallInitialize")
     node(product, "Media", Id="1", Cabinet="hibi.cab", EmbedCab="yes")
     icon = Path(__file__).resolve().parent / "assets" / "hibi.ico"
     node(product, "Icon", Id="hibi.ico", SourceFile=os.path.relpath(icon, payload))

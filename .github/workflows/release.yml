@@ -76,6 +76,8 @@ jobs:
           cargo fmt --manifest-path tools/installer/Cargo.toml --check
           cargo test --locked --manifest-path tools/installer/Cargo.toml
           cargo test --locked --manifest-path tools/installer/Cargo.toml --no-default-features
+          cargo test --locked --manifest-path tools/statusline/Cargo.toml
+          python3 tools/installer/tests/install_smoke.py
 
       - name: Exercise signed update and rollback with two native builds
         run: xvfb-run -a python3 tools/installer/tests/update_smoke.py
@@ -113,10 +115,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Install Linux display dependencies
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libwayland-dev libx11-dev libxcursor-dev libxi-dev libxrandr-dev pkg-config
+        if: runner.os != 'Linux'
       - uses: Swatinem/rust-cache@v2
+        if: runner.os != 'Linux'
         with:
           workspaces: tools/installer
           key: ${{ matrix.platform }}
@@ -124,8 +125,19 @@ jobs:
         if: runner.os == 'Windows'
         run: cargo test --locked --manifest-path tools/installer/Cargo.toml fs::update
       - name: Build native desktop installer
+        if: runner.os != 'Linux'
         shell: bash
         run: bash tools/installer/build.sh "${{ matrix.platform }}"
+      - name: Build GNU installer against glibc 2.34
+        if: runner.os == 'Linux'
+        run: |
+          docker run --rm -e CARGO_NET_RETRY -v "$GITHUB_WORKSPACE:/work" -w /work almalinux:9 bash -ec '
+            dnf -y install gcc findutils tar gzip libxkbcommon-devel libxkbcommon-x11 wayland-devel libX11-devel libXcursor-devel libXi-devel libXrandr-devel pkgconf-pkg-config
+            curl --proto "=https" --tlsv1.2 -fsSL https://sh.rustup.rs -o /tmp/rustup.sh
+            sh /tmp/rustup.sh -y --profile minimal
+            source /root/.cargo/env
+            bash tools/installer/build.sh linux
+          '
       - name: Package macOS application
         if: runner.os == 'macOS'
         run: bash package.sh --macos-app
@@ -160,11 +172,9 @@ jobs:
           path: dist/hibi-linux-musl
           if-no-files-found: error
 
-  release:
+  package:
     needs: [verify, build, build-alpine]
     runs-on: ubuntu-24.04
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -181,9 +191,68 @@ jobs:
       - name: Install nfpm
         run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.49.0
       - name: Install MSI packaging tool
-        run: sudo apt-get update && sudo apt-get install -y wixl
+        run: sudo apt-get update && sudo apt-get install -y wixl msitools
       - name: Package release archives
         run: bash package.sh
+      - name: Exercise native package install and upgrade
+        env:
+          VERSION: ${{ needs.verify.outputs.version }}
+        run: bash tools/installer/tests/package_smoke.sh "release/v$VERSION" "$VERSION"
+      - name: Create Windows upgrade fixtures
+        env:
+          VERSION: ${{ needs.verify.outputs.version }}
+        run: |
+          mkdir -p msi-smoke/payload
+          cp dist/hibi.exe msi-smoke/payload/
+          printf '%s\n' previous > msi-smoke/payload/upgrade-probe.txt
+          python3 tools/installer/package-windows.py 0.0.1 msi-smoke/payload msi-smoke/previous.msi
+          cp "release/v$VERSION/Hibi-$VERSION-windows-x64.msi" msi-smoke/upgrade.msi
+          cp msi-smoke/upgrade.msi msi-smoke/rollback.msi
+          msibuild msi-smoke/rollback.msi -q "INSERT INTO \`CustomAction\` (\`Action\`, \`Type\`, \`Target\`) VALUES ('HibiSmokeFailure', 19, 'Requested rollback test failure')"
+          msibuild msi-smoke/rollback.msi -q "INSERT INTO \`InstallExecuteSequence\` (\`Action\`, \`Sequence\`) VALUES ('HibiSmokeFailure', 1550)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-msi-smoke-fixtures
+          path: msi-smoke/*.msi
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-packages
+          path: release/v${{ needs.verify.outputs.version }}/
+          if-no-files-found: error
+
+  verify-windows-msi:
+    needs: [verify, package]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-msi-smoke-fixtures
+          path: msi-smoke
+      - name: Exercise Windows MSI install, rollback, and upgrade
+        shell: pwsh
+        env:
+          VERSION: ${{ needs.verify.outputs.version }}
+        run: ./tools/installer/tests/windows_msi_smoke.ps1 -Directory msi-smoke -Version $env:VERSION
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: windows-msi-smoke-logs
+          path: msi-smoke/*.log
+          if-no-files-found: ignore
+
+  release:
+    needs: [verify, package, verify-windows-msi]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-packages
+          path: release/v${{ needs.verify.outputs.version }}/
       - name: Install release signing tool
         run: sudo apt-get update && sudo apt-get install -y minisign
       - name: Sign and verify checksums
@@ -199,6 +268,7 @@ jobs:
           printf '%s\n' "$HIBI_UPDATE_SECRET_KEY" > "$key"
           unset HIBI_UPDATE_SECRET_KEY
           sums="release/v${VERSION}/checksums.txt"
+          (cd "release/v${VERSION}" && sha256sum -c checksums.txt)
           minisign -Sm "$sums" -s "$key" < /dev/null
           minisign -Vm "$sums" -p tools/installer/assets/update.pub
       - name: Publish GitHub Release
