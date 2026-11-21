@@ -283,11 +283,7 @@ impl App {
         self.mcp_servers = mcp_servers;
         self.plugins = plugins;
 
-        // Read current settings
-        let (current_output_style, current_statusline) =
-            settings::read_current_settings(&self.dest_dir);
-        self.current_output_style = current_output_style;
-        self.current_statusline = current_statusline;
+        self.refresh_settings_defaults();
 
         let visibility_warning = self.load_folder_visibility();
 

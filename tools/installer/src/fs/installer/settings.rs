@@ -1,5 +1,7 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde_json::Value;
+use std::fs::{self, OpenOptions};
+use std::io::{ErrorKind, Write};
 use std::path::Path;
 
 use crate::component::HookConfig;
@@ -17,42 +19,149 @@ fn to_msys_path(path: &Path) -> String {
     }
 }
 
-/// Read settings.json from dest_dir, returning empty object if file doesn't exist.
-fn read_settings(dest_dir: &Path) -> Result<Value> {
-    let settings_path = dest_dir.join("settings.json");
-    if settings_path.exists() {
-        let content = std::fs::read_to_string(&settings_path)?;
-        Ok(serde_json::from_str(&content)?)
-    } else {
-        Ok(serde_json::json!({}))
+pub(super) fn read_settings_file(path: &Path) -> Result<Value> {
+    match fs::read_to_string(path) {
+        Ok(content) => serde_json::from_str(&content)
+            .with_context(|| format!("Invalid JSON in {}", path.display())),
+        Err(error) if error.kind() == ErrorKind::NotFound => Ok(serde_json::json!({})),
+        Err(error) => Err(error).with_context(|| format!("Cannot read {}", path.display())),
     }
 }
 
-/// Write settings.json to dest_dir, creating parent directories if needed.
-fn write_settings(dest_dir: &Path, settings: &Value) -> Result<()> {
-    let settings_path = dest_dir.join("settings.json");
-    if let Some(parent) = settings_path.parent() {
-        std::fs::create_dir_all(parent)?;
+fn edit_settings(dest_dir: &Path, edit: impl FnOnce(&mut Value) -> Result<bool>) -> Result<()> {
+    edit_settings_file(&dest_dir.join("settings.json"), edit)
+}
+
+pub(super) fn edit_settings_file(
+    path: &Path,
+    edit: impl FnOnce(&mut Value) -> Result<bool>,
+) -> Result<()> {
+    let target = super::resolve_write_target(path)?;
+    let parent = target
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or(Path::new("."));
+    fs::create_dir_all(parent)?;
+    let target = parent
+        .canonicalize()?
+        .join(target.file_name().context("Missing settings filename")?);
+    let mut lock_name = target
+        .file_name()
+        .context("Missing settings filename")?
+        .to_os_string();
+    lock_name.push(".hibi.lock");
+    let lock = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(target.with_file_name(lock_name))
+        .context("Cannot open settings lock")?;
+    lock.lock().context("Cannot lock settings")?;
+    let mut settings = read_settings_file(&target)?;
+    anyhow::ensure!(
+        settings.is_object(),
+        "Expected an object in {}",
+        path.display()
+    );
+    if edit(&mut settings)? {
+        write_settings_file(&target, &settings)?;
     }
-    let output = serde_json::to_string_pretty(settings)?;
-    std::fs::write(&settings_path, output)?;
     Ok(())
 }
 
+fn write_settings_file(path: &Path, settings: &Value) -> Result<()> {
+    let existing =
+        match fs::metadata(path) {
+            Ok(metadata) => {
+                anyhow::ensure!(
+                    metadata.is_file() && !metadata.permissions().readonly(),
+                    "Settings file is not writable: {}",
+                    path.display()
+                );
+                // A directory rename can otherwise bypass the target file's effective access mode.
+                drop(OpenOptions::new().write(true).open(path).with_context(|| {
+                    format!("Settings file is not writable: {}", path.display())
+                })?);
+                Some(metadata)
+            }
+            Err(error) if error.kind() == ErrorKind::NotFound => None,
+            Err(error) => {
+                return Err(error).with_context(|| format!("Cannot inspect {}", path.display()));
+            }
+        };
+    let parent = path
+        .parent()
+        .context("Settings file has no parent directory")?;
+    let mut staged = tempfile::NamedTempFile::new_in(parent)?;
+    staged.write_all(&serde_json::to_vec_pretty(settings)?)?;
+    if let Some(existing) = existing {
+        #[cfg(target_os = "linux")]
+        preserve_ownership(&existing, staged.as_file())
+            .with_context(|| format!("Cannot preserve ownership for {}", path.display()))?;
+        staged.as_file().set_permissions(existing.permissions())?;
+        #[cfg(target_os = "linux")]
+        preserve_access_acl(path, staged.as_file())
+            .with_context(|| format!("Cannot preserve access ACL for {}", path.display()))?;
+    }
+    staged.as_file().sync_all()?;
+    staged
+        .persist(path)
+        .with_context(|| format!("Cannot replace {}", path.display()))?;
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn preserve_ownership(existing: &fs::Metadata, staged: &fs::File) -> std::io::Result<()> {
+    use std::os::unix::fs::{self, MetadataExt};
+
+    let current = staged.metadata()?;
+    let owner = (existing.uid() != current.uid()).then_some(existing.uid());
+    let group = (existing.gid() != current.gid()).then_some(existing.gid());
+    if owner.is_some() || group.is_some() {
+        fs::fchown(staged, owner, group)?;
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn preserve_access_acl(path: &Path, staged: &fs::File) -> std::io::Result<()> {
+    use xattr::FileExt;
+    const ACCESS_ACL: &str = "system.posix_acl_access";
+
+    match xattr::get(path, ACCESS_ACL) {
+        Ok(Some(acl)) => staged.set_xattr(ACCESS_ACL, &acl),
+        Ok(None) => {
+            // A temporary file may have inherited an ACL from its parent.
+            if staged.get_xattr(ACCESS_ACL)?.is_some() {
+                staged.remove_xattr(ACCESS_ACL)?;
+            }
+            Ok(())
+        }
+        Err(error) if error.kind() == ErrorKind::Unsupported => Ok(()),
+        Err(error) => Err(error),
+    }
+}
+
 pub fn set_output_style(dest_dir: &Path, style_name: &str) -> Result<()> {
-    let mut settings = read_settings(dest_dir)?;
-    settings["outputStyle"] = serde_json::json!(style_name);
-    write_settings(dest_dir, &settings)
+    edit_settings(dest_dir, |settings| {
+        settings["outputStyle"] = style_name.into();
+        Ok(true)
+    })
 }
 
 pub fn set_statusline(dest_dir: &Path, script_name: &str) -> Result<()> {
-    let mut settings = read_settings(dest_dir)?;
-    settings["statusLine"] = serde_json::json!({
+    edit_settings(dest_dir, |settings| {
+        settings["statusLine"] = statusline_setting(dest_dir, script_name);
+        Ok(true)
+    })
+}
+
+fn statusline_setting(dest_dir: &Path, script_name: &str) -> Value {
+    serde_json::json!({
         "type": "command",
         "command": statusline_command(dest_dir, script_name)
-    });
-
-    write_settings(dest_dir, &settings)
+    })
 }
 
 fn statusline_command(dest_dir: &Path, script_name: &str) -> String {
@@ -97,54 +206,46 @@ pub(super) fn repair_bundled_statusline(
 }
 
 pub fn unset_output_style(dest_dir: &Path) -> Result<()> {
-    let settings_path = dest_dir.join("settings.json");
-    if !settings_path.exists() {
-        return Ok(());
-    }
-
-    let mut settings = read_settings(dest_dir)?;
-    if let Value::Object(ref mut map) = settings {
-        map.remove("outputStyle");
-    }
-    write_settings(dest_dir, &settings)
+    remove_setting_if(dest_dir, "outputStyle", |_| true)
 }
 
-/// Remove `outputStyle` from settings.json ONLY if it currently points at
-/// `style_name`. Used during remove flow so that deleting an unrelated style
-/// file doesn't clear the user's chosen default.
-///
-/// `style_name` may carry a `.md` suffix (component name) or not (settings
-/// value); both forms compare equal after stripping.
 pub(super) fn unregister_output_style_if_matches(dest_dir: &Path, style_name: &str) -> Result<()> {
-    let settings_path = dest_dir.join("settings.json");
-    if !settings_path.exists() {
-        return Ok(());
-    }
-
-    let mut settings = read_settings(dest_dir)?;
     let target = style_name.strip_suffix(".md").unwrap_or(style_name);
-    let current = settings.get("outputStyle").and_then(|v| v.as_str());
-
-    if current == Some(target) {
-        if let Value::Object(ref mut map) = settings {
-            map.remove("outputStyle");
-        }
-        write_settings(dest_dir, &settings)?;
-    }
-    Ok(())
+    remove_setting_if(dest_dir, "outputStyle", |style| style == target)
 }
 
 pub fn unset_statusline(dest_dir: &Path) -> Result<()> {
-    let settings_path = dest_dir.join("settings.json");
-    if !settings_path.exists() {
+    remove_setting_if(dest_dir, "statusLine", |_| true)
+}
+
+pub(super) fn unregister_statusline_if_matches(dest_dir: &Path, name: &str) -> Result<()> {
+    let command = statusline_command(dest_dir, name);
+    remove_setting_if(dest_dir, "statusLine", |status| {
+        status
+            .as_str()
+            .is_some_and(|legacy| legacy == name || legacy == command)
+            || (status["type"] == "command" && status["command"] == command)
+    })
+}
+
+fn remove_setting_if(
+    dest_dir: &Path,
+    key: &str,
+    matches: impl FnOnce(&Value) -> bool,
+) -> Result<()> {
+    if !dest_dir.join("settings.json").try_exists()? {
         return Ok(());
     }
-
-    let mut settings = read_settings(dest_dir)?;
-    if let Value::Object(ref mut map) = settings {
-        map.remove("statusLine");
-    }
-    write_settings(dest_dir, &settings)
+    edit_settings(dest_dir, |settings| {
+        let fields = settings
+            .as_object_mut()
+            .context("Expected a settings object")?;
+        if fields.get(key).is_some_and(matches) {
+            fields.remove(key);
+            return Ok(true);
+        }
+        Ok(false)
+    })
 }
 
 /// Check if a hook with the given command path already exists in the event array.
@@ -179,109 +280,73 @@ fn build_hook_entry(config: &HookConfig, hook_command: &str) -> Value {
 }
 
 pub(super) fn register_hook_in_settings(dest_dir: &Path, config: &HookConfig) -> Result<()> {
-    let hook_command = config.hook_command_path(dest_dir);
-    let mut settings = read_settings(dest_dir)?;
-
-    // Ensure hooks object and event array exist
-    if settings.get("hooks").is_none() {
-        settings["hooks"] = serde_json::json!({});
-    }
-    let event_name = &config.event;
-    let hooks = settings.get_mut("hooks").unwrap();
-    if hooks.get(event_name).is_none() {
-        hooks[event_name] = serde_json::json!([]);
-    }
-
-    let event_hooks = hooks.get_mut(event_name).unwrap();
-    if let Value::Array(arr) = event_hooks {
-        if !hook_exists_in_array(arr, &hook_command) {
-            arr.push(build_hook_entry(config, &hook_command));
+    let command = config.hook_command_path(dest_dir);
+    edit_settings(dest_dir, |settings| {
+        let fields = settings
+            .as_object_mut()
+            .context("Expected a settings object")?;
+        let hooks = fields
+            .entry("hooks")
+            .or_insert_with(|| serde_json::json!({}))
+            .as_object_mut()
+            .context("Expected a hooks object")?;
+        let commands = hooks
+            .entry(&config.event)
+            .or_insert_with(|| serde_json::json!([]))
+            .as_array_mut()
+            .context("Expected a hook event array")?;
+        if hook_exists_in_array(commands, &command) {
+            return Ok(false);
         }
-    }
-
-    write_settings(dest_dir, &settings)
+        commands.push(build_hook_entry(config, &command));
+        Ok(true)
+    })
 }
 
 pub(crate) fn unregister_hook_from_settings(dest_dir: &Path, config: &HookConfig) -> Result<()> {
-    let settings_path = dest_dir.join("settings.json");
-    if !settings_path.exists() {
+    if !dest_dir.join("settings.json").try_exists()? {
         return Ok(());
     }
-
-    let mut settings = read_settings(dest_dir)?;
-
-    // Get hooks object
-    let hooks = match settings.get_mut("hooks") {
-        Some(Value::Object(h)) => h,
-        _ => return Ok(()),
-    };
-
-    // Get event array
-    let event_name = &config.event;
-    let event_hooks = match hooks.get_mut(event_name) {
-        Some(Value::Array(arr)) => arr,
-        _ => return Ok(()),
-    };
-
-    // Remove hook entries that match config.name
-    event_hooks.retain(|item| {
-        !item
-            .get("hooks")
-            .and_then(|h| h.as_array())
-            .map(|hooks_arr| {
-                hooks_arr.iter().any(|hook| {
-                    hook.get("command")
-                        .and_then(|c| c.as_str())
-                        .map(|cmd| cmd.contains(&config.name))
-                        .unwrap_or(false)
-                })
-            })
-            .unwrap_or(false)
-    });
-
-    // Clean up empty structures
-    if event_hooks.is_empty() {
-        hooks.remove(event_name);
-    }
-    if hooks.is_empty() {
-        if let Value::Object(ref mut map) = settings {
-            map.remove("hooks");
+    let command = config.hook_command_path(dest_dir);
+    edit_settings(dest_dir, |settings| {
+        let fields = settings
+            .as_object_mut()
+            .context("Expected a settings object")?;
+        let Some(hooks) = fields.get_mut("hooks").and_then(Value::as_object_mut) else {
+            return Ok(false);
+        };
+        let Some(event_hooks) = hooks.get_mut(&config.event).and_then(Value::as_array_mut) else {
+            return Ok(false);
+        };
+        let mut changed = false;
+        event_hooks.retain_mut(|group| {
+            let Some(commands) = group.get_mut("hooks").and_then(Value::as_array_mut) else {
+                return true;
+            };
+            let before = commands.len();
+            commands.retain(|hook| hook["type"] != config.hook_type || hook["command"] != command);
+            let removed = before != commands.len();
+            changed |= removed;
+            !removed || !commands.is_empty()
+        });
+        if changed && event_hooks.is_empty() {
+            hooks.remove(&config.event);
+            if hooks.is_empty() {
+                fields.remove("hooks");
+            }
         }
-    }
-
-    write_settings(dest_dir, &settings)
+        Ok(changed)
+    })
 }
 
-/// Removes installer-managed sections from settings.json
-/// This includes: hooks, outputStyle (if it's a known installed style), statusLine (if it's a known installed statusline)
-/// Preserves user settings like env, model, enabledPlugins, etc.
-pub fn remove_managed_settings_sections(dest_dir: &Path) -> Result<()> {
-    let settings_path = dest_dir.join("settings.json");
-    if !settings_path.exists() {
-        return Ok(());
-    }
-
-    let mut settings = read_settings(dest_dir)?;
-    if let Value::Object(ref mut map) = settings {
-        map.remove("hooks");
-        map.remove("outputStyle");
-        map.remove("statusLine");
-    }
-    write_settings(dest_dir, &settings)
-}
-
-/// Auto-register an output style in settings.json if no style is currently set
 pub(super) fn register_output_style_in_settings(dest_dir: &Path, style_name: &str) -> Result<()> {
-    let mut settings = read_settings(dest_dir)?;
-
-    // Only set if outputStyle is not already configured
-    if settings.get("outputStyle").is_none() {
-        let style_name = style_name.strip_suffix(".md").unwrap_or(style_name);
-        settings["outputStyle"] = serde_json::json!(style_name);
-        write_settings(dest_dir, &settings)?;
-    }
-
-    Ok(())
+    edit_settings(dest_dir, |settings| {
+        if settings.get("outputStyle").is_some() {
+            return Ok(false);
+        }
+        settings["outputStyle"] = style_name.strip_suffix(".md").unwrap_or(style_name).into();
+        Ok(true)
+    })
 }
 
 /// Preserve custom commands while repairing a bundled command from another platform.
@@ -289,23 +354,143 @@ pub(super) fn register_statusline_in_settings(
     dest_dir: &Path,
     statusline_name: &str,
 ) -> Result<()> {
-    let mut settings = read_settings(dest_dir)?;
-
-    // Earlier installers wrote a bare string here, and `read_current_settings`
-    // only reads an object's `command`, so a string counts as unset and is replaced.
-    if !settings.get("statusLine").is_some_and(Value::is_object) {
-        set_statusline(dest_dir, statusline_name)?;
-    } else if repair_bundled_statusline(&mut settings, dest_dir, statusline_name) {
-        write_settings(dest_dir, &settings)?;
-    }
-
-    Ok(())
+    edit_settings(dest_dir, |settings| {
+        // Earlier installers wrote a bare string instead of a command object.
+        if !settings.get("statusLine").is_some_and(Value::is_object) {
+            settings["statusLine"] = statusline_setting(dest_dir, statusline_name);
+            return Ok(true);
+        }
+        Ok(repair_bundled_statusline(
+            settings,
+            dest_dir,
+            statusline_name,
+        ))
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[cfg(target_os = "linux")]
+    fn named_user_acl() -> Vec<u8> {
+        // Linux ACL xattr version 2 with a named user and no owning-group access.
+        let mut fixture = 2_u32.to_le_bytes().to_vec();
+        for (tag, permissions, user) in [
+            (0x01_u16, 0x06_u16, u32::MAX),
+            (0x02, 0x04, 65534),
+            (0x04, 0x00, u32::MAX),
+            (0x10, 0x04, u32::MAX),
+            (0x20, 0x00, u32::MAX),
+        ] {
+            fixture.extend(tag.to_le_bytes());
+            fixture.extend(permissions.to_le_bytes());
+            fixture.extend(user.to_le_bytes());
+        }
+        fixture
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn settings_replacement_keeps_the_access_acl() -> Result<()> {
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("settings.json");
+        fs::write(&path, b"{}")?;
+        const ACL: &str = "system.posix_acl_access";
+        let fixture = named_user_acl();
+        match xattr::set(&path, ACL, &fixture) {
+            Err(error) if error.kind() == ErrorKind::Unsupported => return Ok(()),
+            result => result?,
+        }
+        set_output_style(root.path(), "review")?;
+        assert_eq!(xattr::get(&path, ACL)?, Some(fixture));
+        assert_eq!(read_settings_file(&path)?["outputStyle"], "review");
+        Ok(())
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn settings_replacement_does_not_inherit_a_new_access_acl() -> Result<()> {
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("settings.json");
+        fs::write(&path, b"{}")?;
+        match xattr::set(root.path(), "system.posix_acl_default", &named_user_acl()) {
+            Err(error) if error.kind() == ErrorKind::Unsupported => return Ok(()),
+            result => result?,
+        }
+
+        set_output_style(root.path(), "review")?;
+        assert_eq!(xattr::get(&path, "system.posix_acl_access")?, None);
+        assert_eq!(read_settings_file(&path)?["outputStyle"], "review");
+        Ok(())
+    }
+
+    #[test]
+    fn concurrent_edits_hold_the_lock_until_both_changes_are_saved() -> Result<()> {
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("settings.json");
+        std::thread::scope(|threads| -> Result<()> {
+            let (locked, locked_rx) = std::sync::mpsc::channel();
+            let (release, release_rx) = std::sync::mpsc::channel();
+            let first_path = &path;
+            let first = threads.spawn(move || {
+                edit_settings_file(first_path, |settings| {
+                    locked.send(())?;
+                    release_rx.recv()?;
+                    settings["outputStyle"] = "review".into();
+                    Ok(true)
+                })
+            });
+            locked_rx.recv_timeout(std::time::Duration::from_secs(5))?;
+            let probe = OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open(root.path().join("settings.json.hibi.lock"))?;
+            let held = probe.try_lock().is_err();
+            drop(probe);
+            let second = threads.spawn(|| set_statusline(root.path(), "review"));
+            release.send(())?;
+            first.join().unwrap()?;
+            second.join().unwrap()?;
+            assert!(held);
+            Ok(())
+        })?;
+        let settings = read_settings_file(&path)?;
+        assert_eq!(settings["outputStyle"], "review");
+        assert_eq!(settings["statusLine"]["type"], "command");
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn settings_write_creates_a_missing_relative_symlink_target() -> Result<()> {
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("settings.json");
+        std::os::unix::fs::symlink("dotfiles.json", &path)?;
+        set_output_style(root.path(), "review")?;
+        assert_eq!(fs::read_link(path)?, Path::new("dotfiles.json"));
+        assert_eq!(
+            read_settings_file(&root.path().join("dotfiles.json"))?["outputStyle"],
+            "review"
+        );
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn atomic_replace_respects_the_settings_files_effective_permissions() -> Result<()> {
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempfile::tempdir()?;
+        let path = root.path().join("settings.json");
+        fs::write(&path, b"{}")?;
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o466))?;
+        if OpenOptions::new().write(true).open(&path).is_err() {
+            assert!(set_output_style(root.path(), "review").is_err());
+            assert_eq!(fs::read(&path)?, b"{}");
+        }
+        Ok(())
+    }
 
     fn unique_dest(label: &str) -> std::path::PathBuf {
         let nanos = SystemTime::now()
@@ -453,7 +638,7 @@ mod tests {
         register_statusline_in_settings(&dest, "statusline_linux").unwrap();
 
         assert_eq!(
-            read_settings(&dest).unwrap(),
+            read_settings_file(&dest.join("settings.json")).unwrap(),
             serde_json::json!({
                 "statusLine": {"type": "command", "command": "~/.claude/statusline/statusline_linux", "padding": 2},
                 "theme": "dark"
@@ -472,9 +657,16 @@ mod tests {
         ] {
             let settings =
                 serde_json::json!({"statusLine": {"type": "command", "command": command}});
-            write_settings(&dest, &settings).unwrap();
+            fs::write(
+                dest.join("settings.json"),
+                serde_json::to_vec(&settings).unwrap(),
+            )
+            .unwrap();
             register_statusline_in_settings(&dest, "statusline_linux").unwrap();
-            assert_eq!(read_settings(&dest).unwrap(), settings);
+            assert_eq!(
+                read_settings_file(&dest.join("settings.json")).unwrap(),
+                settings
+            );
         }
         std::fs::remove_dir_all(dest).unwrap();
     }
@@ -521,9 +713,10 @@ mod tests {
         let dest = unique_dest("invalid_statusline_json");
         std::fs::write(dest.join("settings.json"), "{invalid").unwrap();
         let error = register_statusline_in_settings(&dest, "statusline_linux").unwrap_err();
+        let detail = format!("{error:#}");
         assert!(
-            error.to_string().contains("key must be a string"),
-            "{error}"
+            detail.contains("Invalid JSON") && detail.contains("key must be a string"),
+            "{detail}"
         );
         assert_eq!(
             std::fs::read_to_string(dest.join("settings.json")).unwrap(),

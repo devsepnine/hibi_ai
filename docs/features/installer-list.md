@@ -131,10 +131,10 @@
   - 데이터: 쓰기 `tools/installer/src/fs/installer/settings.rs` → `set_output_style`, `tools/installer/src/fs/installer/settings.rs` → `set_statusline`, 읽기 `tools/installer/src/app/settings.rs` → `read_current_settings`, 키는 settings.json 의 `outputStyle` 과 `statusLine.command`
 - **테스트**: `tools/installer/src/fs/installer/settings.rs`
 - **함정**: Windows 에서 상태줄이 비어 있음 → stdin 파이프 문제로 명령을 `cat | /c/...` 형태로 쓰며 Git Bash 가 필요하다, 근거: `5c584c7`
-- **플랫폼 보정**: statusline 설치와 설정 병합은 hibi가 생성하는 다른 OS의 기본 명령을 현재 설치된 바이너리 경로로 보정한다. `repair_bundled_statusline`은 전체 명령이 일치할 때만 바꾸므로 사용자 정의 경로와 인수가 붙은 명령은 유지한다. 설정을 먼저 설치하면 statusline 설치 시 보정하고, statusline을 먼저 설치하면 설정 병합 시 보정한다
-- **회귀 테스트**: `tools/installer/src/fs/installer/merge.rs` → `fresh_statusline_and_config_install_use_native_command_in_either_order`, `tools/installer/src/fs/installer/settings.rs` → `linux_registration_repairs_the_bundled_macos_command`, `tools/installer/src/fs/scanner/components.rs` → `fresh_statusline_scan_installs_only_the_native_binary`
+- **플랫폼 보정**: 상태줄을 설치하거나 Config에서 설정 항목을 읽을 때 다른 OS용 hibi 기본 명령을 설치된 바이너리 경로로 맞춘다. `repair_bundled_statusline`은 명령 전체가 일치할 때만 적용하므로 사용자 정의 경로와 인수를 보존한다.
+- **회귀 테스트**: `tools/installer/src/fs/installer/entries.rs`, `tools/installer/src/fs/installer/settings.rs` → `linux_registration_repairs_the_bundled_macos_command`, `tools/installer/src/fs/scanner/components.rs` → `fresh_statusline_scan_installs_only_the_native_binary`
 - **함정**: 스타일을 설치해도 기본값이 안 바뀜 → 자동 등록은 `outputStyle` 이 비어 있을 때만 한다, 근거: `tools/installer/src/fs/installer/settings.rs` → `register_output_style_in_settings`
-- **함정**: settings.json 이 깨진 JSON 이면 s 를 누르는 순간 인스톨러가 꺼짐 → 파싱 실패가 `?` 로 `run_app` 까지 올라간다, 근거: `tools/installer/src/fs/installer/settings.rs` → `read_settings`
+- **저장 오류**: 설정 파일이 깨져 있으면 기본값을 저장할 수 없는 이유를 목록 화면에 표시한다. `tools/installer/src/cli/mod.rs` → `handle_default_toggle`
 - **공유 의존**: `tools/installer/src/fs/installer/settings.rs`
 - **관련**: `statusline-render`, `settings-merge`, `response-language`
 
@@ -211,22 +211,23 @@
 - **공유 의존**: `tools/installer/src/loading/channels.rs` → `ProcessingChannels`, `tools/installer/src/fs/mod.rs` → `run_with_timeout`
 - **관련**: `settings-merge`, `install-manifest`, `mcp-env-input`
 
-### `settings-merge`: settings.json 병합, 훅 등록, Config 파일 설치
+### `settings-merge`: settings.json 항목별 설치와 제거
 
-- **위치**: Config 탭의 `settings.json` · `CLAUDE.md` · `AGENTS.md` 항목과 Hooks 탭 설치 · 제거, 결과는 ~/.claude/settings.json
-- **별칭**: settings.json, 설정 병합, 설정 덮어씀, permissions 날아감, CLAUDE.md 덮어씀, 훅
-- **UI 문구**: `"managed"`, `"is deprecated and cannot be installed"`, `"Security: destination path contains '..' component"`
-- **컨트롤**: component-list 의 `"install selected"` → `install_selected`, `"remove selected"` → `remove_selected`
+- **위치**: Claude Code의 Config 탭에 있는 `settings.json` 그룹. 설치와 제거 결과는 `~/.claude/settings.json`에 저장한다.
+- **별칭**: settings.json, 설정 키, 설정 병합, 설정 덮어씀, permissions
+- **컨트롤**: 항목을 선택한 뒤 Install 또는 Remove를 누른다. Diff에서 해당 항목의 현재 값과 소스 값을 비교할 수 있다.
 - **코드 경로**:
-  - 상태 / 핸들러: `tools/installer/src/fs/installer/mod.rs` → `install_component` 가 타입별로 나눈다
-  - 데이터: 병합 `tools/installer/src/fs/installer/merge.rs` → `merge_settings_json`, 훅 등록 `tools/installer/src/fs/installer/settings.rs` → `register_hook_in_settings`, 제거 `tools/installer/src/fs/installer/settings.rs` → `remove_managed_settings_sections`
-  - 데이터: 배포 원본은 `src/settings.json`, 상태 판정은 `tools/installer/src/fs/scanner/components.rs` → `add_config_files` 가 대상이 있으면 항상 managed 로 둔다
-- **테스트**: `tools/installer/src/fs/installer/settings.rs`
-- **함정**: settings.json 을 설치했더니 내 배열 설정이 원본 값으로 바뀜 → 병합은 객체만 깊게 합치고 `hooks` 가 아닌 배열은 통째로 덮는다, 근거: `tools/installer/src/fs/installer/merge.rs` → `merge_json_values`
-- **함정**: CLAUDE.md 를 설치하면 내가 쓴 ~/.claude/CLAUDE.md 가 사라짐 → settings.json 만 병합하고 CLAUDE.md · AGENTS.md 는 그대로 복사한다, 근거: `tools/installer/src/fs/installer/mod.rs` → `install_component`
-- **함정**: Config 탭에서 settings.json 을 제거하면 상태줄과 출력 스타일도 풀림 → `hooks` · `outputStyle` · `statusLine` 을 통째로 지운다, 근거: `tools/installer/src/fs/installer/settings.rs` → `remove_managed_settings_sections`
-- **함정**: 훅 하나를 제거했는데 이름이 비슷한 다른 훅도 빠짐 → 명령 문자열에 훅 이름이 포함되기만 하면 지운다, 근거: `tools/installer/src/fs/installer/settings.rs` → `unregister_hook_from_settings`
-- **공유 의존**: serde_json, `tools/installer/src/fs/installer/settings.rs` → `read_settings`
+  - 데이터: 번들 원본은 `src/settings.json`이다. `tools/installer/src/fs/scanner/mod.rs` → `scan_all_sources`가 우선순위가 높은 소스의 파일을 고른다.
+  - 데이터: `tools/installer/src/fs/installer/entries.rs`가 설정 키를 나열하고 선택한 키를 설치하거나 제거한다. `tools/installer/src/fs/installer/settings.rs`가 파일을 저장한다.
+- **선택 단위**: `env.MCP_TIMEOUT`처럼 중첩된 키를 따로 표시한다. 배열과 `statusLine` 객체는 각각 값 하나로 취급한다. Claude Code의 Config 항목은 처음에 모두 선택 해제되어 있다.
+- **설치**: 선택한 키에 소스 값을 쓴다. 현재 값이 달라진 경우에는 목록을 갱신한 뒤 다시 선택한다. 같은 키 아래 기존 객체에 하위 값이 있으면 해당 객체를 보존한다.
+- **제거**: 현재 값이 소스 값과 같은 항목만 제거할 수 있다. 다른 설정 키와 파일 자체는 보존한다.
+- **읽기 오류**: 설정을 읽을 수 없으면 해당 항목을 변경 불가로 표시한다. Diff에서 원인을 확인할 수 있다.
+- **테스트**: `tools/installer/src/fs/scanner/mod.rs`, `tools/installer/src/fs/installer/entries.rs`, `tools/installer/tests/gui_smoke.py`
+- **등록 실패**: 훅, 출력 스타일, 상태줄을 설치할 때 설정 등록이 실패하면 기존 파일을 복구한다. 처음 설치하는 항목은 새 파일을 제거한다.
+- **파일 권한**: Linux에서 기존 `settings.json`을 갱신할 때 소유자, 그룹, 접근 ACL을 보존한다.
+- **제거**: 개별 훅을 제거하면 등록할 때 사용한 명령과 일치하는 항목만 지운다. 설치한 상태줄을 제거하면 해당 실행 파일을 등록한 명령도 정리한다.
+- **공유 의존**: serde_json, `tools/installer/src/fs/installer/settings.rs` → `edit_settings_file`
 - **관련**: `default-style-statusline`, `commit-push-gating`, `response-language`
 
 ### `install-manifest`: ~/.hibi/install.json 출처 기록

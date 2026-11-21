@@ -51,6 +51,38 @@ def cli(binary, arguments, cwd, env):
     return result.stdout
 
 
+def git_source_sync(binary, repository, root):
+    home = root / "git-home"
+    sources = home / ".hibi/sources.yaml"
+    sources.parent.mkdir(parents=True)
+    remote = root / "git-remote"
+    remote.mkdir()
+    config = home / "gitconfig"
+    env = dict(isolated_environment(home), GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=str(config),
+               GIT_ALLOW_PROTOCOL="file", GIT_AUTHOR_NAME="Hibi test", GIT_AUTHOR_EMAIL="test@example.invalid",
+               GIT_COMMITTER_NAME="Hibi test", GIT_COMMITTER_EMAIL="test@example.invalid")
+
+    def git(*arguments, data=None):
+        return subprocess.check_output(["git", *arguments], cwd=remote, env=env, input=data, timeout=15).strip()
+
+    git("init", "-q", "-b", "first")
+    for branch in ("first", "second"):
+        blob = git("hash-object", "-w", "--stdin", data=f"{branch}\n".encode())
+        tree = git("mktree", data=b"100644 blob " + blob + b"\tAGENTS.md\n")
+        revision = git("commit-tree", os.fsdecode(tree), "-m", branch)
+        git("update-ref", f"refs/heads/{branch}", os.fsdecode(revision))
+    url = "https://example.invalid/hibi-fixture.git"
+    git("config", "--file", str(config), f"url.{remote.as_uri()}.insteadOf", url)
+    sources.write_text(f"auto_update: false\nsources:\n  - type: git\n    url: {url}\n"
+                       f"  - type: git\n    url: {url}\n    branch: first\n")
+    cli(binary, ["--sync"], repository, env)
+    cache = home / ".hibi/cache/git"
+    assert sorted(file.read_text().strip() for file in cache.glob("*/AGENTS.md")) == ["first", "first"]
+    git("symbolic-ref", "HEAD", "refs/heads/second")
+    cli(binary, ["--sync"], repository, env)
+    assert sorted(file.read_text().strip() for file in cache.glob("*/AGENTS.md")) == ["first", "second"]
+
+
 def terminal(binary, cwd, env, quit_at_picker=False):
     master, slave = pty.openpty()
     before = termios.tcgetattr(slave)
@@ -186,6 +218,19 @@ def main():
         output = cli(copied, ["--sync"], repository, env)
         assert b"bundled: local" in output, output.decode(errors="replace")
         results.append({"test": "sync_with_isolated_home", "status": "passed"})
+        sources = home / ".hibi/sources.yaml"
+        sources.parent.mkdir(exist_ok=True)
+        sources.write_text(f'sources:\n  - type: local\n    path: "{root / "missing-source"}"\n')
+        failed_sync = subprocess.run(
+            [str(copied), "--sync"], cwd=repository, env=env, stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=15, check=False,
+        )
+        assert failed_sync.returncode != 0, failed_sync.stdout.decode(errors="replace")
+        assert b"Failed to resolve source" in failed_sync.stdout, failed_sync.stdout.decode(errors="replace")
+        sources.unlink()
+        results.append({"test": "sync_reports_a_failed_source", "status": "passed"})
+        git_source_sync(copied, repository, root)
+        results.append({"test": "manual_sync_refreshes_distinct_git_refs", "status": "passed"})
         failure = terminal(copied, isolated, env)
         results.append({"test": "tui_initialization_failure_restores_terminal", "status": "passed"})
         success = terminal(copied, repository, env, quit_at_picker=True)

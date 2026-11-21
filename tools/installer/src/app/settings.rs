@@ -6,7 +6,7 @@ use super::App;
 use super::types::{Tab, View};
 use crate::fs;
 
-pub(super) fn read_current_settings(dest_dir: &Path) -> (Option<String>, Option<String>) {
+fn read_current_settings(dest_dir: &Path) -> (Option<String>, Option<String>) {
     use serde_json::Value;
 
     let settings_path = dest_dir.join("settings.json");
@@ -39,6 +39,17 @@ pub(super) fn read_current_settings(dest_dir: &Path) -> (Option<String>, Option<
 }
 
 impl App {
+    pub(super) fn refresh_settings_defaults(&mut self) {
+        (self.current_output_style, self.current_statusline) =
+            read_current_settings(&self.dest_dir);
+    }
+
+    fn refresh_setting_rows(&mut self) {
+        if fs::installer::refresh_setting_entries(&mut self.components, &self.dest_dir) {
+            self.rebuild_component_tree(Tab::Config);
+        }
+    }
+
     pub fn set_default_style(&mut self) -> Result<()> {
         // Only works for OutputStyles tab
         if self.tab != Tab::OutputStyles {
@@ -56,6 +67,7 @@ impl App {
                     .to_string();
 
                 fs::installer::set_output_style(&self.dest_dir, &style_name)?;
+                self.refresh_setting_rows();
                 self.current_output_style = Some(style_name.clone());
                 self.status_message = Some(format!("Set default output style: {}", style_name));
             }
@@ -71,6 +83,7 @@ impl App {
         }
 
         fs::installer::unset_output_style(&self.dest_dir)?;
+        self.refresh_setting_rows();
         self.current_output_style = None;
         self.status_message = Some("Unset default output style".to_string());
         Ok(())
@@ -85,9 +98,11 @@ impl App {
 
         if let Some(idx) = self.selected_component_index() {
             if let Some(component) = self.components.get(idx) {
-                fs::installer::set_statusline(&self.dest_dir, &component.name)?;
-                self.current_statusline = Some(component.name.clone());
-                self.status_message = Some(format!("Set statusline: {}", component.name));
+                let name = component.name.clone();
+                fs::installer::set_statusline(&self.dest_dir, &name)?;
+                self.refresh_setting_rows();
+                self.status_message = Some(format!("Set statusline: {name}"));
+                self.current_statusline = Some(name);
             }
         }
         Ok(())
@@ -101,6 +116,7 @@ impl App {
         }
 
         fs::installer::unset_statusline(&self.dest_dir)?;
+        self.refresh_setting_rows();
         self.current_statusline = None;
         self.status_message = Some("Unset statusline".to_string());
         Ok(())
@@ -113,7 +129,13 @@ impl App {
 
         if let Some(idx) = self.selected_component_index() {
             if let Some(c) = self.components.get(idx) {
-                let diff = fs::diff::compare_files(&c.source_path, &c.dest_path)?;
+                let diff = if let Some(reason) = c.status.blocking_reason() {
+                    reason.to_owned()
+                } else if let Some(setting) = &c.setting_entry {
+                    fs::installer::preview_setting(c, setting)
+                } else {
+                    fs::diff::compare_files(&c.source_path, &c.dest_path)?
+                };
                 self.diff_content = Some(diff);
                 self.diff_scroll = 0;
                 self.current_view = View::Diff;
@@ -133,5 +155,48 @@ impl App {
 
     pub fn scroll_diff_up(&mut self) {
         self.diff_scroll = self.diff_scroll.saturating_sub(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::component::{Component, ComponentType, InstallStatus, statusline_binary_name};
+
+    #[test]
+    fn direct_statusline_changes_refresh_settings_rows() -> Result<()> {
+        let fixture = tempfile::tempdir()?;
+        let mut app = super::super::test_support::fresh_app();
+        app.dest_dir = fixture.path().join(".claude");
+        std::fs::create_dir(&app.dest_dir)?;
+        let binary = statusline_binary_name();
+        let template = fixture.path().join("template.json");
+        std::fs::write(
+            &template,
+            b"{\"statusLine\":{\"type\":\"command\",\"command\":\"fixture\"}}",
+        )?;
+        let file = Component::new(
+            ComponentType::ConfigFile,
+            "settings.json".into(),
+            template,
+            app.dest_dir.join("settings.json"),
+            InstallStatus::New,
+        );
+        app.components = fs::installer::scan_setting_entries(&file)?;
+        app.components.push(Component::new(
+            ComponentType::Statusline,
+            binary.into(),
+            binary.into(),
+            app.dest_dir.join("statusline").join(binary),
+            InstallStatus::New,
+        ));
+        app.tab = Tab::Statusline;
+        app.rebuild_tree_views();
+
+        app.set_statusline()?;
+        assert_eq!(app.components[0].status, InstallStatus::Modified);
+        app.unset_statusline()?;
+        assert_eq!(app.components[0].status, InstallStatus::New);
+        Ok(())
     }
 }

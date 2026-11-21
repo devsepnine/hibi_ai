@@ -177,6 +177,7 @@ catalog! {
     "modified" => "수정됨", "変更あり";
     "installed" => "설치됨", "インストール済み";
     "managed" => "관리 중", "管理対象";
+    "blocked" => "변경 불가", "変更不可";
     "external" => "외부", "外部";
     "unknown" => "확인 불가", "不明";
     "user" => "사용자", "ユーザー";
@@ -269,7 +270,7 @@ catalog! {
     "Changes will appear when synchronization finishes." => "동기화가 끝나면 변경 사항이 표시됩니다.", "同期が完了すると変更が表示されます。";
     "Disconnect this library?" => "이 라이브러리의 연결을 해제할까요?", "このライブラリの接続を解除しますか？";
     "This source is no longer available." => "이 소스는 더 이상 사용할 수 없습니다.", "このソースは利用できなくなりました。";
-    "This removes the library from your sources and clears its Git cache. Your installed components stay in place." => "이 라이브러리를 소스 목록에서 제거하고 Git 캐시를 지웁니다. 설치한 구성 요소는 유지됩니다.", "ソース一覧からこのライブラリを削除し、Git キャッシュを消去します。インストール済みの項目は保持されます。";
+    "This removes the library from your sources. Installed components can be managed separately." => "이 라이브러리를 소스 목록에서 제거합니다. 설치한 구성 요소는 따로 관리할 수 있습니다.", "ソース一覧からこのライブラリを削除します。インストール済みの項目は個別に管理できます。";
     "Connect a Git repository" => "Git 저장소 연결", "Git リポジトリを接続";
     "Use an HTTPS URL without credentials." => "인증 정보가 없는 HTTPS URL을 사용하세요.", "認証情報を含まない HTTPS URL を使用してください。";
     "Choose a branch" => "브랜치 선택", "ブランチを選択";

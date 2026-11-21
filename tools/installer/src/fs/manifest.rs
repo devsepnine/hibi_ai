@@ -108,6 +108,9 @@ fn record_for_target(record: &str, dest_dir: &Path, home: &Path) -> InstallRecor
 }
 
 fn is_installed(component: &Component) -> bool {
+    if component.setting_entry.is_some() {
+        return component.status == InstallStatus::Unchanged;
+    }
     // `New` never landed, and `External` is a user's own file that no source
     // produces — claiming either as installed would misreport provenance.
     matches!(
@@ -117,6 +120,9 @@ fn is_installed(component: &Component) -> bool {
 }
 
 fn component_id(component: &Component) -> String {
+    if component.setting_entry.is_some() {
+        return "config/settings.json".into();
+    }
     format!(
         "{}/{}",
         component.component_type.display_name(),

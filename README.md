@@ -146,7 +146,7 @@ auto_update: true
 hibi --sync
 ```
 
-**Offline behavior**: If a git fetch fails but a cached copy exists, hibi uses the stale cache. Bundled source always works offline.
+**Offline behavior**: If a Git fetch fails but the repository and branch have a cached copy, hibi uses that copy. `hibi --sync` returns a nonzero exit status when a source fails to resolve or refresh. The bundled source works offline.
 
 **Source requirements**: Each source directory must contain at least one of `agents/`, `commands/`, `contexts/`, `rules/`, `skills/`, `hooks/`, `output-styles/`, `statusline/`, `mcps/mcps.yaml`, `plugins/plugins.yaml`, `settings.json`, `CLAUDE.md`, or `AGENTS.md`. The bundled source is checked more strictly: it needs both `agents/` and `settings.json`.
 

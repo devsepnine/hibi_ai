@@ -269,13 +269,17 @@ fn add_config_files(
                 determine_status(&source_path, &dest_path)?
             };
 
-            components.push(Component::new(
+            let mut component = Component::new(
                 ComponentType::ConfigFile,
                 file.to_string(),
                 source_path,
                 dest_path,
                 status,
-            ));
+            );
+            if target_cli == TargetCli::Claude {
+                component.selected = false;
+            }
+            components.push(component);
         }
     }
 

@@ -150,18 +150,21 @@ impl App {
         self.tree_views = Tab::all()
             .iter()
             .filter(|tab| tab.to_component_type().is_some())
-            .map(|&tab| {
-                let components: Vec<_> = self
-                    .components_for_tab(tab)
-                    .into_iter()
-                    .filter(|(_, c)| self.hidden_visibility.matches(self.is_component_hidden(c)))
-                    .collect();
-                (
-                    tab,
-                    TreeView::build_from_components(&self.components, &components),
-                )
-            })
+            .map(|&tab| (tab, self.build_component_tree(tab)))
             .collect();
+    }
+
+    pub(super) fn rebuild_component_tree(&mut self, tab: Tab) {
+        self.tree_views.insert(tab, self.build_component_tree(tab));
+    }
+
+    fn build_component_tree(&self, tab: Tab) -> TreeView {
+        let components: Vec<_> = self
+            .components_for_tab(tab)
+            .into_iter()
+            .filter(|(_, c)| self.hidden_visibility.matches(self.is_component_hidden(c)))
+            .collect();
+        TreeView::build_from_components(&self.components, &components)
     }
 }
 

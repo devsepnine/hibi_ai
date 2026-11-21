@@ -2,6 +2,42 @@ use super::*;
 use crate::app::FocusArea;
 use crate::app::test_support::fresh_app;
 
+#[test]
+fn settings_write_failure_keeps_the_list_open() -> Result<()> {
+    use crate::component::{Component, ComponentType, InstallStatus};
+
+    let fixture = tempfile::tempdir()?;
+    let settings = fixture.path().join("settings.json");
+    std::fs::write(&settings, b"{broken")?;
+    let mut app = fresh_app();
+    app.dest_dir = fixture.path().to_owned();
+    app.tab = app::Tab::Statusline;
+    app.finish_loading(
+        vec![Component::new(
+            ComponentType::Statusline,
+            "statusline".into(),
+            "statusline".into(),
+            "statusline".into(),
+            InstallStatus::New,
+        )],
+        vec![],
+        vec![],
+        vec![],
+    );
+    let (tx, _rx) = std::sync::mpsc::channel();
+
+    dispatch_key(&mut app, KeyCode::Char('s'), &tx)?;
+    assert_eq!(app.current_view, app::View::List);
+    assert!(
+        app.status_message
+            .as_deref()
+            .is_some_and(|message| message.contains("Invalid JSON"))
+    );
+    assert!(app.current_statusline.is_none());
+    assert_eq!(std::fs::read(settings)?, b"{broken");
+    Ok(())
+}
+
 #[path = "visibility/tests.rs"]
 mod folder_visibility;
 

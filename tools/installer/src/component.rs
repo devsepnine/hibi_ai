@@ -64,6 +64,7 @@ pub enum InstallStatus {
     /// orphaned from older hibi versions). source_path = dest_path; never
     /// installed, only removable.
     External,
+    Blocked(String),
 }
 
 impl InstallStatus {
@@ -74,6 +75,14 @@ impl InstallStatus {
             Self::Unchanged => "installed",
             Self::Managed => "managed",
             Self::External => "external",
+            Self::Blocked(_) => "blocked",
+        }
+    }
+
+    pub fn blocking_reason(&self) -> Option<&str> {
+        match self {
+            Self::Blocked(reason) => Some(reason),
+            _ => None,
         }
     }
 }
@@ -131,6 +140,13 @@ impl HookConfig {
 }
 
 #[derive(Clone, Debug)]
+pub struct SettingEntry {
+    pub keys: Vec<String>,
+    pub value: serde_json::Value,
+    pub current: Option<serde_json::Value>,
+}
+
+#[derive(Clone, Debug)]
 pub struct Component {
     pub component_type: ComponentType,
     pub name: String,
@@ -139,6 +155,7 @@ pub struct Component {
     pub selected: bool,
     pub status: InstallStatus,
     pub hook_config: Option<HookConfig>,
+    pub setting_entry: Option<SettingEntry>,
     pub source_name: String,
 }
 
@@ -150,7 +167,10 @@ impl Component {
         dest_path: PathBuf,
         status: InstallStatus,
     ) -> Self {
-        let selected = !matches!(status, InstallStatus::Unchanged | InstallStatus::External);
+        let selected = !matches!(
+            status,
+            InstallStatus::Unchanged | InstallStatus::External | InstallStatus::Blocked(_)
+        );
         Self {
             component_type,
             name,
@@ -159,6 +179,7 @@ impl Component {
             selected,
             status,
             hook_config: None,
+            setting_entry: None,
             source_name: "bundled".to_string(),
         }
     }
@@ -166,6 +187,16 @@ impl Component {
     pub fn with_hook_config(mut self, config: HookConfig) -> Self {
         self.hook_config = Some(config);
         self
+    }
+
+    pub fn with_setting_entry(mut self, setting: SettingEntry) -> Self {
+        self.setting_entry = Some(setting);
+        self.selected = false;
+        self
+    }
+
+    pub fn is_settings_file(&self) -> bool {
+        self.component_type == ComponentType::ConfigFile && self.name == "settings.json"
     }
 
     /// Override the default `bundled` source label (used for externals and
@@ -186,7 +217,10 @@ impl Component {
     /// on the OS). Deprecated hooks are blocked at install time.
     /// Selection and component-type matching are handled by the caller.
     pub fn is_install_eligible(&self) -> bool {
-        if self.status == InstallStatus::External {
+        if matches!(
+            self.status,
+            InstallStatus::External | InstallStatus::Blocked(_)
+        ) {
             return false;
         }
         if let Some(config) = &self.hook_config {
@@ -195,6 +229,16 @@ impl Component {
             }
         }
         true
+    }
+
+    pub fn is_remove_eligible(&self) -> bool {
+        if matches!(self.status, InstallStatus::Blocked(_)) {
+            return false;
+        }
+        if self.setting_entry.is_some() {
+            return self.status == InstallStatus::Unchanged;
+        }
+        !self.is_settings_file()
     }
 }
 

@@ -149,7 +149,7 @@ pub(crate) fn execute(
             let action = if is_removing { "Removed" } else { "Installed" };
             match result {
                 Ok(_) => Ok(format!("[OK] {} {}", action, name)),
-                Err(e) => Ok(format!("[ERR] {}: {}", name, e)),
+                Err(e) => Ok(format!("[ERR] {name}: {e:#}")),
             }
         }
     }

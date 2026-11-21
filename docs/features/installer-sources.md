@@ -13,7 +13,7 @@
   - 상태 / 핸들러: `tools/installer/src/cli/mod.rs` → `dispatch_key` 가 Sources 계열 뷰를 `tools/installer/src/app/sources.rs` 로 넘긴다
   - 상태 / 핸들러: `tools/installer/src/app/sources.rs` → `handle_sources_key`
   - 데이터: ~/.hibi/sources.yaml, 쓰기 `tools/installer/src/source/config.rs` → `save_config`, 읽기 `tools/installer/src/source/config.rs` → `load_config` 를 `tools/installer/src/app/mod.rs` → `load_init_data` 와 `tools/installer/src/source/mod.rs` → `resolve_all_sources` 가 각각 부른다
-  - 데이터: git 소스를 지우면 캐시 ~/.hibi/cache 하위도 `tools/installer/src/source/git.rs` → `remove_cache` 로 지운다
+  - 데이터: 마지막 Git 소스 항목을 삭제하면 백그라운드에서 해당 URL과 브랜치의 캐시를 정리한다. 다른 작업이 캐시를 사용 중이면 캐시를 보존하고 경고를 표시한다. 이전 버전이 만든 URL 단위 캐시는 오프라인 호환을 위해 보존한다.
 - **테스트**: `tools/installer/src/source/config.rs`, `tools/installer/src/source/git.rs`
 - **함정**: Sources 화면에서 q 를 누르면 꺼지지 않고 첫 화면으로 감 → 이 화면의 q 는 Esc 와 같은 뒤로가기다, 근거: `tools/installer/src/app/sources.rs` → `handle_sources_key`
 - **함정**: 라이트 테마에서 Sources 와 대화상자 제목이 안 보임 → 제목 색을 테마 색이 아닌 흰색으로 고정했다, 근거: `tools/installer/src/ui/sources.rs` → `render_list`
@@ -51,10 +51,11 @@
   - UI: `tools/installer/src/ui/source_wizard.rs` → `render_syncing`, 결과 줄은 `tools/installer/src/ui/sources.rs` → `render_footer`
   - 상태 / 핸들러: `tools/installer/src/app/sources.rs` → `source_start_sync` 가 스레드에서 `tools/installer/src/source/mod.rs` → `sync_all_sources` 를 돌리고 재스캔한다
   - 상태 / 핸들러: `tools/installer/src/app/sources.rs` → `check_source_sync`
-  - 데이터: 캐시는 ~/.hibi/cache 하위, 경로 `tools/installer/src/source/git.rs` → `cache_path_for`, clone 과 fetch 는 `tools/installer/src/source/git.rs` → `clone_or_update`, 마지막 fetch 시각은 캐시 안 `.hibi_last_fetch`
+  - 데이터: `cache_path_for`는 Git URL과 브랜치 조합마다 `~/.hibi/cache/git/` 아래에 캐시를 만든다. `clone_or_update`는 마지막 fetch 시각을 `.hibi_last_fetch`에 기록한다.
 - **테스트**: `tools/installer/src/source/mod.rs`, `tools/installer/src/source/git.rs`
 - **함정**: 동기화 뒤에도 목록이 예전 상태 → 동기화가 소스 목록만 바꾸고 컴포넌트는 그대로 뒀다, 지금은 재스캔하지만 CLI 를 고르기 전 첫 화면에서 들어온 경우엔 여전히 건너뛴다, 근거: `c09cd8b`
 - **함정**: 오프라인에서 동기화하면 `(stale)` 이 붙음 → fetch 실패 때 이전 clone 이 있으면 그것을 stale 로 쓴다, 근거: `tools/installer/src/source/mod.rs` → `resolve_git`
+- **수동 동기화**: 자동 갱신을 꺼도 `Sync`와 `hibi --sync`는 원격 소스를 갱신한다. 명령은 소스별 결과를 출력하고 실패한 소스가 있으면 0이 아닌 코드로 종료한다.
 - **함정**: upstream 이 history 를 다시 쓴 뒤 동기화가 실패 → shallow 캐시라 ff merge 가 불가능했다, 근거: `f9b7b31`
 - **함정**: 캐시 디렉터리 안에서 고친 파일이 동기화 때 사라짐 → 매번 `fetch --depth 1` 뒤 `reset --hard FETCH_HEAD` 를 한다, 근거: `tools/installer/src/source/git.rs` → `update_repo`
 - **함정**: 동기화 중 q 를 눌러도 이미 시작한 git 명령은 끝까지 돈다 → 취소는 해석 시작 전에 한 번만 확인한다, 근거: `tools/installer/src/source/mod.rs` → `sync_all_sources`

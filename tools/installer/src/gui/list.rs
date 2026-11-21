@@ -201,7 +201,7 @@ pub fn view(
                 ),
             key_button(lang.text("Remove"), KeyCode::Char('r'))
                 .style(styles::danger)
-                .on_press_maybe((selected > 0).then_some(command('r'))),
+                .on_press_maybe((!app.removal_selection().is_empty()).then_some(command('r'))),
             key_button(lang.text("Install"), KeyCode::Char('i'))
                 .padding([9, 18])
                 .on_press_maybe((eligible > 0).then_some(command('i'))),

@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use anyhow::{Context, Result};
+use sha2::{Digest, Sha256};
 
 use super::config::{validate_branch, validate_git_url};
 
@@ -22,10 +23,20 @@ pub fn clone_or_update(url: &str, branch: &Option<String>, cache_dir: &Path) -> 
         anyhow::bail!("git is not installed or not in PATH");
     }
 
+    let parent = cache_dir
+        .parent()
+        .context("Git cache has no parent directory")?;
+    std::fs::create_dir_all(parent)?;
+    let lock = open_cache_lock(cache_dir)?;
+    lock.lock().context("Cannot lock Git cache")?;
     if cache_dir.join(".git").exists() {
         update_repo(cache_dir, branch.as_deref())?;
     } else {
-        clone_repo(url, branch, cache_dir)?;
+        let stage = tempfile::tempdir_in(parent)?;
+        let next = stage.path().join("repo");
+        clone_repo(url, branch, &next)?;
+        std::fs::rename(next, cache_dir)
+            .with_context(|| format!("Cannot publish Git cache {}", cache_dir.display()))?;
     }
 
     // Record last fetch timestamp
@@ -40,31 +51,97 @@ pub fn cache_exists(cache_dir: &Path) -> bool {
     cache_dir.join(".git").exists()
 }
 
-/// Compute cache directory path for a git source.
-/// `~/.hibi/cache/<sanitized_label>/`
-pub fn cache_path_for(url: &str) -> Result<PathBuf> {
-    let home = crate::paths::require_home_dir()?;
-    let label = sanitize_label(url);
-    Ok(home.join(".hibi").join("cache").join(label))
+fn cache_base() -> Result<PathBuf> {
+    Ok(crate::paths::require_home_dir()?.join(".hibi/cache"))
 }
 
-/// Remove the cached repository for a git source URL.
-/// Returns `Ok(true)` if the cache was removed, `Ok(false)` if no cache existed.
-pub fn remove_cache(url: &str) -> Result<bool> {
-    let cache_dir = cache_path_for(url)?;
+pub fn cache_path_for(url: &str, branch: Option<&str>) -> Result<PathBuf> {
+    cache_path_in(&cache_base()?, url, branch)
+}
 
-    // Defense-in-depth: ensure we only delete within ~/.hibi/cache/
-    let home = crate::paths::require_home_dir()?;
-    let cache_base = home.join(".hibi").join("cache");
-    if !cache_dir.starts_with(&cache_base) {
-        anyhow::bail!(
-            "Refusing to remove path outside cache dir: {}",
-            cache_dir.display()
-        );
+fn cache_path_in(base: &Path, url: &str, branch: Option<&str>) -> Result<PathBuf> {
+    let key = serde_json::to_vec(&(url, branch))?;
+    let digest = Sha256::digest(key);
+    Ok(base.join("git").join(format!("{digest:x}")))
+}
+
+fn open_cache_lock(path: &Path) -> Result<std::fs::File> {
+    std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(path.with_extension("lock"))
+        .context("Cannot open Git cache lock")
+}
+
+pub fn legacy_cache_for(url: &str, branch: Option<&str>) -> Option<PathBuf> {
+    let label = sanitize_label(url);
+    if Path::new(&label).file_name()? != label.as_str() {
+        return None;
     }
+    let dir = cache_base().ok()?.join(label);
+    if !cache_exists(&dir)
+        || read_git(&dir, &["config", "--local", "--get", "remote.origin.url"])? != url
+    {
+        return None;
+    }
+    let head = read_git(&dir, &["rev-parse", "--verify", "HEAD"])?;
+    let reference = format!("refs/remotes/origin/{}", branch.unwrap_or("HEAD"));
+    if read_git(&dir, &["rev-parse", "--verify", &reference]).as_deref() == Some(&head) {
+        return Some(dir);
+    }
+    let name = branch?;
+    let tag = format!("refs/tags/{name}^{{commit}}");
+    if read_git(&dir, &["rev-parse", "--verify", &tag]).as_deref() == Some(&head) {
+        return Some(dir);
+    }
+    // A shallow fetch of an explicit ref may leave only FETCH_HEAD.
+    let branch = format!("branch '{name}' of ");
+    let tag = format!("tag '{name}' of ");
+    let fetch_head = std::fs::read_to_string(dir.join(".git/FETCH_HEAD")).ok()?;
+    fetch_head
+        .lines()
+        .any(|line| {
+            line.split_once("\t\t").is_some_and(|(hash, detail)| {
+                hash == head && (detail.starts_with(&branch) || detail.starts_with(&tag))
+            })
+        })
+        .then_some(dir)
+}
 
+fn read_git(dir: &Path, args: &[&str]) -> Option<String> {
+    let mut cmd = Command::new("git");
+    cmd.args(args).current_dir(dir);
+    let output =
+        crate::exec::run_with_timeout(&mut cmd, GIT_PROBE_TIMEOUT_SECS, |_, e| e.into()).ok()??;
+    output.status.success().then(|| {
+        String::from_utf8_lossy(&output.stdout)
+            .trim_end()
+            .to_owned()
+    })
+}
+
+/// Remove the cached repository for a Git source without waiting for an active sync.
+/// Returns `Ok(true)` if the cache was removed, `Ok(false)` if no cache existed.
+pub fn remove_cache(url: &str, branch: Option<&str>) -> Result<bool> {
+    remove_cache_dir(&cache_path_for(url, branch)?)
+}
+
+fn remove_cache_dir(cache_dir: &Path) -> Result<bool> {
+    if !cache_dir.parent().is_some_and(Path::is_dir) {
+        return Ok(false);
+    }
+    let lock = open_cache_lock(cache_dir)?;
+    match lock.try_lock() {
+        Ok(()) => {}
+        Err(std::fs::TryLockError::WouldBlock) => anyhow::bail!("Git cache is in use"),
+        Err(std::fs::TryLockError::Error(error)) => {
+            return Err(error).context("Cannot lock Git cache");
+        }
+    }
     if cache_dir.exists() {
-        std::fs::remove_dir_all(&cache_dir)
+        std::fs::remove_dir_all(cache_dir)
             .with_context(|| format!("Failed to remove cache: {}", cache_dir.display()))?;
         Ok(true)
     } else {
@@ -102,17 +179,6 @@ fn sanitize_label(url: &str) -> String {
 }
 
 fn clone_repo(url: &str, branch: &Option<String>, dest: &Path) -> Result<()> {
-    // Remove stale cache directory (exists but no .git) before cloning
-    if dest.exists() && !dest.join(".git").exists() {
-        std::fs::remove_dir_all(dest).with_context(|| {
-            format!("Failed to remove stale cache (no .git): {}", dest.display())
-        })?;
-    }
-
-    if let Some(parent) = dest.parent() {
-        std::fs::create_dir_all(parent)?;
-    }
-
     let mut args = vec!["clone", "--depth", "1"];
     if let Some(b) = branch {
         args.push("--branch");
@@ -131,12 +197,8 @@ fn clone_repo(url: &str, branch: &Option<String>, dest: &Path) -> Result<()> {
 }
 
 fn update_repo(repo_dir: &Path, branch: Option<&str>) -> Result<()> {
-    // When no branch specified, fetch default branch (omit refspec)
-    let mut fetch_args = vec!["fetch", "--depth", "1", "origin"];
-    if let Some(b) = branch {
-        fetch_args.push(b);
-    }
-
+    // The clone's fetch refspec can still point to the former default branch.
+    let fetch_args = ["fetch", "--depth", "1", "origin", branch.unwrap_or("HEAD")];
     run_git_command(&fetch_args, Some(repo_dir), FETCH_TIMEOUT_SECS)?;
 
     run_git_command(
@@ -217,31 +279,44 @@ mod tests {
     }
 
     #[test]
-    fn test_cache_path_for() {
-        let path = cache_path_for("https://github.com/user/repo.git").unwrap();
-        assert!(path.to_string_lossy().contains(".hibi"));
-        assert!(path.to_string_lossy().contains("cache"));
-        assert!(path.to_string_lossy().contains("github.com_user_repo"));
+    fn git_cache_separates_branches_and_legacy_url_collisions() -> Result<()> {
+        let dir = tempfile::tempdir()?;
+        let url = "https://example.com/a_b/c.git";
+        let first = cache_path_in(dir.path(), url, Some("first"))?;
+        let second = cache_path_in(dir.path(), url, Some("second"))?;
+        assert_ne!(first, second);
+        assert_ne!(first, cache_path_in(dir.path(), url, None)?);
+        assert_ne!(
+            first,
+            cache_path_in(dir.path(), "https://example.com/a/b_c.git", Some("first"))?
+        );
+        assert!(!remove_cache_dir(&first)?);
+        std::fs::create_dir_all(&first)?;
+        std::fs::create_dir_all(&second)?;
+        assert!(remove_cache_dir(&first)?);
+        assert!(!first.exists());
+        assert!(second.is_dir());
+        Ok(())
     }
 
     #[test]
-    fn test_remove_cache_nonexistent() {
-        let result = remove_cache("https://github.com/nonexistent/repo-never-cloned-99999.git");
-        assert!(result.is_ok());
-        assert!(!result.unwrap());
-    }
+    fn busy_git_cache_is_kept_until_removal_can_lock_it() -> Result<()> {
+        let dir = tempfile::tempdir()?;
+        let cache = dir.path().join("repo");
+        std::fs::create_dir(&cache)?;
+        let lock = open_cache_lock(&cache)?;
+        lock.lock()?;
 
-    #[test]
-    fn test_remove_cache_existing() {
-        let url = "https://github.com/test/remove-cache-test-unique-42.git";
-        let cache_dir = cache_path_for(url).unwrap();
-        std::fs::create_dir_all(&cache_dir).unwrap();
-        std::fs::write(cache_dir.join("dummy"), "test").unwrap();
+        assert_eq!(
+            remove_cache_dir(&cache).unwrap_err().to_string(),
+            "Git cache is in use"
+        );
+        assert!(cache.is_dir());
 
-        let result = remove_cache(url);
-        assert!(result.is_ok());
-        assert!(result.unwrap());
-        assert!(!cache_dir.exists());
+        drop(lock);
+        assert!(remove_cache_dir(&cache)?);
+        assert!(!cache.exists());
+        Ok(())
     }
 
     #[test]

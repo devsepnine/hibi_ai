@@ -178,6 +178,7 @@ fn render_tree_node(
                 InstallStatus::Unchanged => Style::default().fg(app.theme.text_secondary()),
                 InstallStatus::Managed => Style::default().fg(app.theme.accent_primary()),
                 InstallStatus::External => Style::default().fg(app.theme.text_muted()),
+                InstallStatus::Blocked(_) => Style::default().fg(app.theme.error()),
             };
 
             // Check if this is the default item
@@ -273,6 +274,7 @@ fn render_flat(f: &mut Frame, app: &App, area: Rect) {
                 InstallStatus::Unchanged => Style::default().fg(app.theme.text_secondary()),
                 InstallStatus::Managed => Style::default().fg(app.theme.accent_primary()),
                 InstallStatus::External => Style::default().fg(app.theme.text_muted()),
+                InstallStatus::Blocked(_) => Style::default().fg(app.theme.error()),
             };
 
             // Check if this is the default item

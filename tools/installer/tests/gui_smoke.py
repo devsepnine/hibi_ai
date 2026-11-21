@@ -8,6 +8,8 @@ Example: python tools/installer/tests/gui_smoke.py --binary tools/installer/targ
 
 import argparse
 import csv
+import fcntl
+import hashlib
 import io
 import json
 import os
@@ -144,8 +146,12 @@ esac
             result = subprocess.run([self.args.tesseract, str(path), "stdout", "--psm", psm,
                                      "-c", "tessedit_create_tsv=1"], text=True, capture_output=True, check=True)
             for item in csv.DictReader(io.StringIO(result.stdout), delimiter="\t", quoting=csv.QUOTE_NONE):
-                if item.get("text", "").strip():
-                    words.append(dict(text=item["text"], x=int(item["left"])/3 + offset_x,
+                label = item.get("text", "").strip()
+                if label:
+                    # Tesseract can confuse the small Install button's t and l glyphs.
+                    if normalized(label) in {"inslall", "loslall"} and offset_y + int(item["top"])/3 > image.height - 100:
+                        label = "Install"
+                    words.append(dict(text=label, x=int(item["left"])/3 + offset_x,
                                       y=int(item["top"])/3 + offset_y,
                                       w=int(item["width"])/3, h=int(item["height"])/3))
         self.ocr_cache = (key, words)
@@ -420,7 +426,7 @@ esac
         self.d.sync(); time.sleep(.25)
         self.ocr_cache = None
 
-    def inert(self, label):
+    def inert(self, label, compare_region=None):
         before = self.capture()
         try:
             self.click_text(label)
@@ -432,6 +438,9 @@ esac
             x, y, w, h = self.find("Remove", (220, 300, 1120, 780))
             self.click(x + w + 50, y + h / 2)
         after = self.capture()
+        if compare_region is not None:
+            before = before.crop(compare_region)
+            after = after.crop(compare_region)
         assert ImageChops.difference(before, after).getbbox() is None, f"Disabled {label} changed the screen"
 
     def clear_selection(self):
@@ -596,6 +605,7 @@ esac
         self.expect("Install")
         self.passed("11-minimum-window")
         self.resize(1120, 780)
+        self.manage_individual_settings()
         self.back_to_home()
         self.click_text("Codex CLI")
         self.expect("COMPONENTS")
@@ -637,7 +647,108 @@ esac
         self.expect_theme("dark")
         self.passed("17-dark-theme-restored")
         self.close_window()
+        self.remove_source_with_busy_cache()
         (self.artifacts / "results.json").write_text(json.dumps({"passed": self.results, "isolated_home": str(self.home)}, indent=2))
+
+    def manage_individual_settings(self):
+        settings_file = self.home / ".claude/settings.json"
+        instructions = settings_file.with_name("CLAUDE.md")
+        user_instructions = "# Custom workspace instructions\n"
+        instructions.write_text(user_instructions)
+        original = {
+            "model": "custom",
+            "env": {"MCP_TIMEOUT": 5000, "USER_VARIABLE": True},
+            "hooks": {"PostToolUse": [{"hooks": [{"type": "command", "command": "./user-hook.sh"}]}]},
+            "outputStyle": "my-style",
+            "statusLine": {"type": "command", "command": "./status.sh"},
+        }
+        settings_file.write_text(json.dumps(original))
+        self.back_to_home()
+        self.click_text("Claude Code")
+        self.expect("COMPONENTS")
+        self.wheel(140, 420, -10)
+        self.click_text("Config", (0, 150, 220, 665))
+        self.search("MCP_TIMEOUT")
+        self.expect("1 result")
+        self.expect("0 selected")
+        self.click_text("env.MCP_TIMEOUT")
+        self.key("space")
+        self.expect("1 selected")
+        self.inert("Remove", (220, 160, 1120, 780))
+        self.click_text("Diff", (220, 300, 1120, 780))
+        self.expect("Compare configuration")
+        self.expect("5000")
+        self.expect("10000")
+        self.click_text("Back to components")
+        self.clear_search()
+        self.expect("1 selected")
+        self.click_text("Install", (220, 300, 1120, 780))
+        self.expect("Operation complete", timeout=15)
+        expected = {**original, "env": {**original["env"], "MCP_TIMEOUT": 10000}}
+        assert json.loads(settings_file.read_text()) == expected
+        assert instructions.read_text() == user_instructions
+        self.passed("11a-install-one-setting")
+
+        self.click_text("Back to components")
+        self.search("MCP_TIMEOUT")
+        self.click_text("env.MCP_TIMEOUT")
+        self.key("space")
+        self.click_text("Remove", (220, 300, 1120, 780))
+        self.click_text("Remove items")
+        self.expect("Operation complete", timeout=15)
+        del expected["env"]["MCP_TIMEOUT"]
+        assert json.loads(settings_file.read_text()) == expected
+        self.passed("11b-remove-one-setting")
+        self.click_text("Back to components")
+        self.settings_read_error(settings_file)
+        settings_file.write_text(json.dumps(expected))
+
+    def settings_read_error(self, settings_file):
+        settings_file.write_text("{broken")
+        self.back_to_home()
+        self.click_text("Claude Code")
+        self.expect("COMPONENTS")
+        self.wheel(140, 420, -10)
+        self.click_text("Config", (0, 150, 220, 665))
+        self.search("MCP_TIMEOUT")
+        self.expect("blocked")
+        self.click_text("env.MCP_TIMEOUT")
+        self.key("space")
+        self.expect("1 selected")
+        self.inert("Install", (220, 160, 1120, 780))
+        self.inert("Remove", (220, 160, 1120, 780))
+        self.click_text("Diff", (220, 300, 1120, 780))
+        self.expect("Invalid JSON")
+        assert settings_file.read_text() == "{broken"
+        self.passed("11c-settings-read-error")
+        self.click_text("Back to components")
+
+    def remove_source_with_busy_cache(self):
+        url = "https://example.invalid/gui-smoke.git"
+        key = hashlib.sha256(json.dumps([url, None], separators=(",", ":")).encode()).hexdigest()
+        cache = self.home / ".hibi/cache/git" / key
+        (cache / ".git").mkdir(parents=True)
+        marker = cache / "AGENTS.md"
+        marker.write_text("Shared cache fixture")
+        config = self.home / ".hibi/sources.yaml"
+        config.write_text(f"auto_update: false\nsources:\n  - type: git\n    url: {url}\n")
+
+        self.launch()
+        self.click_text("Manage sources")
+        self.expect("Bundled library")
+        self.key("Down")
+        self.click_text("Remove source")
+        self.expect("Disconnect this library?")
+        with cache.with_suffix(".lock").open("wb") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            self.click_text("Remove source")
+            self.expect("Git cache is in use", timeout=15)
+            assert "sources: []" in config.read_text()
+            assert marker.read_text() == "Shared cache fixture"
+            self.passed("18-remove-source-with-busy-cache")
+            self.click_text("Back")
+            self.expect("Your workspace")
+        self.close_window()
 
     def close(self):
         if self.process and self.process.poll() is None:

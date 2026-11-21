@@ -111,7 +111,7 @@ pub(super) fn confirm_remove(lang: Language, app: &App) -> Element<'_, Message> 
     card(column![
         text(lang.text("Disconnect this library?")).size(24),
         container(text(label.unwrap_or_else(|| lang.text("This source is no longer available.").to_string())).size(14)).padding(16).style(styles::surface),
-        text(lang.text("This removes the library from your sources and clears its Git cache. Your installed components stay in place.")).style(styles::muted),
+        text(lang.text("This removes the library from your sources. Installed components can be managed separately.")).style(styles::muted),
         row![cancel(lang), Space::new().width(Fill), button(lang.text("Remove source")).on_press_maybe(entry.map(|_| key('y'))).style(styles::destructive).padding([10,16])].spacing(10),
     ].spacing(18))
 }

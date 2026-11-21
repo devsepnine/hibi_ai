@@ -16,7 +16,7 @@
 - **함정**: `/commit` 을 쳤더니 묻지 않고 커밋함 → 방금 친 슬래시 커맨드가 그 커밋 하나에 대한 명시 요청이다, push 와 PR 은 따로 승인받는다, 근거: `src/CLAUDE.md` → `authorizes`
 - **함정**: 커밋 제목에 남의 티켓 번호가 붙음 → 브랜치에 없는 번호를 git log 에서 빌려 썼다, 지금은 브랜치가 정하고 없으면 접두사를 뺀다, 근거: `5fb1c5d`
 - **함정**: 티켓이 없는 저장소에서도 `[PP-XXXX]` 같은 자리표시자를 요구함 → 형식이 고정 프로젝트 키를 요구했다, 근거: `b399c3a`
-- **함정**: 커밋 메시지나 PR 에 Co-Authored-By 가 붙음 → 서명 끄기는 settings.json 의 `attribution` 빈 문자열에 있어서 Config 탭 settings.json 을 설치하지 않으면 적용되지 않는다, 근거: `src/settings.json` → `attribution`
+- **함정**: 커밋 메시지나 PR에 Co-Authored-By가 붙으면 Config 탭에서 `attribution.commit`과 `attribution.pr`을 선택해 설치한다. 두 설정에 빈 문자열을 지정한다. 근거는 `src/settings.json`의 `attribution`이다.
 - **공유 의존**: `settings-merge`
 - **관련**: `review-gate`, `install-manifest`
 

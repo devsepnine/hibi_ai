@@ -99,8 +99,11 @@ pub(crate) fn sync_all_sources(
         };
     }
 
-    // Resolve all sources using the package-embedded source dir
-    report_resolution(source_dir, summaries, resolve_all_sources(source_dir))
+    report_resolution(
+        source_dir,
+        summaries,
+        resolve_sources(source_dir, Refresh::Manual),
+    )
 }
 
 fn report_resolution(
@@ -142,6 +145,15 @@ fn report_resolution(
 /// Last entry in config = highest priority.
 /// Warnings are collected instead of printed to stderr (TUI-safe).
 pub fn resolve_all_sources(bundled_dir: &Path) -> Result<ResolveResult> {
+    resolve_sources(bundled_dir, Refresh::Configured)
+}
+
+enum Refresh {
+    Configured,
+    Manual,
+}
+
+fn resolve_sources(bundled_dir: &Path, refresh: Refresh) -> Result<ResolveResult> {
     let mut sources = vec![ResolvedSource::bundled(bundled_dir)];
     let mut warnings = Vec::new();
 
@@ -153,8 +165,9 @@ pub fn resolve_all_sources(bundled_dir: &Path) -> Result<ResolveResult> {
         }
     };
 
+    let fetch = auto_update || matches!(refresh, Refresh::Manual);
     for entry in entries {
-        match resolve_entry(&entry, auto_update, &mut warnings) {
+        match resolve_entry(&entry, fetch, &mut warnings) {
             Ok(resolved) => retain_source(resolved, &mut sources, &mut warnings),
             Err(e) => {
                 warnings.push(format!("Failed to resolve source: {}", e));
@@ -215,7 +228,10 @@ fn resolve_git(
     warnings: &mut Vec<String>,
 ) -> Result<ResolvedSource> {
     config::validate_git_url(url)?;
-    let cache_dir = git::cache_path_for(url)?;
+    if let Some(branch) = branch {
+        config::validate_branch(branch)?;
+    }
+    let cache_dir = git::cache_path_for(url, branch.as_deref())?;
 
     let make_resolved = |base: PathBuf, is_stale: bool| ResolvedSource {
         label: url.to_string(),
@@ -226,13 +242,15 @@ fn resolve_git(
         map_to: map_to.clone(),
     };
 
-    // Read before the fetch rather than after it fails: an aborted first clone
-    // can leave a partial `.git` behind, and falling back to that would announce
-    // a stale cache the user never successfully synced.
-    let had_cache = git::cache_exists(&cache_dir);
-
-    if !auto_update && had_cache {
-        return Ok(make_resolved(cache_dir, false));
+    let fallback = || {
+        if git::cache_exists(&cache_dir) {
+            Some(cache_dir.clone())
+        } else {
+            git::legacy_cache_for(url, branch.as_deref())
+        }
+    };
+    if !auto_update && let Some(cached) = fallback() {
+        return Ok(make_resolved(cached, false));
     }
 
     match git::clone_or_update(url, branch, &cache_dir) {
@@ -240,11 +258,13 @@ fn resolve_git(
         // A failed fetch is survivable while a previous clone is still on disk:
         // an offline user gets what they last synced, flagged stale, rather than
         // an empty component list.
-        Err(e) if had_cache => {
+        Err(e) => {
+            let Some(cached) = fallback() else {
+                return Err(e);
+            };
             warnings.push(format!("Git fetch failed, using stale cache: {}", e));
-            Ok(make_resolved(cache_dir, true))
+            Ok(make_resolved(cached, true))
         }
-        Err(e) => Err(e),
     }
 }
 
@@ -314,7 +334,7 @@ mod tests {
     #[test]
     fn test_cache_path_is_prefix_of_resolved_path_with_root() {
         let url = "https://github.com/vercel-labs/agent-skills";
-        let cache_dir = git::cache_path_for(url).unwrap();
+        let cache_dir = git::cache_path_for(url, None).unwrap();
         let resolved_path = apply_root(cache_dir.clone(), Some("skills"));
 
         assert!(resolved_path.starts_with(&cache_dir));
@@ -325,7 +345,7 @@ mod tests {
     #[test]
     fn test_cache_path_equals_resolved_path_without_root() {
         let url = "https://github.com/user/repo.git";
-        let cache_dir = git::cache_path_for(url).unwrap();
+        let cache_dir = git::cache_path_for(url, None).unwrap();
         let resolved_path = apply_root(cache_dir.clone(), None);
 
         assert_eq!(resolved_path, cache_dir);

@@ -143,7 +143,7 @@ impl Runtime {
         let Some(app) = self.app.as_mut() else {
             return;
         };
-        self.remove_count = removal_count(app);
+        self.remove_count = app.removal_selection().len();
         self.remove_requested = self.remove_count > 0;
         if !self.remove_requested {
             app.status_message = Some("Select items in this category to remove.".into());
@@ -158,7 +158,7 @@ impl Runtime {
         let Some(app) = self.app.as_mut() else {
             return;
         };
-        if app.current_view != View::List || removal_count(app) != self.remove_count {
+        if app.current_view != View::List || app.removal_selection().len() != self.remove_count {
             self.error =
                 Some("Selection changed. Review your selection before removing items.".into());
             self.remove_count = 0;
@@ -205,26 +205,6 @@ fn poll_cancelled_sync(app: &mut App) -> bool {
             app.current_view = View::Sources;
             true
         }
-    }
-}
-
-fn removal_count(app: &App) -> usize {
-    match app.tab {
-        crate::app::Tab::McpServers => app
-            .visible_mcp_servers()
-            .iter()
-            .filter(|(_, server)| server.selected)
-            .count(),
-        crate::app::Tab::Plugins => app
-            .visible_plugins()
-            .iter()
-            .filter(|(_, plugin)| plugin.selected)
-            .count(),
-        _ => app
-            .visible_components()
-            .iter()
-            .filter(|(_, component)| component.selected)
-            .count(),
     }
 }
 

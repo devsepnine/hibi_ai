@@ -110,6 +110,18 @@ pub fn scan_all_sources(
         |c, label| c.source_name = label.to_string(),
     )?;
 
+    if let Some(index) = merged.iter().position(Component::is_settings_file) {
+        let file = &mut merged[index];
+        match super::installer::scan_setting_entries(file) {
+            Ok(entries) => {
+                merged.splice(index..=index, entries);
+            }
+            Err(error) => {
+                file.status = crate::component::InstallStatus::Blocked(format!("{error:#}"));
+            }
+        }
+    }
+
     // Reuse the same key shape as scan_directory uses for component name
     // (relative path with forward slashes).
     let existing_keys: HashSet<(ComponentType, String)> = merged
@@ -169,6 +181,86 @@ mod tests {
     use super::*;
     use crate::component::InstallStatus;
     use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn settings_rows_install_and_remove_only_selected_keys() -> Result<()> {
+        let fixture = tempfile::tempdir()?;
+        let source = fixture.path().join("source");
+        let dest = fixture.path().join(".claude");
+        std::fs::create_dir(&source)?;
+        std::fs::create_dir(&dest)?;
+        std::fs::write(
+            source.join("settings.json"),
+            br#"{"env":{"MCP_TIMEOUT":10000,"KEEP":true},"autoUpdates":false}"#,
+        )?;
+        let target = dest.join("settings.json");
+        std::fs::write(source.join("CLAUDE.md"), b"# Bundled instructions")?;
+        std::fs::write(dest.join("CLAUDE.md"), b"# User instructions")?;
+        std::fs::write(
+            &target,
+            br#"{"model":"custom","env":{"USER_VAR":"preserve","MCP_TIMEOUT":5000}}"#,
+        )?;
+        let sources = [ResolvedSource::bundled(&source)];
+        let rows = scan_all_sources(&sources, &dest, TargetCli::Claude)?;
+        assert_eq!(
+            rows.iter().map(|row| row.name.as_str()).collect::<Vec<_>>(),
+            [
+                "settings.json/autoUpdates",
+                "settings.json/env.KEEP",
+                "settings.json/env.MCP_TIMEOUT",
+                "CLAUDE.md"
+            ]
+        );
+        assert!(rows.iter().all(|row| !row.selected));
+        let timeout = &rows[2];
+        assert_eq!(timeout.status, InstallStatus::Modified);
+        assert!(!timeout.is_remove_eligible());
+        crate::fs::installer::install_component(timeout, &source, &dest)?;
+        let read = || {
+            serde_json::from_slice::<serde_json::Value>(&std::fs::read(&target).unwrap()).unwrap()
+        };
+        assert_eq!(
+            read(),
+            serde_json::json!({"model": "custom", "env": {"USER_VAR": "preserve", "MCP_TIMEOUT": 10000}})
+        );
+
+        let rows = scan_all_sources(&sources, &dest, TargetCli::Claude)?;
+        assert_eq!(rows[2].status, InstallStatus::Unchanged);
+        assert!(rows[2].is_remove_eligible());
+        crate::fs::installer::remove_component(&rows[2], &dest)?;
+        assert_eq!(
+            read(),
+            serde_json::json!({"model": "custom", "env": {"USER_VAR": "preserve"}})
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn settings_rows_keep_a_value_edited_since_scan() -> Result<()> {
+        let fixture = tempfile::tempdir()?;
+        let source = fixture.path().join("source");
+        let dest = fixture.path().join(".claude");
+        std::fs::create_dir(&source)?;
+        std::fs::create_dir(&dest)?;
+        let target = dest.join("settings.json");
+        std::fs::write(
+            source.join("settings.json"),
+            br#"{"env":{"MCP_TIMEOUT":10000}}"#,
+        )?;
+        std::fs::write(&target, br#"{"env":{"MCP_TIMEOUT":10000}}"#)?;
+        let sources = [ResolvedSource::bundled(&source)];
+        let rows = scan_all_sources(&sources, &dest, TargetCli::Claude)?;
+        let timeout = &rows[0];
+        assert_eq!(timeout.name, "settings.json/env.MCP_TIMEOUT");
+        let edited = br#"{"env":{"MCP_TIMEOUT":8000,"USER_VAR":true}}"#;
+        std::fs::write(&target, edited)?;
+        let remove = crate::fs::installer::remove_component(timeout, &dest).unwrap_err();
+        assert!(format!("{remove:#}").contains("changed"));
+        let install = crate::fs::installer::install_component(timeout, &source, &dest).unwrap_err();
+        assert!(format!("{install:#}").contains("changed"));
+        assert_eq!(std::fs::read(target)?, edited);
+        Ok(())
+    }
 
     #[test]
     fn only_a_ko_suffixed_stem_is_a_korean_mirror() {

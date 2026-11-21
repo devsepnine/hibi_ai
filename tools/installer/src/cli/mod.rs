@@ -174,7 +174,7 @@ fn handle_content_focus_keys(app: &mut App, key: KeyCode) -> Result<()> {
         KeyCode::Char('d') => app.show_diff()?,
         KeyCode::Char('i') => app.install_selected()?,
         KeyCode::Char('r') => app.remove_selected()?,
-        KeyCode::Char('s') | KeyCode::Char('u') => handle_default_toggle(app, key)?,
+        KeyCode::Char('s') | KeyCode::Char('u') => handle_default_toggle(app, key),
         KeyCode::Char('o') => {
             if app.tab == app::Tab::McpServers {
                 app.toggle_mcp_scope();
@@ -208,15 +208,17 @@ fn handle_enter(app: &mut App) -> Result<()> {
     Ok(())
 }
 
-fn handle_default_toggle(app: &mut App, key: KeyCode) -> Result<()> {
-    match (key, app.tab) {
-        (KeyCode::Char('s'), app::Tab::OutputStyles) => app.set_default_style()?,
-        (KeyCode::Char('s'), app::Tab::Statusline) => app.set_statusline()?,
-        (KeyCode::Char('u'), app::Tab::OutputStyles) => app.unset_default_style()?,
-        (KeyCode::Char('u'), app::Tab::Statusline) => app.unset_statusline()?,
-        _ => {}
+fn handle_default_toggle(app: &mut App, key: KeyCode) {
+    let result = match (key, app.tab) {
+        (KeyCode::Char('s'), app::Tab::OutputStyles) => app.set_default_style(),
+        (KeyCode::Char('s'), app::Tab::Statusline) => app.set_statusline(),
+        (KeyCode::Char('u'), app::Tab::OutputStyles) => app.unset_default_style(),
+        (KeyCode::Char('u'), app::Tab::Statusline) => app.unset_statusline(),
+        _ => return,
+    };
+    if let Err(error) = result {
+        app.status_message = Some(format!("Could not update settings. {error:#}"));
     }
-    Ok(())
 }
 
 fn handle_diff_input(app: &mut App, key: KeyCode) -> Result<()> {
@@ -390,6 +392,7 @@ pub(crate) fn run_sync() -> Result<()> {
     for s in &report.summaries {
         println!("{}", s);
     }
+    anyhow::ensure!(!report.had_error, "Some sources could not be synchronized");
     println!("\nRun `hibi` to install changes.");
     Ok(())
 }

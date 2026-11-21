@@ -78,7 +78,7 @@ GUI 화면과 실패 경로 검증 항목은 `docs/features/installer-gui.md`에
 | 인스톨러가 갑자기 꺼짐, 튕김, 패닉, Error: 찍고 종료 | `diff-view`, `default-style-statusline`, `mcp-env-input` |
 | 기본 스타일, output style, 기본값 설정, DEFAULT, s u 키 | `default-style-statusline` |
 | settings.json `(ambiguous)` | `settings-merge`, `default-style-statusline` |
-| 설정 병합, 설정 덮어씀, permissions 날아감, CLAUDE.md 덮어씀 | `settings-merge` |
+| 설정 키 선택, 설정 추가, 설정 제거, 설정 덮어씀 | `settings-merge` |
 | MCP, 엠씨피, MCP 서버, mcp list, Not Installed 로만 보임, mcps.yaml 서버가 안 보임 | `mcp-list` |
 | 스코프, scope, local, user, 프로젝트 경로 | `mcp-list` |
 | 환경변수, env, API 키, 토큰 입력 | `mcp-env-input` |
@@ -144,7 +144,7 @@ GUI 화면과 실패 경로 검증 항목은 `docs/features/installer-gui.md`에
 | `mcp-env-input` | MCP 환경변수 입력 대화상자 | `docs/features/installer-list.md` |
 | `plugin-list` | Plugins 탭 목록 | `docs/features/installer-list.md` |
 | `install-progress` | 사전 점검, 설치 · 제거 진행, 취소, 새로고침 | `docs/features/installer-list.md` |
-| `settings-merge` | settings.json 병합, 훅 등록, Config 파일 복사 | `docs/features/installer-list.md` |
+| `settings-merge` | settings.json 항목별 설치와 제거 | `docs/features/installer-list.md` |
 | `install-manifest` | ~/.hibi/install.json 출처 기록 | `docs/features/installer-list.md` |
 | `theme-toggle` | `t` 로 Mocha · Latte 전환 | `docs/features/installer-list.md` |
 | `sources-screen` | Sources 목록, 삭제, sources.yaml | `docs/features/installer-sources.md` |

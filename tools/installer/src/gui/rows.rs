@@ -115,22 +115,25 @@ pub fn items(lang: Language, app: &App) -> Column<'_, Message> {
                     let Some(item) = app.components.get(*component_idx) else {
                         continue;
                     };
-                    let details = item
-                        .hook_config
-                        .as_ref()
-                        .map(|hook| {
-                            format!(
-                                "{} · {}{}",
-                                hook.event,
-                                hook.description.as_deref().unwrap_or(""),
-                                if hook.is_deprecated() {
-                                    lang.text(" · deprecated")
-                                } else {
-                                    ""
-                                }
-                            )
-                        })
-                        .unwrap_or_else(|| item.name.clone());
+                    let details = if let Some(reason) = item.status.blocking_reason() {
+                        reason.to_owned()
+                    } else {
+                        item.hook_config
+                            .as_ref()
+                            .map(|hook| {
+                                format!(
+                                    "{} · {}{}",
+                                    hook.event,
+                                    hook.description.as_deref().unwrap_or(""),
+                                    if hook.is_deprecated() {
+                                        lang.text(" · deprecated")
+                                    } else {
+                                        ""
+                                    }
+                                )
+                            })
+                            .unwrap_or_else(|| item.name.clone())
+                    };
                     file(
                         lang,
                         index,
@@ -213,6 +216,7 @@ fn file<'a>(
                 "new" | "not installed" => theme.palette().primary,
                 "modified" => theme.palette().warning,
                 "installed" | "managed" => theme.palette().success,
+                "blocked" => theme.palette().danger,
                 _ => styles::muted(theme).color.unwrap_or(theme.palette().text),
             });
             style

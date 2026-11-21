@@ -75,9 +75,8 @@ impl App {
         self.complete_install_setup()
     }
 
-    pub fn remove_selected(&mut self) -> Result<()> {
-        // Build remove queue
-        let indices: Vec<usize> = if self.tab == Tab::McpServers {
+    pub(crate) fn removal_selection(&self) -> Vec<usize> {
+        if self.tab == Tab::McpServers {
             self.visible_mcp_servers()
                 .into_iter()
                 .filter(|(_, m)| m.selected)
@@ -92,10 +91,14 @@ impl App {
         } else {
             self.visible_components()
                 .into_iter()
-                .filter(|(_, c)| c.selected)
+                .filter(|(_, c)| c.selected && c.is_remove_eligible())
                 .map(|(i, _)| i)
                 .collect()
-        };
+        }
+    }
+
+    pub fn remove_selected(&mut self) -> Result<()> {
+        let indices = self.removal_selection();
 
         if indices.is_empty() {
             self.status_message = Some("No items selected".to_string());
@@ -239,6 +242,7 @@ impl App {
     /// data are untouched, so we skip both.
     pub fn apply_components_refresh(&mut self, components: Vec<Component>) {
         self.components = components;
+        self.refresh_settings_defaults();
         self.rebuild_tree_views();
         self.reset_visible_list_cursors();
         self.finish_refresh_status();
@@ -317,6 +321,49 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn component_refresh_reloads_default_labels_from_settings() -> Result<()> {
+        let fixture = tempfile::tempdir()?;
+        let mut app = super::super::test_support::fresh_app();
+        app.dest_dir = fixture.path().to_owned();
+        let path = app.dest_dir.join("settings.json");
+        std::fs::write(
+            &path,
+            br#"{"outputStyle":"my-style","statusLine":{"command":"./statusline_linux"}}"#,
+        )?;
+        app.apply_components_refresh(Vec::new());
+        assert_eq!(app.current_output_style.as_deref(), Some("my-style"));
+        assert_eq!(app.current_statusline.as_deref(), Some("statusline_linux"));
+
+        std::fs::write(path, b"{}")?;
+        app.apply_components_refresh(Vec::new());
+        assert!(app.current_output_style.is_none());
+        assert!(app.current_statusline.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn config_removal_queues_only_removable_files() {
+        use crate::component::{ComponentType, InstallStatus};
+
+        let mut app = super::super::test_support::fresh_app();
+        app.tab = Tab::Config;
+        app.components = ["settings.json", "CLAUDE.md"]
+            .map(|name| {
+                Component::new(
+                    ComponentType::ConfigFile,
+                    name.into(),
+                    name.into(),
+                    name.into(),
+                    InstallStatus::Managed,
+                )
+            })
+            .into();
+        app.remove_selected().unwrap();
+        assert_eq!(app.processing_queue, vec![1]);
+        assert_eq!(app.current_view, View::Installing);
+    }
 
     #[test]
     fn codex_batch_skips_installed_entries_before_prompting() {
