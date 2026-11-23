@@ -50,6 +50,12 @@ Use existing data in the setup when the test must detect data loss. Inject failu
 
 Derive expectations from the contract. Do not assume rollback, automatic retry, idempotency, or that a timeout means nothing was committed. If the required behavior is undefined, surface that decision before encoding an expectation. Apply the coverage tier and the exceptions in When a Test Is Impractical.
 
+### Shared response handling
+
+When a change adds or tightens a success check in shared code, trace which existing paths reach the check and which provider or legacy implementation produces each materially different response. Read the producer and serialization code or a contract test to verify the response shape. A client type or a fixture with every field populated can hide a valid null, empty, or omitted field.
+
+Test the smallest set of production-valid response variants the new check could reject. For example, a polling path can require a transaction ID while an existing synchronous path can succeed without one. Assert that the synchronous path still reports success and that polling with no ID follows its failure contract.
+
 ## Test Type Matrix
 
 | Type | Scope | Speed | Tools |

@@ -50,7 +50,7 @@ rejections are as useful as approvals.
 - **Both twins**: every file has an English original and a `-ko.md` twin, and only the English one installs. KO twins therefore must never reference `-ko` asset paths.
 - **One source of truth**: detailed policy lives in one skill; `CLAUDE.md` / `AGENTS.md` carry a single pointer line. Duplicating detail across both is the failure mode to avoid.
 - **Codex sees only skills and `AGENTS.md`**: a method that Codex users need belongs in a skill, not in a command, because commands install for Claude only. Reference skills by name in `AGENTS.md`, never by slash-command syntax.
-- **A `/learn` artifact still needs its twin**: `/learn` already writes a promotable `skills/<name>/SKILL.md` with frontmatter into the installed tree, but the distributed copy lives at `src/skills/<name>/` and requires the `-ko.md` twin.
+- **An approved skill improvement needs its twin**: `skill-improvement` proposes changes for review. A change approved for distribution belongs under `src/skills/<name>/` with its `-ko.md` twin.
 - Commit hygiene per the `commit-rules` skill.
 
 ## 5. Ask before anything leaves the machine

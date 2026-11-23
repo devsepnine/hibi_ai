@@ -27,6 +27,14 @@ Before handing off or publishing a written deliverable, review the draft as the 
 - **Concision.** Cut repetition and filler so the main point is easy to find.
 - **Naturalness.** Read the draft through in the artifact's language and smooth awkward or formulaic phrasing.
 
+### Make Slack updates easy to scan
+
+Use short paragraphs with a blank line between distinct points. In a technical update, give each event or behavior its own paragraph. Keep a condition or exception with the behavior it qualifies. Use bullets when readers need to scan or compare parallel items.
+
+Use plain text for field names and literal values in short Slack replies. Reserve backticks for commands, code snippets, or values whose exact syntax needs to stand out. Use bold sparingly to highlight a decision or action.
+
+When asked where a value comes from, lead with the source. If the code reads an API response, give the HTTP method and path, then state how it selects each requested field and when it returns a fallback. Include other flows only when they help answer the question.
+
 ## Artifact language
 
 Write artifact titles, headings, prose, and checklist text in the conversation's language by default. If the user explicitly requests a language for an artifact, use that language instead. Apply this to commit messages, PR titles and bodies, review comments, QA handoffs, reports, release notes, and saved documents.

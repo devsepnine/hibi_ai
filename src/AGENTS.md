@@ -105,10 +105,8 @@ Before marking work complete:
 
 ## 11. Self-improvement loop
 
-- Record recurring mistakes as patterns in `MEMORY.md`, or a project retro doc.
-- Prevent the same mistake structurally first, using lint, a hook, a type, a test, or a script check; add a prose rule only for judgment calls, and apply it immediately.
-- Review relevant lessons at session start to avoid repeating errors.
-- When a lesson generalizes past this project, propose promoting it into the distributed config and follow the `pull-request` skill once the user agrees; keep personal ones in `MEMORY.md`.
+- Review relevant lessons at session start.
+- After completing and verifying all requested work, use `skill-improvement` before the final report if you received a correction or follow-up request or found a workflow gap. Include a proposal only when the skill's criteria are met.
 
 ## 12. Assurance level and traceability, DO-178C
 
@@ -126,7 +124,7 @@ Before marking work complete:
 
 - **Thinking step**: reason in English for more precise reasoning
 - **Output**: respond in Korean, user readability first
-- **Artifacts**: use the conversation's language by default and an explicitly requested language when given. Follow `technical-writing` → Artifact language for commit messages, PRs, QA handoffs, reports, and documents.
+- **Artifacts**: Load `technical-writing` before drafting or editing commit messages, PR titles and descriptions, code reviews, QA handoffs, implementation tickets, release notes, or engineering docs and reports. Apply the skill's language and writing rules. Review the draft before sharing or publishing it, and preserve the repository's required format.
 - **Code, commands, technical terms**: keep in original, English
 - **Error message quotes**: keep verbatim
 

@@ -11,7 +11,7 @@ knows the product, not the codebase.
 
 ## Why this shape
 
-Use `technical-writing` → Artifact language for the document title, headings, summary, and QA checklist. Default to the conversation's language and honor an explicitly requested language.
+Load `technical-writing` before drafting or editing a QA handoff. Apply its language and writing rules to the whole draft, including any surrounding ticket text you edit. Before sharing or saving the draft, check that QA can follow each test from setup to expected result.
 
 QA loses time on two failures: not knowing which changes are observable, and
 not knowing how to reproduce them. Compare the previous and current behavior,

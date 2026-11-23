@@ -16,7 +16,7 @@ hibi_ai/
 ├── src/                    # 배포되는 설정 원본 (Git 관리)
 │   ├── agents/             # 에이전트 정의 8개 (+ -ko 미러)
 │   ├── commands/           # 슬래시 커맨드 28개 (+ -ko 미러)
-│   ├── skills/             # 스킬 30개 (+ 각 SKILL-ko.md)
+│   ├── skills/             # 스킬 31개 (+ 각 SKILL-ko.md)
 │   ├── hooks/              # 라이프사이클 훅 5개 — 전부 deprecated
 │   ├── mcps/mcps.yaml      # MCP 서버 정의 10개
 │   ├── plugins/plugins.yaml# 플러그인 마켓플레이스 4개 / 플러그인 28개
@@ -88,13 +88,13 @@ hibi_ai/
 | `/qa-handoff` | git 이력 → 비개발자용 QA 인수 문서 |
 | `/feature-map` | 증상→코드 기능맵 `docs/FEATURES.md` 작성·갱신 |
 | `/eval` | eval 정의·pass@k 측정·회귀 리포트 |
-| `/learn` | 세션 패턴을 검사, 기존 스킬 수정, 새 스킬 순으로 라우팅해 저장 |
+| `/learn` | 완료한 작업을 돌아보고 재사용할 만한 검사나 스킬 개선을 제안 |
 | `/upstream-pr` | 세션에서 얻은 개선을 상류 PR로 승격 |
 | `/update-docs` | 문서 현행화 |
 | `/update-codemaps` | 아키텍처 코드맵 생성 |
 | `/checkpoint` | 워크플로 체크포인트 저장·검증, 재개 노트를 남기는 일시정지와 재개, 장시간 무인 실행 규칙, `/perf`와 같이 쓰는 결정 로그 형식 |
 
-### 스킬 30개
+### 스킬 31개
 
 트리거될 때만 로드된다. 설명은 스킬 목록 문자 예산인 200K 윈도우 기준 8,000자를 공유하므로 각 `description`을 220자 이하로 유지한다. 예산을 넘으면 초과한 스킬의 설명이 **통째로** 사라져 자동 트리거가 불가능해진다. 예산에 계상되는 값은 `description` 합계가 아니라 목록 항목 합계이고, 스킬명 + 4 + `description`에 항목 구분자를 포함한다. 현재값은 `python3 src/skills/eval-harness/scripts/skill_budget.py src/skills` 로 측정한다.
 
@@ -118,6 +118,7 @@ hibi_ai/
 | 스킬 | 용도 |
 |---|---|
 | `qa-handoff` | git 이력을 QA 인수 문서로 |
+| `skill-improvement` | 작업 완료 후 지적과 후속 요청을 검토하고 재사용할 수 있는 개선안을 제안 |
 | `feature-map` | 화면 위치·사용자 표현·UI 문구로 코드를 찾는 기능맵 |
 | `blast-radius` | 머지 전 파급 범위 검증, 안전 근거를 증거 사다리로 증명 |
 | `why` | 설계 의도 추적: 코드가 왜 이런 모양인지 git·PR·티켓·문서에서 찾고 주장마다 신뢰 등급 표시 |

@@ -55,7 +55,7 @@ Extract it, do not invent it:
 **Commit Message Rules:**
 - Keep title under 50 characters and concise
 - Body should specifically explain changes and reasons
-- Use `technical-writing` → Artifact language for the title and body: default to the conversation's language and honor an explicitly requested language.
+- Load `technical-writing` before drafting or editing a commit message. Apply its language and writing rules to the title and body. Review both before returning the message or creating an authorized commit.
 - Prohibit emojis and unnecessary verbose language
 - Write clear explanations that reveal intent
 - Remove Claude Code generation markers

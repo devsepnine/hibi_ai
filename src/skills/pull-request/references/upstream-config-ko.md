@@ -47,7 +47,7 @@ output style에 대한 교정도 스킬만큼 업스트림 가치가 있다. Cla
 - **쌍을 맞춘다**: 모든 파일은 영문 원본과 `-ko.md` 쌍을 갖고, 설치되는 것은 영문뿐이다. 따라서 KO 쌍이 `-ko` asset 경로를 참조하면 안 된다.
 - **단일 출처**: 상세 정책은 스킬 한 곳에만 두고, `CLAUDE.md`/`AGENTS.md` 에는 그것을 가리키는 한 줄만 넣는다. 양쪽에 상세를 중복하는 것이 피해야 할 실패 모드다.
 - **Codex는 skills와 `AGENTS.md` 만 받는다**: Codex 사용자에게 필요한 방법론은 커맨드가 아니라 스킬에 둔다. 커맨드는 Claude 대상만 설치되기 때문이다. `AGENTS.md` 에서는 스킬을 이름으로 참조하고 슬래시 커맨드 문법을 쓰지 않는다.
-- **`/learn` 산출물에는 쌍이 더 필요하다**: `/learn` 은 이미 frontmatter를 갖춘 `skills/<name>/SKILL.md` 를 설치 트리에 쓴다. 다만 배포본은 `src/skills/<name>/` 에 있고 `-ko.md` 쌍이 필요하다.
+- **배포할 스킬 개선에는 한국어 미러가 필요하다**. `skill-improvement`는 검토할 개선안을 제안한다. 배포하기로 한 변경은 `src/skills/<name>/`에 `-ko.md` 쌍과 함께 둔다.
 - 커밋 위생은 `commit-rules` skill을 따른다.
 
 ## 5. 무엇이든 밖으로 나가기 전에 묻는다
