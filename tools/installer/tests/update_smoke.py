@@ -113,13 +113,18 @@ def smoke(installer, work):
 def launch_and_observe(exe):
     home = pathlib.Path(os.environ["HIBI_TEST_UPDATE_DIR"]) / "home"
     env = dict(os.environ, HOME=home, XDG_CONFIG_HOME=home)
+    platform = os.uname().sysname
+    if platform != "Darwin":
+        # xwininfo observes DISPLAY, which can differ from the parent Wayland session.
+        env.pop("WAYLAND_DISPLAY", None)
+        env.pop("WAYLAND_SOCKET", None)
     app = subprocess.Popen([exe], cwd=home, env=env, start_new_session=True)
     try:
         deadline = time.monotonic() + 25
         while time.monotonic() < deadline:
             if app.poll() is not None:
                 raise RuntimeError(f"Updated GUI exited with status {app.returncode}")
-            if os.uname().sysname == "Darwin":
+            if platform == "Darwin":
                 # Query only the process we launched through NSWorkspace.
                 script = ("ObjC.import('AppKit'); "
                           f"var app = $.NSRunningApplication.runningApplicationWithProcessIdentifier({app.pid}); "
