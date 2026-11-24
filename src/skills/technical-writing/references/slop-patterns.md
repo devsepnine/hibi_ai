@@ -4,7 +4,11 @@ Scan for these, then rewrite. Preserve the meaning and the intended tone. The nu
 
 ## Reader clarity
 
-Look for the work the sentence leaves to the reader. A familiar technical term or a long sentence is not a defect by itself.
+Look for the work the sentence leaves to the reader. This follows the reader's perspective in Joseph M. Williams and Joseph Bizup's *Style: The Basics of Clarity and Grace*.
+
+ASD-STE100 Issue 9, sections 5 and 6, gives English technical authors limits of 20 words for a procedural sentence and 25 for a descriptive sentence. In Korean, split where a thought ends and keep a cause, condition, or simultaneous action with what it explains. If the facts are clear, keep the sentence. [ASD-STE100 Issue 9](https://www.asd-ste100.org/assets/files/ASD-STE100_ISSUE9.pdf)
+
+In Korean, replace phrases such as "~에 있어서" or "~하는 것이 중요하다" with the verb that says what happens. Keep a necessary technical term and explain it once. Keep related sentences in the same paragraph.
 
 ### Hidden actors and actions
 
@@ -47,7 +51,7 @@ Find the result, decision, request, or next step the reader needs. Put it before
 
 ## Style
 
-- **13. Dashes and parentheses.** Banned in prose. End the sentence or use a comma. `tools/lint-prose.py` enforces it.
+- **13. Dashes and parentheses.** Banned in prose. End the sentence or use a comma.
 - **14. Colon overuse.** A colon is fine before a list or an example and after a label. It is not a mid-sentence connector.
 - **15. Boldface overuse.** Do not bold every proper noun or acronym.
 - **16. Inline-header lists.** A bold label whose line restates it, as in "**Performance**: performance improved". Convert to prose. A label followed by genuinely new detail is fine.

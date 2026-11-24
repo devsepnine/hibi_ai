@@ -5,14 +5,14 @@
       "id": 1,
       "name": "fan-out-then-synthesize",
       "prompt": "주문 생성 요청이 들어와서 결제까지 어떻게 동작하는지 전체 흐름 파악 좀 해줘. 다음 주에 이 부분 고쳐야 해.",
-      "expected_output": "The assistant restates the question, judges it complex, and collects the entry points such as the order route before fanning out. It launches 2 to 4 Explore agents in a single message, one per slice such as the request path, the billing call, and persistence, each given the explorer prompt. The answer uses Overview, Key Concepts, How It Works, Where Things Live, and Gotchas in that order, writes How It Works as the real call chain with file:line or path → symbol for each step, and cites a file for every claim.",
+      "expected_output": "The assistant identifies the requested order-to-payment flow and collects entry points such as the order route before fanning out. It launches 2 to 4 Explore agents in a single message, one per slice such as the request path, the billing call, and persistence, each given the explorer prompt. The walkthrough covers Overview, Key Concepts, How It Works, and Where Things Live in that order. Gotchas covers concrete surprises or unresolved questions when present. Each claim and call-chain step cites the implementation.",
       "files": []
     },
     {
       "id": 2,
       "name": "simple-path-no-fan-out",
       "prompt": "How does the debounce helper in src/utils/debounce.ts work?",
-      "expected_output": "Because the question covers one small utility, the assistant reads the file itself and launches no explorers. The answer still uses the fixed sections, dropping Gotchas only if nothing is worth calling out, and every claim about timers, cancellation, or trailing calls cites a line in src/utils/debounce.ts.",
+      "expected_output": "The assistant reads the helper directly and gives a short, cited explanation of the behavior and relevant conditions. Claims about timers, cancellation, or trailing calls must follow from the implementation. A single function needs no subsystem outline or explorer.",
       "files": []
     },
     {

@@ -4,6 +4,7 @@ Defines always-on workflow and decision-making procedures. Detailed, situational
 
 ## Pre-work checklist
 
+- Apply the writing skill imported below on every turn, including short answers, progress updates, and every document you draft or edit. Use other task skills alongside it and honor the requested output format. If the body is missing from context, load `technical-writing` before drafting.
 - **Identify current state**: run `git status` to surface existing changes
 - **Understand file structure**: read related code and dependencies
 - **Stay in scope**: do not change anything outside the requested area
@@ -12,6 +13,8 @@ Defines always-on workflow and decision-making procedures. Detailed, situational
 - **Prefer saved runs**: when connected, prefer matching saved configurations and session tools over direct shell execution. Follow the `verification-loop` skill's execution setup for selection, permissions, fallback, and result checks.
 
 ## CRITICAL: Thinking and response language policy
+
+@skills/technical-writing/SKILL.md
 
 - **Thinking step**: reason in English for more precise reasoning
 - **Output**: respond in Korean, user readability first
@@ -96,7 +99,7 @@ Per the Anthropic Opus 5 guide.
 **Model selection**: Haiku 4.5 for frequent lightweight workers; Sonnet 5 for main dev/tool-heavy work; Opus 5 for deep reasoning and long agent tasks of 30min+; Fable 5 only when explicitly chosen for the hardest frontier work, not the default upgrade path.
 
 **Tool usage at low effort**: combine calls, use fewer of them, act directly → terse confirmation.
-**Tool usage at high effort**: explain the plan before acting, more calls, detailed summaries.
+At high effort, plan and investigate as deeply as the task requires. Keep the response focused on what the reader needs.
 
 ## Agent routing
 
@@ -118,6 +121,8 @@ Agents are isolated workers with their own context window and scoped tools. Use 
 **Multi-perspective analysis**: for complex problems, split into focused subagents, such as factual / senior-engineer / security / consistency / redundancy, one scope each.
 
 ## Completion report format
+
+For completed implementation work, cover the items below. Use `technical-writing` to fit them to the reader's question. A short paragraph can carry the change, reason, and evidence together.
 
 1. **What changed**: file paths with line numbers
 2. **Why it changed**: rationale
@@ -181,7 +186,7 @@ Each policy has ONE source of truth, following DRY. Detailed policies are **Skil
 | Coding style / clean code | `coding-standards` skill | trigger on code review/writing |
 | Project architecture rules: layers, import direction, placement | `architecture-rules` skill | `/architecture-rules` or trigger on documenting a codebase's rules; whether a coupling is healthy stays in `dependency-design` |
 | Pre-merge blast radius of a diff | `blast-radius` skill | `/blast-radius` or trigger on what a change could break; design-time coupling stays in `dependency-design` |
-| Prose style: docs, no dashes or parentheses | `technical-writing` skill | trigger on writing or reviewing docs; `python tools/lint-prose.py` enforces the punctuation |
+| Replies and documents | `technical-writing` skill | Every turn, as specified in the pre-work checklist. |
 | Dependency / coupling design | `dependency-design` skill | `/deps` or trigger on module/coupling/dependency/monorepo design |
 | Build & type errors | `verification-loop` skill | `/verify`, `/build-fix` |
 | Assurance level / traceability for safety-critical work | `do-178c` skill | `/do-178c` or trigger on safety-critical / high-blast-radius / assurance-level / traceability work |

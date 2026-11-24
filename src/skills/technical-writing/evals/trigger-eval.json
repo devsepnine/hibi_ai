@@ -1,5 +1,13 @@
 [
   {
+    "query": "17과 25를 더하면 얼마야? 숫자만 답해줘.",
+    "should_trigger": true
+  },
+  {
+    "query": "운영 배포는 승인 대기 중이고 스테이징 배포는 끝났어. 지금 상태가 어때?",
+    "should_trigger": true
+  },
+  {
     "query": "이 README 너무 AI가 쓴 티가 나. 문체 좀 다듬어서 사람이 쓴 것처럼 고쳐줘.",
     "should_trigger": true
   },
@@ -17,14 +25,14 @@
   },
   {
     "query": "이 PR에 달린 리뷰 코멘트들 triage해서 반영할 것만 골라줘.",
-    "should_trigger": false
+    "should_trigger": true
   },
   {
     "query": "parseDate()에 왜 UTC로 강제 변환하는지 설명하는 주석 하나 달아줘.",
-    "should_trigger": false
+    "should_trigger": true
   },
   {
     "query": "빌드가 tsc 타입 에러로 깨졌어. 고쳐줘.",
-    "should_trigger": false
+    "should_trigger": true
   }
 ]

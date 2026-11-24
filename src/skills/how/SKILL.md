@@ -11,7 +11,7 @@ This skill answers how. For what forces shaped the code, use `why`. For a single
 
 ## Step 1. Pin the question and its size
 
-Restate the question in one line. If the scope is ambiguous, state your reading so the user can redirect, and proceed.
+If the scope is ambiguous, state your reading in one line so the user can redirect. For a clear question, go straight to the relevant code.
 
 - **Simple**: one module, one utility, or a narrow question such as how function X works. Read the code yourself and go to Step 4.
 - **Complex**: a subsystem across several files or services, a cross-cutting feature, or a full architectural overview. Go to Step 2.
@@ -41,7 +41,9 @@ Keep gaps visible. An open question from an explorer goes into Gotchas or the en
 
 ## Output
 
-Use these sections in this order. Drop Gotchas when there is nothing worth calling out; keep the rest.
+For a narrow question about one function, give the behavior and the condition that determines it in a short paragraph. Cite the implementation. Include any uncertainty that affects the answer.
+
+For a subsystem walkthrough, use the following sections in order. Include Gotchas when there is a concrete surprise or open question.
 
 ```
 Overview:           <one or two paragraphs: what this is, what it does, why it exists>

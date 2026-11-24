@@ -23,6 +23,7 @@
 ### `response-language`: 응답과 산출물 언어, 출력 서식
 
 - **위치**: 모든 대화 응답과 작성하는 산출물
+- 글쓰기 스킬을 항상 적용하려면 `technical-writing`과 해당 CLI의 상시 지침을 함께 설치한다. Codex는 `AGENTS.md`에 따라 매 턴 스킬을 열고, Claude는 `CLAUDE.md`의 상대 경로 import로 본문을 불러온다. 짧은 답변, 진행 안내, 문서 작성과 수정에 같은 지침을 적용한다.
 - **별칭**: 영어로 답함, 한국어 응답, 응답 언어, 산출물 언어, PR 언어, QA 인수인계 언어, 출력 스타일, 서식
 - **산출물 언어**: 커밋 메시지, PR 제목과 본문, 리뷰 코멘트, QA 인수인계, 보고서, 릴리즈 노트, 문서는 대화 언어를 기본으로 한다. 사용자가 산출물 언어를 명시하면 해당 언어를 우선한다. 제목과 체크리스트도 같은 기준이며 코드, 식별자, 자동 검증용 고정 라벨과 원문 인용은 유지한다. 템플릿이나 이전 산출물의 언어를 기본값으로 삼지 않는다
 - **UI 문구**: `"Default response language: Korean"`, `"respond in Korean, user readability first"`
@@ -97,6 +98,7 @@
   - 데이터: 각 스킬의 frontmatter `description`, 위치는 `component-lookup`
   - 측정: `src/skills/eval-harness/scripts/skill_budget.py` → `BUDGET_PERCENT`, 트리거 측정은 `src/skills/eval-harness/scripts/trigger_eval.py` 가 중첩 `claude -p` 를 띄워 Skill 호출을 본다
   - 평가셋: 스킬별 evals 디렉터리의 trigger-eval.json, 예 `src/skills/feature-map/evals/trigger-eval.json`
+- 글쓰기 스킬의 상시 적용을 확인할 때는 Codex의 파일 읽기 기록과 Claude의 모델 입력을 검사한다. Claude는 import만으로 본문을 받을 수 있다. `technical-writing/evals/trigger-eval.json`은 상시 지침 없이 스킬 설명만으로 호출되는지 따로 조사할 때 쓴다. 이때 번역 요청도 적용 대상이므로 음성 대조군은 스킬 사용을 명시적으로 생략해 달라는 요청으로 지정한다.
 - **테스트**: `src/skills/feature-map/evals/trigger-eval.json`, `src/skills/technical-writing/evals/trigger-eval.json`, `src/skills/pull-request/evals/trigger-eval.json`
 - **함정**: 특정 스킬이 전혀 트리거되지 않음 → 목록 전체가 문자 예산을 넘으면 넘친 스킬은 이름만 남고 description 이 통째로 빠진다, 근거: `src/skills/eval-harness/scripts/skill_budget.py` → `BUDGET_PERCENT`
 - **함정**: description 을 고쳤는데 트리거 평가 결과가 그대로 → 평가는 ~/.claude/skills 의 설치본을 읽으므로 먼저 설치해야 한다, 근거: `src/skills/eval-harness/SKILL.md` → `installed`

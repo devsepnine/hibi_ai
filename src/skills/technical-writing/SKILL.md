@@ -1,110 +1,38 @@
 ---
 name: technical-writing
-description: "Write and edit docs, tickets, reports, handoffs, explanations, skills, and agent updates. Preserve meaning and intent, put the point first, and apply Diátaxis. 기술 문서 작성·퇴고, AI 문체 제거."
+description: "Apply to every reply and every document you draft or edit. Give a direct answer to a narrow question. Organize longer deliverables around what the reader needs to decide, do, or understand. 모든 응답과 문서 작성·퇴고."
 ---
 
 # Technical Writing
 
-Clarity is a responsibility to the reader. Following Joseph M. Williams and Joseph Bizup's approach in *Style: The Basics of Clarity and Grace*, make an idea no harder to understand than it needs to be. Apply this standard to AI prose in documents, reports, engineering explanations, and progress updates. The goal is writing that a tired reader understands on the first read.
+Choose the form by what the reader needs. A long message can call for a one sentence answer. A short request can call for a report that others will read on its own. Follow the user's requested length and format.
 
-This skill owns how prose reads. Other skills own what a document must contain: `pull-request` for PR bodies, `commit-rules` for commit messages, `qa-handoff` and `obsidian-notes` for their templates. Apply this skill on top of them.
+## Short answers
 
-Three rules sit above the rest:
+For a fact, status, next action, or single line of copy, start with the answer itself. When asked why, give the reason in that first sentence. Include a condition when the available facts establish it and it changes the answer. If a missing fact would change the answer, say what you need to know. Stop there. Skip routine announcements, headings, and closing summaries.
 
-- **Cut every word that does no work.** "In order to" is "to". "It is important to note that" is nothing.
-- **Use the short, everyday word.** "Use", not "utilize". "Help", not "facilitate".
-- **When a rule makes a sentence worse, fix the sentence another way.** The rules serve the reader. A sentence that obeys every rule and reads like a machine wrote it has failed.
+A teammate asks, "Can customers use it now?" If production approval is pending, answer "Not yet. Production deployment is waiting for approval." Mention staging only if it gives the reader somewhere to try it.
 
-Write the real symbol, file, flag, or command name, not a synonym or a description of it.
+## Longer deliverables
 
-## Revise written deliverables before sharing
+Write for the person who will use the document. Give them just enough context to understand the opening even if they missed the conversation. Start a proposal with the decision requested, a research report with the finding and its scope, and an architecture explanation with the path the reader wants to follow.
 
-Before handing off or publishing a written deliverable, review the draft as the intended reader. For a new draft, check it against the request and evidence. When revising existing text, preserve the author's core meaning and intent. Keep facts, requirements, commitments, and uncertainty intact. Rewrite expressions and restructure sentences or paragraphs when that improves the text without changing its meaning.
+Group the supporting material by the questions that reader will bring back to the document. Use [layouts by reader question](references/report-layouts.md) for genre examples and Diátaxis guidance. Use prose for a single reason, a table for options compared on shared criteria, numbered steps for a sequence, and a diagram when branching paths are hard to follow in text.
 
-- **Clarity.** Resolve ambiguous references and remove redundant wording.
-- **Readability.** Split overloaded sentences and give each paragraph a clear purpose.
-- **Logical flow.** Connect sentences and paragraphs in the order the reader needs. Keep conditions with the claims they qualify.
-- **Concision.** Cut repetition and filler so the main point is easy to find.
-- **Naturalness.** Read the draft through in the artifact's language and smooth awkward or formulaic phrasing.
+Keep evidence beside the claim it supports. Explain which criterion turns the observation into a decision. If the reader needs to distinguish **Conclusion**, **Evidence**, and **What to check** at a glance, use those labels. Include an open question when its answer could change the decision. Keep the required fields of any requested template, including PRs, commits, QA handoffs, and notes.
+
+Before sharing, scan the headings and opening sentences for the answer and its basis. Then compare the ends of related rows or bullets. If they repeat a condition, explain it once where it applies to all of them. Keep each distinct result, action, and exception. Preserve facts, promises, and uncertainty when editing.
+
+When you save the document, link to it in a short reply. Give the main takeaway and any verification the user needs. Leave the detailed findings in the document.
+
+## Sentence clarity
+
+Give each idea a natural sentence and keep its condition or cause attached. In instructions, place a prerequisite before the action and keep simultaneous actions together. Name the actor when known and use one term per concept. For a draft that still reads awkwardly, consult the [sentence revision examples](references/slop-patterns.md).
 
 ## Artifact language
 
-Write artifact titles, headings, prose, and checklist text in the conversation's language by default. If the user explicitly requests a language for an artifact, use that language instead. Apply this to commit messages, PR titles and bodies, review comments, QA handoffs, reports, release notes, and saved documents.
-
-The language of a template, example, or previous artifact does not choose the output language. Preserve code, commands, paths, identifiers, schema keys, labels required by automated checks, and verbatim quotations. Translate other headings and labels into the artifact's language. This policy applies to artifact contents even when surrounding replies use a different language.
+Use the conversation's language for titles, headings, prose, and checklists. An explicit language request for the artifact takes precedence. Preserve code, commands, paths, identifiers, schema keys, required labels, and verbatim quotations. Translate discretionary template labels.
 
 ## Punctuation: no dashes, no parentheses
 
-Prose uses no em dash, no en dash, no hyphen standing in for a dash, and no parentheses. End the sentence, or join with a comma. A colon is fine before a list or an example, and after a label as in "**Label**: text". It is not a drop-in for a dash.
-
-| Instead of | Write |
-|---|---|
-| `X — Y` | `X. Y` or `X, Y` |
-| `X (aside) Y` | fold the aside into the sentence, give it its own sentence, or cut it |
-| `MC/DC (modified condition/decision coverage)` | `MC/DC, short for modified condition/decision coverage` |
-| `50–100ms` | `50 to 100ms` |
-
-Code, inline code, link targets, wikilinks, and frontmatter keys are syntax and stay as they are. Do not wrap ordinary prose in backticks to get around the rule. A `description:` value that contains `: ` must be quoted, or YAML rejects it.
-
-The rule is enforced, not remembered: run `python tools/lint-prose.py [paths]` before reporting done. It exits 1 and prints `file:line` for each violation.
-
-## Pick the mode first: Diátaxis
-
-One document, one mode. Two questions pick it. Does the content inform action or understanding? Does it serve learning or work?
-
-- **Tutorial**, action plus learning. Every step produces a visible result. Tell the reader what they should see.
-- **How-to**, action plus work. Solve a problem the reader has. Assume competence, skip teaching, allow forks: "If you want x, do y."
-- **Reference**, understanding plus work. Describe and only describe. Mirror the structure of the thing described.
-- **Explanation**, understanding plus learning. One bounded topic, anchored on a real why question. Opinion belongs here and nowhere else.
-
-Do not mix modes. Split and link instead.
-
-## Write sentences to the reader
-
-- Talk to the reader as "you", in the present tense.
-- Put the condition before the instruction: "To delete the document, click Delete."
-- Put the common case first and exceptions after.
-- One instruction per sentence. Split an instruction past about 20 words.
-- Keep "only" and "not" next to the word they change.
-- Make every "it", "they", and "this" point at one obvious thing. Repeat the noun when in doubt.
-- Call each thing by one name everywhere. Do not reword a sentence that did not change.
-- Headings carry the point, not the topic: "Pick the mode first", not "Modes".
-- Never write "simply", "easy", or "quickly" in a procedure.
-
-## Show the actor, action, and point
-
-- **Put actors in subjects and actions in verbs.** Prefer "the installer compares files" to "file comparison is performed". Unpack nominalizations such as "validation", "execution", and "arrival" when they hide what happens. Keep a passive or a different subject when the actor is unknown, irrelevant, or the reader needs the existing topic first. Never invent an actor to force active voice.
-- **Name things precisely and show their relationships.** Use the names readers and the code use. Replace unclear references and noun chains with explicit relationships. Keep necessary technical terms. If the source leaves a relationship unclear, state what is known and identify the missing meaning rather than inventing it.
-- **Put the reader's main point first.** Lead with the result, decision, requested action, or next step, then give the reason and necessary qualifications. Cut a sentence that adds no fact, instruction, or useful distinction. Preserve uncertainty, conditions, and causal order when moving or shortening text.
-
-Read the [reader clarity examples and review method](references/slop-patterns.md#reader-clarity) when these defects appear. Judge the work needed to understand a sentence, not its length, formality, or presumed author. Do not treat vocabulary checks or punctuation lint as proof of clarity.
-
-## Cut the AI tells
-
-The full catalog with examples is `references/slop-patterns.md`. The ones that show up most:
-
-- **AI vocabulary**: delve, crucial, pivotal, leverage, showcase, underscore, landscape, tapestry, robust, seamless. Use the plain word.
-- **Fancy "is"**: "serves as", "stands as", "boasts". Write "is" or "has".
-- **Abstract metaphor nouns**: substrate, vector, surface, north star, flywheel. Name the concrete thing.
-- **Feeling instead of mechanism**: "types that follow your schema" says nothing. "A column rename fails the build" does. If the sentence could sit unchanged in another project's docs, cut it.
-- **Over-compression**: "bad date → exit 2, no write" makes the reader decode. Write "The parser rejects a bad date, exits with code 2, and writes nothing."
-- **Chatbot and filler phrases**: "I hope this helps", "Great question", "It is worth noting that". Delete them.
-
-## Korean prose
-
-The same rules apply to Korean text, with these additions:
-
-- No dash or parenthesis asides here either. Write `X, 즉 Y` or `X. Y`, and `MC/DC, 곧 modified condition/decision coverage`.
-- Keep one English term per concept and do not gloss it twice. Pick `결합도` or `coupling` for a document and stay with it.
-- Cut translationese: "~하는 것이 중요하다", "~에 있어서", "~를 통해" when a plain verb works.
-
-## Before handing back
-
-- [ ] Reviewed the deliverable for clarity, readability, logical flow, concision, and naturalness without changing the intended meaning
-- [ ] The document is one Diátaxis mode
-- [ ] Every sentence names a mechanism, a fact, or an instruction
-- [ ] Actors, actions, and references are clear without inventing missing facts
-- [ ] The main point comes before supporting detail, with necessary qualifications intact
-- [ ] No pattern from `references/slop-patterns.md`
-- [ ] `python tools/lint-prose.py <changed paths>` prints nothing
-- [ ] EN and `-ko.md` mirrors still say the same thing
+In prose, use a sentence break or a comma for an aside. Omit em dashes, en dashes, hyphens used as dashes, and parentheses. Preserve literal syntax, including links and frontmatter. Check edited Markdown with `tools/lint-prose.py` when the project provides it. Where the project keeps a Korean mirror, verify that both versions carry the same meaning.

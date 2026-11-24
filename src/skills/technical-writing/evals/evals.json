@@ -5,7 +5,7 @@
       "id": 1,
       "name": "unslop-a-readme-section",
       "prompt": "이 README 섹션 AI가 쓴 티가 너무 나. 다듬어줘: \"Our tool serves as a robust, seamless solution — it leverages a powerful engine (built on Rust) to deliver blazing-fast performance, ensuring a delightful developer experience.\"",
-      "expected_output": "The rewrite removes the AI vocabulary (serves as, robust, seamless, leverages, delightful), the em dash, and the parenthesis, and replaces the feeling words with a mechanism or a number, or asks for the missing fact instead of inventing one (no made-up benchmark). The result is plain sentences with no dash or parenthesis, and the assistant runs or recommends `python tools/lint-prose.py` on the changed file.",
+      "expected_output": "The rewrite removes the AI vocabulary (serves as, robust, seamless, leverages, delightful), the em dash, and the parenthesis. It retains the Rust detail without inventing a benchmark. The user supplied a passage in chat, so the reply gives plain sentences without requiring a file or a lint command.",
       "files": []
     },
     {
@@ -55,6 +55,83 @@
       "name": "measure-reader-work-with-sentence-evidence",
       "prompt": "아래 세 문장의 명확성을 검수하고 결함 문장 비율도 알려줘. 도구가 실제로 파일을 비교했다는 사실만 확인됐어. 1. 도구가 파일을 비교했습니다. 2. 비교의 수행이 이루어졌습니다. 3. 그 경계가 이를 가능하게 합니다.",
       "expected_output": "The review accepts sentence 1, identifies the hidden actor and nominalized action in sentence 2, and identifies the unresolved references in sentence 3 without inventing their meanings. It reports 2 defective sentences out of 3 inspected sentences, about 67 percent, and counts each sentence once even if it has several defects. It explains defects with the specific text and reader effort, treats the fraction as this review's judgment rather than a calibrated detector, and makes no claim about AI authorship or general model quality.",
+      "files": []
+    },
+    {
+      "id": 9,
+      "name": "answer-a-status-question",
+      "prompt": "배포됐어? 스테이징 배포는 끝났고 운영 배포는 승인 대기 중이야.",
+      "expected_output": "The first user-visible sentence answers the deployment question. Distinguishes staging completion from pending production approval in a short Korean paragraph. Check every visible message for assumptions about the feature or prerequisites the user did not mention. No skill announcement, report headings, process recap, table, or invented ETA.",
+      "files": []
+    },
+    {
+      "id": 10,
+      "name": "frame-a-proposal-for-a-decision",
+      "prompt": "팀장에게 보낼 기획안을 써줘. 운영자 4명이 매주 CSV 열 이름을 손으로 바꿔. 이번 주에 한 팀에서 열 이름 자동 변환을 시범 적용할지 결정해야 해. 실험 전이라 절감 시간은 몰라.",
+      "expected_output": "Opens with the decision about this week's single-team pilot. Connects the proposal to the operators' manual work. Identifies time saved as unknown and something the pilot could measure. No rollout commitment, invented savings, or empty sections.",
+      "files": []
+    },
+    {
+      "id": 11,
+      "name": "report-research-with-its-limits",
+      "prompt": "팀장에게 공유할 조사 결과를 써줘. 질문은 CSV 열 이름 변환이 보편적인 불편인지야. 인터뷰 기록 A에는 한 팀 운영자 4명 중 3명이 매주 직접 바꾼다고 나와. 다른 팀은 조사하지 않았어.",
+      "expected_output": "Attributes the weekly manual edits by 3 of 4 operators in one team to interview record A. States that the other teams were not surveyed. The record establishes frequency, and does not establish that the three operators found the task inconvenient. Fails if the answer attributes frustration or a complaint to them without evidence. Does not turn the finding into a rollout proposal.",
+      "files": []
+    },
+    {
+      "id": 12,
+      "name": "explain-a-branching-request",
+      "prompt": "새 팀원에게 CSV 가져오기 구조를 설명해줘. API는 파일을 큐에 넣고 워커가 헤더를 검사해. 유효하면 저장소에 저장하고 아니면 오류 큐에 넣어. 재시도 정보는 없어.",
+      "expected_output": "Traces a file from API through queue to worker, then identifies both validation outcomes and their destinations. Chooses legible prose, a small flow, or an ordered walkthrough. Does not invent retries or an implementation plan.",
+      "files": []
+    },
+    {
+      "id": 13,
+      "name": "honor-brief-format-and-simultaneous-actions",
+      "prompt": "안내 문구 한 줄만 써줘. 복구 화면이 열린 상태에서만 동작해. Shift를 누른 채 복원을 클릭해야 해.",
+      "expected_output": "Provides one natural Korean instruction with the required screen condition before the action. Keeps holding Shift simultaneous with clicking Restore. No headings or step list.",
+      "files": []
+    },
+    {
+      "id": 14,
+      "name": "separate-decision-evidence-and-open-question",
+      "prompt": "제품팀이 전체 배포 여부를 논의해. 길지 않게 결론, 근거, 확인할 점만 정리해줘. 사내 파일럿 10건은 모두 성공했어. 외부 계정은 아직 시험한 적이 없어.",
+      "expected_output": "Provides three short, distinct parts in the requested order. Bounds the conclusion to the internal pilot or explains why the full rollout decision is still open. Cites the 10 successful internal cases as evidence. Identifies external account behavior as the material unchecked question. Does not assert readiness or failure for external users, invent causes, or repeat a summary.",
+      "files": []
+    },
+    {
+      "id": 15,
+      "name": "explain-the-deciding-criterion",
+      "prompt": "다음 회의에서 검색 기능 A와 B 중 어느 쪽을 공개할 수 있을지 판단하려고 해. 메모를 정리해줘. A의 응답은 90ms, B는 140ms야. 두 후보 모두 같은 부하에서 시험했어. 공개 전에 키보드 탐색을 지원해야 해. A에서는 실패했고 B에서는 통과했어. 응답 시간에는 합의한 상한이 없어.",
+      "expected_output": "Identifies B as eligible under the stated release criterion. Connects the keyboard requirement directly to A failing and B passing. Preserves both timings, the common load, and the lack of an agreed latency cap. A table is optional. The text around a table should explain the choice without repeating every cell.",
+      "files": []
+    },
+    {
+      "id": 16,
+      "name": "organize-mixed-handoff-notes-by-symptom",
+      "prompt": "아래 메모를 다듬어서 당직 교대 때 읽을 안내를 써줘. 첫 번째 문의는 '다운로드가 안 된다', 두 번째는 '파일 내용이 어제 것'이야. 파일 내용이 어제 것이면 생성 기록에서 마지막 성공 시각을 확인해. 다운로드가 안 되면 링크 만료 시각부터 확인해. 생성 기록이 오늘이면 고객이 받은 파일 이름을 확인해. 링크가 만료됐으면 새 링크를 보내. 생성 기록이 어제면 배치 담당을 호출해. 링크가 유효하면 접근 로그를 확인해.",
+      "expected_output": "Makes each symptom easy to locate and keeps its checks and branches together. For download failure, check the link expiry, send a new link if expired, or inspect access logs if valid. For stale content, check the last successful generation time, then inspect the received filename if today or call the batch owner if yesterday. Preserve the condition and action for every branch.",
+      "files": []
+    },
+    {
+      "id": 17,
+      "name": "extract-the-requested-reason-in-one-sentence",
+      "prompt": "교대 노트에는 스테이징 점검 완료, 공지 초안 작성, 담당자 인계 완료, 고객 안내 대기라고 적혀 있어. 운영 전환 전에는 복원 시험 통과가 필수인데 아직 실행하지 않았어. 지금 운영 전환을 보류하는 이유를 공지에 넣을 한 문장으로 써줘.",
+      "expected_output": "The only user-visible message is one Korean notice sentence. It says production cutover is on hold because the required restore test has not run. Preserves the reason without describing the test as failed. No skill announcement or recap of the other work.",
+      "files": []
+    },
+    {
+      "id": 18,
+      "name": "write-a-standalone-release-decision-report",
+      "prompt": "제품위원회가 다음 주에 검색 기능을 어느 고객군에 공개할지 결정해. 팀 밖에서도 읽을 한국어 보고서를 REPORT.md에 작성해줘. 공개 기준은 검색 성공률 95% 이상이면서 키보드만으로 검색을 끝낼 수 있어야 한다는 거야. 시험 기록 A에서 사내 계정은 100건 중 97건 성공하고 키보드 점검을 통과했어. 협력사 계정은 40건 중 39건 성공했지만 키보드로 결과를 선택하지 못했어. 개인 계정은 시험하지 않았어. 메모에는 응답 속도를 개선했다는 얘기도 있지만 측정값은 없어. 독자가 공개 범위와 그 이유를 찾고, 나머지 고객군을 언제 다시 판단할 수 있는지 알 수 있게 정리해줘.",
+      "expected_output": "The saved REPORT.md gives the recommendation and shared release criteria where an outside reader can find them. It relates those criteria to all three groups and attributes observations to record A. A reader can distinguish the partner retest from the first personal account test without reading the same release rule under each group. It treats speed as unmeasured if mentioned. Verify the saved document. The chat reply points to it and gives the decision without reproducing its findings.",
+      "files": []
+    },
+    {
+      "id": 19,
+      "name": "answer-when-production-status-is-unknown",
+      "prompt": "팀 메모에는 스테이징 배포 완료만 적혀 있어. 이 기록으로 지금 운영 환경에서도 쓸 수 있다고 안내해도 돼?",
+      "expected_output": "Answers that the staging record alone does not establish production availability and names the production status to confirm. Neither the first visible message nor the final answer asserts that production is pending approval, failed, or already live.",
       "files": []
     }
   ]

@@ -108,7 +108,7 @@ hibi_ai/
 | `tdd-workflow` | red/green/refactor, 커버리지 80%+, 단언 강도 |
 | `coding-standards` | TS/JS/React/Node 표준, 타입 안전·경계 파싱, 주석 규칙, 코드 스멜 |
 | `architecture-rules` | 레이어·import 방향·배치 규칙을 코드에서 근거와 함께 도출, 회색 지대 Q&A, lint 초안 |
-| `technical-writing` | 문서당 Diátaxis 모드 하나, 쉬운 직설 문장, AI 문체 삭제 목록, 산문의 대시·괄호 금지 |
+| `technical-writing` | 짧은 문답은 첫 문장에 답하고, 장문 산출물은 독자가 내릴 결정이나 찾을 내용에 맞춰 구성한다. 기술 문서는 목적에 맞는 Diátaxis 형식을 따른다. |
 | `dependency-design` | 단방향 의존성, 책임 격리, 모노레포 구조 |
 | `verification-loop` | 빌드·타입·테스트·보안 검증 루프, 실제 산출물 확인 |
 | `do-178c` | 리스크 티어, 양방향 추적성, 독립 검증 |

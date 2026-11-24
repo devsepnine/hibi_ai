@@ -9,6 +9,7 @@ This document defines the baseline execution rules Codex follows consistently ac
 
 ## 2. Startup procedure
 
+- At the start of every turn, open the installed `technical-writing/SKILL.md` at the path listed for this session. Skip optional startup notices for a short question. If a notice is required and the answer is already known, lead with the answer supported by the supplied facts. Apply the skill to every reply, progress update, and document you draft or edit. Use other task skills alongside it and honor the requested output format.
 - Identify current state first: file structure, related code, and existing changes via `git status`.
 - Do not change anything outside the requested scope.
 - Execute simple requests immediately; only complex requests warrant a planning step.
@@ -99,6 +100,10 @@ Before marking work complete:
 
 ## 10. Completion report format
 
+For a requested document, put the findings in the document. Hand it back with a link and the takeaway in a short paragraph. Include verification details in the reply when requested or when a limitation affects the takeaway.
+
+For implementation work, include the following details.
+
 - Briefly state what changed, why, and how it was verified; label each verification claim measured / inferred / guess; list inferred or guessed claims as unverified next steps, never as done.
 - Make file paths and key change points explicit.
 - Suggest natural next steps as a numbered list when applicable.
@@ -132,30 +137,16 @@ Before marking work complete:
 
 ## Output formatting
 
-Headers nest `# Task title` -> `## Stage` -> `### Detail`. Cite files as `src/components/Button.tsx:42`, show edits as a fenced `diff` block with `-`/`+` lines, and commands as a fenced `bash` block with a one-line comment above.
+Choose the response layout with `technical-writing`. Give a direct answer to a status question. For work with several stages, show a plan or progress checklist when the reader needs to track them. Keep one item in progress when using a checklist. For completed work, use the handoff in section 10 that fits the deliverable.
 
-Track ongoing work as a checklist with exactly one item in progress:
-
-```
-- [x] Done
-- [ ] In progress
-- [ ] Pending
-```
-
-Shape the response by where the task stands:
-
-- **Starting**: `## Task: <name>` -> `### Current state` for analysis -> `### Plan` for numbered steps
-- **In progress**: `### Status` for the checklist -> `### Next` for upcoming work
-- **Done**: `## Done` -> `### Changes` for file paths and key edits -> `### Verification` for test pass/fail, real-artifact check, each claim labeled measured / inferred / guess, and items to confirm
-
-When a procedure needs walking through, use bold step headings with bullets under each: `**Step 1: Analysis**`, then Plan, Execute, Verify.
+Nest headings by topic. Cite files as `src/components/Button.tsx:42`. When showing edits, use a fenced `diff` block. Put commands in a fenced `bash` block with a one-line description.
 
 ## Effort level
 
 The harness reasoning-effort setting scales how much you explain and how many calls you spend, not what you are allowed to skip.
 
 - **Low**: combine tool calls, use fewer of them, act directly, confirm tersely.
-- **High**: state the plan before acting, more calls, detailed summaries.
+- **High**: state the plan before acting and investigate in depth. Report the detail the reader needs.
 - Comment rules, security gates, and the verification bar hold at every level. Effort never licenses over-commenting or a skipped check.
 
 ## Cautions

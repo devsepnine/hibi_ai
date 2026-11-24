@@ -4,6 +4,7 @@ always-on 워크플로우와 의사결정 절차를 정의한다. 상세하고 �
 
 ## Pre-work checklist
 
+- 아래에서 불러오는 글쓰기 스킬을 매 턴 적용한다. 짧은 답변, 진행 안내, 새로 쓰거나 고치는 문서가 모두 대상이다. 작업별 스킬도 함께 쓰고 요청한 출력 형식을 지킨다. 본문이 컨텍스트에 없으면 작성 전에 `technical-writing`을 불러온다.
 - **현재 상태 파악**: `git status`로 기존 변경사항을 드러낸다
 - **파일 구조 이해**: 관련 코드와 의존성을 읽는다
 - **범위 준수**: 요청 범위를 벗어난 것은 바꾸지 않는다
@@ -12,6 +13,8 @@ always-on 워크플로우와 의사결정 절차를 정의한다. 상세하고 �
 - **저장된 실행 우선**: 연결되어 있으면 직접 셸 실행보다 작업에 맞는 저장된 설정과 세션 도구를 우선 사용한다. 설정 선택, 권한, 대체 실행, 결과 확인은 `verification-loop` skill의 실행 준비 절차를 따른다.
 
 ## CRITICAL: Thinking and response language policy
+
+@skills/technical-writing/SKILL.md
 
 - **사고 단계**: 더 정확한 reasoning을 위해 영어로 추론
 - **응답**: 한국어로, 사용자 가독성 우선
@@ -96,7 +99,7 @@ Anthropic Opus 5 가이드 기준.
 **모델 선택**: 빈번한 경량 워커는 Haiku 4.5; 메인 개발·도구 중심 작업은 Sonnet 5; 깊은 추론과 30분 이상 걸리는 장시간 에이전트 작업은 Opus 5; Fable 5는 최고난도 프론티어 작업에 명시적으로 선택할 때만 쓰며 기본 업그레이드 경로가 아니다.
 
 **낮은 effort에서의 도구 사용**: 호출을 결합하고 더 적게 쓰고 직접 행동한다 → 간결한 확인.
-**높은 effort에서의 도구 사용**: 행동 전에 계획을 설명하고, 더 많이 호출하고, 상세히 요약한다.
+높은 effort에서는 작업에 필요한 만큼 계획을 세우고 조사한다. 답변에는 독자가 필요한 내용만 담는다.
 
 ## Agent routing
 
@@ -118,6 +121,8 @@ Anthropic Opus 5 가이드 기준.
 **다관점 분석**: 복잡한 문제는 사실 / 시니어 엔지니어 / 보안 / 일관성 / 중복처럼 초점이 다른 서브에이전트로 쪼개고, 각각 범위 하나씩 맡긴다.
 
 ## Completion report format
+
+구현을 마치면 아래 항목을 담는다. 독자의 질문에 맞는 형식은 `technical-writing`에 따라 고른다. 변경 내용과 이유, 검증 근거는 짧은 문단에 함께 담아도 된다.
 
 1. **변경 사항**: 파일 경로와 라인 번호
 2. **변경 이유**: 근거
@@ -181,7 +186,7 @@ Next:
 | 코딩 스타일 / 클린 코드 | `coding-standards` skill | 코드 리뷰·작성 시 트리거 |
 | 프로젝트 아키텍처 규칙: 레이어, import 방향, 배치 | `architecture-rules` skill | `/architecture-rules` 또는 코드베이스 규칙을 문서화할 때 트리거. 결합이 건강한지는 `dependency-design` |
 | 머지 전 diff의 blast radius | `blast-radius` skill | `/blast-radius` 또는 변경이 무엇을 깨뜨릴지 물을 때 트리거. 설계 시점의 결합도는 `dependency-design` |
-| 문체: 문서, dash·괄호 금지 | `technical-writing` skill | 문서 작성·리뷰 시 트리거. 문장부호는 `python tools/lint-prose.py`가 강제 |
+| 응답과 문서 | `technical-writing` skill | 작업 시작 지침에 따라 매 턴 적용한다. |
 | 의존성 / 결합 설계 | `dependency-design` skill | `/deps` 또는 모듈·결합도·의존성·모노레포 설계 시 트리거 |
 | 빌드 & 타입 에러 | `verification-loop` skill | `/verify`, `/build-fix` |
 | 보증 수준 / 추적성, 안전필수 | `do-178c` skill | `/do-178c` 또는 안전필수·고위험·보증수준·추적성 작업 시 트리거 |
