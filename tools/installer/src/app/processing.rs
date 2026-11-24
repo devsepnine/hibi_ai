@@ -14,6 +14,14 @@ pub(crate) fn needs_cli_preflight(tab: Tab) -> bool {
 }
 
 impl App {
+    pub(crate) fn is_claude_config(&self) -> bool {
+        self.tab == Tab::Config && self.target_cli == Some(crate::target::TargetCli::Claude)
+    }
+
+    fn has_selected_config_items(&self) -> bool {
+        self.is_claude_config() && self.visible_components().iter().any(|(_, c)| c.selected)
+    }
+
     pub fn install_selected(&mut self) -> Result<()> {
         // Build install queue
         let indices: Vec<usize> = if self.tab == Tab::McpServers {
@@ -42,7 +50,9 @@ impl App {
 
         if indices.is_empty() {
             self.status_message = Some(
-                if self.tab == Tab::McpServers
+                if self.has_selected_config_items() {
+                    "Selected configuration items cannot be installed. Check the diff for details."
+                } else if self.tab == Tab::McpServers
                     && self
                         .visible_mcp_servers()
                         .iter()
@@ -97,14 +107,32 @@ impl App {
         }
     }
 
-    pub fn remove_selected(&mut self) -> Result<()> {
-        let indices = self.removal_selection();
-
-        if indices.is_empty() {
-            self.status_message = Some("No items selected".to_string());
-            return Ok(());
+    pub(crate) fn removal_confirmation_count(&mut self) -> usize {
+        let count = self.removal_selection().len();
+        if count == 0 {
+            self.status_message = Some(
+                if self.has_selected_config_items() {
+                    "No selected configuration items can be removed. Check the diff for details."
+                } else {
+                    "Select items in this category to remove."
+                }
+                .into(),
+            );
         }
+        count
+    }
 
+    pub(crate) fn remove_confirmed(&mut self, count: usize) -> Result<()> {
+        let indices = self.removal_selection();
+        anyhow::ensure!(
+            self.current_view == View::List && count > 0 && indices.len() == count,
+            "Selection changed. Review your selection before removing items."
+        );
+        self.start_removal(indices);
+        Ok(())
+    }
+
+    fn start_removal(&mut self, indices: Vec<usize>) {
         self.clear_env_inputs();
         self.processing_complete = false;
         self.processing_queue = indices;
@@ -114,11 +142,10 @@ impl App {
         // the async Preflighting view; component tabs skip it.
         if needs_cli_preflight(self.tab) {
             self.current_view = View::Preflighting;
-            return Ok(());
+            return;
         }
 
         self.complete_remove_setup();
-        Ok(())
     }
 
     /// Finish the install setup after the (optional) preflight has succeeded.
@@ -229,9 +256,6 @@ impl App {
 
     pub fn start_finish_processing(&mut self) {
         self.clear_env_inputs();
-        self.processing_log
-            .push(format!("[INFO] {}", self.processing_summary()));
-        self.processing_log.push("".to_string()); // Empty line for spacing
         self.processing_log.push("Refreshing status...".to_string());
         self.needs_refresh = true;
     }
@@ -245,7 +269,7 @@ impl App {
         self.refresh_settings_defaults();
         self.rebuild_tree_views();
         self.reset_visible_list_cursors();
-        self.finish_refresh_status();
+        self.finish_refresh_status(Ok(()));
     }
 
     /// Swap only the MCP server list. Tree views and other tabs stay as
@@ -253,26 +277,54 @@ impl App {
     pub fn apply_mcp_refresh(&mut self, mcp_servers: Vec<McpServer>) {
         self.mcp_servers = mcp_servers;
         self.reset_visible_list_cursors();
-        self.finish_refresh_status();
+        self.finish_refresh_status(Ok(()));
     }
 
     /// Swap only the plugin list.
     pub fn apply_plugins_refresh(&mut self, plugins: Vec<Plugin>) {
         self.plugins = plugins;
         self.reset_visible_list_cursors();
-        self.finish_refresh_status();
+        self.finish_refresh_status(Ok(()));
     }
 
-    /// Shared "wrap up after refresh" bookkeeping. Each scope-specific
-    /// apply method calls this last so the user-visible status line and
-    /// internal flags stay consistent across scopes.
-    fn finish_refresh_status(&mut self) {
-        self.status_message = Some(self.processing_summary());
-        self.processing_log
-            .push("[OK] Status refresh complete!".to_string());
+    /// Include the refresh outcome in the final error count.
+    pub(crate) fn finish_refresh_status(&mut self, result: Result<()>) {
+        let failed = result.is_err();
+        self.processing_log.push(match result {
+            Ok(()) => "[OK] Status refresh complete!".into(),
+            Err(error) => format!("[ERROR] {error:#}"),
+        });
+        let summary = self.processing_summary();
+        self.processing_log.push(format!("[INFO] {summary}"));
+        self.status_message = Some(if failed {
+            "Operation finished; status refresh failed. Review the log.".into()
+        } else {
+            summary
+        });
         self.needs_refresh = false;
         self.refreshing = false;
         self.processing_complete = true;
+    }
+
+    pub(crate) fn can_cancel_processing(&self) -> bool {
+        matches!(self.current_view, View::Preflighting | View::Installing)
+            && !self.processing_complete
+            && !self.cancelling
+            && !self.needs_refresh
+            && !self.refreshing
+    }
+
+    pub(crate) fn processing_errors(&self) -> usize {
+        self.processing_log
+            .iter()
+            .filter(|line| line.starts_with("[ERR]") || line.starts_with("[ERROR]"))
+            .count()
+    }
+
+    pub(crate) fn processing_cancelled(&self) -> bool {
+        self.processing_log
+            .iter()
+            .any(|line| line == "[WARN] Cancelled by user")
     }
 
     pub(crate) fn processing_summary(&self) -> String {
@@ -281,21 +333,17 @@ impl App {
         } else {
             "Installation"
         };
-        let errors = self
-            .processing_log
-            .iter()
-            .filter(|line| line.starts_with("[ERR]") || line.starts_with("[ERROR]"))
-            .count();
-        let cancelled = self.processing_log.iter().any(|line| {
-            line.contains("Cancelled by user") || line.contains("Cancelling current operation")
-        });
         format!(
             "{} {}: {} of {} items attempted; errors: {}",
             action,
-            if cancelled { "cancelled" } else { "finished" },
+            if self.processing_cancelled() {
+                "cancelled"
+            } else {
+                "finished"
+            },
             self.processing_progress.unwrap_or(0),
             self.processing_total.unwrap_or(0),
-            errors
+            self.processing_errors()
         )
     }
 
@@ -360,7 +408,7 @@ mod tests {
                 )
             })
             .into();
-        app.remove_selected().unwrap();
+        app.remove_confirmed(1).unwrap();
         assert_eq!(app.processing_queue, vec![1]);
         assert_eq!(app.current_view, View::Installing);
     }
@@ -539,7 +587,7 @@ mod search_tests {
                 let mut app = app_with_selected_lists();
                 app.tab = tab;
                 if removing {
-                    app.remove_selected().unwrap();
+                    app.remove_confirmed(1).unwrap();
                 } else {
                     app.install_selected().unwrap();
                 }
@@ -571,7 +619,7 @@ mod search_tests {
             app.tab = tab;
             app.set_search_query("no-match".into());
             app.install_selected().unwrap();
-            app.remove_selected().unwrap();
+            assert_eq!(app.removal_confirmation_count(), 0);
             assert!(app.processing_queue.is_empty());
             assert_eq!(app.current_view, View::List);
         }

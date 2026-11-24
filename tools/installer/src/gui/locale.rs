@@ -311,6 +311,8 @@ catalog! {
     "Dark theme" => "다크 테마", "ダークテーマ";
     "Cancelled" => "취소됨", "キャンセルしました";
     "No items selected" => "선택한 항목이 없습니다", "項目が選択されていません";
+    "No selected configuration items can be removed. Check the diff for details." => "선택한 설정 항목은 제거할 수 없습니다. 차이를 확인하세요.", "選択した設定項目は削除できません。差分を確認してください。";
+    "Selected configuration items cannot be installed. Check the diff for details." => "선택한 설정 항목은 설치할 수 없습니다. 차이를 확인하세요.", "選択した設定項目はインストールできません。差分を確認してください。";
     "Enter an existing project directory." => "기존 프로젝트 디렉터리를 입력하세요.", "既存のプロジェクトディレクトリを入力してください。";
     "Only HTTPS git URLs are allowed" => "HTTPS Git URL만 사용할 수 있습니다", "HTTPS の Git URL のみ使用できます";
     "Local source path is empty" => "로컬 소스 경로가 비어 있습니다", "ローカルソースのパスが空です";

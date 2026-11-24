@@ -143,11 +143,8 @@ impl Runtime {
         let Some(app) = self.app.as_mut() else {
             return;
         };
-        self.remove_count = app.removal_selection().len();
+        self.remove_count = app.removal_confirmation_count();
         self.remove_requested = self.remove_count > 0;
-        if !self.remove_requested {
-            app.status_message = Some("Select items in this category to remove.".into());
-        }
     }
 
     pub(super) fn confirm_removal(&mut self) {
@@ -158,14 +155,8 @@ impl Runtime {
         let Some(app) = self.app.as_mut() else {
             return;
         };
-        if app.current_view != View::List || app.removal_selection().len() != self.remove_count {
-            self.error =
-                Some("Selection changed. Review your selection before removing items.".into());
-            self.remove_count = 0;
-            return;
-        }
-        self.remove_count = 0;
-        if let Err(error) = app.remove_selected() {
+        let count = std::mem::take(&mut self.remove_count);
+        if let Err(error) = app.remove_confirmed(count) {
             let message = format!("{error:#}");
             app.status_message = Some(message.clone());
             self.error = Some(message);

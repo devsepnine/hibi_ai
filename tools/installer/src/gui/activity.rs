@@ -86,23 +86,14 @@ pub(super) fn diff(lang: Language, app: &App) -> Element<'_, Message> {
 pub(super) fn progress(lang: Language, app: &App, follow_log: bool) -> Element<'_, Message> {
     let total = app.processing_total.unwrap_or(app.processing_queue.len());
     let attempted = app.processing_progress.unwrap_or(0).min(total);
-    let failed = app
-        .processing_log
-        .iter()
-        .filter(|line| line.starts_with("[ERR]") || line.starts_with("[ERROR]"))
-        .count();
+    let failed = app.processing_errors();
     let title = if app.current_view == View::Preflighting {
         lang.text("Checking requirements")
     } else if app.cancelling {
         lang.text("Cancelling operation")
     } else if app.refreshing {
         lang.text("Refreshing installed state")
-    } else if app.processing_complete
-        && app
-            .processing_log
-            .iter()
-            .any(|line| line.contains("Cancelled by user"))
-    {
+    } else if app.processing_complete && app.processing_cancelled() {
         lang.text("Operation cancelled")
     } else if app.processing_complete && failed > 0 {
         lang.text("Completed with errors")
@@ -151,10 +142,20 @@ pub(super) fn progress(lang: Language, app: &App, follow_log: bool) -> Element<'
     if app.current_view != View::Preflighting {
         body = body.push(progress_bar(0.0..=total.max(1) as f32, attempted as f32).girth(5));
     }
-    let action_button = if app.processing_complete {
-        neutral(lang.text("Back to components"), Action::Back)
+    let footer = if app.processing_complete {
+        Some((
+            "Review the log before leaving this screen.",
+            "Back to components",
+            Action::Back,
+        ))
+    } else if app.can_cancel_processing() {
+        Some((
+            "Cancelling waits for the current operation to stop safely.",
+            "Cancel operation",
+            Action::Cancel,
+        ))
     } else {
-        neutral(lang.text("Cancel operation"), Action::Cancel)
+        None
     };
     body.push(
         container(
@@ -193,21 +194,17 @@ pub(super) fn progress(lang: Language, app: &App, follow_log: bool) -> Element<'
         .width(Fill)
         .height(Fill),
     )
-    .push(
+    .push(footer.map(|(hint, label, action)| {
         row![
-            text(if app.processing_complete {
-                lang.text("Review the log before leaving this screen.")
-            } else {
-                lang.text("Cancelling waits for the current operation to stop safely.")
-            })
-            .size(12)
-            .style(styles::muted)
-            .width(Fill),
-            action_button,
+            text(lang.text(hint))
+                .size(12)
+                .style(styles::muted)
+                .width(Fill),
+            neutral(lang.text(label), action),
         ]
         .spacing(14)
-        .align_y(iced::Center),
-    )
+        .align_y(iced::Center)
+    }))
     .width(Fill)
     .height(Fill)
     .into()

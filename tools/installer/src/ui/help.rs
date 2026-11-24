@@ -52,12 +52,17 @@ const SECTIONS: [(&str, &[Binding]); 4] = [
             ("r", "remove selected in filter"),
             ("s / u", "set / unset default"),
             ("o", "MCP scope (user / project)"),
-            ("Esc", "back to the CLI picker"),
+            ("Esc", "clear search, then back to the CLI picker"),
         ],
     ),
     (
         "Global",
-        &[("?", "this help"), ("t", "switch theme"), ("q", "quit")],
+        &[
+            ("/", "search this list"),
+            ("?", "this help"),
+            ("t", "switch theme"),
+            ("q", "quit"),
+        ],
     ),
 ];
 

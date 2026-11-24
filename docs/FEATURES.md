@@ -24,7 +24,7 @@ GUI 화면과 실패 경로 검증 항목은 `docs/features/installer-gui.md`에
 | 터미널 명령행, TUI 없이 | `cli-flags`, `install-script` |
 | 목록 화면 상단 탭 바, 테두리 `[1]-` | `tab-bar`, `theme-toggle` |
 | 목록 화면 본문, 테두리 `[2]-` | `component-list`, `mcp-list`, `plugin-list`, `default-style-statusline` |
-| GUI 목록 위 검색창 | `gui-search` |
+| GUI 목록 위 검색창, TUI 목록의 `/` 검색 | `gui-search`, `component-list` |
 | 목록 화면 하단 상태 바 | `status-bar` |
 | `?` 로 뜨는 Keybindings 상자 | `help-overlay` |
 | 본문에서 Esc 를 누르면 뜨는 Confirm 상자 | `exit-confirm` |

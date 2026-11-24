@@ -1,6 +1,8 @@
 # 인스톨러 목록 화면
 
-목록 화면은 세 줄 레이아웃이다: 상단 탭 바 `[1]`, 본문 `[2]`, 하단 상태 바. 키 입력은 전부 `tools/installer/src/cli/mod.rs` → `handle_list_input` 을 거친다. 전역 키 q · t · ? · 1 · 2 · Tab 이 먼저, 그다음 포커스된 pane 의 키가 처리된다.
+목록 화면은 세 줄 레이아웃이다: 상단 탭 바 `[1]`, 본문 `[2]`, 하단 상태 바. TUI 검색은 `dispatch_terminal_key`가 처리한다. 일반 목록 키는 `handle_list_input`으로 전달한다. 전역 키 q · t · ? · 1 · 2 · Tab 이 먼저, 그다음 포커스된 pane 의 키가 처리된다.
+
+탭이나 목록에서 `/`를 누르면 현재 탭을 검색한다. 입력 즉시 파일 이름, 경로, 출처 또는 MCP와 플러그인 정보를 검색한다. 상태 필터와 숨김 설정도 함께 적용한다. Enter로 결과를 탐색하고 Esc로 검색어를 지운다. 검색 결과 밖의 체크는 유지되며 설치와 제거에서 제외된다.
 
 ### `tab-bar`: 상단 탭 바와 pane 포커스
 
@@ -34,7 +36,7 @@
 - **숨김 저장**: `~/.hibi/visibility.json`에 대상 디렉터리와 파일 종류를 포함한 폴더 경로를 저장한다. 재실행해도 유지되고 Claude와 Codex는 따로 적용된다. 잠금으로 동시 저장을 막고 임시 파일을 교체한다. 다른 installer가 저장 중이면 재시도를 안내한다. 저장 실패 시 표시를 유지하고 오류를 알린다
 - **숨김과 처리**: 실제 파일과 AI 서비스 동작은 바꾸지 않는다. 숨긴 항목이 표시되지 않는 동안 `a`와 설치·제거 대기열에서 제외한다. `H`로 표시한 뒤 명시적으로 체크하면 설치나 제거 대상에 포함할 수 있다. 다시 `H`로 감추면 모든 파일 탭과 상태 필터에 걸쳐 숨긴 항목의 체크를 해제한다. 일반 항목의 선택과 숨김 저장값은 유지하며 다시 표시해도 체크는 복원하지 않는다. 숨긴 폴더에는 이후 소스에 추가된 파일과 상태가 바뀐 파일도 표시하지 않는다. `Hidden:`은 현재 대상과 탭에 저장된 숨김 설정 수이며 폴더가 사라져도 설정은 유지한다
 - **UI 문구**: `"[x]"`, `"[-]"`, `"[ ]"`, `"new"`, `"modified"`, `"installed"`, `"managed"`, `"external"`, `"[DEPRECATED]"`, `"[{}]"`, `"No items selected"`
-- **컨트롤**: `"move the cursor"` → `next_item`, `"collapse folder, or parent"` → `handle_folder_collapse`, `"expand folder"` → `expand_folder`, `"toggle selection"` → `toggle_selected`, `"toggle all shown selections"` → `toggle_all_selected`, `"toggle all folders open / closed"` → `toggle_all_folders`, `"file filter: All/Modified/External/New"` → `cycle_component_filter`, `"expand folder, or diff file"` → `handle_enter`, `"install selected in filter"` → `install_selected`, `"remove selected in filter"` → `remove_selected`
+- **컨트롤**: `"move the cursor"` → `next_item`, `"collapse folder, or parent"` → `handle_folder_collapse`, `"expand folder"` → `expand_folder`, `"toggle selection"` → `toggle_selected`, `"toggle all shown selections"` → `toggle_all_selected`, `"toggle all folders open / closed"` → `toggle_all_folders`, `"file filter: All/Modified/External/New"` → `cycle_component_filter`, `"expand folder, or diff file"` → `handle_enter`, `"install selected in filter"` → `install_selected`, `"remove selected in filter"` → `removal_confirmation_count`, `y` → `remove_confirmed`
 - **코드 경로**:
   - UI: `tools/installer/src/ui/list.rs` → `render_tree_node`
   - 상태 / 핸들러: `tools/installer/src/cli/mod.rs` → `handle_content_focus_keys`
@@ -56,7 +58,7 @@
 
 - **위치**: 목록 화면 맨 아래 한 줄, 왼쪽 키 힌트, 그 옆 노란 상태 메시지, 오른쪽 끝 버전
 - **별칭**: 하단 바, 상태 바, 상태 메시지, 버전
-- **UI 문구**: `"[1/2] Pane  [?] Keys  [q] Quit"`, `"[j/k/↑/↓] Scroll  [q/Esc] Close"`, `"[Enter] Submit  [Esc] Cancel  [Backspace] Delete"`, `"[Enter] Confirm  [Esc] Cancel  [Backspace] Delete"`, `"[Enter/q] Close"`, `"Checking CLI...  [Esc] Cancel  [q] Quit"`
+- **UI 문구**: `"[1/2] Pane  [/] Search  [?] Keys  [q] Quit"`, `"[j/k/↑/↓] Scroll  [q/Esc] Close"`, `"[Enter] Submit  [Esc] Cancel  [Backspace] Delete"`, `"[Enter] Confirm  [Esc] Cancel  [Backspace] Delete"`, `"[Enter/q] Close"`, `"Checking CLI...  [Esc] Cancel  [q] Quit"`
 - **컨트롤**: 없음
 - **코드 경로**:
   - UI: `tools/installer/src/ui/mod.rs` → `render_status_bar`, 뷰별 힌트는 `tools/installer/src/ui/mod.rs` → `status_help`
@@ -90,7 +92,7 @@
 - **UI 문구**: `"Leave for the CLI picker?"`, `"Selected items will be discarded."`, `"[y] "`, `"[Esc] "`, `"Confirm"`
 - **컨트롤**: `"back to the CLI picker"` → `request_exit_to_main`, y → `exit_to_main`, Esc · n → `cancel_exit`
 - **코드 경로**:
-  - UI: `tools/installer/src/ui/confirm_exit.rs` → `render`
+  - UI: `tools/installer/src/ui/confirm.rs` → `render`
   - 상태 / 핸들러: `tools/installer/src/cli/mod.rs` → `handle_confirm_exit`
   - 상태 / 핸들러: `tools/installer/src/app/navigation.rs` → `request_exit_to_main` 가 `tools/installer/src/app/selection.rs` → `has_selection` 으로 전 탭 선택을 본다
 - **테스트**: `tools/installer/src/cli/tests.rs`, `tools/installer/src/ui/tests.rs`
@@ -194,8 +196,10 @@
 
 - **위치**: `i` 또는 `r` 뒤 본문 자리의 진행 화면, 위 제목 · `Progress` 막대 · `Log` 목록. MCP · Plugins 는 그 전에 `Preflight` 스피너가 뜬다
 - **별칭**: 설치, 제거, 진행률, 로그, 설치 중, 취소, CLI not found, q 안 먹힘
-- **UI 문구**: `"Checking {} availability..."`, `"Cannot start {}: {}"`, `"Preflight thread crashed"`, `"CLI reported: {}"`, `"Starting installation of {} items..."`, `"Starting removal of {} items..."`, `"✓ Complete"`, `"Refreshing status..."`, `"Installing..."`, `"Removing..."`, `"Progress"`, `"Log"`, `"[OK] {} complete!"`, `"[OK] Status refresh complete!"`, `"[WARN] Cancelling current operation..."`, `"[WARN] Cancelled by user"`, `"[ERR] Process thread crashed"`, `"[ERROR] Refresh failed: {}"`, `"CLI not found in PATH"`, `"Timed out after {}s trying to {} {}"`, `"Cancelled"`
-- **컨트롤**: `"install selected"` → `install_selected`, `"remove selected"` → `remove_selected`, 진행 중 Esc → `handle_installing_input` 가 취소 신호, 완료 후 Enter · q · Esc → `close_processing`, Preflight 중 Esc → `handle_preflighting_input`
+- **UI 문구**: `"Checking {} availability..."`, `"Cannot start {}: {}"`, `"Preflight thread crashed"`, `"CLI reported: {}"`, `"Starting installation of {} items..."`, `"Starting removal of {} items..."`, `"✓ Complete"`, `"Refreshing status..."`, `"Installing..."`, `"Removing..."`, `"Progress"`, `"Log"`, `"[OK] {} complete!"`, `"[OK] Status refresh complete!"`, `"Completed with errors"`, `"Operation cancelled"`, `"[WARN] Cancelled by user"`, `"[ERR] Process thread crashed"`, `"[ERROR] Refresh failed: {}"`, `"CLI not found in PATH"`, `"Timed out after {}s trying to {} {}"`, `"Cancelled"`
+- `i`는 선택 항목을 설치한다. 모든 탭에서 `r`은 제거할 항목 수를 먼저 보여 준다. `y`는 제거를 시작하고 Esc는 기존 체크를 유지한다.
+- 진행 중 Esc는 `installing_key`에서 대기열을 비우고 실행 중인 작업에 취소를 요청한다. 화면에는 시도한 수와 전체 수가 남는다. 완료 후 Enter, q, Esc로 목록에 돌아간다.
+- 최종 오류 수는 설치나 제거 뒤의 목록 갱신 실패도 포함한다. 로그에서 항목 처리 결과와 갱신 오류의 원인을 확인할 수 있다.
 - **코드 경로**:
   - UI: `tools/installer/src/ui/installing.rs` → `render`, Preflight 상자는 `tools/installer/src/ui/mod.rs` → `render_preflighting_screen`
   - 상태 / 핸들러: `tools/installer/src/app/processing.rs` → `install_selected`, MCP · Plugins 만 `needs_cli_preflight`
@@ -204,7 +208,7 @@
   - 상태 / 핸들러: 끝나면 `tools/installer/src/loading/scan.rs` → `start_refresh_thread` 가 현재 탭 범위만 다시 스캔한다
   - 데이터: 컴포넌트는 `tools/installer/src/fs/installer/mod.rs` → `install_component`, 외부 명령은 `tools/installer/src/fs/installer/process.rs` → `spawn_cancelable_process`
 - **테스트**: `tools/installer/src/app/processing.rs`, `tools/installer/src/loading/channels.rs`, `tools/installer/src/loading/scan.rs`, `tools/installer/src/fs/mod.rs`
-- **함정**: 설치 중 q 를 눌러도 안 꺼짐 → 진행 화면의 q 와 Enter 는 완료 뒤 닫기만 하고, 중단은 Esc 다, 근거: `tools/installer/src/loading/install.rs` → `handle_installing_input`
+- **함정**: 설치 중 q 를 눌러도 안 꺼짐 → 진행 화면의 q 와 Enter 는 완료 뒤 닫기만 하고, 중단은 Esc 다, 근거: `tools/installer/src/loading/install.rs` → `installing_key`
 - **함정**: claude 가 설치돼 있는데 `CLI not found in PATH` → 셸 rc 를 안 읽은 터미널이면 PATH 와 몇몇 알려진 위치만 찾는다, 근거: `tools/installer/src/fs/mod.rs` → `resolve_cli_program`
 - **함정**: 컴포넌트 하나가 실패해도 진행이 계속됨 → 컴포넌트 오류는 `[ERR]` 로그 줄로만 남고 다음 항목으로 간다, 근거: `tools/installer/src/process_exec.rs` → `execute`
 - **함정**: MCP 를 설치했는데 다른 탭 상태가 그대로임 → 새로고침은 시작한 탭의 범위만 다시 스캔한다, 근거: `tools/installer/src/loading/scan.rs` → `for_tab`
@@ -216,6 +220,7 @@
 - **위치**: Claude Code의 Config 탭에 있는 `settings.json` 그룹. 설치와 제거 결과는 `~/.claude/settings.json`에 저장한다.
 - **별칭**: settings.json, 설정 키, 설정 병합, 설정 덮어씀, permissions
 - **컨트롤**: 항목을 선택한 뒤 Install 또는 Remove를 누른다. Diff에서 해당 항목의 현재 값과 소스 값을 비교할 수 있다.
+- TUI에서는 Space로 항목을 선택하고 `d`로 차이를 확인한다. `i`는 설치를 시작한다. `r`은 제거할 수 있는 항목 수를 표시하며, `y`로 제거하거나 Esc로 취소한다.
 - **코드 경로**:
   - 데이터: 번들 원본은 `src/settings.json`이다. `tools/installer/src/fs/scanner/mod.rs` → `scan_all_sources`가 우선순위가 높은 소스의 파일을 고른다.
   - 데이터: `tools/installer/src/fs/installer/entries.rs`가 설정 키를 나열하고 선택한 키를 설치하거나 제거한다. `tools/installer/src/fs/installer/settings.rs`가 파일을 저장한다.

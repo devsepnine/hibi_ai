@@ -1,5 +1,6 @@
 mod cli_selection;
-mod confirm_exit;
+mod confirm;
+pub(crate) use confirm::render_source_error;
 pub(crate) mod confirm_hide;
 mod diff;
 mod env_input;
@@ -109,7 +110,7 @@ pub fn draw(f: &mut Frame, app: &App) {
     // own keys on their own borders.
     match app.current_view {
         View::Help => help::render(f, app, f.area()),
-        View::ConfirmExit => confirm_exit::render(f, app, f.area()),
+        View::ConfirmExit | View::ConfirmRemove(_) => confirm::render(f, app, f.area()),
         View::ConfirmHide => confirm_hide::render(f, app, f.area()),
         _ => {}
     }
@@ -176,9 +177,12 @@ fn render_full_screen(f: &mut Frame, app: &App) -> bool {
 fn render_content_pane(f: &mut Frame, app: &App, area: Rect) {
     match app.current_view {
         // Overlays retain the list so dismissing them restores the same context.
-        View::List | View::Help | View::ConfirmExit | View::ConfirmHide => {
-            render_tab_list(f, app, area)
-        }
+        View::List
+        | View::Search
+        | View::Help
+        | View::ConfirmExit
+        | View::ConfirmRemove(_)
+        | View::ConfirmHide => render_tab_list(f, app, area),
         View::Diff => diff::render(f, app, area),
         // The dialogs sit over the MCP list they were opened from, which stays
         // visible so the user can see which server they are answering for.
@@ -208,6 +212,25 @@ fn render_content_pane(f: &mut Frame, app: &App, area: Rect) {
 
 /// Draw whichever list belongs to the current tab.
 fn render_tab_list(f: &mut Frame, app: &App, area: Rect) {
+    let area = if app.current_view == View::Search || !app.search_query.is_empty() {
+        let [field, rows] =
+            Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).areas(area);
+        let text = format!("/ {}", app.search_query);
+        let columns = layout::columns(&text);
+        let offset = columns.saturating_sub(field.width.saturating_sub(1) as usize);
+        f.render_widget(
+            ratatui::widgets::Paragraph::new(text)
+                .scroll((0, offset.min(u16::MAX as usize) as u16))
+                .style(Style::default().fg(app.theme.accent_primary())),
+            field,
+        );
+        if app.current_view == View::Search && !field.is_empty() {
+            f.set_cursor_position((field.x + (columns - offset) as u16, field.y));
+        }
+        rows
+    } else {
+        area
+    };
     if app.tab == Tab::McpServers {
         mcp_list::render(f, app, area);
     } else if app.tab == Tab::Plugins {
@@ -226,6 +249,7 @@ fn render_tab_list(f: &mut Frame, app: &App, area: Rect) {
 /// most likely to need it. The full binding list now lives behind `?`, where it
 /// can scroll instead of truncate.
 const LIST_HELP: &str = "[1/2] Pane  [?] Keys  [q] Quit";
+const LIST_HELP_WITH_SEARCH: &str = "[1/2] Pane  [/] Search  [?] Keys  [q] Quit";
 
 /// Key hints for the current view, or `""` where the view draws its own footer
 /// instead of borrowing this one.
@@ -238,20 +262,21 @@ fn status_help(app: &App) -> &'static str {
         View::Loading => "Loading...  [q] Quit",
         View::Preflighting => "Checking CLI...  [Esc] Cancel  [q] Quit",
         View::List => LIST_HELP,
+        View::Search => "[Enter] Use results  [Esc] Clear search",
         // Overlays name their own keys on their own frames, and the List
         // keys behind them are no longer live — repeating them here would
         // advertise a pane jump the modal will not answer.
-        View::Help | View::ConfirmExit | View::ConfirmHide => "",
+        View::Help | View::ConfirmExit | View::ConfirmRemove(_) | View::ConfirmHide => "",
         View::Diff => "[j/k/↑/↓] Scroll  [q/Esc] Close",
         View::EnvInput => "[Enter] Submit  [Esc] Cancel  [Backspace] Delete",
         View::ProjectPath => "[Enter] Confirm  [Esc] Cancel  [Backspace] Delete",
         View::Installing => {
             if app.processing_complete {
                 "[Enter/q] Close"
-            } else if app.is_removing {
-                "Removing..."
+            } else if app.can_cancel_processing() {
+                "[Esc] Cancel"
             } else {
-                "Installing..."
+                ""
             }
         }
         // Sources views have their own footer
@@ -274,7 +299,13 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
         widgets::{Block, Borders, Paragraph},
     };
 
-    let help_text = status_help(app);
+    let help_text = if app.current_view == View::List
+        && area.width.saturating_sub(2) as usize >= layout::columns(LIST_HELP_WITH_SEARCH)
+    {
+        LIST_HELP_WITH_SEARCH
+    } else {
+        status_help(app)
+    };
     let status = app.status_message.as_deref().unwrap_or("");
     let version = crate::fs::VERSION;
 

@@ -3,6 +3,105 @@ use crate::app::FocusArea;
 use crate::app::test_support::fresh_app;
 
 #[test]
+fn terminal_search_consumes_shortcuts_and_removal_uses_only_visible_rows() -> Result<()> {
+    use crate::app::test_support::{make_mcp_server, make_plugin};
+    use crate::app::{Tab, View};
+
+    for tab in [Tab::McpServers, Tab::Plugins] {
+        let mut app = fresh_app();
+        app.tab = tab;
+        app.focus_tabs();
+        for name in ["other", "한글 riq"] {
+            let mut server = make_mcp_server();
+            server.def.name = name.into();
+            server.selected = true;
+            app.mcp_servers.push(server);
+            let mut plugin = make_plugin();
+            plugin.def.name = name.into();
+            plugin.selected = true;
+            app.plugins.push(plugin);
+        }
+        let (tx, _rx) = std::sync::mpsc::channel();
+        for c in "/한글 riqx".chars() {
+            dispatch_terminal_key(&mut app, KeyCode::Char(c), &tx)?;
+        }
+        assert_eq!(app.current_view, View::Search);
+        assert!(app.processing_queue.is_empty());
+        assert!(!app.should_quit);
+        assert!(app.visible_plugins().is_empty());
+        dispatch_terminal_key(&mut app, KeyCode::Backspace, &tx)?;
+        dispatch_terminal_key(&mut app, KeyCode::Enter, &tx)?;
+        assert_eq!(app.search_query, "한글 riq");
+        assert_eq!(app.focus, FocusArea::Content);
+        assert_eq!((app.mcp_index, app.plugin_index), (1, 1));
+        dispatch_terminal_key(&mut app, KeyCode::Char('r'), &tx)?;
+        assert_eq!(app.current_view, View::ConfirmRemove(1));
+        for key in [KeyCode::Char('/'), KeyCode::Char('o'), KeyCode::Enter] {
+            dispatch_terminal_key(&mut app, key, &tx)?;
+            assert_eq!(app.current_view, View::ConfirmRemove(1));
+            assert!(app.processing_queue.is_empty());
+        }
+        dispatch_terminal_key(&mut app, KeyCode::Esc, &tx)?;
+        assert_eq!(app.search_query, "한글 riq");
+        dispatch_terminal_key(&mut app, KeyCode::Esc, &tx)?;
+        assert!(app.search_query.is_empty());
+        assert_eq!(app.current_view, View::List);
+        assert!(app.plugins.iter().all(|p| p.selected));
+        assert!(app.mcp_servers.iter().all(|m| m.selected));
+    }
+    Ok(())
+}
+
+#[test]
+fn claude_config_removal_confirms_only_matching_installed_keys() -> Result<()> {
+    use crate::app::{Tab, TargetCli, View};
+    use crate::component::{Component, ComponentType, InstallStatus};
+
+    let fixture = tempfile::tempdir()?;
+    let source = fixture.path().join("source.json");
+    let dest = fixture.path().join("settings.json");
+    std::fs::write(&source, br#"{"env":{"A":1,"B":2}}"#)?;
+    std::fs::write(&dest, br#"{"env":{"A":1,"B":9}}"#)?;
+    let file = Component::new(
+        ComponentType::ConfigFile,
+        "settings.json".into(),
+        source,
+        dest,
+        InstallStatus::Managed,
+    );
+    let mut app = fresh_app();
+    app.tab = Tab::Config;
+    app.target_cli = Some(TargetCli::Claude);
+    app.components = fs::installer::scan_setting_entries(&file)?;
+    let (tx, _rx) = std::sync::mpsc::channel();
+    app.components[1].selected = true;
+    dispatch_key(&mut app, KeyCode::Char('r'), &tx)?;
+    assert_eq!(app.current_view, View::List);
+    assert_eq!(
+        app.status_message.as_deref(),
+        Some("No selected configuration items can be removed. Check the diff for details.")
+    );
+
+    app.components[0].selected = true;
+    dispatch_key(&mut app, KeyCode::Char('r'), &tx)?;
+    assert_eq!(app.current_view, View::ConfirmRemove(1));
+    for key in [KeyCode::Enter, KeyCode::Char('i'), KeyCode::Char(' ')] {
+        dispatch_key(&mut app, key, &tx)?;
+        assert_eq!(app.current_view, View::ConfirmRemove(1));
+        assert!(app.processing_queue.is_empty());
+    }
+    dispatch_key(&mut app, KeyCode::Esc, &tx)?;
+    assert_eq!(app.current_view, View::List);
+    assert!(app.components.iter().all(|c| c.selected));
+    dispatch_key(&mut app, KeyCode::Char('r'), &tx)?;
+    dispatch_key(&mut app, KeyCode::Char('y'), &tx)?;
+    assert_eq!(app.current_view, View::Installing);
+    assert!(app.is_removing);
+    assert_eq!(app.processing_queue, [0]);
+    Ok(())
+}
+
+#[test]
 fn settings_write_failure_keeps_the_list_open() -> Result<()> {
     use crate::component::{Component, ComponentType, InstallStatus};
 
@@ -228,7 +327,8 @@ mod status_filter {
     }
 
     fn press(app: &mut App, key: char) {
-        handle_list_input(app, KeyCode::Char(key)).unwrap();
+        let (tx, _rx) = std::sync::mpsc::channel();
+        dispatch_terminal_key(app, KeyCode::Char(key), &tx).unwrap();
     }
 
     fn listed(app: &App) -> Vec<&str> {
@@ -337,6 +437,10 @@ mod status_filter {
             let mut app = fixture();
             press(&mut app, 'f');
             press(&mut app, key);
+            if key == 'r' {
+                assert_eq!(app.current_view, View::ConfirmRemove(1));
+                press(&mut app, 'y');
+            }
             assert_eq!(app.processing_queue, [0]);
             assert_eq!(app.current_view, View::Installing);
         }
@@ -347,6 +451,8 @@ mod status_filter {
         assert_eq!(app.current_view, View::List);
         assert_eq!(app.status_message.as_deref(), Some("No items selected"));
         press(&mut app, 'r');
+        assert_eq!(app.current_view, View::ConfirmRemove(1));
+        press(&mut app, 'y');
         assert_eq!(app.processing_queue, [2]);
     }
 
@@ -497,6 +603,11 @@ mod status_filter {
                 assert!(screen.contains(name), "{screen}");
                 assert!(!screen.contains("same.md"), "{screen}");
                 press(&mut app, action);
+                if action == 'r' {
+                    assert_eq!(app.current_view, View::ConfirmRemove(1));
+                    assert!(dest.join("local.md").is_file());
+                    press(&mut app, 'y');
+                }
                 assert_eq!(execute_queue(&app), [log]);
                 assert_eq!(
                     std::fs::read_to_string(dest.join("same.md")).unwrap(),

@@ -22,7 +22,40 @@ pub(crate) fn read_key_press() -> Result<Option<KeyCode>> {
     Ok(None)
 }
 
-/// Dispatch a key press to the appropriate handler based on current view.
+pub(crate) fn dispatch_terminal_key(
+    app: &mut App,
+    code: KeyCode,
+    refresh_tx: &std::sync::mpsc::Sender<Result<RefreshResult>>,
+) -> Result<()> {
+    match (app.current_view, code) {
+        (app::View::List, KeyCode::Char('/')) => app.current_view = app::View::Search,
+        (app::View::List, KeyCode::Esc) if !app.search_query.is_empty() => {
+            app.set_search_query(String::new());
+        }
+        (app::View::Search, KeyCode::Char(c)) => {
+            let mut query = app.search_query.clone();
+            query.push(c);
+            app.set_search_query(query);
+        }
+        (app::View::Search, KeyCode::Backspace) => {
+            let mut query = app.search_query.clone();
+            query.pop();
+            app.set_search_query(query);
+        }
+        (app::View::Search, KeyCode::Enter | KeyCode::Esc) => {
+            if code == KeyCode::Esc {
+                app.set_search_query(String::new());
+            }
+            app.focus_content();
+            app.current_view = app::View::List;
+        }
+        (app::View::Search, _) => {}
+        _ => return dispatch_key(app, code, refresh_tx),
+    }
+    Ok(())
+}
+
+/// Dispatch keys shared by the terminal and desktop interfaces.
 pub(crate) fn dispatch_key(
     app: &mut App,
     code: KeyCode,
@@ -52,6 +85,19 @@ pub(crate) fn dispatch_key(
         app::View::Help => handle_help_input(app, code),
         app::View::ConfirmExit => {
             handle_confirm_exit(app, code);
+            Ok(())
+        }
+        app::View::ConfirmRemove(count) => {
+            match code {
+                KeyCode::Char('y') => {
+                    app.current_view = app::View::List;
+                    if let Err(error) = app.remove_confirmed(count) {
+                        app.status_message = Some(error.to_string());
+                    }
+                }
+                KeyCode::Esc | KeyCode::Char('n' | 'q') => app.current_view = app::View::List,
+                _ => {}
+            }
             Ok(())
         }
         app::View::ConfirmHide => {
@@ -102,8 +148,7 @@ fn handle_list_input(app: &mut App, key: KeyCode) -> Result<()> {
             app.status_message = Some(format!("Theme: {}", app.theme.mode().name()));
             return Ok(());
         }
-        // The status bar lists only these three keys; `?` is where the rest of
-        // them are documented, so it has to work from either pane.
+        // Both panes can open the full key reference.
         KeyCode::Char('?') => {
             app.open_help();
             return Ok(());
@@ -173,7 +218,12 @@ fn handle_content_focus_keys(app: &mut App, key: KeyCode) -> Result<()> {
         KeyCode::Enter => handle_enter(app)?,
         KeyCode::Char('d') => app.show_diff()?,
         KeyCode::Char('i') => app.install_selected()?,
-        KeyCode::Char('r') => app.remove_selected()?,
+        KeyCode::Char('r') => {
+            let count = app.removal_confirmation_count();
+            if count > 0 {
+                app.current_view = app::View::ConfirmRemove(count);
+            }
+        }
         KeyCode::Char('s') | KeyCode::Char('u') => handle_default_toggle(app, key),
         KeyCode::Char('o') => {
             if app.tab == app::Tab::McpServers {

@@ -51,6 +51,10 @@ fn hidden_managed_items_are_excluded_from_bulk_selection_and_both_work_queues() 
         app.components[0].selected = true;
         for command in ['i', 'r'] {
             press(&mut app, command);
+            if command == 'r' {
+                assert_eq!(app.current_view, View::ConfirmRemove(1));
+                press(&mut app, 'y');
+            }
             assert_eq!(app.processing_queue, [1]);
             app.close_processing();
         }

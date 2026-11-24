@@ -19,6 +19,7 @@ mod ui;
 use anyhow::{Context, Result};
 use crossterm::{
     cursor::{MoveTo, Show},
+    event::KeyCode,
     execute,
     terminal::{
         Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode,
@@ -133,7 +134,6 @@ where
     <B as ratatui::backend::Backend>::Error: Send + Sync + 'static,
 {
     let mut channels = ProcessingChannels::new();
-
     loop {
         terminal.draw(|f| ui::draw(f, app))?;
 
@@ -144,13 +144,52 @@ where
             app::View::SourceSyncing => cli::handle_source_syncing(app)?,
             _ => {
                 if let Some(code) = cli::read_key_press()? {
-                    cli::dispatch_key(app, code, &channels.refresh_tx)?;
+                    let view = app.current_view;
+                    if let Err(error) = cli::dispatch_terminal_key(app, code, &channels.refresh_tx)
+                    {
+                        match view {
+                            app::View::SourceConfirmRemove => app.current_view = app::View::Sources,
+                            app::View::SourceAddMapTo => {}
+                            _ => return Err(error),
+                        }
+                        show_source_error(terminal, app, &error)?;
+                    }
                 }
             }
         }
 
         if app.should_quit {
             return Ok(());
+        }
+    }
+}
+
+fn show_source_error<B: ratatui::backend::Backend>(
+    terminal: &mut Terminal<B>,
+    app: &App,
+    error: &anyhow::Error,
+) -> Result<()>
+where
+    B::Error: Send + Sync + 'static,
+{
+    let mut message = String::from("Could not save source settings.");
+    for cause in error.chain() {
+        message.push('\n');
+        message.push_str(&cause.to_string());
+    }
+    let mut scroll = 0usize;
+    loop {
+        let mut max_scroll = 0;
+        terminal.draw(|f| {
+            ui::draw(f, app);
+            max_scroll = ui::render_source_error(f, app, &message, scroll);
+        })?;
+        scroll = scroll.min(max_scroll);
+        match cli::read_key_press()? {
+            Some(KeyCode::Enter | KeyCode::Esc) => return Ok(()),
+            Some(KeyCode::Down | KeyCode::Char('j')) => scroll = (scroll + 1).min(max_scroll),
+            Some(KeyCode::Up | KeyCode::Char('k')) => scroll = scroll.saturating_sub(1),
+            _ => {}
         }
     }
 }

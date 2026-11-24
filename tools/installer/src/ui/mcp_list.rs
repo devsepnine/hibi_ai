@@ -11,8 +11,13 @@ use crate::app::{App, FocusArea};
 use crate::mcp::McpStatus;
 
 pub fn render(f: &mut Frame, app: &App, area: Rect) {
-    if app.mcp_servers.is_empty() {
-        let message = "No MCP servers found. Create mcps/mcps.yaml to add servers.";
+    let visible = app.visible_mcp_servers();
+    if visible.is_empty() {
+        let message = if app.search_query.trim().is_empty() {
+            "No MCP servers found. Create mcps/mcps.yaml to add servers."
+        } else {
+            "No matches."
+        };
 
         let empty = List::new(vec![ListItem::new(Line::from(vec![Span::styled(
             message,
@@ -29,10 +34,9 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
         return;
     }
 
-    let items: Vec<ListItem> = app
-        .mcp_servers
+    let items: Vec<ListItem> = visible
         .iter()
-        .map(|m| {
+        .map(|(_, m)| {
             let checkbox = if m.selected {
                 "[x]"
             } else if m.status == McpStatus::Installed {
@@ -104,7 +108,11 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
         .highlight_symbol("> ");
 
     let mut state = ListState::default();
-    state.select(Some(app.mcp_index));
+    state.select(
+        visible
+            .iter()
+            .position(|(index, _)| *index == app.mcp_index),
+    );
 
     f.render_stateful_widget(list, area, &mut state);
 }

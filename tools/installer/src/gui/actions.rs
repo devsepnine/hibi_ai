@@ -314,7 +314,9 @@ impl Runtime {
             return;
         };
         match app.current_view {
-            View::Installing => loading::installing_key(app, KeyCode::Esc, &mut self.channels),
+            View::Installing if app.can_cancel_processing() => {
+                loading::installing_key(app, KeyCode::Esc, &mut self.channels);
+            }
             View::Preflighting => {
                 loading::preflighting_key(app, KeyCode::Esc, &mut self.channels);
             }
@@ -329,7 +331,7 @@ impl Runtime {
                     ));
                 }
             }
-            View::Loading => {}
+            View::Loading | View::Installing => {}
             _ => {
                 if let Err(error) = cli::dispatch_key(app, KeyCode::Esc, &self.channels.refresh_tx)
                 {
@@ -535,11 +537,13 @@ mod tests {
     }
 
     #[test]
-    fn completed_processing_back_button_returns_to_list() {
+    fn completed_processing_ignores_late_cancel_and_back_returns_to_list() {
         let mut runtime = runtime_with_app();
         let app = runtime.app.as_mut().unwrap();
         app.current_view = View::Installing;
         app.processing_complete = true;
+        runtime.dispatch(Action::Cancel);
+        assert_eq!(runtime.app.as_ref().unwrap().current_view, View::Installing);
         runtime.dispatch(Action::Back);
         assert_eq!(runtime.app.as_ref().unwrap().current_view, View::List);
     }

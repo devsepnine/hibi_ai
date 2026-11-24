@@ -13,6 +13,21 @@ pub fn columns(s: &str) -> usize {
     Span::raw(s).width()
 }
 
+pub(super) fn wrap_line(text: &str, width: u16) -> Vec<String> {
+    let mut lines = Vec::new();
+    let mut current = String::new();
+    for character in text.chars() {
+        current.push(character);
+        if columns(&current) > usize::from(width) && current.len() > character.len_utf8() {
+            current.pop();
+            lines.push(std::mem::take(&mut current));
+            current.push(character);
+        }
+    }
+    lines.push(current);
+    lines
+}
+
 /// Centre a box of at most `w` x `h` in `area`, shrinking rather than
 /// overflowing.
 ///

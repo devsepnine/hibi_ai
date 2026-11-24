@@ -4,8 +4,8 @@ use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 
 use super::{
-    LIST_HELP, confirm_exit, env_input, help, layout, list, mcp_list, pane_border_style,
-    pane_title, plugin_list, render_status_bar, tabs,
+    LIST_HELP, confirm, env_input, help, layout, list, mcp_list, pane_border_style, pane_title,
+    plugin_list, render_status_bar, tabs,
 };
 use crate::app::test_support::fresh_app;
 use crate::app::{App, FocusArea, View};
@@ -77,6 +77,91 @@ fn title_row(app: &App, render: PaneRenderer) -> String {
 }
 
 fn no_setup(_: &mut App) {}
+
+#[test]
+fn source_error_scroll_reaches_the_cause_and_clamps_after_resize() {
+    let app = fresh_app();
+    let message = format!(
+        "Cannot save source settings\n{}\nInvalid YAML",
+        "긴 경로/".repeat(32)
+    );
+    let mut terminal = ratatui::Terminal::new(ratatui::backend::TestBackend::new(32, 8)).unwrap();
+    let mut max_scroll = 0;
+    terminal
+        .draw(|f| max_scroll = confirm::render_source_error(f, &app, &message, 0))
+        .unwrap();
+    let first = terminal.backend().buffer();
+    assert!(row(first, 1).contains("Cannot save source settings"));
+    assert!(row(first, 7).contains("[j/k] Scroll"));
+    assert!(max_scroll > 0);
+    terminal
+        .draw(|f| {
+            confirm::render_source_error(f, &app, &message, usize::MAX);
+        })
+        .unwrap();
+    assert!(row(terminal.backend().buffer(), 6).contains("Invalid YAML"));
+
+    let mut wide = ratatui::Terminal::new(ratatui::backend::TestBackend::new(100, 20)).unwrap();
+    wide.draw(|f| {
+        assert_eq!(
+            confirm::render_source_error(f, &app, &message, max_scroll),
+            0
+        );
+    })
+    .unwrap();
+    let buffer = wide.backend().buffer();
+    for expected in [
+        "Cannot save source settings",
+        "Invalid YAML",
+        "[Enter/Esc] Close",
+    ] {
+        assert!((0..buffer.area.height).any(|y| row(buffer, y).contains(expected)));
+    }
+}
+
+#[test]
+fn searched_catalogs_display_only_matches_and_mark_the_visible_cursor() {
+    use crate::app::Tab;
+    use crate::app::test_support::{make_mcp_server, make_plugin};
+    for tab in [Tab::McpServers, Tab::Plugins] {
+        let mut app = fresh_app();
+        app.tab = tab;
+        for name in ["excluded", "match-1", "match-2"] {
+            let mut server = make_mcp_server();
+            server.def.name = name.into();
+            app.mcp_servers.push(server);
+            let mut plugin = make_plugin();
+            plugin.def.name = name.into();
+            app.plugins.push(plugin);
+        }
+        app.set_search_query("match".into());
+        app.next_item();
+        let buf = paint(&app, super::render_tab_list);
+        assert!(row(&buf, 0).contains("/ match"));
+        let rows: Vec<_> = (1..buf.area.height).map(|y| row(&buf, y)).collect();
+        assert!(!rows.iter().any(|line| line.contains("excluded")));
+        assert!(rows.iter().any(|line| line.contains("> [ ] match-2")));
+        app.set_search_query("missing".into());
+        let buf = paint(&app, super::render_tab_list);
+        assert!((1..buf.area.height).any(|y| row(&buf, y).contains("No matches.")));
+    }
+}
+
+#[test]
+fn completed_progress_titles_distinguish_failure_cancellation_and_success() {
+    let mut app = fresh_app();
+    app.processing_complete = true;
+    for (log, title) in [
+        ("[OK] file", "✓ Complete"),
+        ("[ERR] Cannot install", "Completed with errors"),
+        ("[ERROR] Refresh failed", "Completed with errors"),
+        ("[WARN] Cancelled by user", "Operation cancelled"),
+    ] {
+        app.processing_log = vec![log.into()];
+        let buf = paint_at(&app, super::installing::render, 80, 20);
+        assert!((0..buf.area.height).any(|y| row(&buf, y).contains(title)));
+    }
+}
 
 #[test]
 fn filter_summary_keeps_the_statusline_default_visible_at_80_columns() {
@@ -213,7 +298,7 @@ fn content_renderers_paint_the_focus_border() {
 /// modal takes keys. `View::Diff` replaces the pane outright and borders it
 /// plainly, so there the stale cue would sit on the tab bar instead — same
 /// lie about which pane the next keystroke reaches, so the same expectation.
-/// `View::Help`, `View::ConfirmExit`, and `View::ConfirmHide` keep the list behind their box,
+/// Help and confirmation dialogs keep the list behind their box,
 /// and `Help` is the sharpest case: the box teaches `1`/`2` while itself
 /// answering neither.
 #[test]
@@ -224,6 +309,7 @@ fn a_modal_view_leaves_both_panes_plain() {
         View::Diff,
         View::Help,
         View::ConfirmExit,
+        View::ConfirmRemove(1),
         View::ConfirmHide,
     ] {
         for (name, render, setup) in CASES {
@@ -487,7 +573,9 @@ fn the_overlay_caps_its_height_at_80_percent_and_pads_no_taller_terminal() {
 /// way out printed in front of them.
 #[test]
 fn the_exit_prompt_names_both_of_its_answers() {
-    let buf = paint_at(&fresh_app(), confirm_exit::render, 80, 24);
+    let mut app = fresh_app();
+    app.current_view = View::ConfirmExit;
+    let buf = paint_at(&app, confirm::render, 80, 24);
     let painted: String = (0..buf.area.height)
         .map(|y| row(&buf, y))
         .collect::<Vec<_>>()

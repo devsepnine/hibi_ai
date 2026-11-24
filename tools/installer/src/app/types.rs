@@ -107,6 +107,7 @@ pub enum View {
     CliSelection,
     Loading,
     List,
+    Search,
     Diff,
     /// The `?` keybinding reference, overlaid on the List view.
     Help,
@@ -116,6 +117,7 @@ pub enum View {
     /// back, so leaving with a selection throws it away, and leaving without
     /// one costs nothing worth a keystroke to confirm.
     ConfirmExit,
+    ConfirmRemove(usize),
     ConfirmHide,
     EnvInput,
     ProjectPath,

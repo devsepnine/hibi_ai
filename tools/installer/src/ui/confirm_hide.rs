@@ -60,21 +60,6 @@ fn body_lines(pending: &HideConfirmation, width: u16) -> Vec<String> {
     summary
         .into_iter()
         .chain(pending.folders.iter().map(|name| format!("  {name}/")))
-        .flat_map(|line| wrap_line(&line, width))
+        .flat_map(|line| layout::wrap_line(&line, width))
         .collect()
-}
-
-fn wrap_line(text: &str, width: u16) -> Vec<String> {
-    let mut lines = Vec::new();
-    let mut current = String::new();
-    for character in text.chars() {
-        current.push(character);
-        if layout::columns(&current) > usize::from(width) && current.len() > character.len_utf8() {
-            current.pop();
-            lines.push(std::mem::take(&mut current));
-            current.push(character);
-        }
-    }
-    lines.push(current);
-    lines
 }

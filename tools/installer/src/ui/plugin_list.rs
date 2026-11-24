@@ -11,9 +11,15 @@ use crate::app::{App, FocusArea};
 use crate::plugin::PluginStatus;
 
 pub fn render(f: &mut Frame, app: &App, area: Rect) {
-    if app.plugins.is_empty() {
+    let visible = app.visible_plugins();
+    if visible.is_empty() {
+        let message = if app.search_query.trim().is_empty() {
+            "No plugins found. Create plugins/plugins.yaml to add plugins."
+        } else {
+            "No matches."
+        };
         let empty = List::new(vec![ListItem::new(Line::from(vec![Span::styled(
-            "No plugins found. Create plugins/plugins.yaml to add plugins.",
+            message,
             Style::default().fg(app.theme.text_muted()),
         )]))])
         .block(
@@ -27,10 +33,9 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
         return;
     }
 
-    let items: Vec<ListItem> = app
-        .plugins
+    let items: Vec<ListItem> = visible
         .iter()
-        .map(|p| {
+        .map(|(_, p)| {
             let checkbox = if p.selected {
                 "[x]"
             } else if p.status == PluginStatus::Installed {
@@ -104,7 +109,11 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
         .highlight_symbol("> ");
 
     let mut state = ListState::default();
-    state.select(Some(app.plugin_index));
+    state.select(
+        visible
+            .iter()
+            .position(|(index, _)| *index == app.plugin_index),
+    );
 
     f.render_stateful_widget(list, area, &mut state);
 }

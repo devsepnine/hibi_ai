@@ -26,8 +26,16 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
 
 fn render_title(f: &mut Frame, app: &App, area: Rect) {
     let (title_text, title_color) = if app.processing_complete {
-        ("✓ Complete".to_string(), app.theme.success())
-    } else if app.needs_refresh {
+        if app.processing_cancelled() {
+            ("Operation cancelled".to_string(), app.theme.warning())
+        } else if app.processing_errors() > 0 {
+            ("Completed with errors".to_string(), app.theme.error())
+        } else {
+            ("✓ Complete".to_string(), app.theme.success())
+        }
+    } else if app.cancelling {
+        ("Cancelling operation...".to_string(), app.theme.warning())
+    } else if app.needs_refresh || app.refreshing {
         let spinner = super::get_spinner(app.animation_frame);
         (
             format!("{} Refreshing status...", spinner),
@@ -64,7 +72,9 @@ fn render_progress(f: &mut Frame, app: &App, area: Rect) {
     let total = app.processing_total.unwrap_or(1).max(1);
     let percent = ((progress as f64 / total as f64) * 100.0).min(100.0) as u16;
 
-    let gauge_color = if app.is_removing {
+    let gauge_color = if app.processing_complete && app.processing_cancelled() {
+        app.theme.warning()
+    } else if app.is_removing || (app.processing_complete && app.processing_errors() > 0) {
         app.theme.error()
     } else {
         app.theme.success()
@@ -90,9 +100,9 @@ fn render_log(f: &mut Frame, app: &App, area: Rect) {
         .map(|msg| {
             let style = if msg.starts_with("[OK]") {
                 Style::default().fg(app.theme.success())
-            } else if msg.starts_with("[ERR]") {
+            } else if msg.starts_with("[ERR]") || msg.starts_with("[ERROR]") {
                 Style::default().fg(app.theme.error())
-            } else if msg.starts_with("[SKIP]") {
+            } else if msg.starts_with("[SKIP]") || msg.starts_with("[WARN]") {
                 Style::default().fg(app.theme.warning())
             } else {
                 Style::default().fg(app.theme.text_secondary())

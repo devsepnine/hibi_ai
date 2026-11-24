@@ -249,7 +249,7 @@ mod tests {
         app.install_selected().unwrap();
         assert_eq!(app.processing_queue, [0, 2]);
         app.close_processing();
-        app.remove_selected().unwrap();
+        app.remove_confirmed(2).unwrap();
         assert_eq!(app.processing_queue, [0, 2]);
         app.close_processing();
         app.tab = Tab::McpServers;

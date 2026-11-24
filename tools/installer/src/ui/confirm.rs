@@ -7,7 +7,37 @@ use ratatui::{
 };
 
 use super::layout;
-use crate::app::App;
+use crate::app::{App, View};
+
+pub(crate) fn render_source_error(f: &mut Frame, app: &App, message: &str, scroll: usize) -> usize {
+    let dialog = layout::centered(f.area(), 78, 14);
+    let block = Block::bordered().title(" Source settings ");
+    let inner = block.inner(dialog);
+    let lines: Vec<_> = message
+        .lines()
+        .flat_map(|line| layout::wrap_line(line, inner.width))
+        .collect();
+    let max_scroll = lines.len().saturating_sub(usize::from(inner.height));
+    let keys = if max_scroll > 0 {
+        " [j/k] Scroll  [Esc] Close "
+    } else {
+        " [Enter/Esc] Close "
+    };
+    f.render_widget(Clear, dialog);
+    let block = block.title_bottom(keys).style(
+        Style::default()
+            .fg(app.theme.error())
+            .bg(app.theme.bg_secondary()),
+    );
+    let visible: Vec<_> = lines
+        .into_iter()
+        .skip(scroll.min(max_scroll))
+        .take(inner.height.into())
+        .map(Line::raw)
+        .collect();
+    f.render_widget(Paragraph::new(visible).block(block), dialog);
+    max_scroll
+}
 
 /// The prompt's two lines plus their surrounding blanks and borders.
 const HEIGHT: u16 = 7;
@@ -16,23 +46,29 @@ const HEIGHT: u16 = 7;
 /// `layout::centered` crops it on a narrower terminal rather than overflowing.
 const WIDTH: u16 = 40;
 
-/// Draw the "leave for the CLI picker?" prompt over `area`.
-///
-/// Styled after the source-removal prompt — warning border, `[y]`/`[Esc]` on
-/// the last line — because both ask the same kind of question, and answering
-/// them should not require reading two different dialogs.
 pub fn render(f: &mut Frame, app: &App, area: Rect) {
+    let (question, detail) = match app.current_view {
+        View::ConfirmExit => (
+            "Leave for the CLI picker?".into(),
+            "Selected items will be discarded.",
+        ),
+        View::ConfirmRemove(count) => (
+            format!("Remove {count} selected items?"),
+            "This action cannot be undone.",
+        ),
+        _ => return,
+    };
     let dialog = layout::centered(area, WIDTH, HEIGHT);
     f.render_widget(Clear, dialog);
 
     let text = vec![
         Line::from(""),
         Line::from(Span::styled(
-            "  Leave for the CLI picker?",
+            format!("  {question}"),
             Style::default().fg(app.theme.warning()),
         )),
         Line::from(Span::styled(
-            "  Selected items will be discarded.",
+            format!("  {detail}"),
             Style::default().fg(app.theme.text_primary()),
         )),
         Line::from(""),

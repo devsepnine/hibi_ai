@@ -161,7 +161,7 @@ fn hidden_only_bounds_work_queues_and_search_without_touching_visible_files() {
     app.install_selected().unwrap();
     assert_eq!(app.processing_queue, [1, 2]);
     app.close_processing();
-    app.remove_selected().unwrap();
+    app.remove_confirmed(2).unwrap();
     assert_eq!(app.processing_queue, [1, 2]);
     app.close_processing();
     app.set_search_query("other-hidden".into());

@@ -13,10 +13,14 @@ use crate::tree::TreeNode;
 
 pub fn render(f: &mut Frame, app: &App, area: Rect) {
     if app.visible_components().is_empty() {
-        let mut message = format!(
-            "No {} files. Press f to change filter.",
-            app.component_filter.display()
-        );
+        let mut message = if app.search_query.trim().is_empty() {
+            format!(
+                "No {} files. Press f to change filter.",
+                app.component_filter.display()
+            )
+        } else {
+            "No matches.".into()
+        };
         if !app.hidden_visibility.shows_hidden() {
             message.push_str(" Press H to show hidden folders.");
         }

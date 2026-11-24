@@ -133,6 +133,8 @@ fn cursor_hide_requests_confirmation_before_clearing_selection_and_preserves_dis
     assert!(app.components[1].selected);
     assert_eq!(std::fs::read_to_string(file).unwrap(), "service owned");
     press(&mut app, 'r');
+    assert_eq!(app.current_view, View::ConfirmRemove(1));
+    press(&mut app, 'y');
     assert_eq!(app.processing_queue, [1]);
 }
 
@@ -368,6 +370,8 @@ fn hidden_items_are_not_bulk_selected_or_queued_until_explicitly_shown() {
     );
     app.components[0].selected = true;
     press(&mut app, 'r');
+    assert_eq!(app.current_view, View::ConfirmRemove(1));
+    press(&mut app, 'y');
     assert_eq!(app.processing_queue, [1]);
     app.close_processing();
     press(&mut app, 'i');
@@ -391,6 +395,8 @@ fn hidden_items_are_not_bulk_selected_or_queued_until_explicitly_shown() {
         [true, true]
     );
     press(&mut app, 'r');
+    assert_eq!(app.current_view, View::ConfirmRemove(2));
+    press(&mut app, 'y');
     assert_eq!(app.processing_queue, [0, 1]);
 }
 
@@ -420,6 +426,8 @@ fn concealing_hidden_folders_clears_their_checks_without_restoring_them() {
     assert_eq!(app.hidden_selected_count(), 0);
     assert!(screen(&app).contains("Selected: 1 [0 hidden]"));
     press(&mut app, 'r');
+    assert_eq!(app.current_view, View::ConfirmRemove(1));
+    press(&mut app, 'y');
     assert_eq!(app.processing_queue, [1]);
     app.close_processing();
     press(&mut app, 'H');

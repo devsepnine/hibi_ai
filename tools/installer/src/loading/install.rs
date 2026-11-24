@@ -1,4 +1,4 @@
-use std::sync::mpsc::{Receiver, Sender, TryRecvError};
+use std::sync::mpsc::{Receiver, TryRecvError};
 use std::thread;
 use std::time::Duration;
 
@@ -16,20 +16,21 @@ fn handle_process_completion(app: &mut App, channels: &mut ProcessingChannels) {
     match channels.process_rx.try_recv() {
         Ok(result) => {
             channels.processing_active = false;
-            app.cancelling = false;
             match result {
                 Ok(msg) => app.processing_log.push(msg),
                 Err(e) => {
                     let err_msg = e.to_string();
-                    if err_msg.contains("Cancelled by user") {
-                        app.processing_log
-                            .push("[WARN] Cancelled by user".to_string());
+                    if err_msg == "Cancelled by user" {
+                        if !app.processing_cancelled() {
+                            app.processing_log.push("[WARN] Cancelled by user".into());
+                        }
                         app.processing_queue.clear();
                     } else {
                         app.processing_log.push(format!("[ERR] {}", err_msg));
                     }
                 }
             }
+            app.cancelling = false;
 
             let progress = app.processing_progress.unwrap_or(0) + 1;
             app.processing_progress = Some(progress);
@@ -42,6 +43,7 @@ fn handle_process_completion(app: &mut App, channels: &mut ProcessingChannels) {
         Err(TryRecvError::Empty) => {}
         Err(TryRecvError::Disconnected) => {
             channels.processing_active = false;
+            app.cancelling = false;
             app.processing_log
                 .push("[ERR] Process thread crashed".to_string());
             if app.processing_queue.is_empty() {
@@ -111,10 +113,10 @@ fn check_refresh_completion(app: &mut App, refresh_rx: &Receiver<Result<RefreshR
             app.apply_components_refresh(components);
         }
         Ok(Ok(RefreshResult::Mcp(servers, warning))) => {
-            app.apply_mcp_refresh(servers);
             if let Some(warning) = warning {
                 app.processing_log.push(format!("[WARN] {warning}"));
             }
+            app.apply_mcp_refresh(servers);
         }
         Ok(Ok(RefreshResult::Plugins(p))) => app.apply_plugins_refresh(p),
         // InitialLoad is only sent by start_loading_thread which feeds
@@ -131,54 +133,12 @@ fn check_refresh_completion(app: &mut App, refresh_rx: &Receiver<Result<RefreshR
             app.mcp_servers = mcp_servers;
             app.plugins = plugins;
         }
-        Ok(Err(e)) => {
-            app.processing_log
-                .push(format!("[ERROR] Refresh failed: {}", e));
-            app.needs_refresh = false;
-            app.refreshing = false;
-            app.processing_complete = true;
-            app.status_message =
-                Some("Operation finished; status refresh failed. Review the log.".into());
-        }
+        Ok(Err(e)) => app.finish_refresh_status(Err(e.context("Refresh failed"))),
         Err(TryRecvError::Empty) => {}
         Err(TryRecvError::Disconnected) => {
-            app.processing_log
-                .push("[ERROR] Refresh thread crashed".to_string());
-            app.needs_refresh = false;
-            app.refreshing = false;
-            app.processing_complete = true;
-            app.status_message =
-                Some("Operation finished; status refresh failed. Review the log.".into());
+            app.finish_refresh_status(Err(anyhow::anyhow!("Refresh thread crashed")));
         }
     }
-}
-
-/// Handle input during the Installing view.
-pub(super) fn handle_installing_input(
-    app: &mut App,
-    key: KeyCode,
-    cancel_tx: &Sender<()>,
-    processing_active: &bool,
-) -> Result<()> {
-    match key {
-        KeyCode::Esc => {
-            if *processing_active && !app.cancelling {
-                let _ = cancel_tx.send(());
-                app.processing_log
-                    .push("[WARN] Cancelling current operation...".to_string());
-                app.cancelling = true;
-            } else if app.processing_complete {
-                app.close_processing();
-            }
-        }
-        KeyCode::Char('q') | KeyCode::Enter => {
-            if app.processing_complete {
-                app.close_processing();
-            }
-        }
-        _ => {}
-    }
-    Ok(())
 }
 
 /// Handle a single tick of the Installing view.
@@ -189,12 +149,7 @@ pub(crate) fn handle_installing_view(
     if poll(Duration::from_millis(100))? {
         if let Event::Key(key) = event::read()? {
             if key.kind != KeyEventKind::Release {
-                handle_installing_input(
-                    app,
-                    key.code,
-                    &channels.current_cancel_tx,
-                    &channels.processing_active,
-                )?;
+                installing_key(app, key.code, channels);
             }
         }
     }
@@ -223,24 +178,29 @@ pub(crate) fn tick_installing(app: &mut App, channels: &mut ProcessingChannels) 
     }
 }
 
-#[cfg(any(feature = "gui", test))]
 pub(crate) fn installing_key(app: &mut App, key: KeyCode, channels: &mut ProcessingChannels) {
-    if key == KeyCode::Esc && !app.processing_complete {
-        if !channels.processing_active && !app.processing_queue.is_empty() {
-            app.processing_log
-                .push("[WARN] Cancelled by user".to_string());
+    if app.processing_complete {
+        if matches!(key, KeyCode::Esc | KeyCode::Enter | KeyCode::Char('q')) {
+            app.close_processing();
         }
-        app.processing_queue.clear();
-        if !channels.processing_active && !app.refreshing && !app.needs_refresh {
-            app.start_finish_processing();
-        }
+        return;
     }
-    let _ = handle_installing_input(
-        app,
-        key,
-        &channels.current_cancel_tx,
-        &channels.processing_active,
-    );
+    if key != KeyCode::Esc
+        || !app.can_cancel_processing()
+        || (!channels.processing_active && app.processing_queue.is_empty())
+    {
+        return;
+    }
+    if !app.processing_queue.is_empty() {
+        app.processing_queue.clear();
+        app.processing_log.push("[WARN] Cancelled by user".into());
+    }
+    if channels.processing_active {
+        let _ = channels.current_cancel_tx.send(());
+        app.cancelling = true;
+    } else {
+        app.start_finish_processing();
+    }
 }
 
 #[cfg(test)]
@@ -248,6 +208,44 @@ mod gui_tests {
     use super::*;
     use crate::app::View;
     use crate::app::test_support::fresh_app;
+
+    #[test]
+    fn final_summary_includes_refresh_failure_and_keeps_the_cause() {
+        for disconnected in [false, true] {
+            let mut app = fresh_app();
+            app.processing_progress = Some(1);
+            app.processing_total = Some(1);
+            app.processing_log.push("[ERR] Write failed".into());
+            app.start_finish_processing();
+            let (tx, rx) = std::sync::mpsc::channel();
+            if !disconnected {
+                tx.send(Err(
+                    anyhow::anyhow!("Directory missing").context("Cannot read catalog")
+                ))
+                .unwrap();
+            }
+            drop(tx);
+            check_refresh_completion(&mut app, &rx);
+            assert!(app.processing_complete);
+            assert_eq!(
+                app.processing_log.last().unwrap(),
+                "[INFO] Installation finished: 1 of 1 items attempted; errors: 2"
+            );
+            assert_eq!(
+                app.processing_log
+                    .iter()
+                    .filter(|line| line.starts_with("[INFO] Installation finished"))
+                    .count(),
+                1
+            );
+            let detail = if disconnected {
+                "Refresh thread crashed"
+            } else {
+                "Cannot read catalog: Directory missing"
+            };
+            assert!(app.processing_log.iter().any(|line| line.contains(detail)));
+        }
+    }
 
     #[test]
     fn panicked_process_delivers_error_and_finishes_queue() {
@@ -303,5 +301,51 @@ mod gui_tests {
         assert!(cancel_rx.try_recv().is_ok());
         assert!(!app.processing_complete);
         assert_eq!(app.current_view, View::Installing);
+        installing_key(&mut app, KeyCode::Esc, &mut channels);
+        assert!(cancel_rx.try_recv().is_err());
+        channels
+            .process_tx
+            .send(Ok("[OK] Finished current item".into()))
+            .unwrap();
+        handle_process_completion(&mut app, &mut channels);
+        assert!(!app.cancelling);
+        assert!(app.processing_cancelled());
+        assert_eq!(app.processing_progress, Some(1));
+        assert!(app.needs_refresh);
+    }
+
+    #[test]
+    fn cancel_before_first_tick_leaves_every_item_unattempted() {
+        let mut app = fresh_app();
+        app.current_view = View::Installing;
+        app.processing_queue = vec![0, 1];
+        app.processing_progress = Some(0);
+        let mut channels = ProcessingChannels::new();
+        installing_key(&mut app, KeyCode::Esc, &mut channels);
+        assert!(app.processing_queue.is_empty());
+        assert_eq!(app.processing_progress, Some(0));
+        assert!(app.needs_refresh);
+        assert!(app.processing_cancelled());
+    }
+
+    #[test]
+    fn last_worker_result_decides_whether_cancellation_took_effect() {
+        for cancelled in [false, true] {
+            let mut app = fresh_app();
+            app.current_view = View::Installing;
+            let mut channels = ProcessingChannels::new();
+            channels.processing_active = true;
+            installing_key(&mut app, KeyCode::Esc, &mut channels);
+            let result = if cancelled {
+                Err(anyhow::anyhow!("Cancelled by user"))
+            } else {
+                Ok("[OK] Installed".into())
+            };
+            channels.process_tx.send(result).unwrap();
+            handle_process_completion(&mut app, &mut channels);
+            assert_eq!(app.processing_cancelled(), cancelled);
+            assert_eq!(app.processing_progress, Some(1));
+            assert!(!app.cancelling);
+        }
     }
 }
