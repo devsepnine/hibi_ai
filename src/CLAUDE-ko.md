@@ -18,7 +18,7 @@ always-on 워크플로우와 의사결정 절차를 정의한다. 상세하고 �
 
 - **사고 단계**: 더 정확한 reasoning을 위해 영어로 추론
 - **응답**: 한국어로, 사용자 가독성 우선
-- **산출물**: 대화 언어를 기본으로 하며, 사용자가 언어를 명시하면 해당 언어를 우선한다. 커밋 메시지, PR, QA 인수인계, 보고서, 문서는 `technical-writing`의 산출물 언어 정책을 따른다.
+- **산출물**: 커밋 메시지, PR 제목과 설명, 코드 리뷰, QA 인수인계, 구현 티켓, 릴리즈 노트, 개발 문서와 보고서를 작성하거나 편집하기 전에 `technical-writing`을 불러온다. 스킬의 언어와 문체 규칙을 적용하고, 저장소의 필수 형식을 지키면서 공유하거나 게시하기 전에 초안을 검토한다.
 - **코드·명령어·기술 용어·에러 메시지**: 원문, 즉 영어 유지
 
 ## Workflow orchestration
@@ -37,10 +37,8 @@ always-on 워크플로우와 의사결정 절차를 정의한다. 상세하고 �
 - 팀 결과 종합이 끝나면 더 필요 없는 팀메이트에게 shutdown을 요청한다. idle 팀메이트는 주소 지정 가능하고 토큰 비용 없이 리드 세션이 끝날 때까지 살아 있다
 
 ### 3. Self-improvement loop
-- 사용자 수정이 있을 때마다 그 패턴을 `MEMORY.md`에 기록한다
-- 같은 실수는 먼저 구조로 막는다: lint·hook·타입·테스트·스크립트 체크. 판단이 필요한 경우에만 문장 규칙을 쓴다. 어느 쪽이든 즉시 적용한다
-- 세션 시작 시 관련 레슨을 검토한다
-- 이 프로젝트를 넘어 일반화되는 교훈은 배포 설정에 반영하자고 제안하고, 사용자가 동의하면 `/upstream-pr` 커맨드를 실행한다. 이 커맨드는 이 경로를 소유한 `pull-request` 스킬을 로드한다. 개인적인 것은 `MEMORY.md`에 남긴다
+- 세션 시작 시 관련 교훈을 확인한다.
+- 사용자 지적이나 후속 요청을 받았거나 작업 절차에서 빈틈을 찾았다면, 요청한 일을 모두 마치고 검증한 뒤 최종 보고 전에 `skill-improvement`를 적용한다. 스킬의 기준을 충족할 때만 개선안을 보고한다.
 
 ### 4. Verify before completion
 - 작동을 증명하지 않고 작업을 완료로 표시하지 않는다
@@ -186,7 +184,7 @@ Next:
 | 코딩 스타일 / 클린 코드 | `coding-standards` skill | 코드 리뷰·작성 시 트리거 |
 | 프로젝트 아키텍처 규칙: 레이어, import 방향, 배치 | `architecture-rules` skill | `/architecture-rules` 또는 코드베이스 규칙을 문서화할 때 트리거. 결합이 건강한지는 `dependency-design` |
 | 머지 전 diff의 blast radius | `blast-radius` skill | `/blast-radius` 또는 변경이 무엇을 깨뜨릴지 물을 때 트리거. 설계 시점의 결합도는 `dependency-design` |
-| 응답과 문서 | `technical-writing` skill | 작업 시작 지침에 따라 매 턴 적용한다. |
+| 응답과 문서 | `technical-writing` 스킬 | 매 턴 적용한다. 문서를 수정한 저장소에 `tools/lint-prose.py`가 있으면 실행한다. |
 | 의존성 / 결합 설계 | `dependency-design` skill | `/deps` 또는 모듈·결합도·의존성·모노레포 설계 시 트리거 |
 | 빌드 & 타입 에러 | `verification-loop` skill | `/verify`, `/build-fix` |
 | 보증 수준 / 추적성, 안전필수 | `do-178c` skill | `/do-178c` 또는 안전필수·고위험·보증수준·추적성 작업 시 트리거 |

@@ -29,6 +29,14 @@ When you save the document, link to it in a short reply. Give the main takeaway 
 
 Give each idea a natural sentence and keep its condition or cause attached. In instructions, place a prerequisite before the action and keep simultaneous actions together. Name the actor when known and use one term per concept. For a draft that still reads awkwardly, consult the [sentence revision examples](references/slop-patterns.md).
 
+### Make Slack updates easy to scan
+
+Use short paragraphs with a blank line between distinct points. In a technical update, give each event or behavior its own paragraph. Keep a condition or exception with the behavior it qualifies. Use bullets when readers need to scan or compare parallel items.
+
+Use plain text for field names and literal values in short Slack replies. Reserve backticks for commands, code snippets, or values whose exact syntax needs to stand out. Use bold sparingly to highlight a decision or action.
+
+When asked where a value comes from, lead with the source. If the code reads an API response, give the HTTP method and path, then state how it selects each requested field and when it returns a fallback. Include other flows only when they help answer the question.
+
 ## Artifact language
 
 Use the conversation's language for titles, headings, prose, and checklists. An explicit language request for the artifact takes precedence. Preserve code, commands, paths, identifiers, schema keys, required labels, and verbatim quotations. Translate discretionary template labels.

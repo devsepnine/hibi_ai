@@ -157,8 +157,8 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 - **Level**: MUST
 - **Rule**: 정책과 규범은 skill에 두고, 커맨드는 skill이나 agent에 위임하거나 다른 skill을 참조하는 절차만 담는다.
 - **Why**: 정책의 단일 원천을 skill로 유지한다. 2026-10-04 결정, 절차형 커맨드 허용.
-- **Evidence**: 위임형 20개, 절차형 7개 · `grep -Li "source of truth" $(ls src/commands/*.md | grep -v -- -ko.md)`
-- **Exceptions**: 절차형 `src/commands/bugfix.md`, `src/commands/checkpoint.md`, `src/commands/learn.md`, `src/commands/orchestrate.md`, `src/commands/perf.md`, `src/commands/plan.md`, `src/commands/refactor.md`
+- **Evidence**: 위임형과 절차형 분류 · `grep -Li "source of truth" $(ls src/commands/*.md | grep -v -- -ko.md)`
+- **Exceptions**: 절차형 `src/commands/bugfix.md`, `src/commands/checkpoint.md`, `src/commands/orchestrate.md`, `src/commands/perf.md`, `src/commands/plan.md`, `src/commands/refactor.md`
 - **Enforced by**: review
 
 ### `arch-skill-layout`

@@ -34,7 +34,7 @@
 |---|---|---|
 | 에이전트 | `src/agents/<name>.md` | [README 에이전트 표](README.md#에이전트-8개) |
 | 슬래시 커맨드 | `src/commands/<name>.md` | [README 커맨드 표](README.md#슬래시-커맨드-28개) |
-| 스킬 | `src/skills/<name>/SKILL.md` | [README 스킬 표](README.md#스킬-30개) |
+| 스킬 | `src/skills/<name>/SKILL.md` | [README 스킬 표](README.md#스킬-31개) |
 | 훅 | `src/hooks/<name>/hook.yaml` | 전부 `deprecated: true`이며 인스톨러가 자동 제거 |
 | MCP 서버 | `src/mcps/mcps.yaml` | 단일 파일 |
 | 플러그인 | `src/plugins/plugins.yaml` | 단일 파일 |
@@ -136,7 +136,7 @@ A: [RUNBOOK.md](RUNBOOK.md) "macOS Gatekeeper 경고" 참조
 A: [RUNBOOK.md](RUNBOOK.md) "빌드 실패" 참조
 
 **Q: 새 에이전트/스킬을 추가하려면?**
-A: `src/agents/`·`src/skills/`의 기존 파일 참조. 스킬은 `/learn`으로 세션 패턴에서 추출할 수도 있다
+A: `src/agents/`와 `src/skills/`의 기존 파일을 참고한다. 세션 경험을 스킬에 반영할지 검토하려면 `skill-improvement`를 사용한다. Claude Code에서는 `/learn`으로도 실행할 수 있다.
 
 **Q: 커밋 메시지 형식은?**
 A: `commit-rules` 스킬이나 `/commit`

@@ -1,6 +1,6 @@
 # 배포 설정의 동작 영역
 
-`src/` 는 인스톨러가 ~/.claude 와 ~/.codex 로 복사하는 산문 설정이다. 제보는 파일 이름이 아니라 모델의 행동으로 들어온다. 그래서 항목은 동작 영역 단위로 나누고 그 동작을 정하는 파일을 가리킨다. 스킬 30개 · 커맨드 28개 · 에이전트 8개를 하나씩 찾을 때는 `component-lookup` 의 규칙을 쓴다. 이 영역에는 화면 문구가 없으므로 UI 문구 줄에는 모델 출력이나 설정에 실제로 박힌 문자열을 적는다.
+`src/` 는 인스톨러가 ~/.claude 와 ~/.codex 로 복사하는 산문 설정이다. 제보는 파일 이름이 아니라 모델의 행동으로 들어온다. 그래서 항목은 동작 영역 단위로 나누고 그 동작을 정하는 파일을 가리킨다. 스킬 31개 · 커맨드 28개 · 에이전트 8개를 하나씩 찾을 때는 `component-lookup` 의 규칙을 쓴다. 이 영역에는 화면 문구가 없으므로 UI 문구 줄에는 모델 출력이나 설정에 실제로 박힌 문자열을 적는다.
 
 ### `commit-push-gating`: 커밋 · 푸시 · PR 은 명시 요청 때만
 
@@ -91,11 +91,12 @@
 ### `skill-triggering`: 스킬 자동 트리거와 description 예산
 
 - **위치**: 대화 중 스킬이 자동으로 로드되는지 여부, 측정은 `src/skills/eval-harness/scripts` 의 두 스크립트
-- **별칭**: 스킬이 안 뜸, 스킬 트리거, description, 예산, 트리거 평가, /learn
+- **별칭**: 스킬이 안 뜸, 스킬 트리거, description, 예산, 트리거 평가, /learn, 작업 회고, 스킬 개선
 - **UI 문구**: `"within budget, {budget - total} chars spare"`, `"OVER BUDGET by {total - budget} chars."`, `"Truncation is all-or-nothing per skill"`
-- **컨트롤**: `python src/skills/eval-harness/scripts/skill_budget.py src/skills`, `/eval` → `src/commands/eval.md`, `/learn` → `src/commands/learn.md`
+- **컨트롤**: `python src/skills/eval-harness/scripts/skill_budget.py src/skills`, `/eval` → `src/commands/eval.md`, Claude Code에서 수동 회고를 실행하는 `/learn` → `src/commands/learn.md`
 - **코드 경로**:
   - 데이터: 각 스킬의 frontmatter `description`, 위치는 `component-lookup`
+  - 작업 회고: `src/AGENTS.md`와 `src/CLAUDE.md`가 완료 보고 전에 회고를 호출한다. `src/skills/skill-improvement/SKILL.md`에서 재사용 범위를 판단하고 기준을 충족할 때 개선을 제안한다.
   - 측정: `src/skills/eval-harness/scripts/skill_budget.py` → `BUDGET_PERCENT`, 트리거 측정은 `src/skills/eval-harness/scripts/trigger_eval.py` 가 중첩 `claude -p` 를 띄워 Skill 호출을 본다
   - 평가셋: 스킬별 evals 디렉터리의 trigger-eval.json, 예 `src/skills/feature-map/evals/trigger-eval.json`
 - 글쓰기 스킬의 상시 적용을 확인할 때는 Codex의 파일 읽기 기록과 Claude의 모델 입력을 검사한다. Claude는 import만으로 본문을 받을 수 있다. `technical-writing/evals/trigger-eval.json`은 상시 지침 없이 스킬 설명만으로 호출되는지 따로 조사할 때 쓴다. 이때 번역 요청도 적용 대상이므로 음성 대조군은 스킬 사용을 명시적으로 생략해 달라는 요청으로 지정한다.
@@ -103,7 +104,7 @@
 - **함정**: 특정 스킬이 전혀 트리거되지 않음 → 목록 전체가 문자 예산을 넘으면 넘친 스킬은 이름만 남고 description 이 통째로 빠진다, 근거: `src/skills/eval-harness/scripts/skill_budget.py` → `BUDGET_PERCENT`
 - **함정**: description 을 고쳤는데 트리거 평가 결과가 그대로 → 평가는 ~/.claude/skills 의 설치본을 읽으므로 먼저 설치해야 한다, 근거: `src/skills/eval-harness/SKILL.md` → `installed`
 - **함정**: 하네스가 죽었는데 FAIL 로 집계됨 → 처리 안 된 예외가 exit 1 로 끝났다, 지금은 exit 4 다, 근거: `582b99b`
-- **함정**: `/learn` 으로 저장한 패턴이 한 번도 로드되지 않음 → 예전에는 로드되지 않는 평면 파일에 썼다, 근거: `b22fb9a`
+- **함정**: 작업 지적을 받았지만 스킬 개선 제안이 나오지 않음 → 다른 작업에서도 같은 조치가 필요한 근거가 있을 때만 제안한다, 근거: `src/skills/skill-improvement/SKILL.md`
 - **공유 의존**: `component-lookup`
 - **관련**: `prose-lint`
 

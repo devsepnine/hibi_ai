@@ -21,7 +21,7 @@ it.
 
 ## Two cases
 
-Use `technical-writing` → Artifact language for PR titles, bodies, reviews, and replies to review comments. Default to the conversation's language and honor an explicitly requested language.
+Load `technical-writing` before drafting or editing a PR title, description, review, or comment reply. Apply its language and writing rules, then revise the draft before returning or posting it. Preserve the repository's PR template and review conventions.
 
 | Need | Where |
 |---|---|
@@ -284,7 +284,7 @@ base branch.
 | Need | Where |
 |---|---|
 | Config contribution method: gates, privacy, source resolution | `references/upstream-config.md`, or `/upstream-pr` |
-| Extracting a session pattern into a skill before contributing it | `/learn` |
+| Evaluating a session pattern before proposing a skill change | `skill-improvement` |
 | Default body template, reviewer and author checklists | `references/pr-body.md` |
 | Commit message format and splitting | `commit-rules` |
 | Change summary to paste into the body | `qa-handoff` |

@@ -104,7 +104,7 @@ GUI 화면과 실패 경로 검증 항목은 `docs/features/installer-gui.md`에
 | 주석, 주석이 너무 많음, 주석 언어 | `comment-rules` |
 | 리뷰, 리뷰어, 잔소리, 닛픽, nit, 지적이 너무 많음, 리뷰가 안 돌아옴, code-reviewer | `review-gate` |
 | 검증, verify, READY 안 나옴, PARTIAL | `verification-phase7` |
-| 스킬이 안 뜸, 스킬 트리거, description, 예산, /learn | `skill-triggering` |
+| 스킬이 안 뜸, 스킬 트리거, description, 예산, /learn, 작업 회고, 스킬 개선 | `skill-triggering` |
 | 대시, 괄호, 줄표, lint-prose, 문체 린트 | `prose-lint` |
 | 커맨드 파일 어디, 스킬 파일 위치, 에이전트 정의, -ko 파일, 한국어 미러 | `component-lookup` |
 | 파일명 검색, 찾기, 출처 검색, Ctrl+F, Cmd+F | `gui-search` |

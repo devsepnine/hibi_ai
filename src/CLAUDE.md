@@ -18,7 +18,7 @@ Defines always-on workflow and decision-making procedures. Detailed, situational
 
 - **Thinking step**: reason in English for more precise reasoning
 - **Output**: respond in Korean, user readability first
-- **Artifacts**: use the conversation's language by default and an explicitly requested language when given. Follow `technical-writing` → Artifact language for commit messages, PRs, QA handoffs, reports, and documents.
+- **Artifacts**: Load `technical-writing` before drafting or editing commit messages, PR titles and descriptions, code reviews, QA handoffs, implementation tickets, release notes, or engineering docs and reports. Apply the skill's language and writing rules. Review the draft before sharing or publishing it, and preserve the repository's required format.
 - **Code, commands, technical terms, error messages**: keep in original English
 
 ## Workflow orchestration
@@ -37,10 +37,8 @@ Defines always-on workflow and decision-making procedures. Detailed, situational
 - After synthesizing team results, ask teammates that are no longer needed to shut down. Idle teammates stay alive, addressable at no token cost, until the lead session ends
 
 ### 3. Self-improvement loop
-- On every user correction, record the pattern in `MEMORY.md`
-- Prevent the same mistake structurally first, with a lint, hook, type, test, or script check; write a prose rule only for judgment calls; apply the fix immediately
-- Review relevant lessons at the start of each session
-- When a lesson generalizes past this project, surface a proposal to promote it into the distributed config and, once the user agrees, run the `/upstream-pr` command, which loads the `pull-request` skill that owns this path; what is personal stays in `MEMORY.md`
+- Review relevant lessons at session start.
+- After completing and verifying all requested work, use `skill-improvement` before the final report if you received a correction or follow-up request or found a workflow gap. Include a proposal only when the skill's criteria are met.
 
 ### 4. Verify before completion
 - Never mark work complete without proof it works
@@ -186,7 +184,7 @@ Each policy has ONE source of truth, following DRY. Detailed policies are **Skil
 | Coding style / clean code | `coding-standards` skill | trigger on code review/writing |
 | Project architecture rules: layers, import direction, placement | `architecture-rules` skill | `/architecture-rules` or trigger on documenting a codebase's rules; whether a coupling is healthy stays in `dependency-design` |
 | Pre-merge blast radius of a diff | `blast-radius` skill | `/blast-radius` or trigger on what a change could break; design-time coupling stays in `dependency-design` |
-| Replies and documents | `technical-writing` skill | Every turn, as specified in the pre-work checklist. |
+| Replies and documents | `technical-writing` skill | Apply on every turn. When the repository provides `tools/lint-prose.py`, run it to check document changes. |
 | Dependency / coupling design | `dependency-design` skill | `/deps` or trigger on module/coupling/dependency/monorepo design |
 | Build & type errors | `verification-loop` skill | `/verify`, `/build-fix` |
 | Assurance level / traceability for safety-critical work | `do-178c` skill | `/do-178c` or trigger on safety-critical / high-blast-radius / assurance-level / traceability work |
