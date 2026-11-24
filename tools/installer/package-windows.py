@@ -1,5 +1,6 @@
 """Build the x64 MSI from the Windows portable payload using wixl."""
 
+import csv
 import os
 from pathlib import Path
 import re
@@ -16,6 +17,22 @@ node = ET.SubElement
 
 def identifier(prefix, path):
     return prefix + uuid.uuid5(UPGRADE_CODE, path).hex
+
+
+def file_version(path):
+    if path.suffix.lower() not in {".exe", ".dll"}:
+        return ""
+    return subprocess.check_output(
+        ["exiftool", "-s3", "-FileVersionNumber", str(path)], text=True
+    ).strip()
+
+
+def verify_file_versions(package, expected):
+    table = subprocess.check_output(["msiinfo", "export", str(package), "File"], text=True)
+    rows = csv.DictReader(table.splitlines(), delimiter="\t")
+    versions = {row["File"]: row["Version"] for row in rows}
+    if any(versions.get(key) != version for key, version in expected.items()):
+        raise ValueError("MSI file versions differ from the Windows payload. Use wixl 0.103 or newer.")
 
 
 def product_version(version):
@@ -51,6 +68,7 @@ def build(version, payload, output):
     node(target, "Directory", Id="ProgramMenuFolder")
     directories = {Path("."): node(programs, "Directory", Id="INSTALLDIR", Name="Hibi")}
     feature = node(product, "Feature", Id="Hibi", Title="Hibi", Level="1")
+    expected_versions = {}
     for path in sorted(payload.rglob("*")):
         rel = path.relative_to(payload)
         name = rel.as_posix()
@@ -64,16 +82,26 @@ def build(version, payload, output):
         component = node(parent, "Component", Id=component_id,
                          Guid=str(uuid.uuid5(UPGRADE_CODE, name)), Win64="yes")
         file = node(component, "File", Id=identifier("F", name), Name=rel.name, Source=name, KeyPath="yes")
+        # Windows Installer compares this value with the version in the installed executable.
+        version_in_file = file_version(path)
+        if version_in_file:
+            file.set("DefaultVersion", version_in_file)
+            expected_versions[file.get("Id")] = version_in_file
         if name == "hibi.exe":
             node(file, "Shortcut", Id="HibiShortcut", Directory="ProgramMenuFolder",
                  Name="Hibi", Icon="hibi.ico", Advertise="yes", WorkingDirectory="INSTALLDIR")
         node(feature, "ComponentRef", Id=component_id)
 
-    with tempfile.NamedTemporaryFile(dir=payload, suffix=".wxs") as source:
+    with (
+        tempfile.NamedTemporaryFile(dir=payload, suffix=".wxs") as source,
+        tempfile.TemporaryDirectory(dir=output.resolve().parent) as staging,
+    ):
         ET.ElementTree(root).write(source, encoding="utf-8", xml_declaration=True)
         source.flush()
-        subprocess.run(["wixl", "-a", "x64", "-o", str(output.resolve()), source.name],
-                       cwd=payload, check=True)
+        package = Path(staging) / output.name
+        subprocess.run(["wixl", "-a", "x64", "-o", str(package), source.name], cwd=payload, check=True)
+        verify_file_versions(package, expected_versions)
+        package.replace(output)
 
 
 if __name__ == "__main__":

@@ -63,6 +63,8 @@ file dist/hibi-linux dist/hibi.exe
 ./dist/hibi
 ```
 
+Windows MSI를 만들 때는 `wixl` 0.103 이상과 `exiftool`, `msiinfo`가 필요하다. 패키징 스크립트는 Windows 실행 파일의 버전을 읽고 완성된 MSI의 파일 버전과 대조한다.
+
 패키징까지 로컬에서 확인하려면:
 
 ```bash
