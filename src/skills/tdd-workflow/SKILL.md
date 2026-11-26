@@ -98,6 +98,8 @@ test('search returns relevant results', async ({ page }) => {
 
 Check that omitting the required behavior or producing a wrong value would fail the test. For an API that returns no value, assert the state or effect its caller observes.
 
+When a sheet or external configuration supplies UI text, compare the required text with what the application reads in the target environment before writing the E2E assertion. Keep the required text as the expectation. If the values differ, record both and the environment for QA to recheck after the mapping changes. A test with a mocked lookup verifies only how the UI renders that response.
+
 Shapes that pass that check vacuously:
 
 | Shape | Example | Rewrite to |

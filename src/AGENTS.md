@@ -63,6 +63,7 @@ All four must pass equally. See the `coding-standards` skill → `references/rev
 - When connected, prefer matching saved configurations and session tools over direct shell execution. Follow the `verification-loop` skill's execution setup for selection, permissions, fallback, and result checks.
 - Prefer `rg` / `rg --files` for search.
 - Run independent lookups and analyses in parallel.
+- For an independent session in WezTerm, list panes with `wezterm cli list` and reuse an idle pane if available. If a new pane is needed, split it with `wezterm cli split-pane`.
 - Prefer patch-based edits for single-file changes.
 - Avoid unnecessary scripting languages for simple file read/write.
 
