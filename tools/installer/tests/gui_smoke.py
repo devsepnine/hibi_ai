@@ -423,9 +423,13 @@ esac
             dark = sum(image.getpixel((0, 0))) < 300
             accent = (250, 250, 250) if dark else (63, 61, 218)
             center = image.crop((365, 88, 515, 210))
-            for y in range(center.height):
-                if center.crop((0, y, center.width, y + 1)).getcolors(1) == [(center.width, accent)]:
-                    return 365 + center.width // 2, 88 + y + 8
+            strokes = [y for y in range(center.height)
+                       if center.crop((0, y, center.width, y + 1)).getcolors(1) == [(center.width, accent)]]
+            # A progress bar can have the same color as a focused text input.
+            for top in strokes:
+                for bottom in strokes:
+                    if 28 <= bottom - top <= 42:
+                        return 365 + center.width // 2, 88 + (top + bottom) // 2
             time.sleep(.1)
         self.screenshot("search-focus-failure")
         raise AssertionError("Search input did not show keyboard focus")
@@ -443,6 +447,10 @@ esac
 
     def expect_components(self):
         self.find("Components", (15, 80, 230, 280), timeout=20)
+
+    def back_to_components(self):
+        self.click_text("Back to components")
+        self.expect_components()
 
     def close_diff(self):
         self.key("Escape")
@@ -755,8 +763,7 @@ esac
         manifest = json.loads((self.home / ".hibi/install.json").read_text())
         assert manifest["components"] == ["agents/architect.md"], manifest
         self.passed("07-install-and-manifest")
-        self.click_text("Back to components")
-        self.expect_components()
+        self.back_to_components()
         self.clear_search()
         self.clear_selection()
         self.search("assurance-auditor")
@@ -765,7 +772,7 @@ esac
         self.expect("Operation complete", timeout=15)
         other_installed = installed.parent / "assurance-auditor.md"
         assert other_installed.is_file()
-        self.click_text("Back to components")
+        self.back_to_components()
         self.clear_search()
         self.clear_selection()
         self.search("architect")
@@ -790,7 +797,7 @@ esac
         assert manifest["components"] == ["agents/assurance-auditor.md"], manifest
         assert other_installed.is_file(), "Search removed a selected but hidden installed file"
         self.passed("09-remove-confirm-and-manifest")
-        self.click_text("Back to components")
+        self.back_to_components()
         self.clear_search()
         self.search("assurance-auditor")
         self.select_one_result("assurance-auditor.md")
@@ -798,7 +805,7 @@ esac
         self.confirm_single_removal("assurance-auditor.md")
         self.expect("Operation complete", timeout=15)
         assert not other_installed.exists()
-        self.click_text("Back to components")
+        self.back_to_components()
         self.clear_search()
         self.click_text("Keyboard shortcuts")
         self.expect("Browse & review")
@@ -914,7 +921,7 @@ esac
         assert instructions.read_text() == user_instructions
         self.passed("11a-install-one-setting")
 
-        self.click_text("Back to components")
+        self.back_to_components()
         self.search("MCP_TIMEOUT")
         self.select_one_result("env.MCP_TIMEOUT")
         self.click_text("Remove", (220, 300, 1120, 780))
@@ -923,7 +930,7 @@ esac
         del expected["env"]["MCP_TIMEOUT"]
         assert json.loads(settings_file.read_text()) == expected
         self.passed("11b-remove-one-setting")
-        self.click_text("Back to components")
+        self.back_to_components()
         self.settings_read_error(settings_file)
         settings_file.write_text(json.dumps(expected))
 
