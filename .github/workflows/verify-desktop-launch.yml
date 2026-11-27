@@ -4,23 +4,9 @@ on:
     branches: [verify/desktop-launch-compat-20261127]
 permissions:
   contents: read
+  actions: read
 jobs:
-  windows-build:
-    runs-on: windows-2025
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: tools/installer
-      - run: cargo build --locked --manifest-path tools/installer/Cargo.toml
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows-x64
-          path: tools/installer/target/debug/hibi.exe
-          retention-days: 1
   windows:
-    needs: windows-build
     strategy:
       fail-fast: false
       matrix:
@@ -32,28 +18,23 @@ jobs:
         with:
           name: windows-x64
           path: build
-      - run: python tools/installer/tests/compat/windows.py build/hibi.exe
-        timeout-minutes: 5
-  macos:
-    strategy:
-      fail-fast: false
-      matrix:
-        runner: [macos-15-intel, macos-26]
-    runs-on: ${{ matrix.runner }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: tools/installer
-      - run: cargo build --locked --manifest-path tools/installer/Cargo.toml
-      - run: |
-          sw_vers
-          uname -m
-          mkdir -p dist
-          cp tools/installer/target/debug/hibi dist/hibi
-          bash package.sh --macos-app
-          unzip -q 'dist/Hibi-*-macos.zip' -d "$RUNNER_TEMP/app"
-          swiftc tools/installer/tests/compat/window.swift -o "$RUNNER_TEMP/window"
-          python3 tools/installer/tests/compat/mac.py "$RUNNER_TEMP/app/Hibi.app" "$RUNNER_TEMP/window"
-          python3 tools/installer/tests/cli_smoke.py --binary dist/hibi
+          run-id: 46004434520
+          github-token: ${{ github.token }}
+      - name: CLI redirection
+        run: python -u tools/installer/tests/compat/windows.py build/hibi.exe driver cli
+      - name: Terminal GUI launch
+        if: always()
+        run: python -u tools/installer/tests/compat/windows.py build/hibi.exe driver terminal
+        timeout-minutes: 2
+      - name: Desktop GUI launch
+        if: always()
+        run: |
+          Get-Process hibi -ErrorAction SilentlyContinue | Stop-Process -Force
+          python -u tools/installer/tests/compat/windows.py build/hibi.exe driver desktop
+        timeout-minutes: 2
+      - name: Terminal interface
+        if: always()
+        run: |
+          Get-Process hibi -ErrorAction SilentlyContinue | Stop-Process -Force
+          python -u tools/installer/tests/compat/windows.py build/hibi.exe driver tui
+        timeout-minutes: 2

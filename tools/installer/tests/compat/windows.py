@@ -37,7 +37,10 @@ def wait_window():
     raise AssertionError("No visible HIBI AI window")
 
 exe = str(Path(sys.argv[1]).resolve())
-mode = sys.argv[2] if len(sys.argv) > 2 else "driver"
+mode = sys.argv[2]
+def record(message):
+    Path(os.environ["PROBE_RESULT"]).write_text(str(message), encoding="utf-8")
+
 
 if mode == "desktop":
     assert k.GetConsoleCP() == 0
@@ -45,13 +48,15 @@ if mode == "desktop":
     info.cbSize, info.mask, info.file, info.show = c.sizeof(info), 0x40, exe, 1
     if not shell.ShellExecuteExW(c.byref(info)):
         raise c.WinError(c.get_last_error())
-    print(k.GetProcessId(info.process))
+    record(k.GetProcessId(info.process))
     k.CloseHandle(info.process)
 elif mode == "terminal":
     assert k.GetConsoleCP() != 0
-    proc = sp.Popen([exe])
+    with open('CONIN$', 'rb') as cin, open('CONOUT$', 'wb') as cout:
+        proc = sp.Popen([exe], stdin=cin, stdout=cout, stderr=cout)
+    record(f"spawned {proc.pid}, waiting for launcher exit")
     assert proc.wait(timeout=15) == 0
-    print(proc.pid)
+    record(proc.pid)
 elif mode == "console-probe":
     assert k.GetConsoleCP() == 0
     if k.AttachConsole(int(sys.argv[3])):
@@ -68,35 +73,57 @@ elif mode == "tui":
             ids = (w.DWORD * 32)()
             count = k.GetConsoleProcessList(ids, len(ids))
             assert proc.poll() is None and proc.pid in ids[:count] and not window()
-            print("PASS --tui stays in caller console")
+            record("PASS --tui stays in caller console")
         finally:
             proc.terminate()
             proc.wait(timeout=5)
 else:
     build = sys.getwindowsversion().build
     print("Windows build", build, "CPU", os.environ.get("PROCESSOR_ARCHITECTURE"), flush=True)
-    def helper(mode, flags, *args):
-        return sp.check_output([sys.executable, __file__, exe, mode, *args],
-                               creationflags=flags, text=True, timeout=45).strip()
-    assert not window()
-    for launch, flags in [("terminal", sp.CREATE_NEW_CONSOLE), ("desktop", sp.DETACHED_PROCESS)]:
-        original = int(helper(launch, flags))
+    def helper(name, flags, *args):
+        with tempfile.NamedTemporaryFile(dir=os.environ["RUNNER_TEMP"], prefix="hibi-probe-", delete=False) as marker:
+            result = Path(marker.name)
+        print("Starting", name, flush=True)
+        with result.with_suffix(".log").open("w") as log:
+            process = sp.Popen([sys.executable, "-u", __file__, exe, name, *args],
+                               creationflags=flags, stdin=sp.DEVNULL, stdout=log, stderr=log,
+                               env=dict(os.environ, PROBE_RESULT=str(result)))
+            try:
+                status = process.wait(timeout=35)
+            except sp.TimeoutExpired:
+                process.kill()
+                raise
+            finally:
+                print(name, "result:", result.read_text(encoding="utf-8"),
+                      result.with_suffix(".log").read_text(errors="replace"), flush=True)
+        assert status == 0, (name, status)
+        return result.read_text(encoding="utf-8").strip()
+
+    scenario = sys.argv[3]
+    if scenario in ("terminal", "desktop"):
+        assert not window()
+        flags = sp.CREATE_NEW_CONSOLE if scenario == "terminal" else sp.DETACHED_PROCESS
+        original = int(helper(scenario, flags))
         pid = wait_window()
         try:
             time.sleep(.5)
             assert window() == pid
             helper("console-probe", sp.DETACHED_PROCESS, str(pid))
-            print(f"PASS {launch}: launcher={original} window={pid} attached_console=false", flush=True)
-            if launch == "terminal":
+            print(f"PASS {scenario}: launcher={original} window={pid} attached_console=false", flush=True)
+            if scenario == "terminal":
                 assert original != pid
             else:
                 print("Desktop needed console handoff:", original != pid, flush=True)
+                if build >= 26100:
+                    assert original == pid, "Desktop launch allocated a console before opening the GUI"
         finally:
-            sp.run(["taskkill", "/pid", str(pid), "/f"], check=True)
-    print(helper("tui", sp.CREATE_NEW_CONSOLE))
-    with tempfile.TemporaryFile() as out:
-        sp.run([exe, "--version"], stdout=out, check=True)
-        out.seek(0)
-        assert out.read().strip() == b"hibi v2.1.2 (Config Installer)"
-    assert b"Usage: hibi" in sp.check_output([exe, "--help"])
-    print("PASS --version file redirection and --help pipe")
+            sp.run(["taskkill", "/pid", str(pid), "/f"], check=True, timeout=10)
+    elif scenario == "tui":
+        print(helper("tui", sp.CREATE_NEW_CONSOLE))
+    else:
+        with tempfile.TemporaryFile() as out:
+            sp.run([exe, "--version"], stdout=out, check=True, timeout=10)
+            out.seek(0)
+            assert out.read().strip() == b"hibi v2.1.2 (Config Installer)"
+        assert b"Usage: hibi" in sp.check_output([exe, "--help"], timeout=10)
+        print("PASS --version file redirection and --help pipe")
