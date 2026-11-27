@@ -73,6 +73,7 @@ jobs:
         run: |
           python3 tools/lint-prose.py
           python3 tools/lint-arch.py
+          python3 tools/test_skill_budget.py
           cargo fmt --manifest-path tools/installer/Cargo.toml --check
           cargo test --locked --manifest-path tools/installer/Cargo.toml
           cargo test --locked --manifest-path tools/installer/Cargo.toml --no-default-features

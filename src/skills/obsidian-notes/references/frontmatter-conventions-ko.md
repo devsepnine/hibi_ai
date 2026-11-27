@@ -26,7 +26,7 @@ aliases: ["Alt Title"]   # optional
 |-------|----------|
 | `release`  | Release notes |
 | `adr`      | Architecture Decision Record |
-| `retro`    | Sprint/iteration retrospective |
+| `retro`    | 반복 작업 회고 또는 사건 회고 |
 | `debug`    | Debugging session log |
 | `learning` | Library/tool/pattern learning note |
 | `daily`    | Daily log / dev journal |
@@ -89,6 +89,9 @@ changelog_link: https://github.com/org/repo/releases/tag/v1.9.4
 ```
 
 #### `retro`
+
+반복 작업 회고에서는 해당하는 필드만 추가한다.
+
 ```yaml
 sprint: 2026-W16
 team: platform

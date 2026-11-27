@@ -166,6 +166,17 @@ The global setting checks the aggregate. For a changed file threshold, compare t
 | `console.log` left in tests | Noisy CI output | Remove before commit |
 | Weakening an assertion to match the implementation | Test now encodes the bug | Change a test only when the intended behavior changed, and say why |
 
+## Diagnose a failing test
+
+Rerun the smallest failing test with the project's runner. Compare the first relevant failure with the intended behavior before changing the test or the implementation.
+
+| Failure | Check first |
+|---|---|
+| Assertion mismatch | Read the behavior contract and compare it with the actual result and the assertion. Fix the implementation if the assertion expresses the agreed behavior. |
+| Mock mismatch | Verify that the boundary was reached and that the mock reflects the real argument and response shapes. |
+| Timeout or intermittent failure | Wait on the promised event and check for leaked timers or state. Increase a timeout only when the expected duration supports it. |
+| Setup or teardown failure | Check fixture scope, initialization, cleanup, and shared state. Rerun the test alone and with its related tests if order may matter. |
+
 ## Author Checklist
 
 Before marking work complete:

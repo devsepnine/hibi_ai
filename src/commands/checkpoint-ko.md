@@ -63,14 +63,16 @@ Build: [PASS/FAIL]
 
 1. 안전한 경계에서 멈춘다: 지금의 원자적 단계를 끝내거나 되돌리고, 새 작업을 시작하지 않으며, 백그라운드 서브에이전트를 멈춘다.
 2. 멈추려고 되돌릴 수 없는 동작을 하지 않는다. 사용자가 요청하지 않는 한 commit, push, PR을 하지 않는다. 커밋하지 않은 편집은 이미 디스크에 남아 있는 작업 트리에 그대로 둔다. 멈추려고 stash하지 않는다. `create`가 stash를 남겼다면 그 ref를 노트에 적는다.
-3. 재개 노트를 `.claude/resume/<name>.md`에 쓴다. 섹션: Intent, Done and verified, Current state, Next step, Key files, Gotchas. "완료" 주장마다 measured 또는 inferred를 표시한다. 기존 결정 로그가 있으면 복사하지 말고 가리킨다. 노트는 세션 전용이다: 프로젝트가 `.claude/resume/`를 무시하지 않으면 커밋하지 말고 `.gitignore`에 추가하자고 제안한다.
-4. 어디서 멈췄는지, 노트 경로, 트리가 깨끗한지, 재개 시 첫 동작을 응답한다.
+3. 작업 파일이 있는 worktree의 `.claude/resume/<name>.md`에 재개 노트를 쓴다. 섹션: Intent, Done and verified, Current state, Next step, Key files, Gotchas. "완료" 주장마다 measured 또는 inferred를 표시한다. 기존 결정 로그가 있으면 복사하지 말고 가리킨다. 노트는 세션 전용이다: 프로젝트가 `.claude/resume/`를 무시하지 않으면 커밋하지 말고 `.gitignore`에 추가하자고 제안한다.
+
+   Current state에 작업 파일이 있는 worktree의 Git 루트 절대 경로, 브랜치 또는 detached 상태, 전체 HEAD 커밋 ID를 적는다. 해당 worktree에서 `git rev-parse --show-toplevel`, `git symbolic-ref --short -q HEAD`, `git rev-parse --verify HEAD`를 실행한다.
+4. 어디서 멈췄는지, 노트의 절대 경로, 기록한 worktree가 깨끗한지, 재개할 때 첫 작업이 무엇인지 알린다.
 
 ## Resume
 
-1. 흔적부터 읽는다: `.claude/resume/<name>.md`와 그 `-decisions.tsv`, 체크포인트 로그, base 대비 `git log`와 `git diff`, 그리고 지정된 이전 transcript를 읽는다. 그 세션은 `claude --resume`으로 다시 열거나, 보통 `~/.claude/projects/` 아래 인코딩된 작업 디렉터리 이름의 폴더에 있는 JSONL을 읽는다. 긴 transcript는 서브에이전트에서 파싱하고 줄인 타임라인만 남긴다.
-2. 흔적을 권위 있는 입력으로 다룬다. 재개 지점을 밝히고, 끝난 작업을 다시 하거나 이미 내린 결정을 다시 도출하지 않는다.
-3. 이어받은 "완료" 주장은 그 위에 쌓기 전에 실제 결과물에서 다시 검증한다. 이전의 자기 보고는 증거가 아니다.
+1. `.claude/resume/<name>.md`부터 읽는다. 세션을 다른 경로에서 시작했으면 중단 시 보고한 절대 경로를 사용한다. 노트 옆의 `-decisions.tsv`, 체크포인트 로그, 지정된 이전 transcript를 읽는다. 그 세션은 `claude --resume`으로 다시 열거나, 보통 `~/.claude/projects/` 아래 인코딩된 작업 디렉터리 이름의 폴더에 있는 JSONL을 읽는다. 긴 transcript는 서브에이전트에서 파싱하고 줄인 타임라인만 남긴다.
+2. 편집 전에 기록한 worktree 루트, 브랜치 또는 detached 상태, 전체 HEAD를 확인한다. 하나라도 다르면 `git worktree list`, `git log`, `git diff`로 현재 worktree와 그사이 변경을 확인한다. 이 항목이 없는 이전 노트는 기록한 경로와 Git 이력을 활용한다. 이어갈 체크아웃이나 리비전이 여전히 불분명하면 사용자에게 확인한다.
+3. 확인한 worktree에서 이력과 base 대비 diff를 읽는다. 재개 지점을 밝히고 이미 내린 결정을 이어받는다. 이어받은 "완료" 주장은 후속 작업을 하기 전에 실제 결과물에서 다시 검증한다.
 4. 남은 작업을 `/bugfix`, `/refactor`, `/perf`, `/plan` 중 맞는 커맨드에 넘기고, 무엇을 이어받았고 무엇을 다시 했으며 왜 그랬는지 말한다.
 
 ## 장시간 무인 실행

@@ -24,6 +24,10 @@ class SkillBudgetTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn(f"skills={len(list(SKILLS.glob('*/SKILL.md')))} ", result.stdout)
 
+    def test_shipped_skill_listing_fits_default_budget(self):
+        result = self.measure(SKILLS)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_scalar_and_mapping_boundaries(self):
         with tempfile.TemporaryDirectory() as directory:
             skill = Path(directory) / "s"

@@ -24,6 +24,7 @@ OFM을 발행한다.
 | 버전 릴리즈 요약 | [release-note](assets/release-note.md) | 타입별 변경 그룹화, PR/이슈 링크, 업그레이드 가이드 |
 | 아키텍처/기술 결정 | [adr](assets/adr.md) | 미래의 자신을 위한 Status + context + decision + consequences |
 | 스프린트/이터레이션 마무리 | [retro](assets/retro.md) | Start/Stop/Continue + 후속 액션 아이템 링크 |
+| 사건 회고 | [incident-review](assets/incident-review-ko.md) | 영향, 시간순 근거, 미확인 사항과 후속 조치의 확인 방법 |
 | 라이브 디버깅 세션 | [debug-log](assets/debug-log.md) | 증상 → 가설 → 증거 타임라인 |
 | 라이브러리/도구 학습 | [learning-note](assets/learning-note.md) | 요약 + 핵심 API + 함정 + 다이어그램 옵션 |
 
@@ -182,6 +183,7 @@ frontmatter 스키마 + 태그 분류는 본문 파싱 없이 노트를 dataview
 | ADR | `ADR/ADR-NNNN-<slug>.md` |
 | Release | `Release Notes/v<version>.md` |
 | Retro | `Retros/YYYY-Wnn.md` |
+| 사건 회고 | `Retros/YYYY-MM-DD-<slug>.md` |
 | Debug | `Debug/YYYY-MM-DD <slug>.md` |
 | Learning | `Library/<Name>/<Topic>.md` |
 | Daily | `Daily/YYYY-MM-DD.md` |

@@ -94,6 +94,7 @@ const validated = CreateUserSchema.parse(input) // throws on invalid
 ### 8. Sensitive Data Exposure: OWASP A02 / A09 Logging Failures / CWE-532, CWE-209
 
 - [ ] Logs **redact** passwords, tokens, full PAN, CVV, SSN, JWT bodies
+- [ ] Trace sensitive values from headers, URLs, bodies, and error context through formatting and enrichment to each affected log destination. Exercise a representative log event with synthetic values and check both redaction and the diagnostic fields that should remain useful.
 - [ ] Log only safe identifiers: `userId`, `last4`, `requestId`
 - [ ] Client error responses are generic, e.g. `"An error occurred"`; details only server-side
 - [ ] No stack traces, SQL errors, or internal paths in client responses
@@ -119,6 +120,10 @@ const validated = CreateUserSchema.parse(input) // throws on invalid
 - [ ] Dependabot / Renovate enabled
 - [ ] Periodic `npm outdated` review; security patches applied promptly
 - Refs: [CWE-1104](https://cwe.mitre.org/data/definitions/1104.html), [npm audit docs](https://docs.npmjs.com/cli/v10/commands/npm-audit)
+
+## Verify scanner findings
+
+Use the project's configured scanners for the affected files and dependency graph. Record what ran, what it covered, and whether it returned findings or failed to run. For secret scans, enable redaction or filter the output before it reaches tool logs, CI logs, or artifacts. Report only the locations and types of potential secrets. Match a dependency finding to the resolved version before reporting impact. Trace affected code or configuration to distinguish confirmed exposure from potential exposure.
 
 ## Security Testing: Required
 

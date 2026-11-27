@@ -28,7 +28,7 @@ Controls which template applies and which `status` values are legal.
 |-------|----------|
 | `release`  | Release notes |
 | `adr`      | Architecture Decision Record |
-| `retro`    | Sprint/iteration retrospective |
+| `retro`    | Iteration retrospective or incident review |
 | `debug`    | Debugging session log |
 | `learning` | Library/tool/pattern learning note |
 | `daily`    | Daily log / dev journal |
@@ -96,6 +96,9 @@ changelog_link: https://github.com/org/repo/releases/tag/v1.9.4
 ```
 
 #### `retro`
+
+Add these fields for an iteration retrospective when they apply.
+
 ```yaml
 sprint: 2026-W16
 team: platform

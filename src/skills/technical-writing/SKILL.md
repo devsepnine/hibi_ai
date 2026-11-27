@@ -25,6 +25,11 @@ Before sharing, scan the headings and opening sentences for the answer and its b
 
 When you save the document, link to it in a short reply. Give the main takeaway and any verification the user needs. Leave the detailed findings in the document.
 
+## Check the document before sharing
+
+- If the document includes tables, fenced code, or diagrams, preview it in the format the reader will receive. Use the project's Markdown or diagram checker when available. Check that tables render with the expected columns, fences end where intended, and diagrams render. If you can check only the source, say which rendering remains unverified.
+- Review quoted logs, screenshots, and attachments for credentials, private URLs and paths, and personal data. Share only the excerpts the reader needs. Redact the shared copy and review it again before sending it. Preserve the original evidence when it is needed for investigation.
+
 ## Sentence clarity
 
 Give each idea a natural sentence and keep its condition or cause attached. In instructions, place a prerequisite before the action and keep simultaneous actions together. Name the actor when known and use one term per concept. For a draft that still reads awkwardly, consult the [sentence revision examples](references/slop-patterns.md).

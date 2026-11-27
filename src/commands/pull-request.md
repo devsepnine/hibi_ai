@@ -14,10 +14,10 @@ Thin entry point for PR work. Loads the `pull-request` skill. With a PR number i
 
 1. **Open or push a PR ONLY when the user explicitly asks**: the same rule that governs commits. Preparing the branch and drafting the description is not permission to run `gh pr create`.
 2. **Read the conventions from the repo, not from memory**: resolve the base branch, extract the ticket ID from the branch or history and omit the prefix when there is none, and use the repository's own PR template when it has one.
-3. **Ask instead of guessing**: write the body from the diff, not from the branch name; when a change's reason cannot be recovered, ask rather than inventing one. Before applying a review comment, check whether it belongs to this PR; ask the commenter when it is unclear.
+3. **Resolve uncertainty from evidence**. Write the body from the diff. Ask the user when you cannot recover why a change was made. If a review comment's scope is unclear, draft a question for the commenter and send it only on explicit request.
 4. **No secrets, PII, debug code, or `console.log` in the diff**: run `/security-review` if the change touches auth, input, or secrets.
 
-Before opening: `verification-loop` passes, covering lint, type-check, and tests; the branch is a feature branch rebased on its target; commits follow `commit-rules`; and docs are updated if behavior or an API changed.
+Use the pre-PR checks in the `pull-request` skill. Compare the feature branch with the verified target and follow the repository's integration policy. Rewrite history only on explicit request.
 
 Keep PRs small: split into logical units, each independently buildable and testable.
 

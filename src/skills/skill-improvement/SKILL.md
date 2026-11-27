@@ -11,7 +11,8 @@ For a completion review, finish and verify the user's original work and follow-u
 
 1. Identify what the user corrected, what a follow-up request clarified, or what verification exposed. Name the missed decision and the observed consequence.
 2. Read the current skill and relevant project instructions. Check whether the workflow lacked guidance, the right skill was hard to discover, or a clear instruction was missed in execution.
-3. Replace the names, ticket, and other local details with a different plausible case. Propose a change only if the same cause would call for the same action and the change would likely prevent the observed problem. Repeated evidence helps. One case can qualify if it establishes a reusable mechanism or exposes a consequential gap that can recur. Skip routine scope additions, one-time incidents, and edge cases tied to one environment.
+3. For every skill improvement, identify the condition that calls for a different decision, the decision itself, and the result to check. Try the rule on a different realistic case within the skill's scope and on a similar case without that condition. Check that it helps in the first case and leaves the second alone.
+4. State the reusable condition and action in the proposal. Use concrete cases as examples when they clarify the rule. When the evidence supports a rule only for a specific project or environment, keep the rule within that scope. One incident can support a general rule if it exposes a mechanism that recurs elsewhere and the rule would likely prevent it.
 
 ## Choose the narrowest fix
 

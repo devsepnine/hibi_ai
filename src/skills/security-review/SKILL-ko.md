@@ -94,6 +94,7 @@ const validated = CreateUserSchema.parse(input) // throws on invalid
 ### 8. Sensitive Data Exposure: OWASP A02 / A09 Logging Failures / CWE-532, CWE-209
 
 - [ ] 로그는 비밀번호, 토큰, 전체 PAN, CVV, SSN, JWT body를 **redact**
+- [ ] 헤더, URL, 본문, 오류 맥락의 민감한 값이 포맷과 필드 추가를 거쳐 어떤 로그 출력에 도달하는지 추적한다. 가짜 값으로 대표 로그 이벤트를 실행해 마스킹 여부와 진단에 필요한 필드가 남는지 확인한다.
 - [ ] 안전한 식별자만 로그: `userId`, `last4`, `requestId`
 - [ ] 클라이언트 에러 응답은 `"An error occurred"` 같은 generic; 상세는 서버 측에만
 - [ ] 클라이언트 응답에 stack trace, SQL 에러, 내부 경로 금지
@@ -119,6 +120,10 @@ const validated = CreateUserSchema.parse(input) // throws on invalid
 - [ ] Dependabot / Renovate 활성화
 - [ ] 주기적 `npm outdated` 검토; 보안 패치 신속 적용
 - Refs: [CWE-1104](https://cwe.mitre.org/data/definitions/1104.html), [npm audit docs](https://docs.npmjs.com/cli/v10/commands/npm-audit)
+
+## 스캐너 결과 검증하기
+
+영향받는 파일과 의존성 그래프를 프로젝트에 설정된 스캐너로 검사한다. 실행한 검사, 검사 범위, 발견 사항과 실행 실패를 기록한다. 시크릿 스캔은 도구 로그, CI 로그, 아티팩트에 결과가 남기 전에 마스킹하거나 출력을 필터링한다. 시크릿으로 의심되는 항목은 위치와 유형만 보고한다. 의존성의 영향을 보고하기 전에 발견 사항과 실제로 결정된 버전을 대조한다. 관련 코드와 설정을 추적해 확인된 노출과 잠재적 노출을 구분한다.
 
 ## Security Testing: Required
 

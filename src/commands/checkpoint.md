@@ -63,14 +63,16 @@ Only on an explicit request to pause. "Keep going" or "don't stop" is not one.
 
 1. Stop at a safe boundary: finish the current atomic step or back out of it, start nothing new, and stop any background subagents.
 2. Take no irreversible action to pause. No commit, push, or PR unless the user asks for one; uncommitted edits stay in the working tree, which is already durable. Do not stash to pause; if `create` left a stash, list its ref in the note.
-3. Write the resume note to `.claude/resume/<name>.md` with these sections: Intent, Done and verified, Current state, Next step, Key files, Gotchas. Mark each "done" claim measured or inferred. Point at an existing decision log instead of copying it. The notes are session-local: if the project does not ignore `.claude/resume/`, suggest adding it to `.gitignore` rather than committing them.
-4. Reply with where the work stopped, the note's path, whether the tree is clean, and the first action on resume.
+3. In the worktree holding the task files, write the resume note to `.claude/resume/<name>.md` with these sections: Intent, Done and verified, Current state, Next step, Key files, Gotchas. Mark each "done" claim measured or inferred. Point at an existing decision log instead of copying it. The notes are session-local: if the project does not ignore `.claude/resume/`, suggest adding it to `.gitignore` rather than committing them.
+
+   In Current state, record the absolute Git root of the worktree holding the task files, its branch or detached state, and its full HEAD commit ID. Run `git rev-parse --show-toplevel`, `git symbolic-ref --short -q HEAD`, and `git rev-parse --verify HEAD` from that worktree.
+4. Reply with where the work stopped, the note's absolute path, whether the recorded worktree is clean, and the first action on resume.
 
 ## Resume
 
-1. Read the trail first: `.claude/resume/<name>.md` and its `-decisions.tsv`, the checkpoint log, `git log` and `git diff` against the base, and the prior transcript when one is named. Reopen that session with `claude --resume`, or read its JSONL, typically under `~/.claude/projects/` in a folder named after the encoded working directory. Parse a long transcript in a subagent and keep only the reduced timeline.
-2. Treat the trail as authoritative input. Name the resume point and do not redo finished work or re-derive decisions already made.
-3. Re-verify each inherited "done" claim on the real artifact before building on it. A prior self-report is not proof.
+1. Read `.claude/resume/<name>.md` first. Use the absolute path reported at pause if the session opened elsewhere. Read the adjacent `-decisions.tsv`, the checkpoint log, and any named prior transcript. Reopen that session with `claude --resume`, or read its JSONL, typically under `~/.claude/projects/` in a folder named after the encoded working directory. Parse a long transcript in a subagent and keep only the reduced timeline.
+2. Before editing, verify the recorded worktree root, branch or detached state, and full HEAD. If any differ, use `git worktree list`, `git log`, and `git diff` to identify the current worktree and intervening changes. For older notes that lack these fields, use the recorded paths and Git history. Ask if the intended checkout or revision remains unclear.
+3. From the confirmed worktree, read the history and diff against the base. Name the resume point, carry forward settled decisions, and verify each inherited "done" claim on the real artifact before building on it.
 4. Hand the remaining work to the matching command, such as `/bugfix`, `/refactor`, `/perf`, or `/plan`, and say what was inherited, what was redone, and why.
 
 ## Long unattended runs

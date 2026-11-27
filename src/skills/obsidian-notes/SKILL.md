@@ -25,6 +25,7 @@ Use `technical-writing` → Artifact language for note titles, headings, and pro
 | Version release summary | [release-note](assets/release-note.md) | Groups changes by type, links PRs/issues, upgrade guidance |
 | Architectural / technical decision | [adr](assets/adr.md) | Status + context + decision + consequences for future-you |
 | Sprint / iteration wrap-up | [retro](assets/retro.md) | Start/Stop/Continue + action items linking follow-ups |
+| Incident review | [incident-review](assets/incident-review.md) | Impact, evidence timeline, open questions, and checks for follow-up actions |
 | Live debugging session | [debug-log](assets/debug-log.md) | Symptom → hypothesis → evidence timeline |
 | Library / tool learning | [learning-note](assets/learning-note.md) | Summary + key APIs + gotchas + diagram options |
 
@@ -183,6 +184,7 @@ plugins and common folder layouts.
 | ADR | `ADR/ADR-NNNN-<slug>.md` |
 | Release | `Release Notes/v<version>.md` |
 | Retro | `Retros/YYYY-Wnn.md` |
+| Incident review | `Retros/YYYY-MM-DD-<slug>.md` |
 | Debug | `Debug/YYYY-MM-DD <slug>.md` |
 | Learning | `Library/<Name>/<Topic>.md` |
 | Daily | `Daily/YYYY-MM-DD.md` |

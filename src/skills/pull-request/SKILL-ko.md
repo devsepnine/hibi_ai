@@ -32,11 +32,13 @@ PR 제목과 설명, 리뷰, 코멘트 답변을 작성하거나 편집하기 �
 아래 값은 모두 탐색 가능하다. 하나라도 가정하면 존재하지 않는 브랜치를 타깃하거나
 프로젝트가 쓰지 않는 티켓 접두사를 붙인 PR이 나온다.
 
-**base 브랜치**: `main` 이나 `develop` 을 가정하지 않는다:
+**체크아웃과 타깃**을 확인한다. 변경이 있는 체크아웃의 절대 경로에서 작업하고 head 브랜치와 커밋을 기록한다. PR을 받을 저장소와 base 브랜치, PR의 head를 올릴 원격과 ref를 각각 확인한다. 사용자 요청, Git 원격, 저장소 규약에서 확인하되 PR을 열 위치가 달라질 수 있는 모호함은 확인한다.
+
+**base 브랜치**는 타깃 저장소의 규약에서 찾는다. `TARGET_REPO`에는 `HOST/OWNER/REPO`, `BASE`에는 선택한 base 브랜치명, `BASE_REF`에는 같은 브랜치를 가져온 Git ref를 넣는다.
 
 ```bash
-gh repo view --json defaultBranchRef -q .defaultBranchRef.name
-gh pr list --state merged --limit 10 --json baseRefName -q '.[].baseRefName' | sort | uniq -c
+gh repo view "$TARGET_REPO" --json defaultBranchRef -q .defaultBranchRef.name
+gh pr list --repo "$TARGET_REPO" --state merged --limit 10 --json baseRefName -q '.[].baseRefName' | sort | uniq -c
 ```
 
 기본 브랜치는 출발점 추측이고, 최근 머지된 PR이 실제로 무엇을 타깃했는지가 더 강한
@@ -85,13 +87,12 @@ ls .github/pull_request_template.md .github/PULL_REQUEST_TEMPLATE.md \
 말하지만, PR이 실제로 무엇을 하는지 말하는 것은 diff뿐이다.
 
 ```bash
-git diff --stat "$BASE"...HEAD     # 먼저 형태: 몇 파일, 얼마나 큰지
-git diff "$BASE"...HEAD            # 그다음 내용, hunk 단위로
-git log --oneline "$BASE"..HEAD    # 작성자가 진행하면서 남긴 말
+git diff --stat "$BASE_REF"...HEAD     # 먼저 형태: 몇 파일, 얼마나 큰지
+git diff "$BASE_REF"...HEAD            # 그다음 내용, hunk 단위로
+git log --oneline "$BASE_REF"..HEAD    # 작성자가 진행하면서 남긴 말
 ```
 
-점 두 개가 아니라 세 개다: `"$BASE"...HEAD` 는 이 브랜치가 갈라진 뒤 더한 것이므로,
-base 브랜치가 움직인 내역이 설명할 diff에 섞이지 않는다.
+`"$BASE_REF"...HEAD`는 공통 조상에서 현재 브랜치까지 비교해 이 브랜치가 추가한 변경을 보여준다. 초안을 쓰는 동안 체크아웃이 바뀔 수 있으면 `HEAD` 대신 §1에서 기록한 커밋을 사용한다.
 
 **본문과 diff를 양방향으로 맞춘다.** 자명하지 않은 모든 hunk가 본문 어딘가에 등장하고,
 본문의 모든 주장이 hunk로 대응된다. 대응되지 않는 항목은 리뷰어가 찾기 전에 고칠 수 있는
@@ -114,8 +115,8 @@ Changes 섹션이 리뷰어가 머릿속에 담을 수 있는 크기를 넘기�
 
 1. **검증**: lint, type-check, 테스트 통과, `verification-loop` 참조.
 2. **브랜치**: base 브랜치가 아니라 feature 브랜치에 있다.
-3. **최신화**: §1에서 확인한 타깃에 rebase.
-4. **커밋**: 노이즈 squash, 각 커밋이 독립적으로 빌드 가능, `commit-rules` 참조.
+3. **base**는 §1에서 확인한 최신 타깃과 비교한다. 브랜치가 갈라진 상태를 알리고 저장소의 통합 규약을 따른다. 이력을 다시 쓰려면 해당 작업을 포함한 요청이 필요하다.
+4. **커밋**별로 독립 빌드가 가능한지 확인한다. `commit-rules`를 참고한다.
 5. **충돌**: 해결.
 6. **문서**: 동작이나 API가 변경되면 갱신.
 7. **코드 주석**: diff가 건드린 모든 주석과 diff가 다른 곳에서 무효화한 모든 주석이
@@ -149,12 +150,16 @@ PR에 대한 명시적 요청이 있을 때만 한다. 그 요청은 이월되�
 보여주고 멈춘다. 공개 저장소로 나가는 경우는 문턱이 더 높다.
 `references/upstream-config.md` 참조.
 
-렌더링된 제목과 본문을 먼저 보여주고, 그다음:
+요청받은 push나 PR을 실행하기 전에 §1의 체크아웃, 브랜치, 로컬 커밋을 다시 확인한다. push 원격의 push URL과 대상 ref를 확인한다. PR을 열기 전에 원격 head ref가 §2에서 검토한 커밋을 가리키고 타깃 저장소에 요청받은 base가 있는지 확인한다. head를 먼저 올려야 하면 push 요청을 별도로 처리한다.
+
+타깃 저장소, base와 head, 렌더링된 제목과 본문을 보여준다. `HEAD_SPEC`에는 확인한 head 브랜치명을 넣는다. 도구에서 포크의 head를 지정할 수 있으면 소유자를 함께 명시한다. 확인한 head를 도구에서 지정할 수 없으면 응답에 초안으로 남긴다.
 
 ```bash
-gh pr create --base "$BASE" --title "$TITLE" --body-file pr-body.md --draft
-gh pr ready <PR-number>      # draft가 아니게 될 때
+gh pr create --repo "$TARGET_REPO" --base "$BASE" --head "$HEAD_SPEC" \
+  --title "$TITLE" --body-file pr-body.md --draft
 ```
+
+사용자가 해당 초안을 리뷰 가능한 상태로 전환해 달라고 요청하면 `gh pr ready "$PR_NUMBER" --repo "$TARGET_REPO"`를 사용한다.
 
 - **`--body` 가 아니라 `--body-file`**: 백틱과 따옴표가 섞인 멀티라인 본문은 셸 인용 과정에서 쉽게 망가진다.
 - **아직 움직이는 것이 있으면 `--draft`**: CI 미확인, 미해결 질문, rebase 가능성.
@@ -162,16 +167,19 @@ gh pr ready <PR-number>      # draft가 아니게 될 때
 
 ## 5. 기존 PR을 리뷰한다
 
-판단하기 전에 수집한다. diff만으로는 CI가 통과했는지, 누가 이미 그 지적을 했는지 알 수
-없다:
+판단하기 전에 diff와 CI 상태를 수집한다. 기존 논의는 §6에 따라 읽는다.
 
 ```bash
-gh pr view <n> --json title,body,baseRefName,isDraft,reviewDecision,statusCheckRollup
-gh pr diff <n> --name-only     # 먼저 형태
-gh pr diff <n>                 # 그다음 내용
-gh pr view <n> --comments      # 이미 나온 이야기
-gh pr checks <n>
+gh pr view "$PR_NUMBER" --repo "$TARGET_REPO" \
+  --json title,body,baseRefName,baseRefOid,headRefOid,changedFiles,isDraft,reviewDecision,statusCheckRollup
+gh pr diff "$PR_NUMBER" --repo "$TARGET_REPO" --name-only
+gh pr diff "$PR_NUMBER" --repo "$TARGET_REPO"
+gh pr checks "$PR_NUMBER" --repo "$TARGET_REPO"
 ```
+
+base와 head의 커밋 ID를 기록한다. 현재 PR 파일이나 diff를 읽은 뒤 두 커밋을 다시 확인하고 달라졌으면 다시 조회한다. 수집한 경로 수를 `changedFiles`와 비교하고 누락된 패치가 있는지 확인한다. diff가 불완전하면 타깃 저장소의 `pulls/{n}/files`를 페이지별로 조회하고 누락된 부분이 남아 있는지 확인한다.
+
+누락된 코드를 살필 때는 기록한 커밋의 로컬 diff를 참고할 수 있다. GitHub PR은 다른 공통 조상을 사용할 수 있으므로 로컬 비교임을 표시한다. 확인할 수 없었던 PR diff 범위를 밝힌다. 지적과 관련된 직접 호출처는 기록한 head에서 읽고, 변경 의도를 파악할 때는 해당 이력도 추적한다. 수정 제안도 같은 근거로 검증한다.
 
 그다음 가장 저렴한 질문부터 이 순서로 판단한다:
 
@@ -193,15 +201,28 @@ hunk는 가장 빨리 찾아낼 수 있고, 작성자가 올릴 의도가 없던
 
 **c. 실패해도 맞게 동작하는가?** `coding-standards`의 `references/review-checklist.md` 중 셀프리뷰와 PR 리뷰의 실패 경로에 따라 정상과 도달 가능한 실패를 함께 검수한다. 유발 조건부터 오류, 일부만 완료된 효과, 정리, 호출자의 최종 상태까지 추적한다. 확인된 결함과 테스트 누락, 미검증 위험을 구분한다. 깊이는 `/code-review`, diff가 인증·입력 처리·시크릿을 건드리면 `security-review`.
 
+변경으로 공유 상태를 읽고 쓰고 지우는 시점, 현재 값으로 사용하는 데이터, 또는 일부
+단계가 실패한 뒤 남는 상태가 달라질 수 있다면 리뷰를 마치기 전에 예상 최종 상태를
+적는다. 변경되지 않은 코드까지 포함해 값이 생성되고 저장되고 사용되는 경로를 추적한다.
+생성하는 쪽에서 값을 생략하거나 빈 값으로 보낼 수 있다면, 이전 데이터가 남아 있을 때
+사용하는 쪽에서 무엇을 읽는지 확인한다. 작업 순서나 기존 데이터에 따라 결과가 달라지는
+경우도 확인한다. 공유 상태의 변경이나 삭제를 요청하는 리뷰 코멘트에는 어느 작업이
+변경해도 되는지, 소유자를 확인할 수 없거나 소유자가 바뀌면 어떤 값을 보존해야 하는지
+적는다. 최종 상태와 사용자나 호출자가 받는 결과를 함께 확인한다. 같은 PR의 후속
+리뷰에서도 이 사례를 다시 확인하고, 새 상태가 추가되거나 상태 처리 방식이 바뀌면
+검증 사례를 보완한다.
+
+후속 리뷰에서 같은 요구사항을 위반하는 중대한 결함이 수정 뒤에도 발견되면, 코멘트를
+게시하기 전에 해당 흐름을 처음부터 끝까지 다시 검토한다. 현재 head에서 결과에 영향을
+줄 수 있는 다른 진입점과 작업을 확인한다. 최신 패치 밖의 경로도 포함한다. 정상 완료와
+실제로 발생할 수 있는 실패 뒤의 최종 상태를 확인하고, 확인된 지적을 한 리뷰에 모은다.
+
 **d. 테스트되는가?** 이 변경을 되돌리면 실패하는 테스트가 있는가? 없다면 커버리지 수치와
 무관하게 그 주장은 검증되지 않았다. 정상 동작과 관련 실패 시나리오에 의미 있는 검증이 있는지 확인한다. 오류 발생뿐 아니라 실패 후 상태도 확인한다. 사례 설계에는 `tdd-workflow`를 쓰고 충분한 기존 테스트는 재사용하며 실행하지 않은 검사는 밝힌다.
 
-리뷰를 게시하는 것도 외부로 나가는 행위다. 작성해서 보여주고, 요청받았을 때만 게시한다:
+신뢰할 수 없는 리비전은 커밋에서 파일을 직접 읽고 해당 리비전의 CI 근거를 확인할 수 있으면 활용한다. 자격 증명, 비공개 파일, 사용자가 공유하는 Git 데이터에 접근할 수 없는 일회용 샌드박스에서만 해당 리비전을 체크아웃하고 검사를 실행한다.
 
-```bash
-gh pr review <n> --comment --body-file review.md
-gh pr review <n> --approve | --request-changes --body-file review.md
-```
+리뷰 초안을 보여주고 명시적으로 요청받았을 때만 게시한다. 게시 전에 기록한 base와 head를 다시 확인하고 달라졌으면 영향을 받은 지적을 갱신한다. 승인, 변경 요청, 인라인 코멘트가 있는 리뷰는 `commit_id`나 같은 역할의 필드로 검토한 head에 연결한다. 도구가 연결을 지원하지 않으면 초안으로 둔다. 인라인 코멘트는 한 리뷰에 담고 경로, 줄, 변경 전후 위치를 GitHub PR diff에서 확인한다. 위치를 지정할 수 없으면 지적을 초안에 남기거나, 사용자가 본문 코멘트 게시를 요청한 경우 해당 줄의 영구 링크를 본문에 넣는다.
 
 블로킹 지적과 제안을 명시적으로 구분한다. 동등한 무게의 코멘트 8개를 나열한 리뷰는
 작성자가 그중 어느 둘이 실제로 블로킹인지 추측하게 만든다.
@@ -211,23 +232,13 @@ gh pr review <n> --approve | --request-changes --body-file review.md
 리뷰 코멘트는 지시가 아니라 주장이다. 분류 없이 전부 반영하는 것이 집중된 PR을 리뷰
 불가능하게 만드는 경로이고, 잘못된 코멘트가 배포되는 코드가 되는 경로다.
 
-해결된 라운드까지 포함해 스레드 전체를 먼저 읽는다. 여기 쓰이는 조회는 모두 기본값에서
-조용히 잘리므로 페이지를 이어붙인다. REST 한 페이지는 30건에서 끊기고, `gh pr view
---json commits` 는 가장 오래된 100건에서 끊긴다. 긴 PR에서는 n차 라운드가 기준으로 삼는
-최근 커밋이 바로 그 잘리는 부분이다.
+코멘트를 분류하기 전에 타깃 저장소의 세 곳에서 논의를 읽는다.
 
-```bash
-gh pr view <n> --comments                     # 훑어보기 — 최근 것만 렌더링된다
-gh api --paginate "repos/{owner}/{repo}/pulls/<n>/comments" \
-  --jq '.[] | "\(.created_at) \(.path):\(.line // .original_line) \(.user.login): \(.body)"'
-gh api --paginate "repos/{owner}/{repo}/pulls/<n>/commits" \
-  --jq '.[] | "\(.commit.committer.date) \(.sha[0:7]) \(.commit.message | split("\n")[0])"'
-```
+1. GraphQL `reviewThreads`에서 인라인 스레드를 읽는다. 스레드 ID, 해결 여부, 최신 diff에 남아 있는지 여부, diff 위치, 작성 시각과 답글을 수집한다. `pageInfo`로 스레드 목록과 각 스레드의 코멘트를 끝까지 읽는다.
+2. `pulls/{n}/reviews`에서 리뷰 본문을 읽는다. 승인한 리뷰의 본문에도 인라인 스레드 없이 지적이 남을 수 있다.
+3. `issues/{n}/comments`에서 PR 대화를 읽는다. 여기에서 인라인 지적을 반영한 커밋을 링크했을 수 있다.
 
-라인 단위 코멘트는 `path` 와 `line` 을 갖는데, 이 PR이 바꾼 줄에 달린 코멘트와 그저 옆에
-있는 코드에 달린 코멘트를 구분해 주는 것이 그 값이다. 두 조회 모두 타임스탬프로 시작하는
-것이 2차·3차 라운드를 다룰 수 있게 해 준다. 어떤 커밋보다 먼저 쓰인 코멘트는 이미
-처리됐을 수 있고, 그것에 다시 답하면 리뷰어의 다음 라운드를 아무것도 아닌 데 쓰게 한다.
+REST 목록은 끝까지 읽고 가져오지 못한 범위를 밝힌다. `pulls/{n}/commits`도 페이지를 끝까지 읽어 후속 커밋을 같은 타임라인에 놓는다. 스레드, 위치, 근거를 바탕으로 지적과 후속 조치를 연결한다. 커밋에서 반영했다는 주장은 PR head의 변경을 확인한 뒤 검증할 수 있다. 답글이 없는 스레드는 대응 여부를 미확인으로 둔다.
 
 코드를 건드리기 전에 각 코멘트를 분류한다:
 
@@ -244,12 +255,9 @@ gh api --paginate "repos/{owner}/{repo}/pulls/<n>/commits" \
 아니라 후속 작업이다. 범위를 키우는 것은 작성자와 리뷰어가 함께 내려 스레드에 기록하는
 결정이고, 조용한 추가 커밋이 되어서는 안 된다.
 
-**분류가 불분명하면 코멘트 작성자에게 묻는다.** "이걸 이 PR에서 할까요, 후속으로 할까요?"
-한 줄이면 정리된다. 추측은 두 방향 중 하나로 실패한다. 리뷰 가능한 크기를 넘겨 자란 PR,
-또는 지적이 조용히 버려진 리뷰어.
+**분류가 불분명하면 작성자에게 물어볼 질문을 작성한다.** 이번 PR과 후속 작업 중 어디에 해당하는지 묻는다.
 
-반영하지 않은 것까지 모든 코멘트에 답한다. 어느 분류였고 어디로 갔는지 밝힌다. 답이
-없는 코멘트는 무시된 것으로 읽히고, 다음 라운드에서 다시 올라온다.
+요청 범위의 코멘트에 답글 초안을 쓴다. 수정이 올라갔다고 답하려면 원격 PR head에서 실제 변경을 확인하고 관련 커밋을 링크한다. 명시적으로 요청받은 답글을 보내기 전에 정확한 PR, 스레드 또는 코멘트, 답글 문구를 보여준다. 게시 위치와 현재 논의, 원격 PR head를 다시 확인한다. head가 달라졌으면 코드에 대한 답변의 근거를 다시 확인한다. 재리뷰는 사용자가 해당 작업을 요청했을 때만 요청한다.
 
 ## 7. 브랜치 네이밍
 
