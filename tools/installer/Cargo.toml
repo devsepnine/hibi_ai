@@ -71,6 +71,7 @@ wait-timeout = "0.2"
 command-group = "5"
 
 [target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_System_Console", "Win32_System_Threading"] }
 base64 = { version = "0.22", optional = true }
 dunce = { version = "1", optional = true }
 
