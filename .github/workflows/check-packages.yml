@@ -1,0 +1,81 @@
+name: Verify v2.3.0 package manager upgrades
+on:
+  push:
+    branches: [verify/packages-2.3.0]
+permissions:
+  contents: read
+jobs:
+  brew:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the published formula and upgrade to the candidate
+        run: |
+          brew install devsepnine/brew/hibi
+          test "$(hibi --version)" = "hibi v2.2.0 (Config Installer)"
+          cp verification/hibi.rb "$(brew --repo devsepnine/brew)/Formula/hibi.rb"
+          brew upgrade devsepnine/brew/hibi
+          brew test devsepnine/brew/hibi
+          swiftc verification/window.swift -o "$RUNNER_TEMP/query-window"
+          python3 verification/check-mac.py "$(brew --prefix hibi)/bin/hibi" "$RUNNER_TEMP/query-window"
+  scoop:
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Scoop and upgrade from the published bucket
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $env:SCOOP = Join-Path $env:RUNNER_TEMP 'scoop'
+          $installer = Join-Path $env:RUNNER_TEMP 'install-scoop.ps1'
+          Invoke-WebRequest https://get.scoop.sh -OutFile $installer
+          & $installer -RunAsAdmin -ScoopDir $env:SCOOP
+          $env:PATH = "$env:SCOOP\shims;$env:PATH"
+          $source = Join-Path $env:RUNNER_TEMP 'candidate-bucket'
+          git clone -q https://github.com/devsepnine/scoop-bucket $source
+          scoop bucket add hibi-review https://github.com/devsepnine/scoop-bucket
+          git -C "$env:SCOOP/buckets/hibi-review" remote set-url origin $source
+          scoop install hibi-review/hibi-ai
+          if ((hibi --version) -ne 'hibi v2.2.0 (Config Installer)') { throw 'Previous version not installed' }
+          Copy-Item verification/hibi-ai.json "$source/hibi-ai.json" -Force
+          git -C $source add hibi-ai.json
+          git -C $source -c user.name=Runner -c user.email=runner@localhost commit -qm candidate
+          git -C "$env:SCOOP/buckets/hibi-review" pull --ff-only
+          scoop update hibi-ai
+          $version = (Get-Content verification/hibi-ai.json -Raw | ConvertFrom-Json).version
+          if ((hibi --version) -ne "hibi v$version (Config Installer)") { throw 'Upgrade failed' }
+          $exe = "$env:SCOOP/apps/hibi-ai/current/hibi.exe"
+          if (!(Test-Path "$env:SCOOP/apps/hibi-ai/current/skills/technical-writing/SKILL.md")) { throw 'Missing bundled skills' }
+          python -u verification/windows.py $exe driver terminal
+          python -u verification/windows.py $exe driver desktop
+          python -u verification/windows.py $exe driver tui
+  windows-compatibility:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [windows-2022, windows-11-arm]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Launch the Windows archive referenced by Scoop
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $manifest = Get-Content verification/hibi-ai.json -Raw | ConvertFrom-Json
+          $windows = $manifest.architecture.'64bit'
+          $zip = Join-Path $env:RUNNER_TEMP 'hibi.zip'
+          Invoke-WebRequest $windows.url -OutFile $zip
+          if ((Get-FileHash $zip).Hash -ne $windows.hash) { throw 'Download hash mismatch' }
+          Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP
+          $exe = Join-Path $env:RUNNER_TEMP "$($windows.extract_dir)/hibi.exe"
+          if ((& $exe --version) -ne "hibi v$($manifest.version) (Config Installer)") { throw 'Unexpected binary version' }
+          python -u verification/windows.py $exe driver terminal
+          python -u verification/windows.py $exe driver desktop
+          python -u verification/windows.py $exe driver tui
