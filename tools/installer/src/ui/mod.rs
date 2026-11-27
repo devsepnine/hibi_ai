@@ -1,6 +1,6 @@
 mod cli_selection;
 mod confirm;
-pub(crate) use confirm::render_source_error;
+pub(crate) use confirm::{removal_scroll_limit, render_source_error};
 pub(crate) mod confirm_hide;
 mod diff;
 mod env_input;
@@ -92,12 +92,13 @@ pub fn draw(f: &mut Frame, app: &App) {
         return;
     }
 
+    let status_rows = status_message_rows(app, f.area());
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3), // Tabs
-            Constraint::Min(0),    // Content
-            Constraint::Length(3), // Status bar
+            Constraint::Length(3),               // Tabs
+            Constraint::Min(0),                  // Content
+            Constraint::Length(3 + status_rows), // Status bar
         ])
         .split(f.area());
 
@@ -110,7 +111,8 @@ pub fn draw(f: &mut Frame, app: &App) {
     // own keys on their own borders.
     match app.current_view {
         View::Help => help::render(f, app, f.area()),
-        View::ConfirmExit | View::ConfirmRemove => confirm::render(f, app, f.area()),
+        View::ConfirmExit => confirm::render(f, app, f.area()),
+        View::ConfirmRemove => confirm::render_remove(f, app, f.area()),
         View::ConfirmHide => confirm_hide::render(f, app, f.area()),
         _ => {}
     }
@@ -307,12 +309,14 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
         status_help(app)
     };
     let status = app.status_message.as_deref().unwrap_or("");
+    let status_rows = area.height.saturating_sub(3);
+    let inline_status = if status_rows == 0 { status } else { "" };
     let version = crate::fs::VERSION;
 
     let spans = vec![
         Span::styled(help_text, Style::default().fg(app.theme.text_secondary())),
         Span::raw("  "),
-        Span::styled(status, Style::default().fg(app.theme.warning())),
+        Span::styled(inline_status, Style::default().fg(app.theme.warning())),
     ];
 
     // Render help text left-aligned, version right-aligned
@@ -332,13 +336,48 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
         Style::default().fg(app.theme.text_secondary()),
     ));
 
-    let paragraph = Paragraph::new(Line::from(all_spans)).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(app.theme.border())),
+    let mut block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(app.theme.border()));
+    if app.current_view == View::List {
+        let selection = app.work_selection();
+        let (install, remove) = if app.focus == FocusArea::Content && selection.visible > 0 {
+            ("[i] Install", "[r] Remove")
+        } else {
+            ("Install", "Remove")
+        };
+        block = block.title(format!(
+            " {install} {}  {remove} {} ",
+            selection.install.len(),
+            selection.remove.len()
+        ));
+    }
+    let lines = std::iter::once(Line::from(all_spans)).chain(
+        status_lines(status, area.width)
+            .take(usize::from(status_rows))
+            .map(|line| Line::styled(line, Style::default().fg(app.theme.warning()))),
     );
+    let paragraph = Paragraph::new(lines.collect::<Vec<_>>()).block(block);
 
     f.render_widget(paragraph, area);
+}
+
+fn status_lines(status: &str, width: u16) -> impl Iterator<Item = String> + '_ {
+    status
+        .lines()
+        .flat_map(move |line| layout::wrap_line(line, width.saturating_sub(2)))
+}
+
+fn status_message_rows(app: &App, area: Rect) -> u16 {
+    const MAX_STATUS_ROWS: usize = 2;
+
+    if area.height < 12 {
+        return 0;
+    }
+    let status = app.status_message.as_deref().unwrap_or("");
+    status_lines(status, area.width)
+        .take(MAX_STATUS_ROWS)
+        .count() as u16
 }
 
 fn render_loading_screen(f: &mut Frame, app: &App) {

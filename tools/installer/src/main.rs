@@ -135,7 +135,7 @@ where
 {
     let mut channels = ProcessingChannels::new();
     loop {
-        terminal.draw(|f| ui::draw(f, app))?;
+        let area = terminal.draw(|f| ui::draw(f, app))?.area;
 
         match app.current_view {
             app::View::Installing => loading::handle_installing_view(app, &mut channels)?,
@@ -145,7 +145,8 @@ where
             _ => {
                 if let Some(code) = cli::read_key_press()? {
                     let view = app.current_view;
-                    if let Err(error) = cli::dispatch_terminal_key(app, code, &channels.refresh_tx)
+                    if let Err(error) =
+                        cli::dispatch_terminal_key(app, code, area, &channels.refresh_tx)
                     {
                         match view {
                             app::View::SourceConfirmRemove => app.current_view = app::View::Sources,

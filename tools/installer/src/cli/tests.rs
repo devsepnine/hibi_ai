@@ -2,6 +2,23 @@ use super::*;
 use crate::app::FocusArea;
 use crate::app::test_support::fresh_app;
 
+const TERMINAL_AREA: Rect = Rect::new(0, 0, 80, 24);
+
+#[test]
+fn terminal_removal_skips_uninstalled_selected_items() -> Result<()> {
+    use crate::app::View;
+    use crate::tree::test_support::make_component;
+
+    let mut app = fresh_app();
+    app.components = vec![make_component("not-installed.md")];
+    let (tx, _rx) = std::sync::mpsc::channel();
+    dispatch_terminal_key(&mut app, KeyCode::Char('r'), TERMINAL_AREA, &tx)?;
+    assert_eq!(app.current_view, View::List);
+    assert!(app.processing_queue.is_empty());
+    assert!(app.components[0].selected);
+    Ok(())
+}
+
 #[test]
 fn terminal_search_consumes_shortcuts_and_removal_uses_only_visible_rows() -> Result<()> {
     use crate::app::test_support::{make_mcp_server, make_plugin};
@@ -25,29 +42,29 @@ fn terminal_search_consumes_shortcuts_and_removal_uses_only_visible_rows() -> Re
         }
         let (tx, _rx) = std::sync::mpsc::channel();
         for c in "/한글 riqx".chars() {
-            dispatch_terminal_key(&mut app, KeyCode::Char(c), &tx)?;
+            dispatch_terminal_key(&mut app, KeyCode::Char(c), TERMINAL_AREA, &tx)?;
         }
         assert_eq!(app.current_view, View::Search);
         assert!(app.processing_queue.is_empty());
         assert!(!app.should_quit);
         assert!(app.visible_plugins().is_empty());
-        dispatch_terminal_key(&mut app, KeyCode::Backspace, &tx)?;
-        dispatch_terminal_key(&mut app, KeyCode::Enter, &tx)?;
+        dispatch_terminal_key(&mut app, KeyCode::Backspace, TERMINAL_AREA, &tx)?;
+        dispatch_terminal_key(&mut app, KeyCode::Enter, TERMINAL_AREA, &tx)?;
         assert_eq!(app.search_query, "한글 riq");
         assert_eq!(app.focus, FocusArea::Content);
         assert_eq!((app.mcp_index, app.plugin_index), (1, 1));
-        dispatch_terminal_key(&mut app, KeyCode::Char('r'), &tx)?;
+        dispatch_terminal_key(&mut app, KeyCode::Char('r'), TERMINAL_AREA, &tx)?;
         assert_eq!(app.current_view, View::ConfirmRemove);
         assert_eq!(app.pending_removal_items().len(), 1);
         for key in [KeyCode::Char('/'), KeyCode::Char('o'), KeyCode::Enter] {
-            dispatch_terminal_key(&mut app, key, &tx)?;
+            dispatch_terminal_key(&mut app, key, TERMINAL_AREA, &tx)?;
             assert_eq!(app.current_view, View::ConfirmRemove);
             assert_eq!(app.pending_removal_items().len(), 1);
             assert!(app.processing_queue.is_empty());
         }
-        dispatch_terminal_key(&mut app, KeyCode::Esc, &tx)?;
+        dispatch_terminal_key(&mut app, KeyCode::Esc, TERMINAL_AREA, &tx)?;
         assert_eq!(app.search_query, "한글 riq");
-        dispatch_terminal_key(&mut app, KeyCode::Esc, &tx)?;
+        dispatch_terminal_key(&mut app, KeyCode::Esc, TERMINAL_AREA, &tx)?;
         assert!(app.search_query.is_empty());
         assert_eq!(app.current_view, View::List);
         assert!(app.plugins.iter().all(|p| p.selected));
@@ -334,7 +351,7 @@ mod status_filter {
 
     fn press(app: &mut App, key: char) {
         let (tx, _rx) = std::sync::mpsc::channel();
-        dispatch_terminal_key(app, KeyCode::Char(key), &tx).unwrap();
+        dispatch_terminal_key(app, KeyCode::Char(key), TERMINAL_AREA, &tx).unwrap();
     }
 
     fn listed(app: &App) -> Vec<&str> {

@@ -334,6 +334,104 @@ fn a_modal_view_leaves_both_panes_plain() {
     }
 }
 
+#[test]
+fn short_picker_keeps_all_targets_and_keyboard_hints_visible() {
+    let app = fresh_app();
+    let buffer = paint_at(&app, super::cli_selection::render, 40, 10);
+    let content = (0..buffer.area.height)
+        .map(|y| row(&buffer, y))
+        .collect::<Vec<_>>()
+        .join("\n");
+    for label in [
+        "HIBI AI",
+        "Select target",
+        "Claude Code",
+        "Codex CLI",
+        "Manage Sources",
+        "[Enter] Select",
+    ] {
+        assert!(content.contains(label), "Missing {label} in {content}");
+    }
+}
+
+#[test]
+fn removal_dialog_lists_only_eligible_items_and_scrolls_to_later_names() {
+    use crate::component::InstallStatus;
+
+    let mut app = fresh_app();
+    app.components = (1..=12)
+        .map(|index| {
+            let mut file =
+                crate::tree::test_support::make_component(&format!("target-{index:02}.md"));
+            file.status = InstallStatus::Modified;
+            file
+        })
+        .collect();
+    app.components
+        .push(crate::tree::test_support::make_component("uninstalled.md"));
+    app.request_removal();
+
+    let content = |app: &App| {
+        let buffer = paint_at(app, super::confirm::render_remove, 52, 10);
+        (0..buffer.area.height)
+            .map(|y| row(&buffer, y))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    let top = content(&app);
+    assert!(top.contains("Remove 12 selected items?"));
+    assert!(top.contains("target-01.md  [modified]"));
+    assert!(!top.contains("uninstalled.md"));
+    assert!(!top.contains("target-12.md"));
+    assert!(top.contains("[Esc] Cancel"));
+
+    app.removal_scroll = 11;
+    let end = content(&app);
+    assert!(end.contains("target-12.md  [modified]"));
+    assert!(!end.contains("target-01.md"));
+    assert!(end.contains("[y] Remove"));
+}
+
+#[test]
+fn removal_scroll_reaches_the_end_of_a_single_wrapped_name() -> anyhow::Result<()> {
+    use crate::component::InstallStatus;
+    use crossterm::event::KeyCode;
+
+    let mut app = fresh_app();
+    let name = format!("start-{}/tail.md", "nested/".repeat(38));
+    let mut file = crate::tree::test_support::make_component(&name);
+    file.status = InstallStatus::External;
+    app.components = vec![file];
+    let (tx, _rx) = std::sync::mpsc::channel();
+    let area = Rect::new(0, 0, 40, 10);
+    let press = |app: &mut App, key, area| crate::cli::dispatch_terminal_key(app, key, area, &tx);
+    let content = |app: &App| {
+        let buffer = paint_at(app, super::confirm::render_remove, area.width, area.height);
+        (0..area.height)
+            .map(|y| row(&buffer, y))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+
+    press(&mut app, KeyCode::Char('r'), area)?;
+    assert!(content(&app).contains("start-"));
+    assert!(!content(&app).contains("tail.md"));
+    for _ in 0..12 {
+        press(&mut app, KeyCode::Down, area)?;
+    }
+    assert!(content(&app).contains("tail.md  [external]"));
+    let last_offset = app.removal_scroll;
+    assert!(last_offset > 0);
+    press(&mut app, KeyCode::Char('j'), area)?;
+    assert_eq!(app.removal_scroll, last_offset);
+    press(&mut app, KeyCode::Up, area)?;
+    assert_eq!(app.removal_scroll, last_offset - 1);
+    press(&mut app, KeyCode::Char('k'), Rect::new(0, 0, 80, 24))?;
+    assert_eq!(app.removal_scroll, 0);
+    assert!(content(&app).contains("start-"));
+    Ok(())
+}
+
 /// The digits are spelled out here rather than read from `FocusArea::shortcut`,
 /// which is what makes these tests worth having: production derives the prefix
 /// from that method, so if it ever changed, the label would follow silently and
@@ -430,6 +528,24 @@ fn the_version_stays_flush_right_under_a_cjk_status_message() {
     let buf = paint_at(&app, render_status_bar, 80, 3);
     let line = inner_row(&buf, 1);
     assert!(line.ends_with(crate::fs::VERSION), "{line}");
+}
+
+#[test]
+fn a_long_status_keeps_the_help_and_version_visible_above_it() {
+    let mut app = fresh_app();
+    app.status_message = Some("No selected items are installed and removable in this view.".into());
+    let area = Rect::new(0, 0, 54, 24);
+    let height = 3 + super::status_message_rows(&app, area);
+    let buffer = paint_at(&app, render_status_bar, area.width, height);
+    let keys = inner_row(&buffer, 1);
+    assert!(keys.contains("[q] Quit"));
+    assert!(keys.ends_with(crate::fs::VERSION));
+    let message = format!(
+        "{}{}",
+        inner_row(&buffer, 2),
+        inner_row(&buffer, 3).trim_end()
+    );
+    assert_eq!(message, app.status_message.unwrap());
 }
 
 /// Rows painted by the help overlay, borders included.

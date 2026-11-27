@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
+use ratatui::layout::Rect;
 
 use crate::app::{self, App};
 use crate::fs;
@@ -25,6 +26,7 @@ pub(crate) fn read_key_press() -> Result<Option<KeyCode>> {
 pub(crate) fn dispatch_terminal_key(
     app: &mut App,
     code: KeyCode,
+    area: Rect,
     refresh_tx: &std::sync::mpsc::Sender<Result<RefreshResult>>,
 ) -> Result<()> {
     match (app.current_view, code) {
@@ -50,7 +52,14 @@ pub(crate) fn dispatch_terminal_key(
             app.current_view = app::View::List;
         }
         (app::View::Search, _) => {}
-        (app::View::CliSelection, KeyCode::Tab | KeyCode::BackTab) => {}
+        (app::View::ConfirmRemove, KeyCode::Up | KeyCode::Char('k')) => {
+            let limit = crate::ui::removal_scroll_limit(app, area);
+            app.removal_scroll = app.removal_scroll.min(limit).saturating_sub(1);
+        }
+        (app::View::ConfirmRemove, KeyCode::Down | KeyCode::Char('j')) => {
+            let limit = crate::ui::removal_scroll_limit(app, area);
+            app.removal_scroll = app.removal_scroll.saturating_add(1).min(limit);
+        }
         _ => return dispatch_key(app, code, refresh_tx),
     }
     Ok(())

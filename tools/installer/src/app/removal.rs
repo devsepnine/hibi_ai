@@ -27,7 +27,6 @@ pub(crate) struct RemovalItem {
 }
 
 impl RemovalItem {
-    #[cfg(any(feature = "gui", test))]
     pub fn display_name(&self) -> String {
         self.name
             .chars()
@@ -56,6 +55,7 @@ impl App {
             return;
         }
         self.pending_removal = Some(self.removal_plan(&selection.remove));
+        self.removal_scroll = 0;
         self.current_view = View::ConfirmRemove;
     }
 
@@ -67,6 +67,7 @@ impl App {
 
     pub(crate) fn cancel_removal(&mut self) {
         self.pending_removal = None;
+        self.removal_scroll = 0;
         if self.current_view == View::ConfirmRemove {
             self.current_view = View::List;
         }

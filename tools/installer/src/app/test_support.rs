@@ -59,6 +59,7 @@ pub(crate) fn fresh_app() -> App {
         visibility_path: Default::default(),
         hide_confirmation: None,
         pending_removal: None,
+        removal_scroll: 0,
         list_index: 0,
         tree_views: std::collections::HashMap::new(),
         mcp_servers: Vec::new(),

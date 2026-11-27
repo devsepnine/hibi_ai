@@ -26,34 +26,21 @@ const BRAND_COMPACT: &str = "HIBI AI";
 /// tagline, plus a blank line. Used to compute the brand area height so
 /// the layout stays stable across themes.
 const BRAND_HEIGHT: u16 = 1 + 6 + 1 + 1;
-
-/// Options shown on the initial screen. Order is the cursor index order.
-struct OptionRow {
-    label: &'static str,
-    detail: &'static str,
-}
-
-const OPTIONS: &[OptionRow] = &[
-    OptionRow {
-        label: "Claude Code",
-        detail: "Anthropic's official CLI for Claude (~/.claude)",
-    },
-    OptionRow {
-        label: "Codex CLI",
-        detail: "OpenAI's ChatGPT-based CLI (~/.codex)",
-    },
-    OptionRow {
-        label: "Manage Sources",
-        detail: "Configure component sources (~/.hibi/sources.yaml)",
-    },
-];
+const OPTION_HEIGHT: u16 = CliChoice::ALL.len() as u16 * 3 + 2;
 
 pub fn render(f: &mut Frame, app: &App, area: Rect) {
+    let brand_height = if area.height >= BRAND_HEIGHT + OPTION_HEIGHT + 1 {
+        BRAND_HEIGHT
+    } else {
+        area.height
+            .saturating_sub(CliChoice::ALL.len() as u16 + 3)
+            .min(1)
+    };
     // Three rows: brand banner, options, single-line version footer.
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(BRAND_HEIGHT),
+            Constraint::Length(brand_height),
             Constraint::Min(0),
             Constraint::Length(1),
         ])
@@ -65,6 +52,16 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
 }
 
 fn render_brand(f: &mut Frame, app: &App, area: Rect) {
+    let brand_style = Style::default()
+        .fg(app.theme.accent_primary())
+        .add_modifier(Modifier::BOLD);
+    if area.height < BRAND_HEIGHT {
+        f.render_widget(
+            Paragraph::new(Span::styled(BRAND_COMPACT, brand_style)).alignment(Alignment::Center),
+            area,
+        );
+        return;
+    }
     let inner_width = area.width as usize;
     let art_width = BRAND_ART[0].chars().count();
     let use_compact = inner_width < art_width;
@@ -72,24 +69,14 @@ fn render_brand(f: &mut Frame, app: &App, area: Rect) {
     let mut lines: Vec<Line> = vec![Line::from("")];
 
     if use_compact {
-        lines.push(Line::from(Span::styled(
-            BRAND_COMPACT,
-            Style::default()
-                .fg(app.theme.accent_primary())
-                .add_modifier(Modifier::BOLD),
-        )));
+        lines.push(Line::from(Span::styled(BRAND_COMPACT, brand_style)));
         // Pad to keep the brand block the same height regardless of mode.
         for _ in 1..BRAND_ART.len() {
             lines.push(Line::from(""));
         }
     } else {
         for art_line in BRAND_ART {
-            lines.push(Line::from(Span::styled(
-                art_line.to_string(),
-                Style::default()
-                    .fg(app.theme.accent_primary())
-                    .add_modifier(Modifier::BOLD),
-            )));
+            lines.push(Line::from(Span::styled(*art_line, brand_style)));
         }
     }
 
@@ -106,9 +93,20 @@ fn render_options(f: &mut Frame, app: &App, area: Rect) {
     // Two visual rows per option (label + detail) plus a blank spacer; the
     // whole block is centered horizontally so the longest detail line
     // anchors the column.
-    let mut lines: Vec<Line> = Vec::with_capacity(OPTIONS.len() * 3);
+    let mut lines: Vec<Line> = Vec::with_capacity(CliChoice::ALL.len() * 3);
 
-    for (choice, opt) in CliChoice::ALL.into_iter().zip(OPTIONS) {
+    for choice in CliChoice::ALL {
+        let (label, detail) = match choice {
+            CliChoice::Claude => (
+                "Claude Code",
+                "Anthropic's official CLI for Claude (~/.claude)",
+            ),
+            CliChoice::Codex => ("Codex CLI", "OpenAI's ChatGPT-based CLI (~/.codex)"),
+            CliChoice::Sources => (
+                "Manage Sources",
+                "Configure component sources (~/.hibi/sources.yaml)",
+            ),
+        };
         let selected = choice == app.cli_choice;
         let (marker, label_color, label_mod) = if selected {
             ("▶ ", app.theme.accent_primary(), Modifier::BOLD)
@@ -119,15 +117,17 @@ fn render_options(f: &mut Frame, app: &App, area: Rect) {
         lines.push(Line::from(vec![
             Span::styled(marker, Style::default().fg(app.theme.accent_primary())),
             Span::styled(
-                opt.label,
+                label,
                 Style::default().fg(label_color).add_modifier(label_mod),
             ),
         ]));
-        lines.push(Line::from(Span::styled(
-            format!("    {}", opt.detail),
-            Style::default().fg(app.theme.text_muted()),
-        )));
-        lines.push(Line::from(""));
+        if area.height >= OPTION_HEIGHT {
+            lines.push(Line::from(Span::styled(
+                format!("    {detail}"),
+                Style::default().fg(app.theme.text_muted()),
+            )));
+            lines.push(Line::from(""));
+        }
     }
 
     let paragraph = Paragraph::new(lines).alignment(Alignment::Left).block(
@@ -135,6 +135,7 @@ fn render_options(f: &mut Frame, app: &App, area: Rect) {
             .borders(Borders::ALL)
             .border_style(Style::default().fg(app.theme.border()))
             .title(" Select target ")
+            .title_bottom(" [↑/↓ or Tab] Move  [Enter] Select ")
             .title_style(Style::default().fg(app.theme.text_primary())),
     );
 

@@ -52,6 +52,7 @@ pub struct App {
     pub visibility_path: PathBuf,
     pub hide_confirmation: Option<HideConfirmation>,
     pending_removal: Option<removal::RemovalPlan>,
+    pub(crate) removal_scroll: usize,
     pub list_index: usize, // Index within current tab's filtered list (legacy, for MCP/Plugins)
     pub tree_views: HashMap<Tab, TreeView>, // Tree views for component tabs
 
@@ -199,6 +200,7 @@ impl App {
             visibility_path: d.visibility_path,
             hide_confirmation: None,
             pending_removal: None,
+            removal_scroll: 0,
             list_index: 0,
             tree_views: HashMap::new(),
             mcp_servers: Vec::new(),
