@@ -10,7 +10,8 @@ Hibi is a desktop and terminal app for managing Claude Code and Codex CLI config
 
 ## Features
 
-- Switch between light and dark themes on the desktop or use the keyboard to work in a terminal over SSH.
+- Follow the system appearance or choose an iced palette. The desktop app remembers your choice.
+- Use the keyboard to work in a terminal over SSH.
 - Search and filter components, compare installed files with their source, and review selected items before removing them.
 - Manage skills, configuration, and MCP servers for both tools. Claude Code also supports agents, slash commands, plugins, hooks, and output styles.
 - Add Git repositories and local folders as sources. The desktop and terminal interfaces share sources and installation records.

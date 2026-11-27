@@ -1,6 +1,7 @@
 #[macro_use]
 mod locale;
 mod actions;
+mod appearance;
 use crate::fs::installer::preferences::Language;
 mod activity;
 mod dialogs;
@@ -30,7 +31,6 @@ use iced::widget::{button, column, container, row, scrollable, svg, text, toolti
 use iced::{Element, Fill, Task, Theme};
 
 use crate::app::{App, View};
-use crate::theme::ThemeMode;
 use actions::Action;
 use runtime::Runtime;
 use shortcuts::{scroll_after_key, subscription};
@@ -45,6 +45,7 @@ pub enum Message {
     #[cfg(target_os = "windows")]
     TouchWindowDrag(iced::Vector),
     Tick,
+    SystemTheme(iced::theme::Mode),
     Resized(iced::Size),
     SearchSubmitted,
     SearchEscape,
@@ -54,14 +55,23 @@ pub enum Message {
 pub fn run() -> iced::Result {
     #[cfg(target_os = "macos")]
     set_application_icon();
-    iced::application(Runtime::new, update, view)
-        .default_font(fonts::interface())
-        .title("HIBI AI")
-        .theme(theme)
-        .subscription(subscription)
-        .window(window_bar::settings())
-        .centered()
-        .run()
+    iced::application(
+        || {
+            (
+                Runtime::new(),
+                iced::system::theme().map(Message::SystemTheme),
+            )
+        },
+        update,
+        view,
+    )
+    .default_font(fonts::interface())
+    .title("HIBI AI")
+    .theme(|state: &Runtime| appearance::window_theme(&state.theme_choice))
+    .subscription(subscription)
+    .window(window_bar::settings())
+    .centered()
+    .run()
 }
 
 #[cfg(target_os = "macos")]
@@ -118,6 +128,7 @@ fn update(state: &mut Runtime, message: Message) -> Task<Message> {
         }
         Message::Action(action) => state.dispatch(action),
         Message::Tick => state.tick(),
+        Message::SystemTheme(mode) => state.system_mode = mode,
         Message::Resized(size) => state.window_size = size,
         Message::OperationLogScrolled(viewport) => {
             if state.app.as_ref().is_some_and(|app| {
@@ -165,10 +176,7 @@ fn search_available(state: &Runtime) -> bool {
 }
 
 fn theme(state: &Runtime) -> Theme {
-    styles::theme(!matches!(
-        state.app.as_ref().map(|app| app.theme.mode()),
-        Some(ThemeMode::Latte)
-    ))
+    appearance::resolve(&state.theme_choice, state.system_mode)
 }
 
 fn view(state: &Runtime) -> Element<'_, Message> {
@@ -239,7 +247,8 @@ fn view(state: &Runtime) -> Element<'_, Message> {
         )
         .text_size(12)
         .padding([4, 10])
-        .style(styles::selector),
+        .style(styles::selector)
+        .menu_style(styles::selector_menu),
     );
     let version = updates::footer(state);
     let footer = container(footer.push(version))
@@ -250,19 +259,21 @@ fn view(state: &Runtime) -> Element<'_, Message> {
     #[cfg(not(target_os = "macos"))]
     let page = window_bar::resizable(page.height(Fill).into());
     // Include the background in damage tracking when presentation buffers are reused.
-    container(page)
-        .width(Fill)
-        .height(Fill)
-        .style(styles::backdrop)
-        .into()
+    iced::widget::themer(
+        Some(theme(state)),
+        container(page)
+            .width(Fill)
+            .height(Fill)
+            .style(styles::backdrop),
+    )
+    .text_color(|theme| theme.palette().text)
+    .into()
 }
 
 fn theme_button(state: &Runtime) -> Element<'static, Message> {
+    const DIAMETER: f32 = 36.0;
     let lang = state.language;
-    let dark = !matches!(
-        state.app.as_ref().map(|app| app.theme.mode()),
-        Some(ThemeMode::Latte)
-    );
+    let dark = theme(state).extended_palette().is_dark;
     let theme_icon: &[u8] = if dark {
         br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="black" stroke-width="1.7"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5" fill="none" stroke="black" stroke-width="1.7" stroke-linecap="round"/></svg>"#
     } else {
@@ -283,9 +294,13 @@ fn theme_button(state: &Runtime) -> Element<'static, Message> {
     tooltip(
         button(icon)
             .padding(9)
-            .width(36)
-            .height(36)
-            .style(styles::glass_button)
+            .width(DIAMETER)
+            .height(DIAMETER)
+            .style(|theme, status| {
+                let mut style = styles::glass_button(theme, status);
+                style.border.radius = (DIAMETER / 2.0).into();
+                style
+            })
             .on_press_maybe(enabled.then_some(Message::Action(Action::ToggleTheme))),
         text(if dark {
             lang.text("Light theme")
@@ -296,7 +311,7 @@ fn theme_button(state: &Runtime) -> Element<'static, Message> {
         tooltip::Position::Bottom,
     )
     .gap(6)
-    .style(styles::surface)
+    .style(styles::popup)
     .into()
 }
 

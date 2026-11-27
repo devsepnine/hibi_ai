@@ -108,7 +108,10 @@ pub(super) fn scroll_after_key(app: &App, key: KeyCode) -> Task<Message> {
 }
 
 pub(super) fn subscription(state: &Runtime) -> Subscription<Message> {
-    let events = iced::event::listen_with(|event, status, _| event_message(event, status));
+    let events = Subscription::batch([
+        iced::event::listen_with(|event, status, _| event_message(event, status)),
+        iced::system::theme_changes().map(Message::SystemTheme),
+    ]);
     if state.busy() || matches!(state.updater, super::updates::State::Current(_)) {
         Subscription::batch([
             events,

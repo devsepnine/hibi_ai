@@ -90,10 +90,11 @@ fn theme_changes_repaint_the_entire_page_background() {
     let mut renderer = Renderer::new(Font::default(), Pixels(16.0));
     let mut tree = Tree::new(super::view(&state).as_widget());
     for dark in [true, false, true] {
-        let app = state.app.as_mut().unwrap();
-        if dark != (app.theme.mode() == crate::theme::ThemeMode::Mocha) {
-            app.theme.toggle();
-        }
+        state.theme_choice = if dark {
+            crate::fs::installer::preferences::Appearance::Dark
+        } else {
+            crate::fs::installer::preferences::Appearance::Light
+        };
         let pixels = render_page(&state, &mut tree, &mut renderer);
         let corners = [(0, 0), (1119, 0), (0, 779), (1119, 779)].map(|(x, y)| {
             let offset = (y * 1120 + x) * 4;
@@ -112,14 +113,34 @@ fn theme_changes_repaint_the_entire_page_background() {
 }
 
 #[test]
+fn system_changes_follow_the_os_until_a_palette_is_selected() {
+    use crate::fs::installer::preferences::Appearance;
+    use iced::theme::Mode;
+    let mut state = runtime();
+    for mode in [Mode::Dark, Mode::Light] {
+        let _ = super::update(&mut state, Message::SystemTheme(mode));
+        assert_eq!(
+            super::theme(&state).extended_palette().is_dark,
+            mode == Mode::Dark
+        );
+        assert!(!state.appearance.busy());
+    }
+    state.dispatch(Action::SetAppearance(Appearance::Palette("Nord".into())));
+    let nord = super::theme(&state);
+    let _ = super::update(&mut state, Message::SystemTheme(Mode::Light));
+    assert_eq!(super::theme(&state), nord);
+    assert_eq!(nord.to_string(), "Nord");
+    state.dispatch(Action::SetAppearance(Appearance::System));
+    assert!(!super::theme(&state).extended_palette().is_dark);
+}
+
+#[test]
 fn saving_appearance_does_not_change_the_visible_page() {
     let mut state = runtime();
     let mut renderer = Renderer::new(Font::default(), Pixels(16.0));
     let mut tree = Tree::new(super::view(&state).as_widget());
     let before = render_page(&state, &mut tree, &mut renderer);
-    state
-        .appearance
-        .request_theme(state.app.as_ref().unwrap().theme.mode());
+    state.appearance.request_theme(state.theme_choice.clone());
     assert!(state.busy());
     let saving = render_page(&state, &mut tree, &mut renderer);
     let changed = before.iter().zip(&saving).filter(|(a, b)| a != b).count();
@@ -131,10 +152,10 @@ fn toggling_theme_preserves_status_messages_and_footer_visibility() {
     for status in [None, Some("Installation complete".to_string())] {
         let mut state = runtime();
         state.app.as_mut().unwrap().status_message = status.clone();
-        let previous = state.app.as_ref().unwrap().theme.mode();
+        let previous = super::theme(&state).extended_palette().is_dark;
         let _ = super::update(&mut state, Message::Action(Action::ToggleTheme));
         let app = state.app.as_ref().unwrap();
-        assert_eq!(app.theme.mode(), previous.toggle());
+        assert_ne!(super::theme(&state).extended_palette().is_dark, previous);
         assert_eq!(app.status_message, status);
         assert!(state.appearance.busy());
     }

@@ -1,54 +1,67 @@
-use iced::widget::{button, checkbox, container, pick_list, rule, text, text_input};
-use iced::{Border, Color, Degrees, Theme, color, gradient};
+use iced::theme::palette::{mix, readable};
+use iced::widget::{button, checkbox, container, overlay::menu, pick_list, rule, text, text_input};
+use iced::{Border, Color, Degrees, Theme, gradient};
 
 const PANEL_RADIUS: f32 = 18.0;
-const PILL_RADIUS: f32 = 999.0;
+const CONTROL_RADIUS: f32 = 10.0;
 
-pub fn theme(dark: bool) -> Theme {
-    use iced::theme::Palette;
-
-    let (name, palette) = if dark {
-        (
-            "Hibi Dark",
-            Palette {
-                background: color!(0x232639),
-                text: color!(0xf3f2fd),
-                primary: color!(0xd1bfff),
-                success: color!(0xace0c1),
-                warning: color!(0xf3d396),
-                danger: color!(0xffb1c7),
-            },
-        )
-    } else {
-        (
-            "Hibi Light",
-            Palette {
-                background: color!(0xe9eaf8),
-                text: color!(0x22243a),
-                primary: color!(0x584099),
-                success: color!(0x226148),
-                warning: color!(0x74500e),
-                danger: color!(0x922c51),
-            },
-        )
-    };
-    Theme::custom(name, palette)
+pub(super) fn glass_theme(source: &Theme) -> Theme {
+    let mut palette = source.palette();
+    let dark = source.extended_palette().is_dark;
+    let reference = mix(
+        palette.background,
+        if dark { Color::WHITE } else { Color::BLACK },
+        if dark { 0.065 } else { 0.14 },
+    );
+    for ink in [
+        &mut palette.text,
+        &mut palette.primary,
+        &mut palette.success,
+        &mut palette.warning,
+        &mut palette.danger,
+    ] {
+        *ink = readable(reference, *ink);
+    }
+    Theme::custom(source.to_string(), palette)
 }
 
-fn tone(theme: &Theme, light: Color, dark: Color) -> Color {
+fn surface_color(theme: &Theme) -> Color {
+    let base = theme.palette().background;
     if theme.extended_palette().is_dark {
-        dark
+        mix(base, Color::BLACK, 0.22)
     } else {
-        light
+        mix(base, Color::WHITE, 0.70)
     }
 }
 
+fn glass_tint(theme: &Theme) -> Color {
+    let p = theme.palette();
+    let amount = if theme.extended_palette().is_dark {
+        0.11
+    } else {
+        0.21
+    };
+    mix(p.background, p.primary, amount)
+}
+
 pub fn backdrop(theme: &Theme) -> container::Style {
+    let p = theme.palette();
+    let dark = theme.extended_palette().is_dark;
+    let start = if dark {
+        mix(p.background, p.primary, 0.075)
+    } else {
+        mix(p.background, Color::WHITE, 0.75)
+    };
+    let end = if dark {
+        mix(p.background, Color::BLACK, 0.48)
+    } else {
+        glass_tint(theme)
+    };
     container::Style::default().background(
         gradient::Linear::new(Degrees(126.0))
-            .add_stop(0.0, tone(theme, color!(0xf7f8ff), color!(0x383451)))
-            .add_stop(0.48, theme.palette().background)
-            .add_stop(1.0, tone(theme, color!(0xd7dbf4), color!(0x181b2a))),
+            .add_stop(0.0, start)
+            .add_stop(0.48, p.background)
+            .add_stop(1.0, end),
     )
 }
 
@@ -60,16 +73,23 @@ pub fn divider(theme: &Theme) -> rule::Style {
 }
 
 pub fn muted(theme: &Theme) -> text::Style {
+    let palette = theme.palette();
+    let (reference, background_weight) = if theme.extended_palette().is_dark {
+        (mix(palette.background, palette.primary, 0.14), 0.24)
+    } else {
+        (theme.extended_palette().background.neutral.color, 0.06)
+    };
+    let ink = mix(palette.text, palette.background, background_weight);
     text::Style {
-        color: Some(tone(theme, color!(0x50546c), color!(0xc6c8dc))),
+        color: Some(readable(reference, ink)),
     }
 }
 
 pub fn surface(theme: &Theme) -> container::Style {
     container::Style {
-        background: Some(tone(theme, color!(0xfbfaff), color!(0x1e2131)).into()),
+        background: Some(surface_color(theme).into()),
         border: Border {
-            color: tone(theme, color!(0xd8daeb), color!(0x3b4058)),
+            color: theme.extended_palette().background.weak.color,
             width: 1.0,
             radius: PANEL_RADIUS.into(),
         },
@@ -77,29 +97,50 @@ pub fn surface(theme: &Theme) -> container::Style {
     }
 }
 
+fn glass_fill(theme: &Theme, base: Color) -> gradient::Linear {
+    let dark = theme.extended_palette().is_dark;
+    let highlight = if dark {
+        glass_tint(theme)
+    } else {
+        mix(base, Color::WHITE, 0.94)
+    };
+    gradient::Linear::new(Degrees(153.0))
+        .add_stop(0.0, highlight.scale_alpha(0.90))
+        .add_stop(0.36, base.scale_alpha(0.52))
+        .add_stop(
+            1.0,
+            mix(
+                base,
+                theme.palette().primary,
+                if dark { 0.065 } else { 0.15 },
+            )
+            .scale_alpha(0.78),
+        )
+}
+
 pub fn glass(theme: &Theme) -> container::Style {
-    // The software renderer paints shadows outside the damage clip on partial redraws.
-    let highlight = tone(theme, Color::WHITE, color!(0x555071));
-    let base = tone(theme, color!(0xf3f2ff), color!(0x21263b));
-    let fill = gradient::Linear::new(Degrees(154.0))
-        .add_stop(0.0, highlight.scale_alpha(0.78))
-        .add_stop(0.42, base.scale_alpha(0.88))
-        .add_stop(1.0, base.scale_alpha(0.64));
+    let fill = glass_fill(theme, theme.palette().background);
     container::Style {
         background: Some(fill.into()),
         border: Border {
-            color: tone(theme, Color::WHITE, color!(0x9d94c4)).scale_alpha(0.55),
+            color: mix(theme.palette().primary, Color::WHITE, 0.45).scale_alpha(0.55),
             width: 1.0,
             radius: PANEL_RADIUS.into(),
         },
         ..Default::default()
     }
+}
+
+pub fn popup(theme: &Theme) -> container::Style {
+    let mut style = surface(theme);
+    style.border.radius = CONTROL_RADIUS.into();
+    style
 }
 
 pub fn subtle(theme: &Theme, status: button::Status) -> button::Style {
     let mut style = button::text(theme, status);
     style.border = Border {
-        radius: 10.0.into(),
+        radius: CONTROL_RADIUS.into(),
         ..Default::default()
     };
     style.text_color = theme.palette().text;
@@ -118,34 +159,65 @@ pub fn subtle(theme: &Theme, status: button::Status) -> button::Style {
 }
 
 fn hover_fill(theme: &Theme, alpha: f32) -> Color {
-    tone(theme, color!(0xe2e1f6), color!(0x373b56)).scale_alpha(alpha)
+    theme
+        .extended_palette()
+        .background
+        .weak
+        .color
+        .scale_alpha(alpha)
+}
+
+fn control_border(theme: &Theme) -> Border {
+    let tint = glass_tint(theme);
+    let dark = theme.extended_palette().is_dark;
+    let end = mix(
+        theme.palette().primary,
+        if dark { Color::WHITE } else { Color::BLACK },
+        0.65,
+    );
+    // Leave room for antialiasing at the brightest dark or deepest light glass edge.
+    let base = tint.relative_luminance();
+    let target = if dark {
+        (base + 0.05) * 3.6 - 0.05
+    } else {
+        (base + 0.05) / 3.6 - 0.05
+    };
+    let strength = (target - base) / (end.relative_luminance() - base);
+    Border {
+        color: mix(tint, end, strength),
+        width: 1.5,
+        radius: CONTROL_RADIUS.into(),
+    }
 }
 
 pub fn secondary(theme: &Theme, status: button::Status) -> button::Style {
-    let mut style = subtle(theme, status);
-    let surface = surface(theme);
-    style.border = surface.border;
-    style.border.radius = PILL_RADIUS.into();
-    if matches!(status, button::Status::Active) {
-        style.background = surface.background;
-    }
+    let palette = &theme.extended_palette().background;
+    let pair = match status {
+        button::Status::Active | button::Status::Disabled => palette.weakest,
+        button::Status::Hovered => palette.weak,
+        button::Status::Pressed => palette.neutral,
+    };
+    let mut style = button::Style {
+        background: Some(glass_fill(theme, pair.color).into()),
+        text_color: pair.text,
+        border: control_border(theme),
+        ..Default::default()
+    };
     if status == button::Status::Disabled {
+        style.background = Some(pair.color.scale_alpha(0.4).into());
+        style.text_color = style.text_color.scale_alpha(0.45);
         style.border.color = style.border.color.scale_alpha(0.4);
     }
     style
 }
 
 pub fn glass_button(theme: &Theme, status: button::Status) -> button::Style {
-    let mut material = glass(theme);
-    if matches!(status, button::Status::Hovered | button::Status::Pressed) {
-        material.background = Some(hover_fill(theme, 0.9).into());
-        material.border.color = theme.palette().primary.scale_alpha(0.65);
+    let mut style = secondary(theme, status);
+    style.border.radius = PANEL_RADIUS.into();
+    if status == button::Status::Active {
+        style.background = glass(theme).background;
     }
-    button::Style {
-        background: material.background,
-        border: material.border,
-        ..subtle(theme, status)
-    }
+    style
 }
 
 pub fn focused_glass_button(theme: &Theme, status: button::Status) -> button::Style {
@@ -162,38 +234,27 @@ pub fn focused_secondary(theme: &Theme, status: button::Status) -> button::Style
 
 pub fn primary(theme: &Theme, status: button::Status) -> button::Style {
     let mut style = button::primary(theme, status);
-    style.border.radius = PILL_RADIUS.into();
-    if status != button::Status::Disabled {
-        let fill = match status {
-            button::Status::Hovered => tone(theme, color!(0x6245ae), color!(0xe3d7ff)),
-            button::Status::Pressed => tone(theme, color!(0x4f348f), color!(0xbba2f5)),
-            _ => theme.palette().primary,
-        };
-        style.background = Some(fill.into());
-        style.text_color = tone(theme, Color::WHITE, color!(0x241b38));
-        style.border.color = Color::WHITE.scale_alpha(0.35);
-        style.border.width = 1.0;
+    style.border.radius = CONTROL_RADIUS.into();
+    if status == button::Status::Hovered {
+        style.text_color = theme.extended_palette().primary.strong.text;
     }
     style
 }
 
 pub fn destructive(theme: &Theme, status: button::Status) -> button::Style {
     let mut style = button::danger(theme, status);
-    style.border.radius = PILL_RADIUS.into();
+    style.border.radius = CONTROL_RADIUS.into();
     style
 }
 
 pub fn navigation(theme: &Theme, status: button::Status) -> button::Style {
     let mut style = subtle(theme, status);
+    let palette = theme.palette();
     style.background = Some(match status {
         button::Status::Hovered | button::Status::Pressed => hover_fill(theme, 1.0).into(),
-        _ => tone(theme, color!(0xf0ecff), color!(0x38324e)).into(),
+        _ => mix(palette.background, palette.primary, 0.08).into(),
     });
-    style.border = Border {
-        color: theme.palette().primary.scale_alpha(0.24),
-        width: 1.0,
-        radius: 10.0.into(),
-    };
+    style.border = control_border(theme);
     style
 }
 
@@ -213,19 +274,18 @@ fn focus_border(theme: &Theme, radius: impl Into<iced::border::Radius>) -> Borde
 
 pub fn focus_ring(theme: &Theme) -> container::Style {
     container::Style {
-        border: focus_border(theme, 8.0),
+        border: focus_border(theme, CONTROL_RADIUS),
         ..Default::default()
     }
 }
 
 pub fn input(theme: &Theme, status: text_input::Status) -> text_input::Style {
     let mut style = text_input::default(theme, status);
-    style.background = tone(theme, color!(0xfbfaff), color!(0x202438)).into();
+    style.background = surface_color(theme).into();
     style.placeholder = muted(theme).color.unwrap_or(theme.palette().text);
-    style.border = surface(theme).border;
-    style.border.radius = PILL_RADIUS.into();
+    style.border = control_border(theme);
     if matches!(status, text_input::Status::Focused { .. }) {
-        style.border = focus_border(theme, PILL_RADIUS);
+        style.border = focus_border(theme, CONTROL_RADIUS);
     }
     style
 }
@@ -233,12 +293,17 @@ pub fn input(theme: &Theme, status: text_input::Status) -> text_input::Style {
 pub fn selector(theme: &Theme, status: pick_list::Status) -> pick_list::Style {
     let mut style = pick_list::default(theme, status);
     style.background = if status == pick_list::Status::Active {
-        tone(theme, color!(0xfbfaff), color!(0x202438)).into()
+        surface_color(theme).into()
     } else {
         hover_fill(theme, 1.0).into()
     };
-    style.border = surface(theme).border;
-    style.border.radius = PILL_RADIUS.into();
+    style.border = control_border(theme);
+    style
+}
+
+pub fn selector_menu(theme: &Theme) -> menu::Style {
+    let mut style = menu::default(theme);
+    style.border.radius = CONTROL_RADIUS.into();
     style
 }
 
@@ -251,7 +316,7 @@ pub fn check(theme: &Theme, status: checkbox::Status) -> checkbox::Style {
         | checkbox::Status::Disabled { is_checked } => is_checked,
     };
     if checked {
-        style.background = tone(theme, color!(0xe7dffb), color!(0x494061)).into();
+        style.background = mix(theme.palette().background, theme.palette().primary, 0.10).into();
         style.border.color = theme.palette().primary.scale_alpha(0.6);
         style.icon_color = theme.palette().primary;
     }
@@ -270,10 +335,10 @@ pub fn danger(theme: &Theme, status: button::Status) -> button::Style {
 
 pub fn badge(theme: &Theme) -> container::Style {
     container::Style {
-        background: Some(tone(theme, color!(0xeceaf8), color!(0x30344a)).into()),
+        background: Some(mix(theme.palette().background, theme.palette().primary, 0.05).into()),
         text_color: muted(theme).color,
         border: Border {
-            radius: 9.0.into(),
+            radius: CONTROL_RADIUS.into(),
             ..Default::default()
         },
         ..Default::default()
@@ -284,6 +349,22 @@ pub fn badge(theme: &Theme) -> container::Style {
 mod tests {
     use super::*;
     use iced::Background;
+
+    #[test]
+    fn compact_popups_and_focus_rings_match_their_controls() {
+        let theme = glass_theme(&Theme::Light);
+        let radius = secondary(&theme, button::Status::Active).border.radius;
+        for border in [
+            navigation(&theme, button::Status::Active).border,
+            focus_ring(&theme).border,
+            badge(&theme).border,
+            popup(&theme).border,
+            selector(&theme, pick_list::Status::Active).border,
+            selector_menu(&theme).border,
+        ] {
+            assert_eq!(border.radius, radius);
+        }
+    }
 
     fn luminance(color: Color) -> f32 {
         fn linear(v: f32) -> f32 {
@@ -317,8 +398,12 @@ mod tests {
         )
     }
 
+    #[track_caller]
     fn assert_contrast(foreground: Color, background: Color, minimum: f32) {
-        let (a, b) = (luminance(foreground), luminance(background));
+        let (a, b) = (
+            luminance(composite(foreground, background)),
+            luminance(background),
+        );
         let ratio = (a.max(b) + 0.05) / (a.min(b) + 0.05);
         assert!(
             ratio >= minimum,
@@ -327,9 +412,8 @@ mod tests {
     }
 
     #[test]
-    fn body_and_secondary_copy_meet_aa_contrast_in_both_themes() {
-        for dark in [false, true] {
-            let theme = theme(dark);
+    fn body_and_secondary_copy_meet_aa_contrast_in_all_palettes() {
+        for theme in Theme::ALL.iter().map(glass_theme) {
             let backgrounds = [
                 backdrop(&theme).background,
                 surface(&theme).background,
@@ -370,10 +454,55 @@ mod tests {
         }
     }
 
+    fn button_backdrops(theme: &Theme) -> Vec<Color> {
+        let mut parents = Vec::new();
+        for base in colors(backdrop(theme).background.unwrap()) {
+            parents.push(base);
+            for layer in [surface(theme), glass(theme)] {
+                for fill in colors(layer.background.unwrap()) {
+                    parents.push(composite(fill, base));
+                }
+            }
+        }
+        parents
+    }
+
     #[test]
-    fn focus_indicators_have_three_to_one_contrast_in_both_themes() {
-        for dark in [false, true] {
-            let theme = theme(dark);
+    fn enabled_buttons_stay_visible_on_every_backdrop() {
+        for theme in Theme::ALL.iter().map(glass_theme) {
+            let parents = button_backdrops(&theme);
+            for status in [
+                button::Status::Active,
+                button::Status::Hovered,
+                button::Status::Pressed,
+            ] {
+                for &parent in &parents {
+                    for fill in colors(primary(&theme, status).background.unwrap()) {
+                        assert_contrast(fill, parent, 3.0);
+                    }
+                    for style in [
+                        secondary,
+                        glass_button,
+                        navigation,
+                        focused_secondary,
+                        focused_glass_button,
+                    ] {
+                        let button = style(&theme, status);
+                        assert_contrast(button.border.color, parent, 3.0);
+                        for fill in colors(button.background.unwrap()) {
+                            let inside = composite(fill, parent);
+                            assert_contrast(button.text_color, inside, 4.5);
+                            assert_contrast(muted(&theme).color.unwrap(), inside, 4.5);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn focus_indicators_have_three_to_one_contrast_in_all_palettes() {
+        for theme in Theme::ALL.iter().map(glass_theme) {
             let status = button::Status::Active;
             let focus = [
                 focus_ring(&theme).border,

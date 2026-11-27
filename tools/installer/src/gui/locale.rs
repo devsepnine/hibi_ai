@@ -71,6 +71,7 @@ impl Language {
 }
 
 catalog! {
+    "System theme" => "시스템 테마 따르기", "システム設定に従う";
     "Checking for updates…" => "업데이트 확인 중…", "更新を確認中…";
     "Up to date" => "최신 버전입니다", "最新です";
     "Could not check for updates" => "업데이트를 확인할 수 없습니다", "更新を確認できません";

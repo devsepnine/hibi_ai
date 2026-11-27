@@ -94,7 +94,7 @@ GUI와 TUI는 `tools/installer/src/app/selection.rs`에서 계산한 설치와 �
 | `install-progress` | 사전 검사, 진행률과 로그, 설치 및 제거 | 첫 항목 실패, 중간 취소, 작업 스레드 종료, 새로고침 실패 |
 | `settings-merge` | 설정 항목 선택, 값 비교, 설치와 제거 | 사용자 설정 보존과 권한 오류 |
 | `install-manifest` | 설치 출처와 해시 기록 유지 | 기록 저장 실패, 수정된 옛 파일과 해시 없는 파일 보존 |
-| `gui-appearance` | 다크 모드와 라이트 모드 전환, 언어 선택과 저장 | 모든 화면의 제목, 선택, 비활성 버튼과 오류 대비 |
+| `gui-appearance` | 시스템 테마 추적, 팔레트와 언어 선택 및 저장 | 모든 화면의 제목, 선택, 비활성 버튼과 오류 대비 |
 | `sources-screen` | 번들과 사용자 소스 목록, 선택, 수정 및 제거 | 번들 편집과 삭제 금지, 목록 변경 뒤 오래된 인덱스 |
 | `source-wizard` | Git과 로컬 소스 추가 및 수정 | HTTPS 외 URL, 자격증명, 잘못된 브랜치와 경로 거부 |
 | `source-wizard` | 브랜치, 하위 루트, 컴포넌트 매핑 | 빈 선택 기본값, 기존 값 표시, 각 단계 취소, 저장 실패 재시도 |
@@ -176,12 +176,12 @@ cargo test --locked --manifest-path tools/installer/Cargo.toml
 
 ### `gui-appearance`: 창 헤더, 테마와 언어
 
-- **위치**: 헤더 오른쪽의 테마 토글, 하단 버전 옆의 언어 선택
-- **UI 문구**: `"Light theme"`, `"Dark theme"`, `"Could not save display settings"`
+- **위치**: 헤더 오른쪽의 팔레트 선택과 테마 토글, 하단 버전 옆의 언어 선택
+- **UI 문구**: `"System theme"`, `"Light"`, `"Dark"`, `"Could not save display settings"`
 - **코드 경로**: `tools/installer/src/gui/window_bar.rs` → `view`, `tools/installer/src/gui/styles.rs`, `tools/installer/src/gui/runtime.rs` → `start_initialization`, `tools/installer/src/gui/preferences.rs` → `Writer`. `tools/installer/src/fs/installer/preferences.rs`의 `load`와 `save`가 파일을 다룬다.
 - **테스트**: `tools/installer/src/gui/window_bar.rs`, `tools/installer/src/gui/keyboard_tests.rs`, `tools/installer/src/gui/locale.rs`, `tools/installer/src/fs/installer/preferences.rs`
 
-헤더는 테마 버튼과 창 드래그 영역을 나눈다. 유리 스타일의 배경과 카드, 입력과 클릭 상태는 `tools/installer/src/gui/styles.rs`에서 관리한다. 현재 설정 언어는 영어, 한국어, 일본어 중 하나다. 저장한 값이 없으면 운영체제의 선호 언어 목록에서 지원하는 첫 언어를 고르고, 목록에 해당 언어가 없으면 영어를 사용한다. 경로와 외부 도구 로그는 원문을 표시한다.
+첫 실행에는 시스템의 밝기 설정을 따르고 실행 중 변경도 반영한다. 헤더에서 iced 팔레트를 고르면 다음 실행에도 그 선택을 쓴다. 해와 달 버튼은 Light와 Dark를 빠르게 선택한다. 시스템 설정을 다시 따르려면 목록에서 시스템 테마 따르기를 선택한다. 유리 스타일의 배경과 카드, 입력과 클릭 상태는 `tools/installer/src/gui/styles.rs`에서 관리한다. 현재 설정 언어는 영어, 한국어, 일본어 중 하나다. 저장한 값이 없으면 운영체제의 선호 언어 목록에서 지원하는 첫 언어를 고르고, 목록에 해당 언어가 없으면 영어를 사용한다. 경로와 외부 도구 로그는 원문을 표시한다.
 
 GUI는 언어와 테마를 `~/.hibi/preferences.json`에 저장한다. 저장할 키만 바꿔 다른 설정을 보존한다. 파일이 손상되었거나 읽기 전용이면 원인을 표시하고 파일을 보존한다. 창 닫기는 진행 중인 환경설정 쓰기가 끝날 때까지 기다린다.
 

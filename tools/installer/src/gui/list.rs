@@ -293,7 +293,7 @@ fn selection_label(lang: Language, app: &App, selected: usize) -> Element<'_, Me
             container(text(details).size(12)).max_width(600).padding(10),
             tooltip::Position::Top,
         )
-        .style(styles::surface)
+        .style(styles::popup)
         .into()
     } else {
         label.into()

@@ -2,9 +2,21 @@ use std::sync::mpsc::{self, Receiver, TryRecvError};
 
 use anyhow::Result;
 
+use super::runtime::Runtime;
 use crate::app::App;
 use crate::fs::installer::preferences::{self, Appearance, Language, Preferences};
-use crate::theme::ThemeMode;
+
+impl Runtime {
+    pub(super) fn restore_preferences(&mut self, saved: Option<&Preferences>) {
+        if self.appearance.busy() {
+            return;
+        }
+        self.theme_choice = saved.and_then(|p| p.appearance.clone()).unwrap_or_default();
+        self.language = saved
+            .and_then(|p| p.language)
+            .unwrap_or_else(|| Language::preferred(sys_locale::get_locales()));
+    }
+}
 
 #[derive(Default)]
 pub(super) struct Writer {
@@ -13,13 +25,10 @@ pub(super) struct Writer {
 }
 
 impl Writer {
-    pub fn request_theme(&mut self, mode: ThemeMode) {
+    pub fn request_theme(&mut self, choice: Appearance) {
         self.pending
             .get_or_insert_with(Preferences::default)
-            .appearance = Some(match mode {
-            ThemeMode::Mocha => Appearance::Dark,
-            ThemeMode::Latte => Appearance::Light,
-        });
+            .appearance = Some(choice);
     }
 
     pub fn request_language(&mut self, language: Language) {
@@ -60,29 +69,33 @@ impl Writer {
     }
 }
 
-pub(super) fn restore(app: &mut App, settings: Result<Preferences>) {
-    match settings {
-        Ok(settings) => {
-            if let Some(appearance) = settings.appearance
-                && (appearance == Appearance::Dark) != (app.theme.mode() == ThemeMode::Mocha)
-            {
-                app.theme.toggle();
-            }
-        }
-        Err(error) => {
-            let warning = format!("Could not load display settings: {error:#}");
-            let message = app.status_message.get_or_insert_with(String::new);
-            if !message.is_empty() {
-                message.push_str("; ");
-            }
-            message.push_str(&warning);
-        }
+pub(super) fn report_load_error(app: &mut App, error: anyhow::Error) {
+    let warning = format!("Could not load display settings: {error:#}");
+    let message = app.status_message.get_or_insert_with(String::new);
+    if !message.is_empty() {
+        message.push_str("; ");
     }
+    message.push_str(&warning);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::gui::actions::Action;
+
+    #[test]
+    fn retry_keeps_choices_that_are_still_being_saved() {
+        let mut runtime = Runtime::empty();
+        let nord = Appearance::Palette("Nord".into());
+        runtime.dispatch(Action::SetAppearance(nord.clone()));
+        runtime.dispatch(Action::SetLanguage(Language::Korean));
+        runtime.restore_preferences(Some(&Preferences {
+            appearance: Some(Appearance::Dark),
+            language: Some(Language::English),
+        }));
+        assert_eq!(runtime.theme_choice, nord);
+        assert_eq!(runtime.language, Language::Korean);
+    }
 
     #[test]
     fn rapid_theme_changes_coalesce_while_an_earlier_write_is_running() {
@@ -92,9 +105,9 @@ mod tests {
             pending: None,
         };
         writer.request_language(Language::Japanese);
-        writer.request_theme(ThemeMode::Mocha);
+        writer.request_theme(Appearance::Dark);
         writer.request_language(Language::Korean);
-        writer.request_theme(ThemeMode::Latte);
+        writer.request_theme(Appearance::Light);
         assert!(writer.tick().is_none());
         assert_eq!(
             writer.pending,
