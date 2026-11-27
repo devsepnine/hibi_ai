@@ -1,441 +1,150 @@
-# hibi-ai 운영 가이드 RUNBOOK
+# hibi-ai 운영 가이드
 
-> v2 베타부터 직접 설치본은 서명한 번들로 업데이트한다.
+이 문서는 릴리스 준비, 플랫폼별 검증, 게시, 배포 문제 대응을 다룬다. 사용자 설치 절차는 [루트 README](../README.ko.md), 앱에서 업데이트 방식을 고르는 기준은 [배포 기능맵](features/distribution.md)을 참고한다.
 
-릴리즈는 ~v1.13부터 GitHub Actions로 자동화됐다. 아래 절차는 태그 푸시 이전의 준비와, 워크플로가 끝난 뒤 남는 수동 작업을 다룬다.
+## 릴리스 준비
 
-## 릴리즈 절차
+### 버전과 태그 준비
 
-### 베타와 서명 키
-
-`v2.0.0-beta` 태그는 GUI 검증에서 중단됐다. 첫 공개 베타에는 `v2.0.0-beta.1` 태그를 사용한다. 베타 기간에는 Homebrew Formula와 Scoop Manifest가 기존 정식판을 가리킨다. 정식 v2를 게시한 뒤 두 패키지의 버전과 해시를 갱신한다.
-
-앱은 `tools/installer/assets/update.pub`의 minisign 공개키를 내장한다. 운영자가 해당 개인키 파일 전체를 저장소의 Actions Secret `HIBI_UPDATE_SECRET_KEY`에 등록한다. CI는 비대화형 서명 후 같은 공개키로 검증한다. 키가 없거나 일치하지 않으면 배포가 중단된다. 이미 배포한 앱은 내장 키를 신뢰하므로 다음 릴리스에도 같은 키를 쓴다.
-
-`python3 tools/installer/tests/update_smoke.py`는 macOS와 GNU Linux에서 두 버전의 바이너리와 임시 키로 번들 교체, 서명 오류, 손상된 파일, 재실행 실패 후 복구를 검증한다. 베타를 배포한 뒤에는 각 운영체제에서 실제 다음 베타로 업데이트하고 다시 열린 앱에서 버전과 설정을 확인한다.
-
-### 1. 버전 동기화 3곳
-
-릴리즈 워크플로가 세 값의 일치를 검증하고, 어긋나면 빌드 전에 실패한다.
+`tools/installer/Cargo.toml`의 `version`과 `package.sh`의 `VERSION`을 같은 값으로 변경한다. `Cargo.lock`은 아래 명령으로 갱신한다. 바이너리의 버전은 파일 컴포넌트를 설치하거나 제거할 때 `~/.hibi/install.json`에 기록된다.
 
 ```bash
-# 1) tools/installer/Cargo.toml
-#    version = "1.23.1"
-#    바이너리에 각인되고 사용자의 ~/.hibi/install.json에 provenance로 기록된다
-vim tools/installer/Cargo.toml
-
-# 2) package.sh
-#    VERSION="1.23.1"
-vim package.sh
-
-# 3) Cargo.lock
 cargo update -w --manifest-path tools/installer/Cargo.toml
 ```
 
-푸시할 태그 `v1.23.1`의 `v` 접두어를 뗀 값이 위 두 버전과 같아야 한다.
+릴리스 워크플로는 이 버전과 `v<version>` 태그를 대조한다. 수동 실행에서도 기존 태그가 가리키는 커밋을 선택하고 `v`를 뺀 버전을 입력한다. `main`을 리라이트하면 기존 Git 소스 캐시가 같은 태그의 다른 커밋을 가리킬 수 있으므로 공개 이력에 새 커밋을 추가한다.
 
-### 2. 로컬 검증
+### 릴리스 서명
 
-릴리즈 워크플로가 빌드 전에 돌리는 검사 네 개를 먼저 로컬에서 통과시킨다. 같은 목록이 루트 `AGENTS.md`에 있다.
+서명 담당자는 `tools/installer/assets/update.pub`와 짝을 이루는 minisign 비밀 키를 저장소의 Actions Secret `HIBI_UPDATE_SECRET_KEY`에 등록한다. 게시 작업은 완성된 패키지의 SHA-256을 확인하고 `checksums.txt`를 서명한 뒤, 앱에 내장된 공개키로 서명을 검증한다. 키가 없거나 공개키와 일치하지 않으면 게시에 실패한다. 기존 앱이 새 배포를 검증하려면 같은 공개키로 서명이 검증되어야 한다.
+
+정식판은 정식 릴리스를 확인한다. 시험판은 더 높은 시험판과 정식판을 확인한다. 시험판 태그에는 `--prerelease --latest=false`가 적용되고 Homebrew와 Scoop의 정식 배포 버전은 기존 값을 유지한다. [릴리스 워크플로](../.github/workflows/release.yml)
+
+## 빌드 전 검사
+
+저장소 루트에서 실행한다. 릴리스 작업은 상태줄 소스와 바이너리의 변경 이력을 확인하므로 전체 Git 이력을 가져온다.
 
 ```bash
-# 산문 구두점 린트: src, docs, README.md, AGENTS.md. 위반 시 exit 1
-python tools/lint-prose.py
-
-# 아키텍처 규칙 린트: docs/ARCHITECTURE.md의 기계적 MUST 규칙. 새 위반이나 stale 행이면 exit 1
-python tools/lint-arch.py
-
-# 포맷 검사: 차이가 있으면 실패. 고칠 때는 --check 없이 실행
+python3 tools/lint-prose.py
+python3 tools/lint-prose.py README.ko.md README.ja.md
+python3 tools/lint-arch.py
 cargo fmt --manifest-path tools/installer/Cargo.toml --check
-
-# 테스트
-cargo test --manifest-path tools/installer/Cargo.toml   # 151 tests
-
-# 전 플랫폼 빌드 (dist/로 출력)
-cd tools/installer && ./build.sh && cd ../..
-
-# 바이너리 확인
-file dist/hibi
-lipo -info dist/hibi        # macOS Universal: x86_64 + arm64
-file dist/hibi-linux dist/hibi.exe
-
-# 실행 테스트
-./dist/hibi
+cargo test --locked --manifest-path tools/installer/Cargo.toml
+cargo test --locked --manifest-path tools/installer/Cargo.toml --no-default-features
+cargo test --locked --manifest-path tools/statusline/Cargo.toml
 ```
 
-Windows MSI를 만들 때는 `wixl` 0.103 이상과 `exiftool`, `msiinfo`가 필요하다. 패키징 스크립트는 Windows 실행 파일의 버전을 읽고 완성된 MSI의 파일 버전과 대조한다.
-
-패키징까지 로컬에서 확인하려면:
+Ubuntu의 검증 환경에서 다음 명령으로 Linux 설치 스크립트, 서명 업데이트와 복구, 실제 터미널 및 GUI 입력을 확인한다. Xvfb, Python Xlib, Pillow, Tesseract 영어 데이터와 minisign 등은 릴리스 워크플로의 `verify` 작업과 같은 설치 목록을 사용한다.
 
 ```bash
-./package.sh
-ls -lh release/v1.23.1/
-cat release/v1.23.1/checksums.txt
+python3 tools/installer/tests/install_smoke.py
+xvfb-run -a python3 tools/installer/tests/update_smoke.py
+cargo build --locked --manifest-path tools/installer/Cargo.toml
+python3 tools/installer/tests/cli_smoke.py \
+  --binary tools/installer/target/debug/hibi --artifacts /tmp/hibi-cli-smoke
+xvfb-run -a -s "-screen 0 1280x900x24" \
+  python3 tools/installer/tests/gui_smoke.py \
+  --binary tools/installer/target/debug/hibi --artifacts /tmp/hibi-gui-smoke
 ```
 
-`release/`와 `dist/`는 gitignore 대상이므로 커밋되지 않는다.
+GUI와 PTY 스모크는 임시 사용자 디렉터리를 사용한다. CI의 `gui-acceptance` 아티팩트에서 화면과 로그를 확인한다. macOS에서 GUI를 수동 검수할 때는 빌드한 앱을 LaunchServices로 열고 활성화된 창에서 키 입력을 확인한다.
 
-### 3. 커밋 및 태그 푸시
+### Claude Code와 Codex 설정 로딩 확인
+
+1. 기존 프로젝트 설정이 없는 테스트 디렉터리에서 시작한다. Claude Code와 Codex에 별도의 임시 OS 사용자 프로필을 사용한다. 설치 전에 hibi가 쓰는 경로와 대상 CLI가 읽는 경로가 같은 임시 프로필에 있는지 확인하고, 그곳에 같은 hibi 번들로 각각 설치한다. CLI 버전과 설치한 항목을 기록하고 지원 여부가 불분명하면 해당 버전의 공식 문서와 대조한다.
+2. 파일 위치와 구문을 확인한 뒤 각 CLI에서 변경한 항목을 실제로 사용한다. 스킬은 더미 입력으로 호출한다. MCP 목록으로 등록을 확인하고 연결 동작까지 검증할 때는 테스트용 서버에 연결한다. CLI 시작 여부와 확인한 로딩 동작을 따로 기록한다.
+3. 같은 설정 파일의 hibi 관리 범위 밖에 예제 키를 추가한다. 파일 보존이 검증 대상이면 관리되지 않는 예제 파일을 추가한다. 같은 번들을 재설치한 뒤 예제 키의 값과 파일 내용이 그대로이고 설치한 항목이 계속 로드되는지 확인한다. 기록에는 확인한 경로와 결과를 남기고 인증 정보는 가린다.
+
+## 플랫폼별 빌드와 패키징
+
+`tools/installer/build.sh`에 인자 없이 실행하면 현재 호스트에 맞는 빌드 하나를 선택한다. 아래의 명시적 대상은 해당 환경에서 실행한다.
+
+| 환경 | 명령 | 결과 |
+|---|---|---|
+| macOS, Xcode Command Line Tools | `bash tools/installer/build.sh macos` | Intel과 Apple Silicon용 Universal `dist/hibi` |
+| Windows x64, MSVC Rust와 Bash | `bash tools/installer/build.sh windows` | `dist/hibi.exe` |
+| GNU Linux x86_64, CI는 AlmaLinux 9 | `bash tools/installer/build.sh linux` | glibc 2.34 이상을 쓰는 `dist/hibi-linux` |
+| Alpine x86_64, CI는 Rust Alpine 컨테이너 | `bash tools/installer/build.sh linux-musl` | 동적 musl 기반 `dist/hibi-linux-musl` |
+
+macOS 빌드가 끝나면 같은 호스트에서 `bash package.sh --macos-app`으로 `Hibi.app`을 준비한다. 이 모드는 앱을 로컬 서명하고 설치용 DMG와 업데이트용 ZIP을 `dist/`에 만든다. CI는 네 플랫폼 바이너리와 macOS 패키지를 한곳에 모아 `bash package.sh`를 실행한다.
+
+전체 패키징에는 Windows MSI를 만드는 `wixl` 0.103 이상, `msiinfo`, `exiftool`이 필요하다. Linux 시스템 패키지는 `nfpm`으로 만든다. CI는 패키징 뒤 `package_smoke.sh`로 Linux 설치와 업그레이드를 확인한다. Windows 러너는 `windows_msi_smoke.ps1`로 MSI 설치, 실패한 업그레이드 복구, 성공한 업그레이드를 확인한다.
+
+상태줄은 `tools/statusline/`에서 별도로 빌드한다. 상태줄 소스를 바꾸면 세 바이너리를 다시 만들고 `src/statusline/`과 함께 갱신한다. `tools/statusline/build.sh`는 macOS에서 `lipo`와 macOS 타깃, Windows GNU 및 Linux musl 크로스 도구를 사용한다. Linux 타깃이 없으면 해당 바이너리를 건너뛰므로 세 출력 파일을 모두 확인한다. [상태줄 기능맵](features/statusline.md)
+
+## 게시와 결과 확인
+
+릴리스 대상 커밋을 검토한 뒤 권한 있는 운영자가 `v<version>` 태그를 게시한다. GitHub Actions에서 검사, 빌드, 패키징, Windows MSI 검증, 최종 게시까지 이어지는지 확인한다.
 
 ```bash
-git add tools/installer/Cargo.toml tools/installer/Cargo.lock package.sh
-git commit -m "chore: bump version to 1.23.1"
-git push origin main
-
-git tag v1.23.1
-git push origin v1.23.1
-```
-
-> **`main` 히스토리를 리라이트하지 말 것.** 메인테이너가 `main`을 rebase하면 모든 사용자 캐시의 태그가 존재하지 않는 커밋을 가리키게 되고, `git pull --ff-only`가 "would clobber existing tag"로 실패한다. v1.9.7 → v1.9.8은 이 때문에 sync 핫픽스를 급히 내보내야 했다. 불가피하게 rebase했다면 같은 릴리즈에 sync 복원 로직을 함께 넣는다.
-
-### 4. GitHub Actions 확인
-
-태그 푸시로 `.github/workflows/release.yml`이 트리거된다. 수동 실행은 기존 태그와 같은 커밋을 선택하고 태그에서 v를 뺀 버전을 입력한다.
-
-워크플로 단계:
-
-1. 전체 이력 checkout: `lint-arch.py`가 상태 표시줄 소스와 바이너리의 커밋 이력을 비교하므로 `fetch-depth: 0`
-2. 버전 검증: 태그, `package.sh` VERSION, `Cargo.toml` version이 같은지 확인
-3. 검사: `lint-prose.py`, `lint-arch.py`, `cargo fmt --check`, `cargo test`. 하나라도 실패하면 빌드하지 않는다
-4. macOS Universal, Windows, GNU Linux, Alpine용 바이너리를 각각 빌드한다.
-5. macOS 러너가 아이콘을 포함한 `Hibi.app`을 로컬 서명하고 설치용 DMG와 업데이트용 ZIP을 만든다. `package.sh`가 두 파일과 운영체제별 아카이브 네 개, Windows용 MSI, Linux 패키지 세 개의 체크섬을 계산한다.
-6. CI가 체크섬에 서명하고 앱에 내장한 공개키로 검증한다.
-7. 기존 태그로 릴리스를 게시한다. 베타에는 prerelease 표시를 붙이고 최신 정식판은 유지한다.
-
-```bash
-# 진행 상황
-gh run list --workflow=release.yml --limit 5
+gh run list --workflow release.yml --limit 5
 gh run watch
-
-# 결과 확인
-gh release view v1.23.1
+gh release view "$release_tag"
 ```
 
-체크리스트:
+`release_tag`는 확인할 태그이며 `v`를 포함한다. 다음 파일이 모두 제공되는지 확인한다.
 
-- [ ] 워크플로 성공
-- [ ] macOS 앱 DMG와 ZIP, 터미널용 tar 아카이브, GNU Linux와 Alpine용 tar 아카이브, Windows용 MSI와 ZIP 업로드
-- [ ] Linux `.deb`/`.rpm`/`.apk` 3개 업로드
-- [ ] `checksums.txt`와 `checksums.txt.minisig` 업로드 확인. 체크섬은 설치 및 업데이트 파일 열 개를 포함한다
+- macOS DMG와 앱 ZIP, macOS 터미널 배포용 아카이브
+- Windows x64 MSI와 휴대용 ZIP
+- GNU Linux와 Alpine 아카이브, Linux `.deb`, `.rpm`, `.apk`
+- 설치와 업데이트 파일 열 개의 `checksums.txt` 및 `checksums.txt.minisig`
 
-### 5. Homebrew Tap 갱신, 수동
-
-정식판은 테스트용 Tap에서 기존 버전을 업그레이드한 뒤 `hibi`로 GUI를 열고 번들 목록을 확인한다. `hibi --tui`로 터미널 진입도 확인한다. Linux에서는 빈 환경에서 GUI 실행에 필요한 라이브러리를 Formula가 제공하는지 확인한다.
+릴리스 파일을 검증할 때는 파일이 내려받아진 디렉터리에서 아래 명령을 실행한다. `release_public_key`는 체크아웃에 있는 `tools/installer/assets/update.pub`의 절대 경로다. `sha256sum -c`는 해당 체크섬에 적힌 파일들의 존재도 확인한다.
 
 ```bash
-cd ../homebrew-brew
-
-# checksums.txt에서 sha256을 가져와 version / URL / sha256 갱신
-gh release view v1.23.1 --repo devsepnine/hibi_ai
-vim Formula/hibi.rb
-
-git add Formula/hibi.rb
-git commit -m "chore: update hibi to v1.23.1"
-git push origin main
+minisign -Vm checksums.txt -p "$release_public_key"
+sha256sum -c checksums.txt
 ```
 
-### 6. Scoop Bucket 갱신, 수동
+### Homebrew와 Scoop 갱신
 
-테스트용 Bucket에서 기존 버전을 업그레이드하고 새 버전의 GUI와 TUI가 실행되는지 확인한다. GUI 안에서 다음 버전을 선택하면 이전 프로세스가 종료된 후 교체와 재실행이 이뤄져야 한다.
+정식판이 게시되면 Homebrew `Formula/hibi.rb`의 macOS 및 Linux GNU 아카이브 URL, 버전과 체크섬을 갱신한다. Linux Formula가 배포 바이너리의 데스크톱 라이브러리를 찾도록 기존 의존성과 RPATH 설정을 유지한다. 테스트용 Tap에서 설치와 업그레이드를 검증하고 나서 게시한다. [Homebrew Formula](https://github.com/devsepnine/homebrew-brew/blob/main/Formula/hibi.rb)
+
+Scoop의 저장소 루트 `hibi-ai.json`에서 버전, Windows ZIP URL, 해시, 압축 경로를 갱신한다. 테스트용 Bucket에서 이전 버전을 올린 뒤 새 버전을 검증한다. [Scoop Manifest](https://github.com/devsepnine/scoop-bucket/blob/master/hibi-ai.json)
+
+두 설치본에서 `hibi --version`과 `hibi --tui`를 실행하고 GUI에서도 첫 화면과 번들 목록을 확인한다. 앱이 업데이트를 제안해도 해당 패키지의 새 버전이 게시되기 전에는 배포 대기 상태가 표시될 수 있다.
+
+### 배포 후 사용자 경로 검증
+
+1. macOS DMG에서 Applications로 복사한 앱, Windows MSI, Linux 시스템 패키지 및 직접 설치본을 각 환경에서 연다.
+2. 이전 버전에서 앱 업데이트를 확인한다. 서명된 직접 설치본이 새 버전으로 재실행되고, MSI와 Linux 시스템 패키지는 릴리스 페이지로 안내되는지 확인한다.
+3. GUI의 **소스 관리**에서 기존 소스를 확인한다. `hibi --sync`로 실제로 캐시를 갱신한다.
+4. 임시 사용자 설정에 파일 컴포넌트 하나를 설치하고 `~/.hibi/install.json`의 `version`과 설치 파일을 확인한다. 소스 동기화만 실행한 경우에는 설치 기록이 갱신되지 않는다.
+
+다운로드 통계는 릴리스 자산을 조회한다.
 
 ```bash
-cd ../scoop-bucket
-
-# version / URL / hash / extract_dir 갱신
-vim hibi-ai.json
-
-git add hibi-ai.json
-git commit -m "chore: update hibi-ai to v1.23.1"
-git push origin master
+gh release view "$release_tag" --json assets \
+  --jq '.assets[] | [.name, .downloadCount] | @tsv'
 ```
 
-## 릴리즈 후 검증
-
-### 설치 경로 확인
-
-```bash
-# Homebrew
-brew update
-brew uninstall hibi
-brew install --debug --verbose devsepnine/brew/hibi
-which hibi && hibi --version
-```
-
-```powershell
-# Scoop (Windows)
-scoop uninstall hibi-ai
-scoop update
-scoop install hibi-ai
-where hibi; hibi --version
-```
-
-### 기존 사용자 sync 확인
-
-캐시를 가진 사용자가 새 릴리즈로 넘어오는 경로를 확인한다.
-
-```bash
-hibi --sync       # git 소스 업데이트만 수행 (TUI 없이)
-ls ~/.hibi/cache/
-cat ~/.hibi/install.json   # version이 새 태그를 가리키는지
-```
-
-### 다운로드 통계
-
-```bash
-gh release view v1.23.1 --json assets \
-  --jq '.assets[] | {name: .name, downloads: .downloadCount}'
-```
-
-## 일반적인 문제 및 해결
-
-### 릴리즈 워크플로 실패
-
-#### 문제: 버전 불일치로 즉시 실패
-
-```
-# 증상
-::error::Release version (1.23.1) does not match package.sh VERSION (1.15.0).
-
-```
-
-버전을 수정한 커밋에는 새 버전과 새 태그를 사용한다. 예를 들어 첫 베타 다음 수정은 `v2.0.0-beta.1`로 배포한다.
-
-#### 문제: 검사 단계에서 실패
-
-"Check prose, architecture rules, formatting, and tests" 단계가 실패하면 빌드 전에 멈춘다. 로그에서 실패한 명령을 찾아 로컬에서 같은 명령으로 재현하고, 고친 커밋에서 다음 버전 태그를 만든다. `cargo fmt` 차이는 `--check` 없이 실행하면 고쳐진다.
-
-#### 문제: crates.io 네트워크 타임아웃
-
-워크플로에 `CARGO_NET_RETRY: 10`이 설정돼 있어 대부분 자동 복구된다. 그래도 실패하면 `gh run rerun <run-id>`로 재실행한다.
-
-### 빌드 실패
-
-#### 문제: macOS 타겟 누락
-
-```bash
-# 증상
-error: can't find crate for `std`
-
-# 해결
-rustup target add aarch64-apple-darwin x86_64-apple-darwin \
-  x86_64-pc-windows-gnu x86_64-unknown-linux-musl
-```
-
-#### 문제: lipo 실패
-
-```bash
-# 증상
-fatal error: lipo: can't open input file
-
-# 해결 — Xcode Command Line Tools 설치
-xcode-select --install
-```
-
-#### 문제: musl 타겟 링커 에러
-
-```bash
-# 증상
-error: linker `x86_64-linux-musl-gcc` not found
-
-# 해결
-brew install filosottile/musl-cross/musl-cross
-```
-
-#### 문제: mingw 링커 에러, Windows 타겟
-
-```bash
-# 증상
-error: linker `x86_64-w64-mingw32-gcc` not found
-
-# 해결
-brew install mingw-w64
-```
-
-### 패키징 실패
-
-#### 문제: 바이너리 파일 없음
-
-```bash
-# 증상
-❌ Error: Installer binaries not found in dist/
-
-# 해결 — 먼저 빌드
-cd tools/installer && ./build.sh && cd ../..
-./package.sh
-```
-
-#### 문제: 체크섬 파일이 비어 있음
-
-네 플랫폼 바이너리와 nfpm이 준비됐는지 확인한 뒤 패키징을 다시 실행한다. 생성한 일곱 파일의 체크섬과 서명은 같은 워크플로 실행에서 게시한다.
-
-### 설치 문제
-
-#### 문제: Homebrew 설치 실패
-
-```bash
-# 증상
-Error: No available formula with the name "hibi"
-
-# 해결
-brew update
-brew tap devsepnine/brew
-brew install hibi
-```
-
-#### 문제: Scoop 설치 실패
-
-```powershell
-# 증상
-Couldn't find manifest for 'hibi-ai'
-
-# 해결
-scoop bucket add hibi-ai https://github.com/devsepnine/scoop-bucket
-scoop update
-scoop install hibi-ai
-```
-
-#### 문제: macOS Gatekeeper 경고
-
-```bash
-# 증상
-"hibi" cannot be opened because the developer cannot be verified
-
-# 임시 해결
-xattr -d com.apple.quarantine hibi
-
-# 영구 해결 — Apple Developer ID 서명 필요
-codesign --sign "Developer ID Application: ..." hibi
-```
-
-### 실행 문제
-
-#### 문제: 권한 거부
-
-```bash
-# 증상
-Permission denied: ./hibi
-
-# 해결
-chmod +x hibi
-```
-
-#### 문제: 잘못된 아키텍처
-
-```bash
-# 증상
-Bad CPU type in executable
-
-# 확인
-file hibi
-lipo -info hibi   # Intel Mac은 x86_64, Apple Silicon은 arm64 포함 필요
-```
-
-#### 문제: Windows에서 MCP 서버가 스캔되지 않음
-
-```
-# 증상 — npm으로 설치한 CLI가 목록에 없음
-
-# 원인
-# CreateProcessW는 .exe만 자동 부착하고 PATHEXT를 따르지 않아
-# npm shim의 .cmd 파일이 보이지 않는다
-
-# 해결 — v1.9.7 이상으로 업그레이드
-# fs/mod.rs::resolve_cli_program이 PATH를 .exe -> .cmd -> .bat 순으로 직접 탐색한다
-```
-
-#### 문제: 사용자 캐시 sync 실패
-
-```
-# 증상
-would clobber existing tag
-refusing to merge unrelated histories
-
-# 원인 — 상류 main 히스토리 리라이트
-# 해결 — v1.9.9 이상으로 업그레이드
-# fetch --tags --force 후 shallow는 reset --hard FETCH_HEAD,
-# full clone은 merge --ff-only @{u}로 분기한다
-```
-
-## 롤백 절차
-
-### 1. GitHub 릴리즈 롤백
-
-```bash
-gh release delete v1.23.1 --yes
-
-# 태그 삭제 (로컬 + 리모트)
-git tag -d v1.23.1
-git push origin :refs/tags/v1.23.1
-```
-
-`main` 커밋은 되돌리지 않는다. 태그만 제거하면 배포가 멈춘다. 히스토리 리라이트는 사용자 캐시를 깨뜨린다.
-
-### 2. Homebrew Formula 롤백
-
-```bash
-cd ../homebrew-brew
-git revert HEAD
-git push origin main
-```
-
-### 3. Scoop Manifest 롤백
-
-```bash
-cd ../scoop-bucket
-git revert HEAD
-git push origin master
-```
-
-### 4. 사용자 안내
-
-- GitHub Discussions 공지
-- 필요 시 루트 `README.md`에 경고 추가
-
-## 긴급 대응
-
-### 보안 취약점 발견
-
-1. **즉시 조치**: 문제 릴리즈를 Draft로 전환하거나 삭제하고, 루트 `README.md`에 경고
-2. **수정**: 취약점 수정 커밋 → 패치 버전 릴리즈. 예: v1.23.1 → v1.20.1
-3. **알림**: GitHub Security Advisory 생성, Homebrew/Scoop 갱신
-
-시크릿이 커밋에 들어간 경우는 릴리즈 롤백만으로 끝나지 않는다. 해당 크리덴셜을 먼저 폐기하고 rotate한 뒤, 그다음 이력 처리를 판단한다.
-
-### 심각한 버그 발견
-
-1. **영향 평가**: 사용자 영향 범위, 데이터 손실 여부. 인스톨러는 `~/.claude` 트리를 병합 방식으로 다루므로 설정 손상 가능성을 우선 확인한다
-2. **핫픽스 릴리즈**: 긴급 수정 후 패치 버전. 사용자 캐시 sync 경로가 깨졌다면 sync 복원 로직을 같은 릴리즈에 포함한다
-3. **사용자 안내**: Discussions 공지, 업그레이드 권장
-
-## 유지보수 작업
-
-### 주간
-
-- [ ] GitHub Issues 확인 및 응답
-- [ ] Pull Requests 리뷰
-- [ ] 다운로드 통계 확인
-
-### 월간
-
-- [ ] 의존성 업데이트: `cargo update -w --manifest-path tools/installer/Cargo.toml`
-- [ ] Rust 툴체인 업데이트
-- [ ] 보안 스캔: `cargo audit`
-- [ ] `src/mcps/mcps.yaml`·`src/plugins/plugins.yaml`의 상류 패키지명·URL 유효성 확인
-- [ ] 문서 현행화: `/update-docs`
-
-### 분기별
-
-- [ ] 로드맵 검토
-- [ ] 사용자 피드백 분석
-- [ ] 아키텍처 리뷰: `/deps`로 결합도 감사
-- [ ] 스킬 목록 예산 재측정: `python3 src/skills/eval-harness/scripts/skill_budget.py src/skills`
-  초과면 exit 1이다. 스킬이 늘면 8,000자를 넘겨 설명이 절삭되고, 절삭된 스킬은
-  자동 트리거를 잃는다
-
-## 연락처 및 리소스
-
-- **GitHub 저장소**: https://github.com/devsepnine/hibi_ai
-- **이슈 트래커**: https://github.com/devsepnine/hibi_ai/issues
-- **Releases**: https://github.com/devsepnine/hibi_ai/releases
-- **Homebrew Tap**: https://github.com/devsepnine/homebrew-brew
-- **Scoop Bucket**: https://github.com/devsepnine/scoop-bucket
+## 문제 해결
+
+| 증상 | 확인할 곳 |
+|---|---|
+| 태그 실행이 버전 검사에서 실패 | 태그의 커밋과 워크플로가 체크아웃한 커밋, `Cargo.toml`과 `package.sh`의 버전을 비교한다. `Cargo.lock` 변경이 빠졌으면 갱신한다. |
+| 의존성 다운로드가 반복해서 실패 | Actions의 다운로드 로그와 crates.io 상태를 확인한다. 코드나 버전을 바꾸기 전에 동일 커밋에서 일시적 네트워크 문제인지 확인한다. |
+| macOS에서 타깃이나 `lipo`를 찾지 못함 | `rustup target list --installed`, `xcode-select -p`를 확인한다. 빌드 결과는 `lipo -info dist/hibi`로 확인한다. |
+| Linux GNU 또는 Alpine 바이너리가 실행되지 않음 | `file`과 `ldd`로 아키텍처와 로더를 확인한다. glibc 배포판은 GNU, Alpine은 동적 musl 패키지를 사용한다. |
+| 데스크톱 실행이 `No graphical display is available`로 실패 | SSH나 헤드리스 환경에서는 `hibi --tui`를 실행한다. 데스크톱 환경이라면 디스플레이와 X11 또는 Wayland 라이브러리를 확인한다. |
+| `Cannot find source directory` | 휴대용 설치는 압축을 푼 폴더에서 실행한다. Linux 스크립트 설치의 `bin/hibi`가 원본 번들의 심볼릭 링크인지 확인한다. |
+| 패키징에 필요한 실행 파일이 없음 | 플랫폼별 파일이 모두 `dist/`에 있고 macOS 앱 ZIP과 DMG도 생성됐는지 확인한다. Linux 패키지가 빠졌으면 `nfpm` 설치 로그를 확인한다. |
+| Homebrew와 Scoop에서 새 버전을 못 찾음 | 패키지 관리자의 인덱스를 갱신하고 Formula 또는 Manifest가 원하는 버전을 가리키는지 확인한다. |
+| Git 소스가 오래된 사본으로 표시됨 | Git 설치와 네트워크, URL·브랜치 조합을 확인하고 `hibi --sync`를 실행한다. 실패한 소스가 있으면 0이 아닌 상태로 종료한다. |
+| macOS가 앱을 차단함 | Apple 안내와 릴리스의 체크섬을 확인한다. 번들의 로컬 서명과 Apple Developer ID 공증은 다른 배포 절차다. |
+| MCP 상태가 `unknown` | Claude는 선택한 스코프의 레지스트리와 프로젝트 경로를 확인한다. Codex는 CLI 경로와 조회 오류를 확인한다. [MCP 기능맵](features/installer-list.md) |
+
+## 배포 실패와 복구
+
+직접 업데이트가 실패하면 표시된 오류를 확인한다. 재실행에 실패하면 교체 코드가 이전 번들을 복구하며, 성공 시 백업은 설치 위치 옆의 `.hibi-update-*`에 남는다. 패키지 설치가 실패하면 패키지 관리자 또는 MSI 로그에서 실패 원인과 롤백 여부를 확인한다.
+
+공개 릴리스에 결함이 있으면 영향받는 버전과 설치 방식을 적고, 확인된 이전 버전으로 돌아가는 방법 또는 수정본을 안내한다. Homebrew Formula와 Scoop Manifest가 결함 버전을 가리키는지 별도로 확인한다. 필요하면 알려진 정상 버전의 URL과 체크섬으로 되돌리고 설치를 검증한다. 공개 태그 삭제가 필요한 경우 사용자 캐시와 패키지 URL에 미치는 영향을 먼저 검토한다.
+
+보안 문제가 의심되면 재현 자료에서 키와 개인 경로를 지우고 저장소의 보안 신고 경로를 확인한다. 수정본을 배포할 때는 영향 범위, 검증 방법, 사용자 조치를 릴리스 노트에 적는다.
+
+## 유지보수
+
+- 실패한 릴리스 작업과 설치·업데이트 이슈를 먼저 확인한다.
+- 배포 도구를 바꾼 뒤에는 새 설치와 이전 버전에서의 업그레이드를 모두 검증한다.
+- 상태줄을 바꾸면 소스 테스트와 커밋할 플랫폼별 바이너리 세 개를 확인한다.
+- 문서의 화면 이름과 검증 명령은 현재 기능맵 및 워크플로와 대조한다.

@@ -1,7 +1,7 @@
 # hibi-ai Architecture Rules
 
-Verified at `45b573f` · `2026-10-12` · Structural view: `docs/INDEX.md` · Feature map: `docs/FEATURES.md`
-Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `tools/statusline`은 서로 독립 · 경계 lint 도구 없음, 의존 측정은 `use crate::` grep · `src/`는 실행 코드가 아니라 배포되는 마크다운 설정
+Verified at `cc8978b` · `2026-11-27` · Structural view: `docs/INDEX.md` · Feature map: `docs/FEATURES.md`
+Premises: `tools/installer`와 `tools/statusline`은 Cargo workspace를 공유하지 않는 독립 크레이트다. `tools/lint-arch.py`가 일부 경계를 검사한다. `src/`에는 배포 설정과 상태줄 바이너리가 들어 있다.
 
 ## How to use these rules
 
@@ -16,12 +16,12 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 
 | Unit | Path | Responsibility | May depend on |
 |---|---|---|---|
-| `main` | `tools/installer/src/main.rs` | GUI 기본 진입, `--tui` 터미널 셋업, view별 loading 분기, `--help`와 `--sync` 진입 | `gui`, `app`, `loading`, `ui`, `cli`, `fs` |
-| `gui` | `tools/installer/src/gui/` | iced 화면, 메시지 처리, 백그라운드 작업의 비차단 폴링 | `app`, `cli`, `loading`, `component`, `mcp`, `plugin`, `source`, `theme`, `tree`, `fs` 설정 API와 상수 |
-| `app` | `tools/installer/src/app/` | 공유 인스톨러 상태 `App`, 입력, 이동, 소스 위저드 | `component`, `fs`, `mcp`, `plugin`, `source`, `theme`, `tree` |
+| `main` | `tools/installer/src/main.rs` | 인자 처리, iced 진입, `--tui` 터미널 셋업과 종료 복원 | `gui`, `app`, `loading`, `ui`, `cli`, `fs` |
+| `gui` | `tools/installer/src/gui/` | iced 렌더링과 이벤트 변환, 환경설정 저장과 업데이트 작업 폴링 | `app`, `cli`, `loading`, `component`, `mcp`, `source`, `theme`, `tree`, `fs`의 API와 상수 |
+| `app` | `tools/installer/src/app/` | 공유 상태 `App`, 탐색, 필터와 검색, 설치·제거 대상 판정, 소스 위저드 | `component`, `fs`, `mcp`, `paths`, `plugin`, `source`, `target`, `theme`, `tree` |
 | `ui` | `tools/installer/src/ui/` | ratatui 렌더링 | `app`, `tree`, `component`, `source`, `mcp`, `plugin`, `theme`, `fs` 상수 |
 | `cli` | `tools/installer/src/cli/` | 키 입력 분기와 비대화형 `run_sync` | `app`, `fs`, `loading`, `source`, `ui` |
-| `fs` | `tools/installer/src/fs/` | 스캔, 설치·제거, manifest, diff, CLI 프로세스, settings.json 쓰기 | `component`, `mcp`, `plugin`, `source`, `target`, `paths`, `exec` |
+| `fs` | `tools/installer/src/fs/` | 스캔, 설치·제거, 파일 비교, 설정과 매니페스트 기록, GUI 업데이트 | `component`, `mcp`, `plugin`, `source`, `target`, `paths`, `exec` |
 | `loading` | `tools/installer/src/loading/` | 백그라운드 스레드 채널과 대기 화면 상태 | `app`, `fs`, `component`, `mcp`, `plugin`, `process_exec` |
 | `process_exec` | `tools/installer/src/process_exec.rs` | 백그라운드 설치·제거의 `ProcessData` 조정 | `app`, `component`, `fs`, `mcp`, `plugin` |
 | `source` | `tools/installer/src/source/` | 소스 탐색, git clone과 캐시, `sources.yaml` | `paths`, `exec` |
@@ -32,6 +32,16 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 | `target` | `tools/installer/src/target.rs` | 대상 CLI `TargetCli`와 그 설정 디렉터리 | `paths` |
 | `statusline` | `tools/statusline/` | stdin JSON을 상태줄로 렌더링하는 독립 바이너리 | 외부 크레이트만 |
 | 배포 설정 | `src/` | agents, commands, skills, hooks, mcps, plugins, output-styles, 상태줄 바이너리 | 해당 없음 |
+
+## 설치와 화면 사이의 경계
+
+`main`에서 인자를 먼저 처리한다. 기본 빌드는 `gui` 기능을 켜고 iced 화면을 연다. `--tui` 경로는 crossterm 입력과 ratatui 렌더링을 사용하며 종료 시 원래 터미널 상태를 복원한다.
+
+GUI의 화면 모듈은 `App`을 읽고 메시지를 만든다. `tools/installer/src/gui/actions.rs`가 입력을 변환하고 `tools/installer/src/gui/runtime.rs`가 백그라운드 작업과 창 닫기를 조정한다. TUI의 `tools/installer/src/cli/mod.rs`는 키를 같은 상태 전이로 전달한다.
+
+`tools/installer/src/app/search.rs`와 `tools/installer/src/app/filter.rs`는 표시할 항목을 고른다. `tools/installer/src/app/selection.rs`의 `work_selection`은 화면에 보이는 체크 항목에서 설치·제거 대상을 계산한다. `tools/installer/src/app/removal.rs`는 목록과 대상 경로를 다시 확인한 뒤 대기열을 시작한다. `loading`과 `process_exec`가 작업 실행과 목록 갱신을 이어받는다.
+
+표시 설정의 직렬화와 잠금은 `tools/installer/src/fs/installer/preferences.rs`가 맡는다. GUI 업데이트의 경로 선택과 서명 검증, 번들 교체와 복구는 `tools/installer/src/fs/update/`에 둔다. GUI 런타임은 진행 상태와 결과만 받는다.
 
 ## Rules
 
@@ -48,7 +58,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 
 - **Level**: MUST
 - **Rule**: `fs`는 `crate::ui`를 import하지 않는다.
-- **Why**: 코드가 증명함, 위반 0건. 설치 로직은 화면과 무관해야 `--sync`처럼 TUI 없이도 돈다.
+- **Why**: 화면 없이도 설치 관련 파일과 CLI를 다룰 수 있도록 표시 코드를 분리한다.
 - **Evidence**: 0건 · `grep -rn "crate::ui" tools/installer/src/fs`
 - **Exceptions**: none
 - **Enforced by**: `tools/lint-arch.py`
@@ -65,7 +75,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 ### `arch-leaf-modules-no-crate-import`
 
 - **Level**: MUST
-- **Rule**: `component`, `mcp`, `plugin`, `theme`, `source`는 크레이트 내부 모듈 가운데 `paths`와 `exec`만 import할 수 있다. `paths`와 `exec`는 아무것도 import하지 않는다.
+- **Rule**: `component`, `mcp`, `plugin`, `theme`, `source`는 크레이트 내부 모듈 가운데 `paths`와 `exec`만 import할 수 있다. `paths`와 `exec`는 크레이트 내부 모듈을 import하지 않는다.
 - **Why**: 코드가 증명함, 위반 0건. 이 모듈들은 모든 unit이 가져다 쓰는 바닥이라, 위를 참조하는 순간 순환이 생긴다.
 - **Evidence**: 0 edges · `grep -rnE "crate::(app|ui|cli|fs|loading|tree|process_exec)" tools/installer/src/component.rs tools/installer/src/mcp.rs tools/installer/src/plugin.rs tools/installer/src/theme.rs tools/installer/src/source`
 - **Exceptions**: none
@@ -76,7 +86,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 - **Level**: MUST
 - **Rule**: 외부 프로세스 실행 호출 `.spawn()`, `.status()`, `.output()`은 `tools/installer/src/exec.rs`와 `tools/installer/src/fs/installer/process.rs`에만 둔다. `Command`를 만드는 것은 어디서든 된다.
 - **Why**: 실행 지점을 모아 타임아웃, stdin 차단, 자식 프로세스 정리를 통일한다. 2026-10-04 결정은 `fs`로 통일이었지만 `source`가 내부 import를 하지 않는 leaf라서, 공용 실행기는 내부 의존이 없는 leaf 모듈 `exec`에 두었다. 설치·제거처럼 취소와 정리 콜백이 필요한 프로세스는 `process.rs`가 맡는다.
-- **Evidence**: 위 두 파일 밖 실행 호출 0건 · `grep -rnE "\.spawn\(\)|\.status\(\)|\.output\(\)" tools/installer/src`
+- **Evidence**: 린트가 검사하는 프로덕션 코드에서 위반 0건. 업데이트 재실행과 릴리스 페이지 열기는 `exec.rs`의 `launch`를 사용한다. · `python3 tools/lint-arch.py`
 - **Exceptions**: none
 - **Enforced by**: `tools/lint-arch.py`
 
@@ -94,7 +104,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 - **Level**: MUST
 - **Rule**: JSON·YAML 설정 파일 쓰기는 `tools/installer/src/fs/installer/`, `tools/installer/src/fs/manifest.rs`, `tools/installer/src/source/`에서만 한다.
 - **Why**: 코드가 증명함, 위반 0건. 사용자 설정을 쓰는 곳이 적어야 덮어쓰기 사고를 추적할 수 있다.
-- **Evidence**: 비테스트 쓰기 지점 5곳, 모두 해당 위치 · `grep -rnE "fs::write" tools/installer/src | grep -v unwrap`
+- **Evidence**: 린트가 검사하는 프로덕션의 `fs::write` 위반 0건. 설정 쓰기 경로는 `tools/installer/src/fs/installer/settings.rs`, `tools/installer/src/fs/installer/preferences.rs`, `tools/installer/src/fs/installer/visibility.rs`, `tools/installer/src/fs/manifest.rs`, `tools/installer/src/source/config.rs`에서 확인했다. · `python3 tools/lint-arch.py`
 - **Exceptions**: none
 - **Enforced by**: `tools/lint-arch.py`
 
@@ -103,8 +113,8 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 - **Level**: SHOULD
 - **Rule**: 단위 테스트는 대상 파일 안의 `#[cfg(test)] mod tests`에 두고, 모듈 전체를 엮는 테스트만 `<module>/tests.rs`로 분리한다.
 - **Why**: Rust의 일반 관례. 2026-10-04 결정. 렌더링과 키 라우팅 테스트는 파일 하나에 속하지 않아 분리돼 있다.
-- **Evidence**: 인라인 21개 파일, 분리 2개 · `grep -rln "mod tests {" tools/installer/src | wc -l` · `grep -rn "mod tests;" tools/installer/src`
-- **Exceptions**: `tools/installer/src/ui/tests.rs`, `tools/installer/src/cli/tests.rs`, 모듈 전체 테스트. 공용 픽스처는 `tools/installer/src/app/test_support.rs`
+- **Evidence**: 이름이 `tests`인 인라인 모듈은 파일 57개에서, 같은 이름의 외부 테스트 선언은 파일 3개에서 확인했다. `work_tests`와 `keyboard_tests`처럼 역할을 이름에 넣은 테스트도 있다. · `rg -l "^\s*mod tests\s*\{" tools/installer/src | wc -l` · `rg -l "^\s*mod tests\s*;" tools/installer/src | wc -l`
+- **Exceptions**: `tools/installer/src/ui/tests.rs`, `tools/installer/src/cli/tests.rs`, 모듈 전체 테스트. GUI 키보드 회귀 테스트는 `tools/installer/src/gui/keyboard_tests.rs`, 프로세스와 화면을 띄우는 스모크 테스트는 `tools/installer/tests/`, 공용 App 픽스처는 `tools/installer/src/app/test_support.rs`
 - **Enforced by**: review
 
 ### `arch-file-size`
@@ -112,7 +122,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 - **Level**: SHOULD
 - **Rule**: Rust 파일의 프로덕션 코드는 빈 줄, 주석, 인라인 `mod tests` 블록을 뺀 300줄 이하로 유지한다. 500줄을 넘으면 결함이다.
 - **Why**: `coding-standards`의 soft 300, hard 500 한도. 테스트는 픽스처처럼 길이에서 빠진다. 2026-10-04 rustfmt 도입으로 줄이 늘어 측정 기준을 프로덕션 코드로 맞췄다.
-- **Evidence**: 300줄 초과 1개, 500줄 초과 0개 · `for f in $(find tools -name '*.rs' -not -path '*/target/*' ! -name tests.rs); do echo "$(awk '/^\s*mod tests\s*\{/{exit} !/^\s*$/ && !/^\s*\/\//{n++} END{print n+0}' $f) $f"; done | sort -n | tail -3`
+- **Evidence**: 300줄 초과 10개, 500줄 초과 0개. 인스톨러와 상태줄의 `src`에서 Rust 구문 트리로 `#[cfg(test)]` 항목과 주석 줄을 제외하고 비어 있지 않은 줄을 셌다. 전용 테스트 파일과 픽스처도 제외했다.
 - **Exceptions**: 테스트 파일 `tools/installer/src/ui/tests.rs`, `tools/installer/src/cli/tests.rs`
 - **Enforced by**: review
 
@@ -121,7 +131,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 - **Level**: MUST
 - **Rule**: `tools/statusline`은 인스톨러 크레이트를 의존하지 않고, 인스톨러도 상태줄 코드를 의존하지 않는다.
 - **Why**: 코드가 증명함, path 의존과 참조 0건. 상태줄은 Claude Code가 매번 실행하는 별도 바이너리다.
-- **Evidence**: 0건 · `grep -rn "hibi_ai" tools/statusline` · `grep -n "path" tools/statusline/Cargo.toml`
+- **Evidence**: 두 Cargo 매니페스트의 로컬 path 의존과 상태줄 소스의 `hibi_ai` 참조 위반 0건. · `python3 tools/lint-arch.py`
 - **Exceptions**: none
 - **Enforced by**: `tools/lint-arch.py`
 
@@ -201,7 +211,7 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 ### `arch-prose-lint`
 
 - **Level**: MUST
-- **Rule**: `src/`, `docs/`, `README.md`의 산문은 em dash, en dash, dash 대신 쓴 하이픈, 괄호를 쓰지 않는다.
+- **Rule**: 기본 검사 대상인 `src/`, `docs/`, `README.md`, `AGENTS.md`의 산문은 em dash, en dash, dash 대신 쓴 하이픈, 괄호를 쓰지 않는다.
 - **Why**: 2026-10-04 문장부호 전면 금지 결정. `technical-writing` skill이 규칙을 소유한다.
 - **Evidence**: 위반 0건 · `python tools/lint-prose.py`
 - **Exceptions**: none
@@ -211,7 +221,21 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 
 | Path | Rule | Decision |
 |---|---|---|
-| `tools/installer/src/ui/mod.rs` | `arch-file-size` | accepted, rustfmt로 302줄, hard 500 미만 |
+| `tools/installer/src/ui/mod.rs` | `arch-file-size` | 기존 결정에서 soft 초과를 수용했다. 현재 측정값은 361줄이다. |
+
+같은 기준으로 새로 확인한 300줄 초과 파일은 다음과 같다. 각 파일의 분리 여부는 해당 파일을 변경할 때 리뷰한다.
+
+| 경로 | 프로덕션 줄 수 |
+|---|---:|
+| `tools/installer/src/cli/mod.rs` | 363 |
+| `tools/installer/src/fs/installer/mod.rs` | 317 |
+| `tools/installer/src/fs/installer/settings.rs` | 328 |
+| `tools/installer/src/gui/actions.rs` | 425 |
+| `tools/installer/src/gui/dialogs.rs` | 335 |
+| `tools/installer/src/gui/list.rs` | 344 |
+| `tools/installer/src/gui/locale.rs` | 329 |
+| `tools/installer/src/gui/mod.rs` | 310 |
+| `tools/installer/src/ui/list.rs` | 302 |
 
 ## Decisions
 
@@ -231,13 +255,3 @@ Premises: Cargo workspace 없음, 크레이트 두 개 `tools/installer`와 `too
 | `2026-10-04` | 번들 원본에서 빠진 파일이 사용자 설치본에 남는다 | 설치 기록에 파일별 SHA-256을 남기고 해시가 같을 때만 지운다. 사용자가 고친 파일과 해시가 없는 파일은 남기고 알린다. `tools/installer/src/fs/installer/unshipped.rs`, v1.22.0 |
 | `2026-10-04` | 빠진 파일 정리에서 요청에 없던 동작을 둘까 | 그대로 승인. 판정한 ID는 기록에서 빼서 알림은 한 번만 뜬다. 원본에 타입 디렉터리가 없으면 판정하지 않는다. 타입 디렉터리 자체가 링크인지는 보지 않고 그 아래 링크만 따라가지 않는다. 지우지 못한 파일은 다음 실행에 다시 시도한다. 원본과 같은 내용의 파일은 hibi가 쓴 것으로 본다. trash로 옮기지 않고 바로 지운다 |
 | `2026-10-04` | 규칙 검사를 CI에 연결할까 | 릴리즈 워크플로가 빌드 전에 lint 두 개와 fmt, 테스트를 실행한다. 상태줄은 CI 빌드 대신 바이너리 갱신 여부를 검사한다 |
-
-GUI 화면은 상태만 읽는다. `gui/runtime.rs`와 `gui/actions.rs`가 입력과 작업 수명 관리를 맡는다.
-설치와 제거, 소스 검증은 기존 모델을 공유한다. 작업 취소와 창 닫기는 작업 정리가 끝날 때까지 기다린다.
-`gui` Cargo 기능은 기본으로 켜진다. 기능을 끄면 기존 터미널 바이너리만 빌드한다.
-
-GUI의 화면 모듈은 `home`, `sidebar`, `list`, `rows`, `sources`, `source_forms`, `dialogs`, `activity`로 나눈다. 색상과 공통 시각 상태는 `styles`를 사용한다. 화면 렌더링은 사용자 파일이나 외부 프로세스를 직접 변경하지 않는다.
-
-`app/search.rs`는 검색어와 이름, 경로 및 메타데이터의 비교를 맡는다. 상태 필터와 숨김 규칙은 기존 `app/filter.rs`와 함께 적용한다. 검색 결과는 원래 항목 인덱스를 유지하며 선택과 작업 큐가 같은 결과를 사용한다. `gui/shortcuts.rs`는 키보드 구독과 목록 스크롤을 맡고 검색창이 받은 일반 입력을 작업 명령으로 전달하지 않는다.
-
-`gui/text_input.rs`는 검색창의 보조키를 현재 키 이벤트와 동기화한다. 검색어 편집에는 Control과 Command를 모두 허용하고 선택, 클립보드와 입력기 처리는 iced 기본 입력 위젯에 맡긴다. 위젯의 상태와 포커스 식별자는 그대로 전달한다.

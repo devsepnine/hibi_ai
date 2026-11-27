@@ -1,6 +1,6 @@
 # 배포 설정의 동작 영역
 
-`src/` 는 인스톨러가 ~/.claude 와 ~/.codex 로 복사하는 산문 설정이다. 제보는 파일 이름이 아니라 모델의 행동으로 들어온다. 그래서 항목은 동작 영역 단위로 나누고 그 동작을 정하는 파일을 가리킨다. 스킬 31개 · 커맨드 28개 · 에이전트 8개를 하나씩 찾을 때는 `component-lookup` 의 규칙을 쓴다. 이 영역에는 화면 문구가 없으므로 UI 문구 줄에는 모델 출력이나 설정에 실제로 박힌 문자열을 적는다.
+배포 지침, 커맨드와 스킬의 원본은 `src/`에 있다. 모델의 응답과 동작을 바꾸는 파일을 기능별로 찾는다. 문구 항목은 지침이나 산출물에 나타나는 표현이다. 개별 파일 위치는 `component-lookup`을 참고한다.
 
 ### `commit-push-gating`: 커밋 · 푸시 · PR 은 명시 요청 때만
 
@@ -16,7 +16,7 @@
 - **함정**: `/commit` 을 쳤더니 묻지 않고 커밋함 → 방금 친 슬래시 커맨드가 그 커밋 하나에 대한 명시 요청이다, push 와 PR 은 따로 승인받는다, 근거: `src/CLAUDE.md` → `authorizes`
 - **함정**: 커밋 제목에 남의 티켓 번호가 붙음 → 브랜치에 없는 번호를 git log 에서 빌려 썼다, 지금은 브랜치가 정하고 없으면 접두사를 뺀다, 근거: `5fb1c5d`
 - **함정**: 티켓이 없는 저장소에서도 `[PP-XXXX]` 같은 자리표시자를 요구함 → 형식이 고정 프로젝트 키를 요구했다, 근거: `b399c3a`
-- **함정**: 커밋 메시지나 PR에 Co-Authored-By가 붙으면 Config 탭에서 `attribution.commit`과 `attribution.pr`을 선택해 설치한다. 두 설정에 빈 문자열을 지정한다. 근거는 `src/settings.json`의 `attribution`이다.
+- **함정**: 커밋이나 PR에 자동 서명이 붙음 → Config에서 `attribution.commit`과 `attribution.pr`을 설치했는지 확인한다. 번들 설정은 두 값을 빈 문자열로 둔다, 근거: `src/settings.json` → `attribution`
 - **공유 의존**: `settings-merge`
 - **관련**: `review-gate`, `install-manifest`
 
@@ -32,9 +32,9 @@
   - 상시 규칙: `src/CLAUDE.md` 의 Thinking and response language policy
   - 산출물 공통 규칙: `src/skills/technical-writing/SKILL.md`의 Artifact language. `commit-rules`, `pull-request`, `qa-handoff`, `obsidian-notes`, `architecture-rules`, `feature-map`이 참조한다
   - 출력 스타일: `src/output-styles/hibi_default.md` 가 언어와 마크다운 서식을 정한다, settings.json 의 `outputStyle` 로 켠다
-  - Codex: `src/AGENTS.md` 의 Language settings 와 Output formatting, Codex 에는 이 파일이 유일한 사본이다
+  - Codex: `src/AGENTS.md` 의 Language settings 와 Output formatting, 공통 글쓰기 규칙은 `technical-writing`을 읽는다
 - **테스트**: none
-- **함정**: Codex 가 영어로 답함 → Codex 대상은 skills 와 AGENTS.md 만 설치되므로 Config 탭에서 AGENTS.md 를 설치하지 않으면 언어 규칙이 없다, 근거: `tools/installer/src/fs/scanner/components.rs` → `add_config_files`
+- **함정**: Codex 가 영어로 답함 → Codex의 상시 지침은 Config에서 AGENTS.md를 설치하고 글쓰기 스킬을 함께 사용할 때 적용한다, 근거: `tools/installer/src/fs/scanner/components.rs` → `add_config_files`
 - **함정**: hibi_default 를 설치했는데 출력 스타일이 안 바뀜 → 이미 다른 `outputStyle` 이 있으면 자동 등록하지 않는다, 근거: `tools/installer/src/fs/installer/settings.rs` → `register_output_style_in_settings`
 - **함정**: 응답은 한국어인데 코드 주석은 영어 → 주석 언어는 응답 언어가 아니라 대상 파일의 기존 주석 언어를 따른다, 근거: `src/CLAUDE.md` → `Language`
 - **공유 의존**: `settings-merge`
@@ -68,7 +68,7 @@
   - 기준표: `src/skills/coding-standards/references/review-checklist.md`
 - **테스트**: none
 - **함정**: 리뷰가 사소한 스타일 지적을 경고로 쏟아냄 → 필터는 LOW 지적만 남으면 APPROVE 하고 제안으로만 나열하게 한다, 이 필터가 없는 옛 설치본이면 Agents 탭에 modified 로 보인다, 근거: `src/agents/code-reviewer.md` → `Nits`
-- **함정**: 내가 건드리지 않은 문제를 리뷰가 지적함 → 기존 스타일 문제는 빼지만 건드린 파일의 보안 · 정확성 결함은 그대로 보고한다, 근거: `src/agents/code-reviewer.md` → `Caused`
+- **함정**: 내가 건드리지 않은 문제를 리뷰가 지적함 → 변경으로 발생한 문제나 변경한 파일의 안전·보안·정확성 문제는 보고할 수 있다, 근거: `src/agents/code-reviewer.md` → `Caused`
 - **함정**: 팀으로 띄운 리뷰어가 결과를 못 돌려줌 → 도구 허용 목록에 SendMessage 가 없었다, 근거: `11b8d52`
 - **공유 의존**: `src/skills/coding-standards/SKILL.md`
 - **관련**: `verification-phase7`, `comment-rules`
@@ -99,7 +99,7 @@
   - 작업 회고: `src/AGENTS.md`와 `src/CLAUDE.md`가 완료 보고 전에 회고를 호출한다. `src/skills/skill-improvement/SKILL.md`에서 재사용 범위를 판단하고 기준을 충족할 때 개선을 제안한다.
   - 측정: `src/skills/eval-harness/scripts/skill_budget.py` → `BUDGET_PERCENT`, 트리거 측정은 `src/skills/eval-harness/scripts/trigger_eval.py` 가 중첩 `claude -p` 를 띄워 Skill 호출을 본다
   - 평가셋: 스킬별 evals 디렉터리의 trigger-eval.json, 예 `src/skills/feature-map/evals/trigger-eval.json`
-- 글쓰기 스킬의 상시 적용을 확인할 때는 Codex의 파일 읽기 기록과 Claude의 모델 입력을 검사한다. Claude는 import만으로 본문을 받을 수 있다. `technical-writing/evals/trigger-eval.json`은 상시 지침 없이 스킬 설명만으로 호출되는지 따로 조사할 때 쓴다. 이때 번역 요청도 적용 대상이므로 음성 대조군은 스킬 사용을 명시적으로 생략해 달라는 요청으로 지정한다.
+- 글쓰기 스킬의 상시 적용을 확인할 때는 Codex의 파일 읽기 기록과 Claude의 모델 입력을 검사한다. Claude는 import만으로 본문을 받을 수 있다. `src/skills/technical-writing/evals/trigger-eval.json`은 상시 지침 없이 스킬 설명만으로 호출되는지 따로 조사할 때 쓴다. 이때 번역 요청도 적용 대상이므로 음성 대조군은 스킬 사용을 명시적으로 생략해 달라는 요청으로 지정한다.
 - **테스트**: `src/skills/feature-map/evals/trigger-eval.json`, `src/skills/technical-writing/evals/trigger-eval.json`, `src/skills/pull-request/evals/trigger-eval.json`
 - **함정**: 특정 스킬이 전혀 트리거되지 않음 → 목록 전체가 문자 예산을 넘으면 넘친 스킬은 이름만 남고 description 이 통째로 빠진다, 근거: `src/skills/eval-harness/scripts/skill_budget.py` → `BUDGET_PERCENT`
 - **함정**: description 을 고쳤는데 트리거 평가 결과가 그대로 → 평가는 ~/.claude/skills 의 설치본을 읽으므로 먼저 설치해야 한다, 근거: `src/skills/eval-harness/SKILL.md` → `installed`
@@ -110,7 +110,7 @@
 
 ### `prose-lint`: 산문 구두점 린트
 
-- **위치**: `python tools/lint-prose.py` 실행, 기본 대상은 src · docs · README.md
+- **위치**: `python tools/lint-prose.py` 실행, 기본 대상은 `src/`, `docs/`, `README.md`, `AGENTS.md`. 루트 언어판은 파일 경로를 인자로 지정한다
 - **별칭**: 대시, 괄호, 줄표, lint-prose, 문체 린트, 산문 규칙
 - **UI 문구**: `"em dash"`, `"en dash"`, `"hyphen as dash"`, `"parenthesis"`
 - **컨트롤**: 없음, 위반이 있으면 exit 1
@@ -135,7 +135,7 @@
   - 스캔: `tools/installer/src/fs/scanner/components.rs` → `scan_components`
 - **테스트**: `tools/installer/src/fs/scanner/components.rs`
 - **함정**: `-ko.md` 를 고쳤는데 동작이 안 바뀜 → 스캐너가 `-ko` 파일을 건너뛰고 `package.sh` 도 릴리즈에서 지운다, 영어 원본을 같이 고쳐야 한다, 근거: `tools/installer/src/fs/scanner/components.rs` → `scan_directory`
-- **함정**: Codex 에서 커맨드나 에이전트를 쓰라고 안내함 → Codex 대상은 skills 와 AGENTS.md 만 받는다, AGENTS.md 의 그런 안내는 고쳤다, 근거: `b22fb9a`
+- **함정**: Codex 에서 커맨드나 에이전트를 쓰라고 안내함 → Codex의 설치 화면은 Skills, Config, MCP를 제공하며 Claude용 커맨드와 에이전트는 포함하지 않는다, 근거: `tools/installer/src/app/types.rs` → `for_cli`
 - **함정**: `src/hooks` 의 훅을 설치할 수 없음 → 모든 hook.yaml 이 deprecated 라 인스톨러가 설치를 거부하고 기존 설치본은 지운다, 근거: `tools/installer/src/fs/installer/mod.rs` → `install_component`
 - **공유 의존**: `tools/installer/src/fs/scanner/mod.rs`
 - **관련**: `component-list`, `skill-triggering`

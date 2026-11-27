@@ -1,6 +1,6 @@
 # 인스톨러 목록 화면
 
-목록 화면은 세 줄 레이아웃이다: 상단 탭 바 `[1]`, 본문 `[2]`, 하단 상태 바. TUI 검색은 `dispatch_terminal_key`가 처리한다. 일반 목록 키는 `handle_list_input`으로 전달한다. 전역 키 q · t · ? · 1 · 2 · Tab 이 먼저, 그다음 포커스된 pane 의 키가 처리된다.
+TUI 목록은 상단 탭 바 `[1]`, 본문 `[2]`, 하단 상태 바로 구성한다. TUI 검색은 `dispatch_terminal_key`가 처리한다. 일반 목록 키는 `handle_list_input`으로 전달한다. 전역 키 q · t · ? · 1 · 2 · Tab 이 먼저, 그다음 포커스된 pane 의 키가 처리된다.
 
 탭이나 목록에서 `/`를 누르면 현재 탭을 검색한다. 입력 즉시 파일 이름, 경로, 출처 또는 MCP와 플러그인 정보를 검색한다. 상태 필터와 숨김 설정도 함께 적용한다. Enter로 결과를 탐색하고 Esc로 검색어를 지운다. 검색 결과 밖의 체크는 유지되며 설치와 제거에서 제외된다.
 
@@ -28,19 +28,19 @@
 - **위치**: 본문 pane, 테두리 제목 `[2]-Agents` 처럼 현재 탭 이름. MCP · Plugins 탭은 별도 목록이다
 - **별칭**: 목록, 체크박스, 전체 선택, 폴더 펼치기, 에이전트, 커맨드, 스킬, modified, external
 - **상태 필터**: 본문에서 `f`로 `All → Modified → External → New → All` 순서로 전환한다. `New`는 미설치 파일이다. 파일 탭 사이에 필터가 유지되고 CLI를 다시 선택하면 `All`로 초기화된다. MCP와 Plugins에는 적용하지 않는다
-- **전체 선택 토글**: `a`는 현재 탭에서 필터와 숨김 표시 상태에 맞는 항목을 모두 선택한다. 그 범위가 이미 모두 선택되어 있으면 해제한다. 같은 탭에서 범위 밖에 있는 선택도 해제하고 다른 탭의 선택은 유지한다. 접힌 폴더 안의 일치 파일도 포함한다. MCP와 Plugins도 `a`로 전체 선택과 해제를 전환한다. 폴더 선택과 `i`, `r`도 필터와 숨김 표시 상태에 맞는 파일만 대상으로 한다
+- **전체 선택 토글**: `a`는 현재 탭에서 필터와 숨김 표시 상태에 맞는 항목을 모두 선택한다. 그 범위가 이미 모두 선택되어 있으면 해제한다. 검색어가 비어 있는 파일 탭에서는 범위 밖에 있는 체크를 해제한다. 검색 중에는 결과 안에서만 변경하고 다른 탭의 체크도 유지한다. 접힌 폴더 안의 일치 파일도 포함한다. MCP와 Plugins도 `a`로 전체 선택과 해제를 전환한다. 폴더 선택과 `i`, `r`도 필터와 숨김 표시 상태에 맞는 파일만 대상으로 한다
 - **필터 표시**: 제목에 `Filter:`, `Files:`, `Selected:`를 표시한다. 결과가 없으면 `Press f to change filter.`로 안내한다. 필터 전환 자체는 체크 상태를 바꾸지 않는다
 - **전체 폴더 토글**: 본문에서 `E`는 현재 탭의 폴더가 모두 펼쳐져 있으면 모두 접고, 아니면 모두 펼친다. 체크와 상태 필터, 숨김 설정은 유지한다. 모두 접으면 현재 항목의 최상위 폴더로 커서를 옮긴다. 탭 바와 MCP, Plugins에는 적용하지 않는다
 - **폴더 숨김**: 본문에서 폴더에 `x`를 누르면 파일 상태와 관계없이 확인 레이어를 연다. `X`는 현재 탭과 상태 필터에서 완전히 체크한 폴더들을 모은다. 상위 폴더가 포함되면 그 안의 폴더는 중복으로 세지 않는다. 일부만 체크한 폴더는 제외한다. `.system`이나 `synced` 같은 이름을 자동으로 숨기지는 않는다
 - **숨김 확인**: 레이어에 대상 폴더 목록과 해제할 체크 수를 표시한다. 긴 경로는 줄바꿈하며 `j`, `k`로 본문 전체를 스크롤한다. `y`로 확인하면 저장 성공 후 대상 폴더의 체크를 해제하고 숨긴다. `Esc`, `n`, `q`는 취소하며 저장값과 체크를 유지한다. `H`로 숨긴 폴더를 표시하고 `[hidden]` 폴더에서 `x`를 누르면 숨김을 취소한다. 체크는 자동 복원하지 않는다
 - **숨김 저장**: `~/.hibi/visibility.json`에 대상 디렉터리와 파일 종류를 포함한 폴더 경로를 저장한다. 재실행해도 유지되고 Claude와 Codex는 따로 적용된다. 잠금으로 동시 저장을 막고 임시 파일을 교체한다. 다른 installer가 저장 중이면 재시도를 안내한다. 저장 실패 시 표시를 유지하고 오류를 알린다
 - **숨김과 처리**: 실제 파일과 AI 서비스 동작은 바꾸지 않는다. 숨긴 항목이 표시되지 않는 동안 `a`와 설치·제거 대기열에서 제외한다. `H`로 표시한 뒤 명시적으로 체크하면 설치나 제거 대상에 포함할 수 있다. 다시 `H`로 감추면 모든 파일 탭과 상태 필터에 걸쳐 숨긴 항목의 체크를 해제한다. 일반 항목의 선택과 숨김 저장값은 유지하며 다시 표시해도 체크는 복원하지 않는다. 숨긴 폴더에는 이후 소스에 추가된 파일과 상태가 바뀐 파일도 표시하지 않는다. `Hidden:`은 현재 대상과 탭에 저장된 숨김 설정 수이며 폴더가 사라져도 설정은 유지한다
-- **UI 문구**: `"[x]"`, `"[-]"`, `"[ ]"`, `"new"`, `"modified"`, `"installed"`, `"managed"`, `"external"`, `"[DEPRECATED]"`, `"[{}]"`, `"No items selected"`
-- **컨트롤**: `"move the cursor"` → `next_item`, `"collapse folder, or parent"` → `handle_folder_collapse`, `"expand folder"` → `expand_folder`, `"toggle selection"` → `toggle_selected`, `"toggle all shown selections"` → `toggle_all_selected`, `"toggle all folders open / closed"` → `toggle_all_folders`, `"file filter: All/Modified/External/New"` → `cycle_component_filter`, `"expand folder, or diff file"` → `handle_enter`, `"install selected in filter"` → `install_selected`, `"remove selected in filter"` → `removal_confirmation_count`, `y` → `remove_confirmed`
+- **UI 문구**: `"[x]"`, `"[-]"`, `"[ ]"`, `"new"`, `"modified"`, `"installed"`, `"managed"`, `"external"`, `"[DEPRECATED]"`, `"[{}]"`, `"No selected items can be installed in this view."`
+- **컨트롤**: `"move the cursor"` → `next_item`, `"collapse folder, or parent"` → `handle_folder_collapse`, `"expand folder"` → `expand_folder`, `"toggle selection"` → `toggle_selected`, `"toggle all shown selections"` → `toggle_all_selected`, `"toggle all folders open / closed"` → `toggle_all_folders`, `"file filter: All/Modified/External/New"` → `cycle_component_filter`, `"expand folder, or diff file"` → `handle_enter`, `"install selected in filter"` → `install_selected`, `r` → `request_removal`, `y` → `confirm_removal`
 - **코드 경로**:
   - UI: `tools/installer/src/ui/list.rs` → `render_tree_node`
   - 상태 / 핸들러: `tools/installer/src/cli/mod.rs` → `handle_content_focus_keys`
-  - 상태 필터: `tools/installer/src/app/filter.rs` → `current_components`, `rebuild_tree_views`. 표시와 설치·제거 대기열에 같은 필터를 적용한다
+  - 상태 필터: `tools/installer/src/app/filter.rs` → `current_components`, `rebuild_tree_views`. 표시 대상은 `visible_components`에서 정하고 `work_selection`이 같은 결과로 작업 대기열을 계산한다
   - 폴더 숨김: `tools/installer/src/app/visibility.rs` → `toggle_folder_visibility`, `confirm_folder_hide`, `toggle_show_hidden`. 일괄 숨김과 폴더 집계는 `tools/installer/src/app/visibility/folders.rs`의 `hide_selected_folders`와 `folder_states`가 맡는다. 화면과 대기열은 `visible_components`를 사용한다. 확인 레이어는 `tools/installer/src/ui/confirm_hide.rs`, 저장은 `tools/installer/src/fs/installer/visibility.rs`
   - 상태 / 핸들러: `tools/installer/src/app/selection.rs` → `toggle_selected`, 폴더면 하위 전체를 뒤집는다
   - 상태 / 핸들러: `tools/installer/src/tree/build.rs` → `build_from_components`, 이동은 `tools/installer/src/tree/navigate.rs`
@@ -56,16 +56,16 @@
 
 ### `status-bar`: 하단 키 힌트와 상태 메시지
 
-- **위치**: 목록 화면 맨 아래 한 줄, 왼쪽 키 힌트, 그 옆 노란 상태 메시지, 오른쪽 끝 버전
+- **위치**: 목록 화면 아래 상태 영역. 테두리에 설치·제거 대상 수, 본문 첫 줄에 키 힌트와 오른쪽 버전, 필요한 경우 아래에 상태 메시지를 표시한다.
 - **별칭**: 하단 바, 상태 바, 상태 메시지, 버전
 - **UI 문구**: `"[1/2] Pane  [/] Search  [?] Keys  [q] Quit"`, `"[j/k/↑/↓] Scroll  [q/Esc] Close"`, `"[Enter] Submit  [Esc] Cancel  [Backspace] Delete"`, `"[Enter] Confirm  [Esc] Cancel  [Backspace] Delete"`, `"[Enter/q] Close"`, `"Checking CLI...  [Esc] Cancel  [q] Quit"`
 - **컨트롤**: 없음
 - **코드 경로**:
-  - UI: `tools/installer/src/ui/mod.rs` → `render_status_bar`, 뷰별 힌트는 `tools/installer/src/ui/mod.rs` → `status_help`
+  - UI: `tools/installer/src/ui/mod.rs` → `render_status_bar`, 키 힌트는 `status_help`, 메시지 줄 수는 `status_message_rows`에서 정한다. 충분한 화면 높이에서는 메시지에 최대 두 줄을 배정한다.
   - 데이터: 메시지는 `status_message` 한 칸이라 마지막으로 쓴 것만 남는다
 - **테스트**: `tools/installer/src/ui/tests.rs`
 - **함정**: 버전 표시가 오른쪽 끝에서 안쪽으로 밀림 → 패딩을 바이트 길이로 계산했다, 근거: `9580428`
-- **함정**: 상태 바에 d · i · r 같은 키가 안 보임 → 80칸에서 잘려 Quit 이 사라지던 문제로 목록을 `?` 상자로 옮겼다, 근거: `tools/installer/src/ui/mod.rs` → `LIST_HELP`
+- **함정**: 상태 바에서 전체 키가 보이지 않음 → 기본 키 힌트와 작업 수를 먼저 표시하고 전체 키는 `?` 도움말에 둔다, 근거: `tools/installer/src/ui/mod.rs` → `LIST_HELP`
 - **공유 의존**: `tools/installer/src/ui/layout.rs` → `columns`
 - **관련**: `help-overlay`, `tab-bar`
 
@@ -150,12 +150,12 @@
   - UI: `tools/installer/src/ui/mcp_list.rs` → `render`, 경로 대화상자 `tools/installer/src/ui/project_path.rs` → `render`
   - 상태 / 핸들러: `tools/installer/src/app/input.rs` → `toggle_mcp_scope`
   - 상태 / 핸들러: `tools/installer/src/fs/installer/mcp.rs` → `install_mcp_server` 가 `claude mcp add --scope` 또는 `codex mcp add` 를 부른다
-  - 데이터: 카탈로그 `src/mcps/mcps.yaml`, 설치 여부는 `tools/installer/src/fs/scanner/mcp.rs` → `get_installed_claude_servers` 가 `mcp list` 출력에서 읽는다
-- **테스트**: `tools/installer/src/fs/scanner/validation.rs`, `tools/installer/src/fs/mod.rs`
-- **함정**: Windows 에서 모든 MCP 가 not installed 로 보임 → npm 설치 CLI 의 `.cmd` shim 을 못 찾아 `mcp list` 가 비었다, 지금은 PATH 를 직접 뒤진다, 근거: `e06dad2`
-- **함정**: CLI로 등록 상태를 조회할 수 없으면 목록에 `unknown`을 표시한다. Claude 로컬 스코프에서는 선택한 프로젝트 디렉터리에서 목록을 다시 조회한다
+  - 데이터: 카탈로그 `src/mcps/mcps.yaml`, `tools/installer/src/fs/scanner/mod.rs` → `scan_all_mcp_sources`가 등록 목록을 한 번 읽는다. Claude는 `tools/installer/src/fs/scanner/mcp.rs` → `installed_claude_names`에서 선택 범위의 `.claude.json`을 읽고, Codex는 `tools/installer/src/fs/mod.rs` → `codex_mcp_names`에서 CLI를 조회한다
+- **테스트**: `tools/installer/src/fs/scanner/mcp.rs`, `tools/installer/src/fs/scanner/validation.rs`, `tools/installer/src/fs/mod.rs`
+- **함정**: Windows에서 Codex CLI를 찾지 못함 → npm 설치의 `.cmd` shim도 PATH에서 찾는 현재 경로를 확인한다, 근거: `tools/installer/src/fs/mod.rs` → `resolve_cli_program`
+- **함정**: Claude의 다른 스코프에 있는 서버가 현재 목록에서 미설치로 보임 → user 설정과 선택한 프로젝트의 local 설정을 따로 확인한다. Git 하위 폴더와 연결 worktree는 원래 체크아웃 기준으로 해석한다. 조회 오류는 `unknown`과 경고로 표시한다, 근거: `tools/installer/src/fs/scanner/mcp.rs` → `installed_claude_names`, `tools/installer/src/fs/scanner/mod.rs` → `scan_all_mcp_sources`
 - **함정**: mcps.yaml 에 넣은 서버가 목록에 없음 → 이름 · URL · 명령 검증에 실패한 항목은 조용히 빠진다, 근거: `tools/installer/src/fs/scanner/mcp.rs` → `scan_with_installed`
-- **함정**: Codex는 사용자 스코프를 사용한다. 설치 직전에 기존 등록을 조회하며 이름이 같으면 건너뛴다
+- **함정**: Codex에서 local을 선택할 수 없음 → Codex는 user 범위만 쓴다. 기존 이름도 재설치하지 않는다, 근거: `tools/installer/src/app/input.rs` → `toggle_mcp_scope`, `tools/installer/src/app/selection.rs` → `work_selection`
 - **공유 의존**: `tools/installer/src/fs/mod.rs` → `create_cli_command`, `tools/installer/src/fs/scanner/validation.rs`
 - **관련**: `mcp-env-input`, `install-progress`
 
@@ -172,7 +172,7 @@
   - 데이터: Memory 저장 경로는 stdio 서버의 환경변수로 기록한다. Context7 키를 설정하면 HTTP 인증에 클라이언트 환경변수 이름을 사용한다. Atlassian Cloud는 원격 서버에서 OAuth로 인증한다
 - **테스트**: `tools/installer/src/cli/tests.rs`
 - **함정**: 값을 비운 채 Enter 를 누르면 아무 일도 없음 → 빈 값은 무시한다, 근거: `tools/installer/src/app/input.rs` → `env_input_submit`
-- **함정**: 여러 서버를 고르면 입력은 서버별로 보관하며 다음 서버의 필수 입력까지 확인한 뒤 설치한다, 근거: `tools/installer/src/app/processing.rs` → `continue_mcp_install`
+- **함정**: 환경변수를 입력한 뒤 또 입력창이 열림 → 선택한 모든 서버의 필수 입력을 확인한 뒤 설치한다, 근거: `tools/installer/src/app/processing.rs` → `continue_mcp_install`
 - **공유 의존**: `tools/installer/src/process_exec.rs`
 - **관련**: `mcp-list`, `install-progress`
 
@@ -185,19 +185,34 @@
 - **코드 경로**:
   - UI: `tools/installer/src/ui/plugin_list.rs` → `render`
   - 상태 / 핸들러: `tools/installer/src/fs/installer/plugin.rs` → `install_plugin`, 마켓플레이스 등록은 `tools/installer/src/fs/installer/mcp.rs` → `ensure_marketplace_added`
-  - 데이터: 카탈로그 `src/plugins/plugins.yaml` 을 `tools/installer/src/plugin.rs` → `parse_plugins_yaml` 로 읽고, 설치 여부는 `tools/installer/src/fs/scanner/plugin.rs` → `get_installed_plugins` 가 Claude 설정 디렉터리의 `plugins/installed_plugins.json`에서 사용자 스코프 기록을 읽는다
+  - 데이터: 카탈로그 `src/plugins/plugins.yaml` 을 `tools/installer/src/plugin.rs` → `parse_plugins_yaml` 로 읽고, 설치 여부는 `tools/installer/src/fs/scanner/plugin.rs` → `get_installed_plugins` 가 Claude 설정 디렉터리의 `~/.claude/plugins/installed_plugins.json`에서 사용자 스코프 기록을 읽는다
 - **테스트**: `tools/installer/src/plugin.rs`, `tools/installer/src/fs/scanner/validation.rs`
-- **함정**: 같은 이름의 플러그인은 마켓플레이스로 구분한다. 설치 기록이 있는 플러그인은 비활성화해도 `installed`로 표시된다. 이전 형식에서는 사용자 설정의 `enabledPlugins`를 참조한다
+- **함정**: 비활성화한 플러그인이 설치됨으로 표시됨 → 등록된 설치 여부를 검사한다. 식별자는 이름과 마켓플레이스를 사용한다. 이전 형식은 `enabledPlugins`를 참조한다, 근거: `tools/installer/src/fs/scanner/plugin.rs` → `get_installed_plugins`
 - **함정**: plugins.yaml 의 항목이 목록에 없음 → 이름 · 마켓플레이스 검증 실패 항목은 조용히 빠진다, 근거: `tools/installer/src/fs/scanner/plugin.rs` → `scan_plugins`
 - **공유 의존**: `tools/installer/src/fs/installer/process.rs`
 - **관련**: `install-progress`
 
+### `removal-confirm`: 설치된 항목의 제거 확인
+
+- **위치**: GUI 목록의 Remove, TUI 목록의 `r`로 여는 확인창
+- **별칭**: 제거 버튼이 꺼짐, 제거 수, 미설치 항목, 긴 항목 이름, 제거 결과 재확인
+- **UI 문구**: `"This action cannot be undone."`, `"Selection changed. Review your selection before removing items."`, `"No selected items are installed and removable in this view."`
+- **컨트롤**: GUI는 제거와 취소 버튼을 제공하고 MCP 범위와 대상을 표시한다. TUI는 `y`로 제거하고 Esc, `n`, `q`로 취소한다. 긴 명단은 방향키나 `j`와 `k`로 스크롤한다. 취소 후 체크를 보존한다.
+- **코드 경로**:
+  - GUI: `tools/installer/src/gui/list.rs`의 작업 버튼과 `tools/installer/src/gui/dialogs.rs`의 확인 화면
+  - TUI: `tools/installer/src/ui/confirm.rs` → `render_remove`와 `removal_scroll_limit`, 키 입력은 `tools/installer/src/cli/mod.rs` → `dispatch_terminal_key`
+  - 상태: `tools/installer/src/app/selection.rs` → `work_selection`이 보이는 체크에서 설치와 제거 대상 수를 계산한다. `tools/installer/src/app/removal.rs` → `request_removal`이 대상을 담고 `confirm_removal`이 다시 비교한 뒤 실행한다.
+- **테스트**: `tools/installer/src/app/removal.rs`, `tools/installer/src/ui/tests.rs`, `tools/installer/src/cli/tests.rs`, `tools/installer/tests/gui_smoke.py`
+- **함정**: 같은 수의 항목을 골랐는데 재확인을 요구함 → 확인은 수량과 함께 이름, 파일 경로, 설정 키와 MCP 범위를 비교한다, 근거: `tools/installer/src/app/removal.rs` → `removal_plan`
+- **함정**: 체크했는데 제거 대상이 없음 → 현재 검색과 필터에 보이는 항목 중 설치 여부와 제거 가능성을 확인한다. 미설치 파일과 상태를 확인하지 못한 MCP 또는 플러그인은 건너뛴다, 근거: `tools/installer/src/app/selection.rs` → `work_selection`
+- **관련**: `component-list`, `install-progress`, `mcp-list`, `settings-merge`
+
 ### `install-progress`: 사전 점검, 설치와 제거 진행
 
-- **위치**: `i` 또는 `r` 뒤 본문 자리의 진행 화면, 위 제목 · `Progress` 막대 · `Log` 목록. MCP · Plugins 는 그 전에 `Preflight` 스피너가 뜬다
+- **위치**: `i` 또는 제거 확인 뒤 본문 자리의 진행 화면, 위 제목 · `Progress` 막대 · `Log` 목록. MCP · Plugins 는 그 전에 `Preflight` 스피너가 뜬다
 - **별칭**: 설치, 제거, 진행률, 로그, 설치 중, 취소, CLI not found, q 안 먹힘
-- **UI 문구**: `"Checking {} availability..."`, `"Cannot start {}: {}"`, `"Preflight thread crashed"`, `"CLI reported: {}"`, `"Starting installation of {} items..."`, `"Starting removal of {} items..."`, `"✓ Complete"`, `"Refreshing status..."`, `"Installing..."`, `"Removing..."`, `"Progress"`, `"Log"`, `"[OK] {} complete!"`, `"[OK] Status refresh complete!"`, `"Completed with errors"`, `"Operation cancelled"`, `"[WARN] Cancelled by user"`, `"[ERR] Process thread crashed"`, `"[ERROR] Refresh failed: {}"`, `"CLI not found in PATH"`, `"Timed out after {}s trying to {} {}"`, `"Cancelled"`
-- `i`는 선택 항목을 설치한다. 모든 탭에서 `r`은 제거할 항목 수를 먼저 보여 준다. `y`는 제거를 시작하고 Esc는 기존 체크를 유지한다.
+- **UI 문구**: `"Checking {} availability..."`, `"Cannot start {}: {}"`, `"Preflight thread crashed"`, `"CLI reported: {}"`, `"Starting installation of {} items..."`, `"Starting removal of {} items..."`, `"✓ Complete"`, `"Refreshing status..."`, `"Installing..."`, `"Removing..."`, `"Progress"`, `"Log"`, `"[OK] Status refresh complete!"`, `"Completed with errors"`, `"Operation cancelled"`, `"[WARN] Cancelled by user"`, `"[ERR] Process thread crashed"`, `"Operation finished; status refresh failed. Review the log."`, `"CLI not found in PATH"`, `"Timed out after {}s trying to {} {}"`, `"Cancelled"`
+- `i`는 현재 결과의 설치 가능 항목을 대기열로 보낸다. `r`은 제거 확인창을 열며 확인 뒤에만 제거 대기열을 만든다. 자세한 조건은 `removal-confirm`을 참고한다.
 - 진행 중 Esc는 `installing_key`에서 대기열을 비우고 실행 중인 작업에 취소를 요청한다. 화면에는 시도한 수와 전체 수가 남는다. 완료 후 Enter, q, Esc로 목록에 돌아간다.
 - 최종 오류 수는 설치나 제거 뒤의 목록 갱신 실패도 포함한다. 로그에서 항목 처리 결과와 갱신 오류의 원인을 확인할 수 있다.
 - **코드 경로**:
@@ -210,7 +225,7 @@
 - **테스트**: `tools/installer/src/app/processing.rs`, `tools/installer/src/loading/channels.rs`, `tools/installer/src/loading/scan.rs`, `tools/installer/src/fs/mod.rs`
 - **함정**: 설치 중 q 를 눌러도 안 꺼짐 → 진행 화면의 q 와 Enter 는 완료 뒤 닫기만 하고, 중단은 Esc 다, 근거: `tools/installer/src/loading/install.rs` → `installing_key`
 - **함정**: claude 가 설치돼 있는데 `CLI not found in PATH` → 셸 rc 를 안 읽은 터미널이면 PATH 와 몇몇 알려진 위치만 찾는다, 근거: `tools/installer/src/fs/mod.rs` → `resolve_cli_program`
-- **함정**: 컴포넌트 하나가 실패해도 진행이 계속됨 → 컴포넌트 오류는 `[ERR]` 로그 줄로만 남고 다음 항목으로 간다, 근거: `tools/installer/src/process_exec.rs` → `execute`
+- **함정**: 컴포넌트 하나가 실패해도 진행이 계속됨 → 항목 오류를 `[ERR]`로 기록해 최종 오류 수에 포함하고 다음 항목을 처리한다, 근거: `tools/installer/src/process_exec.rs` → `execute`, `tools/installer/src/app/processing.rs` → `processing_errors`
 - **함정**: MCP 를 설치했는데 다른 탭 상태가 그대로임 → 새로고침은 시작한 탭의 범위만 다시 스캔한다, 근거: `tools/installer/src/loading/scan.rs` → `for_tab`
 - **공유 의존**: `tools/installer/src/loading/channels.rs` → `ProcessingChannels`, `tools/installer/src/fs/mod.rs` → `run_with_timeout`
 - **관련**: `settings-merge`, `install-manifest`, `mcp-env-input`
@@ -220,7 +235,7 @@
 - **위치**: Claude Code의 Config 탭에 있는 `settings.json` 그룹. 설치와 제거 결과는 `~/.claude/settings.json`에 저장한다.
 - **별칭**: settings.json, 설정 키, 설정 병합, 설정 덮어씀, permissions
 - **컨트롤**: 항목을 선택한 뒤 Install 또는 Remove를 누른다. Diff에서 해당 항목의 현재 값과 소스 값을 비교할 수 있다.
-- TUI에서는 Space로 항목을 선택하고 `d`로 차이를 확인한다. `i`는 설치를 시작한다. `r`은 제거할 수 있는 항목 수를 표시하며, `y`로 제거하거나 Esc로 취소한다.
+- TUI에서는 Space로 항목을 선택하고 `d`로 차이를 확인한다. `i`는 설치를 시작한다. `r`은 제거 대상의 수와 이름을 표시한다. `y`로 제거하거나 Esc로 취소한다.
 - **코드 경로**:
   - 데이터: 번들 원본은 `src/settings.json`이다. `tools/installer/src/fs/scanner/mod.rs` → `scan_all_sources`가 우선순위가 높은 소스의 파일을 고른다.
   - 데이터: `tools/installer/src/fs/installer/entries.rs`가 설정 키를 나열하고 선택한 키를 설치하거나 제거한다. `tools/installer/src/fs/installer/settings.rs`가 파일을 저장한다.
@@ -253,7 +268,7 @@
 - **공유 의존**: `tools/installer/src/fs/mod.rs` → `VERSION`, `tools/installer/src/fs/mod.rs` → `normalize_line_endings`, sha2 크레이트
 - **관련**: `release-workflow`, `commit-push-gating`, `startup-loading`
 
-### `theme-toggle`: Mocha · Latte 테마 전환
+### `theme-toggle`: TUI Mocha · Latte 테마 전환
 
 - **위치**: 목록 화면 어디서나 `t`, 탭 바 제목 괄호 안에 테마 이름
 - **별칭**: 테마, 다크모드, 라이트모드, 색
@@ -263,7 +278,7 @@
   - 상태 / 핸들러: `tools/installer/src/cli/mod.rs` → `handle_list_input`
   - 데이터: 초기값은 `tools/installer/src/theme.rs` → `detect_system_theme` 가 터미널 배경 밝기로 고르고 저장하지 않는다
 - **테스트**: none
-- **함정**: 실행할 때마다 테마가 되돌아감 → 선택을 저장하지 않고 매번 배경 밝기로 다시 고른다, 근거: `tools/installer/src/theme.rs` → `detect_system_theme`
+- **함정**: 실행할 때마다 테마가 되돌아감 → TUI는 시작 때 터미널 배경에서 테마를 고른다. GUI 테마 저장은 `gui-appearance`에서 다룬다, 근거: `tools/installer/src/theme.rs` → `detect_system_theme`
 - **함정**: Sources 화면에서는 t 가 안 먹음 → `t` 는 목록 화면 키 처리에만 있다, 근거: `tools/installer/src/app/sources.rs` → `handle_sources_key`
 - **공유 의존**: terminal-light 크레이트
 - **관련**: `sources-screen`

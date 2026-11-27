@@ -1,46 +1,26 @@
 # hibi-ai 프로젝트 문서
 
-> 마지막 업데이트: 2026-11-09 · 버전 v1.24.0
+기준 코드 `cc8978b` · `2026-11-27` · 공개 릴리스 `v2.0.0`
 
 ## 개요
 
-hibi-ai는 Claude Code와 Codex CLI를 위한 TUI, 즉 터미널 사용자 인터페이스 인스톨러다.
-에이전트, 슬래시 커맨드, 스킬, MCP 서버, 플러그인, 출력 스타일을 대화형으로 선택해 `~/.claude` 또는 `~/.codex`에 설치한다.
+hibi-ai는 Claude Code와 Codex CLI의 설정을 고르고 설치하는 Rust 앱이다. 기본 실행은 iced GUI이며 `hibi --tui`는 ratatui 화면을 연다. 같은 앱 모델이 소스, 파일 비교, 설치·제거, 설치 기록을 관리한다.
 
-`src/`가 배포되는 설정의 원본이자 SSOT이고, `tools/installer/`가 그것을 설치하는 Rust TUI다.
+Claude Code에서는 에이전트, 커맨드, 스킬, MCP 서버, 플러그인, 출력 스타일과 설정 항목을 관리한다. Codex의 화면에는 Skills, Config, MCP가 있다. 설치 파일과 처음 실행하는 방법은 [루트 README 한국어판](../README.ko.md)을 참고한다.
 
 ## 프로젝트 구조
 
-```
-hibi_ai/
-├── src/                    # 배포되는 설정 원본 (Git 관리)
-│   ├── agents/             # 에이전트 정의 8개 (+ -ko 미러)
-│   ├── commands/           # 슬래시 커맨드 28개 (+ -ko 미러)
-│   ├── skills/             # 스킬 31개 (+ 각 SKILL-ko.md)
-│   ├── hooks/              # 라이프사이클 훅 5개 — 전부 deprecated
-│   ├── mcps/mcps.yaml      # MCP 서버 정의 10개
-│   ├── plugins/plugins.yaml# 플러그인 마켓플레이스 4개 / 플러그인 28개
-│   ├── output-styles/      # 출력 스타일 (hibi_default)
-│   ├── statusline/         # 상태 표시줄 바이너리 (macOS/Linux/Windows)
-│   ├── CLAUDE.md           # Claude Code 항상-로드 지침
-│   ├── AGENTS.md           # Codex 항상-로드 지침
-│   └── settings.json       # 전역 설정
-├── tools/
-│   ├── installer/          # TUI 인스톨러 (Rust, 모듈 표는 INDEX.md)
-│   ├── statusline/         # 상태 표시줄 소스 (Rust)
-│   ├── lint-prose.py       # 산문 구두점 린트 (src, docs, README.md, AGENTS.md)
-│   └── lint-arch.py        # 아키텍처 규칙 린트 (docs/ARCHITECTURE.md)
-├── docs/                   # 이 문서 디렉터리 (README / INDEX / RUNBOOK / FEATURES / ARCHITECTURE)
-├── .github/workflows/      # release.yml — 태그 푸시로 검사 후 릴리즈 자동화
-├── AGENTS.md               # 이 저장소 개발용 지침, Codex와 Claude Code 공용 (배포되지 않음)
-├── package.sh              # 릴리즈 패키징
-├── nfpm.yaml               # Linux 패키지 정의 (deb/rpm/apk)
-├── install.sh              # Linux curl|sh 인스톨러
-├── dist/                   # 빌드 산출물 (gitignore)
-└── release/                # 릴리즈 아티팩트 v{VERSION}/ (gitignore)
-```
+| 경로 | 용도 |
+|---|---|
+| `src/` | 배포 설정 원본과 상태줄 바이너리 |
+| `tools/installer/` | GUI와 TUI가 들어 있는 인스톨러, 플랫폼별 패키징 도구, 스모크 테스트 |
+| `tools/statusline/` | Claude Code용 독립 상태줄 바이너리 소스 |
+| `docs/` | 운영 가이드, 아키텍처 규칙, 화면별 기능맵 |
+| `.github/workflows/release.yml` | 검증, 플랫폼별 빌드, 패키징, 서명, 게시 |
+| `package.sh`, `nfpm.yaml`, `install.sh` | 배포 아카이브와 시스템 패키지 구성, Linux 사용자 설치 |
+| `dist/`, `release/` | Git에서 제외하는 로컬 빌드 결과와 릴리스 패키지 |
 
-`src/rules/`와 `src/contexts/`는 더 이상 존재하지 않는다. 정책은 전부 `src/skills/`로 이관됐고, `contexts/`는 Claude Code가 읽지 않는 디렉터리여서 v1.17.0에서 삭제했다. 다만 인스톨러는 두 컴포넌트 타입을 **여전히 지원**하므로 사용자가 자신의 소스에서 `rules/`·`contexts/`를 제공할 수 있다.
+모듈과 문서 위치는 [문서 인덱스](INDEX.md), 동작별 코드와 오류 문구는 [기능맵](FEATURES.md)을 참고한다.
 
 ## 주요 컴포넌트
 
@@ -94,9 +74,9 @@ hibi_ai/
 | `/update-codemaps` | 아키텍처 코드맵 생성 |
 | `/checkpoint` | 워크플로 체크포인트 저장·검증, 재개 노트를 남기는 일시정지와 재개, 장시간 무인 실행 규칙, `/perf`와 같이 쓰는 결정 로그 형식 |
 
-### 스킬 31개
+### 스킬
 
-트리거될 때만 로드된다. 설명은 스킬 목록 문자 예산인 200K 윈도우 기준 8,000자를 공유하므로 각 `description`을 220자 이하로 유지한다. 예산을 넘으면 초과한 스킬의 설명이 **통째로** 사라져 자동 트리거가 불가능해진다. 예산에 계상되는 값은 `description` 합계가 아니라 목록 항목 합계이고, 스킬명 + 4 + `description`에 항목 구분자를 포함한다. 현재값은 `python3 src/skills/eval-harness/scripts/skill_budget.py src/skills` 로 측정한다.
+스킬은 해당 작업에서 참조한다. `technical-writing`은 Claude Code의 상대 경로 import와 Codex의 상시 지침으로 매 턴 적용한다. 아래 표는 기준 커밋에 포함된 스킬을 다룬다. 설명은 220자 이하로 유지하고 목록 예산은 `python3 src/skills/eval-harness/scripts/skill_budget.py src/skills`로 측정한다.
 
 **정책: CLAUDE.md 라우팅 표의 SSOT**
 
@@ -144,7 +124,9 @@ hibi_ai/
 | `superset` | Apache Superset, MCP 경유 |
 | `deploy-to-vercel` | Vercel 배포 |
 
-스킬 디렉터리에는 `SKILL.md`, `-ko.md` 미러, 하위 폴더 `references/`, `assets/`, `scripts/`, `rules/`, `evals/`만 둔다. 이 구조와 kebab-case 이름은 [ARCHITECTURE.md](ARCHITECTURE.md)의 `arch-skill-layout`, `arch-skill-name-kebab`이 정하고 `tools/lint-arch.py`가 검사한다. 스킬별 부가 자산은 다음과 같다. 점진적 공개용 `references/` 14개는 `backend-patterns`, `coding-standards`, `dependency-design`, `do-178c`, `how`, `iced-rs`, `obsidian-notes`, `pull-request`, `ratatui-rs`, `rust-best-practices`, `svelte-5`, `technical-writing`, `why`, `zustand`에 있다. 벤더링된 상류 규칙 `rules/` 4개는 `composition-patterns`, `dependency-design`, `react-best-practices`, `react-native-skills`에 있고, 규칙 세트의 유지보수 안내는 각 `rules/_README.md`에 있다. 실행 스크립트 `scripts/` 2개는 `deploy-to-vercel`, `eval-harness`에 있다. 평가 세트 `evals/` 15개는 `architecture-rules`, `blast-radius`, `dependency-design`, `do-178c`, `feature-map`, `how`, `iced-rs`, `obsidian-notes`, `pull-request`, `qa-handoff`, `ratatui-rs`, `svelte-5`, `technical-writing`, `why`, `zustand`에 있다. `evals/`에는 두 종류가 들어간다. `evals.json`은 출력 품질 평가로 `prompt` + `expected_output`을 담고, `trigger-eval.json`은 설명이 실제로 발화하는지 보는 트리거 회귀 세트로 `query` + `should_trigger`를 담으며 `trigger_eval.py --eval-set`이 소비한다.
+스킬은 `src/skills/<name>/SKILL.md`와 옆의 `SKILL-ko.md`로 구성한다. 부가 문서는 `references/`, 템플릿은 `assets/`, 실행 스크립트는 `scripts/`, 규칙 묶음은 `rules/`, 재사용할 평가는 `evals/`에 둔다. 파일 배치와 이름 규칙은 [아키텍처 규칙](ARCHITECTURE.md)을 따른다.
+
+평가 정의인 `evals.json`은 요청과 기대 결과를 담는다. `trigger-eval.json`은 요청과 기대 트리거 값을 담으며 `trigger_eval.py --eval-set`으로 실행한다. 평가 실행 결과는 Git에서 제외하는 `skill-evaluations/`에 둔다.
 
 ### 훅: 활성 없음
 
@@ -185,7 +167,7 @@ MCP 또는 플러그인 설치를 취소하면 설치기는 실행 중인 CLI를
 
 ### 출력 스타일
 
-`src/output-styles/hibi_default.md`는 한국어 응답, 영문 코드·명령어 유지, 마크다운 구조와 완료 보고 형식을 규정한다. Codex는 `skills/`와 `AGENTS.md`만 설치되므로 `src/AGENTS.md`가 Codex용 서식 규칙의 유일한 사본이다.
+`src/output-styles/hibi_default.md`는 한국어 응답, 영문 코드·명령어 유지, 마크다운 구조와 완료 보고 형식을 규정한다. Codex의 응답 서식은 `src/AGENTS.md`와 `technical-writing` 스킬에 있다.
 
 ### 루트 설정 파일
 
@@ -197,165 +179,35 @@ MCP 또는 플러그인 설치를 취소하면 설치기는 실행 중인 CLI를
 
 `-ko.md` 접미사 파일은 개발자 가독용 한국어 미러다. 인스톨러 스캐너가 건너뛰고 `package.sh`가 번들에서 제거하므로 **설치되지 않는다**.
 
-## 빌드 및 릴리즈
+## 개발과 배포
 
-### 빌드
-
-```bash
-# Installer — 전 플랫폼 (dist/로 출력)
-cd tools/installer && ./build.sh
-
-# Statusline (필요 시만 — src/에서 Git 관리)
-cd tools/statusline && ./build.sh
-```
-
-생성 바이너리: macOS Universal은 Intel과 Apple Silicon, Linux x86_64는 musl static, Windows x86_64는 mingw-w64.
-
-### 테스트
+저장소 루트에서 안정 버전 Rust로 개발한다. 기본 실행과 터미널 전용 실행은 다음 명령을 사용한다.
 
 ```bash
-cargo test --manifest-path tools/installer/Cargo.toml   # 151 tests
+cargo run --locked --manifest-path tools/installer/Cargo.toml
+cargo run --locked --manifest-path tools/installer/Cargo.toml --no-default-features -- --tui
 ```
 
-### 릴리즈: GitHub Actions 자동화, v1.13부터
+인스톨러 배포 빌드는 macOS Universal, Windows x64 MSVC, glibc 2.34 이상을 사용하는 Linux x86_64, Alpine x86_64용 동적 musl로 나뉜다. 상태줄은 별도 크레이트로 빌드하고, 릴리스는 커밋된 바이너리를 패키지에 복사한다. 테스트 명령과 패키징 절차는 [운영 가이드](RUNBOOK.md)를 참고한다.
 
-1. `tools/installer/Cargo.toml`과 `package.sh`의 버전을 올린다. `cargo update -w`도 함께 실행한다
-2. 커밋 → `main` 푸시 → 태그 `v{VERSION}` 푸시
-3. `.github/workflows/release.yml`이 태그에서 트리거된다. 태그 == `package.sh` VERSION == `Cargo.toml` version을 검증하고, `lint-prose.py`, `lint-arch.py`, `cargo fmt --check`, `cargo test`를 통과한 뒤 nfpm 설치 → 전 플랫폼 빌드 → `package.sh` → 아카이브, Windows MSI, Linux `.deb`·`.rpm`·`.apk`, `checksums.txt`를 담아 GitHub Release 발행
-4. 릴리즈 후 **수동**: `homebrew-brew/Formula/hibi.rb`와 `scoop-bucket/hibi-ai.json` 갱신
+## 멀티소스 설정
 
-상세 절차·트러블슈팅·롤백은 [RUNBOOK.md](RUNBOOK.md).
+번들 설정으로 시작하고 **소스 관리** 화면이나 `~/.hibi/sources.yaml`에서 추가 소스를 등록한다. 같은 ID가 여러 소스에 있으면 목록에서 마지막에 있는 소스가 우선한다. 번들 소스는 최저 우선순위다.
 
-### 패키징
+번들 디렉터리에는 `agents/`와 `settings.json`이 모두 있어야 한다. 사용자 소스에는 다음 중 하나 이상이 필요하다. `agents/`, `commands/`, `contexts/`, `rules/`, `skills/`, `hooks/`, `output-styles/`, `statusline/`, `mcps/mcps.yaml`, `plugins/plugins.yaml`, `settings.json`, `CLAUDE.md`, `AGENTS.md`.
 
-`./package.sh`는 `src/`의 설정 디렉터리와 바이너리를 `dist/`로 모아 플랫폼별 아카이브를 만든다. 전체 릴리스 패키징에는 Windows MSI를 생성하는 `wixl`이 필요하다. `nfpm`이 있으면 `nfpm.yaml`로 Linux `.deb`·`.rpm`·`.apk`도 만들고, 없으면 경고만 내고 건너뛴다. 마지막으로 만든 아카이브와 패키지 전부의 SHA256을 `checksums.txt`에 쓴다. `-ko.md` 파일은 이 단계에서 제거된다.
-
-## 설치 방법
-
-### 빠른 설치, Linux
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/devsepnine/hibi_ai/main/install.sh | sh
-```
-
-`install.sh`는 최신 릴리즈의 Linux 아카이브를 받아 `checksums.txt`로 SHA256을 검증한 뒤 `~/.local/lib/hibi-ai/`에 풀고 `~/.local/bin/hibi` 심볼릭 링크를 만든다. 시스템 전역 설치는 `HIBI_PREFIX=/usr/local`, 버전 고정은 `HIBI_VERSION=x.y.z`로 지정한다. 릴리즈는 x86_64만 제공한다. macOS는 Homebrew, Windows는 Scoop을 쓰라는 안내와 함께 종료한다.
-
-### Homebrew, macOS/Linux
-
-```bash
-brew tap devsepnine/brew
-brew install hibi
-```
-
-### Linux 패키지: deb, rpm, apk
-
-[Releases](https://github.com/devsepnine/hibi_ai/releases/latest)에서 배포판에 맞는 패키지를 받아 설치한다.
-
-```bash
-sudo apt install ./hibi-ai_*_amd64.deb       # Debian/Ubuntu
-sudo dnf install ./hibi-ai-*-1.x86_64.rpm    # Fedora/RHEL
-apk add --allow-untrusted hibi-ai_*.apk      # Alpine, 서명 없는 패키지
-```
-
-apk는 서명되지 않았다. 어느 패키지든 설치 전에 같은 릴리즈의 `checksums.txt`로 검증한다. 패키지는 바이너리를 `/usr/bin/hibi`에, 번들 설정을 `/usr/share/hibi`에 설치한다.
-
-### Scoop, Windows
-
-```bash
-scoop bucket add hibi-ai https://github.com/devsepnine/scoop-bucket
-scoop install hibi-ai
-```
-
-### 수동 설치
-
-[Releases](https://github.com/devsepnine/hibi_ai/releases/latest)에서 플랫폼별 아카이브를 받아 압축 해제 후 실행한다.
-
-```bash
-# macOS/Linux
-tar xzf hibi-ai-*-macos.tar.gz    # 또는 *-linux.tar.gz
-./hibi
-
-# Windows: zip 해제 후 hibi.exe
-```
-
-## 사용법
-
-```bash
-hibi            # TUI 실행 (소스 resolve + 스캔)
-hibi --sync     # git 소스만 업데이트 (TUI 없이)
-```
-
-TUI 흐름: Claude Code 또는 Codex 대상 CLI 선택 → 컴포넌트 선택 → 변경 사항 검토 → 설치.
-
-`1`은 탭 바로, `2`는 콘텐츠 창으로 바로 이동하고 `Tab`은 두 창을 순환한다. 전체 키 표는 `?`로 연다. 목록에서 `Esc`를 누르면 CLI 선택 화면으로 돌아가고, 선택한 항목이 있으면 먼저 확인을 받는다.
-
-## 멀티소스 지원
-
-기본값은 릴리스 패키지에 번들된 설정이다. `~/.hibi/sources.yaml`로 git 레포나 로컬 디렉터리를 추가할 수 있다.
-
-```yaml
-sources:
-  - type: git
-    url: "https://github.com/your-org/shared-configs.git"
-    branch: main
-
-  - type: local
-    path: "~/dotfiles/claude-configs"
-
-auto_update: true   # git 소스 자동 업데이트 (기본 true)
-```
-
-### 우선순위
-
-리스트 순서대로 적용되며 마지막이 최우선이다. 즉 last wins.
-
-```
-bundled (최저) → sources.yaml 첫 번째 → ... → sources.yaml 마지막 (최고)
-```
-
-같은 이름의 파일이 여러 소스에 있으면 마지막 소스의 파일이 사용된다.
-
-### 소스 디렉터리 요구사항
-
-- **번들 소스**는 엄격하다: `agents/`와 `settings.json`이 **둘 다** 있어야 한다
-- **사용자 소스**는 허용적이다. 다음 중 **하나 이상**이 있으면 된다: `agents/`, `commands/`, `contexts/`, `rules/`, `skills/`, `hooks/`, `output-styles/`, `statusline/`, `mcps/mcps.yaml`, `plugins/plugins.yaml`, `settings.json`, `CLAUDE.md`, `AGENTS.md`
-
-### 오프라인 동작
-
-| 상황 | 동작 |
-|------|------|
-| git 미설치 | 경고 + 해당 소스 skip |
-| 네트워크 실패 + 캐시 있음 | 경고 + stale 캐시 사용 |
-| 네트워크 실패 + 캐시 없음 | 경고 + 해당 소스 skip |
-| bundled | 항상 동작. 오프라인 보장 |
-
-### TUI 표시
-
-멀티소스가 활성화되면 항목마다 소스 태그가 붙는다. 번들 소스만 있는 단일 소스일 때는 생략된다.
-
-```
-[x] my-agent.md      (new)      [bundled]
-[x] custom-agent.md  (new)      [~/dotfiles/claude-configs]
-```
-
-### 보안
-
-- git URL: **HTTPS만** 허용, URL 안에 `@` 형태로 credentials를 넣는 것은 불가
-- 로컬 경로: `..` path traversal 금지, `~/.claude/` 내부 경로 금지. symlink 해제 후 검증
-- git 캐시 위치: `~/.hibi/cache/<sanitized_url>/`
-- MCP 커맨드 파싱은 `shlex::split()`이며 인자 주입을 방지한다
-- Windows에서 `cmd /c` 미사용. 셸 인젝션을 방지한다
+Git 소스에는 HTTPS와 Git 실행 파일이 필요하다. 명시적으로 동기화하면 `auto_update: false`여도 fetch한다. 네트워크 오류 시 해당 URL과 브랜치의 캐시가 있으면 오래된 사본을 표시하고, 없으면 소스를 건너뛴다. Git 캐시는 `~/.hibi/cache/git/`에 있다. 입력 검증과 캐시 동작은 [소스 관리 기능맵](features/installer-sources.md)을 참고한다.
 
 ## 설치 이력 `install.json`
 
-설치·제거마다 `~/.hibi/install.json`에 출처를 기록한다.
+파일 컴포넌트의 설치·제거 후 목록을 갱신할 때 `~/.hibi/install.json`에 출처를 기록한다.
 
 ```json
 {
   "source": "https://github.com/devsepnine/hibi_ai",
-  "version": "v1.16.0",
+  "version": "v2.0.0",
   "target": ".claude",
-  "updated_at": "2026-09-09T00:00:00Z",
+  "updated_at": "2026-11-27T00:00:00Z",
   "components": ["agents/architect.md", "commands/qa-handoff.md", "skills/qa-handoff/SKILL.md"]
 }
 ```
@@ -378,7 +230,7 @@ v1.22.0부터 기록에 `hashes`가 더 붙는다. hibi가 쓴 그대로의 파�
 - 소스와 달랐던 파일은 같은 대상의 이전 기록에 있던 해시와 아직 같을 때만 그 해시를 유지한다. 옛 hibi가 기록한 내용 그대로라는 뜻이다. 그 밖의 파일은 해시가 없다
 - `hashes`가 없는 옛 기록도 그대로 읽힌다
 
-인스톨러는 시작할 때 이름을 바꾼 스킬을 정리한 다음 `fs/installer/unshipped.rs`로 기록에는 있지만 번들 소스가 더는 내보내지 않는 파일을 판정한다.
+인스톨러는 시작할 때 이름을 바꾼 스킬을 정리한 다음 `tools/installer/src/fs/installer/unshipped.rs`로 기록에는 있지만 번들 소스가 더는 내보내지 않는 파일을 판정한다.
 
 - 기록된 해시와 같으면 지운다. 그래서 비게 된 상위 디렉터리도 지우되 타입 디렉터리는 남긴다
 - 해시가 다르면 사용자가 고친 파일로 보고 남긴다
@@ -389,6 +241,20 @@ v1.22.0부터 기록에 `hashes`가 더 붙는다. hibi가 쓴 그대로의 파�
 결과는 목록 화면 상태 바의 `Auto-cleaned N outdated item(s)` 뒤에 `N file(s) no longer shipped`, `N file(s) no longer shipped could not be removed`, `kept N edited file(s) no longer shipped`, `kept N unverified file(s) no longer shipped`로 붙는다.
 
 ## 최근 변경사항
+
+날짜별 항목은 당시 변경 기록이다. 현재 파일 위치와 실행 절차는 [문서 인덱스](INDEX.md)에서 찾는다.
+
+### 2026-11-27, 인스톨러 개선
+
+- GUI의 라이트·다크 테마와 헤더 여백을 조정했다. 대상 카드 탐색, 검색창 포커스, 필터 키보드 조작을 개선했다.
+- GUI와 TUI에서 실제로 설치하거나 제거할 수 있는 항목 수를 표시한다. 제거 전에 이름과 범위를 확인하며, 체크나 경로가 달라지면 다시 확인한다.
+- TUI는 짧은 창에서 시작 화면을 줄인다. 제거 목록을 스크롤할 수 있고 상태 메시지는 키 힌트와 버전을 남겨 둔 채 줄바꿈한다.
+
+### 2026-11, v2.0.0
+
+- 기본 실행을 iced GUI로 전환했다. `--tui`로 터미널에서 같은 설치 기능을 사용한다. GUI는 한국어, 영어, 일본어로 표시한다.
+- macOS DMG와 업데이트용 ZIP, Windows MSI, GNU Linux와 Alpine 패키지를 제공한다. 앱은 직접 설치본의 업데이트 번들 서명을 확인한다.
+- GUI와 TUI는 Claude 설정 항목 선택과 작업 결과를 공유한다. 릴리스 워크플로에 GUI, PTY, 패키지 설치·업그레이드와 업데이트 복구 검증을 추가했다. [v2.0.0 릴리스](https://github.com/devsepnine/hibi_ai/releases/tag/v2.0.0)
 
 ### 2026-11-09, v1.24.0
 
@@ -554,14 +420,6 @@ v1.22.0부터 기록에 `hashes`가 더 붙는다. hibi가 쓴 그대로의 파�
 
 전체 이력은 `git log`와 [Releases](https://github.com/devsepnine/hibi_ai/releases)를 참조한다.
 
-## 개발 요구사항
-
-- Rust 2024 edition
-- macOS: Xcode Command Line Tools, 즉 `lipo`
-- 크로스 컴파일: `brew install mingw-w64 filosottile/musl-cross/musl-cross`
-- Linux 패키지: `brew install nfpm`. 없으면 `package.sh`가 deb/rpm/apk 단계를 건너뛴다
-- 타겟: `aarch64-apple-darwin`, `x86_64-apple-darwin`, `x86_64-pc-windows-gnu`, `x86_64-unknown-linux-musl`
-
 ## 라이선스
 
-MIT License. [LICENSE](../LICENSE) 참조
+[MIT License](../LICENSE).

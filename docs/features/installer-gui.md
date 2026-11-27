@@ -1,17 +1,17 @@
 # 인스톨러 GUI 기능과 검수 기준
 
-`v2`의 기본 실행 화면은 iced GUI다. GUI와 TUI는 같은 `App` 상태와 설치 함수를 사용한다. 파일 병합, 설치 기록, 소스 캐시와 상태줄 바이너리는 기존 구현을 공유한다.
+기본 실행 화면은 iced GUI다. GUI와 TUI는 `App`을 통해 검색, 선택과 작업을 공유한다. 파일 병합, 설치 기록과 소스 캐시는 같은 저장 경로를 사용한다.
 
 ## 실행 경로
 
 | 명령 | 실행 대상 |
 |---|---|
-| `cargo run --manifest-path tools/installer/Cargo.toml` | GUI |
-| `cargo run --manifest-path tools/installer/Cargo.toml -- --tui` | TUI |
-| `cargo run --manifest-path tools/installer/Cargo.toml -- --sync` | 창 없이 소스 동기화 |
-| `cargo run --manifest-path tools/installer/Cargo.toml -- --help` | 명령행 도움말 |
-| `cargo run --manifest-path tools/installer/Cargo.toml -- --version` | 버전 |
-| `cargo build --manifest-path tools/installer/Cargo.toml --no-default-features` | GUI 의존성을 제외한 터미널 전용 빌드 |
+| `cargo run --locked --manifest-path tools/installer/Cargo.toml` | GUI |
+| `cargo run --locked --manifest-path tools/installer/Cargo.toml -- --tui` | TUI |
+| `cargo run --locked --manifest-path tools/installer/Cargo.toml -- --sync` | 창 없이 소스 동기화 |
+| `cargo run --locked --manifest-path tools/installer/Cargo.toml -- --help` | 명령행 도움말 |
+| `cargo run --locked --manifest-path tools/installer/Cargo.toml -- --version` | 버전 |
+| `cargo build --locked --manifest-path tools/installer/Cargo.toml --no-default-features` | GUI 의존성을 제외한 터미널 전용 빌드 |
 
 GUI를 실행하려면 데스크톱 디스플레이가 필요하다. GUI 시작에 실패하면 오류에 TUI 실행 방법이 표시된다.
 
@@ -33,34 +33,39 @@ Hide selected와 Unhide selected는 완전히 체크한 폴더 수를 표시하�
 
 | 요구사항 | 구현 경로 | 검증 경로 |
 |---|---|---|
-| 모든 파일 상태의 단일 숨김, 재실행과 숨김 해제 | `app/visibility.rs`의 `toggle_folder_visibility`, `is_component_hidden` | `cli/visibility/managed/tests.rs`의 `each_managed_status_can_be_hidden_persisted_and_unhidden_without_changing_files` |
-| 완전히 체크한 혼합 폴더의 일괄 숨김 | `app/visibility/folders.rs`의 `folder_states`, `hide_selected_folders` | `cli/visibility/tests.rs`의 `batch_skips_partial_folders_and_hides_fully_selected_mixed_parents` |
-| 숨긴 항목의 전체 선택과 설치 및 제거 제외 | `app/visibility.rs`, `app/filter.rs`의 `visible_components`, `app/processing.rs` | `cli/visibility/managed/tests.rs`의 `hidden_managed_items_are_excluded_from_bulk_selection_and_both_work_queues` |
-| 취소와 저장 실패 시 선택과 표시 보존 | `app/visibility.rs`의 `confirm_folder_hide`, `cancel_folder_hide` | `cli/visibility/managed/tests.rs`의 `cancelling_or_failing_to_save_managed_hide_preserves_checks_and_visibility` |
-| 확인 전 상태 변경 허용, 사라진 폴더는 일괄 저장 취소 | `app/visibility.rs`의 `confirm_folder_hide` | `cli/visibility/managed/tests.rs`의 `status_changes_between_request_and_confirmation_do_not_cancel_batch_hide`, `cli/visibility/tests.rs`의 `disappeared_second_batch_folder_cancels_entire_transaction` |
-| 혼합 선택의 명시적 목표 상태, 반복 실행과 저장 실패 보존 | `app/visibility/folders.rs`, `gui/actions.rs`, `gui/list.rs` | `gui/visibility/tests.rs`의 실제 버튼 클릭과 저장 파일 검증 |
+| 모든 파일 상태의 단일 숨김, 재실행과 숨김 해제 | `tools/installer/src/app/visibility.rs`의 `toggle_folder_visibility`, `is_component_hidden` | `tools/installer/src/cli/visibility/managed/tests.rs`의 `each_managed_status_can_be_hidden_persisted_and_unhidden_without_changing_files` |
+| 완전히 체크한 혼합 폴더의 일괄 숨김 | `tools/installer/src/app/visibility/folders.rs`의 `folder_states`, `hide_selected_folders` | `tools/installer/src/cli/visibility/tests.rs`의 `batch_skips_partial_folders_and_hides_fully_selected_mixed_parents` |
+| 숨긴 항목의 전체 선택과 설치 및 제거 제외 | `tools/installer/src/app/visibility.rs`, `tools/installer/src/app/filter.rs`의 `visible_components`, `tools/installer/src/app/processing.rs` | `tools/installer/src/cli/visibility/managed/tests.rs`의 `hidden_managed_items_are_excluded_from_bulk_selection_and_both_work_queues` |
+| 취소와 저장 실패 시 선택과 표시 보존 | `tools/installer/src/app/visibility.rs`의 `confirm_folder_hide`, `cancel_folder_hide` | `tools/installer/src/cli/visibility/managed/tests.rs`의 `cancelling_or_failing_to_save_managed_hide_preserves_checks_and_visibility` |
+| 확인 전 상태 변경 허용, 사라진 폴더는 일괄 저장 취소 | `tools/installer/src/app/visibility.rs`의 `confirm_folder_hide` | `tools/installer/src/cli/visibility/managed/tests.rs`의 `status_changes_between_request_and_confirmation_do_not_cancel_batch_hide`, `tools/installer/src/cli/visibility/tests.rs`의 `disappeared_second_batch_folder_cancels_entire_transaction` |
+| 혼합 선택의 명시적 목표 상태, 반복 실행과 저장 실패 보존 | `tools/installer/src/app/visibility/folders.rs`, `tools/installer/src/gui/actions.rs`, `tools/installer/src/gui/list.rs` | `tools/installer/src/gui/visibility/tests.rs`의 실제 버튼 클릭과 저장 파일 검증 |
 
-## 상태 선택과 숨김 표시
+### `gui-filters`: 상태 선택과 숨김 표시
+
+- **위치**: 목록 상단의 필터 메뉴
+- **UI 문구**: `"Filters · Default"` · ko `"필터 · 기본값"`, `"Status"`, `"Visibility"`, `"Hidden only"`
+- **코드 경로**: `tools/installer/src/gui/filters.rs` → `view`, 키 입력은 `tools/installer/src/gui/actions.rs`
+- **테스트**: `tools/installer/src/gui/visibility/filters/tests.rs`, `tools/installer/src/gui/filters/dropdown/tests.rs`, `tools/installer/tests/gui_smoke.py`
 
 GUI의 Filters 버튼은 Status와 Visibility를 하나의 오버레이에 모은다. 기본 표시는 Filters · Default이며, 세부 상태 수와 기본값에서 바꾼 Visibility 한 개를 합쳐 적용 조건 수를 표시한다. Status는 탭 대신 Default, Modified, External과 New를 체크하는 목록을 사용한다. 세부 상태는 OR로 합친다. Default를 체크하면 세부 선택을 초기화하며, 마지막 세부 상태를 해제해도 Default로 돌아간다. Default는 설치됨과 관리 중인 항목도 포함하므로 세부 상태 세 개를 모두 체크한 경우와 다르다.
 
-필터 오버레이는 컴포넌트 목록의 위치와 크기를 바꾸지 않는다. 상태와 Visibility를 고르는 동안 메뉴를 유지한다. 버튼을 다시 누르거나 Esc 또는 메뉴 바깥 클릭으로 닫는다. 바깥 클릭은 메뉴만 닫고 뒤쪽 항목을 선택하지 않는다. `gui/filters/dropdown.rs`는 앵커 버튼과 오버레이를 분리하고 화면 가장자리에서 메뉴를 배치한다. 작은 창에서는 메뉴 안을 스크롤할 수 있다.
+필터 오버레이는 컴포넌트 목록의 위치와 크기를 바꾸지 않는다. 상태와 Visibility를 고르는 동안 메뉴를 유지한다. 버튼을 다시 누르거나 Esc 또는 메뉴 바깥 클릭으로 닫는다. 바깥 클릭은 메뉴만 닫고 뒤쪽 항목을 선택하지 않는다. `tools/installer/src/gui/filters/dropdown.rs`는 앵커 버튼과 오버레이를 분리하고 화면 가장자리에서 메뉴를 배치한다. 작은 창에서는 메뉴 안을 스크롤할 수 있다.
 
 GUI에서는 `f`로 필터를 열거나 닫는다. 열린 필터에서는 위아래 방향키, Tab과 Shift+Tab으로 이동하고 Enter 또는 Space로 적용한다. Esc는 필터를 닫으며 열린 상태의 키는 목록의 설치와 제거 단축키로 전달되지 않는다.
 
-오버레이의 표시 영역은 생성할 때마다 창에서 받는다. iced는 배치를 캐시하고 그리기 단계에서 오버레이를 다시 생성하므로 배치 단계에서만 영역을 저장하면 메뉴가 보이지 않는다. `gui/filters/dropdown/tests.rs`는 이 수명 주기를 재현하고 렌더링한 메뉴 배경의 픽셀 수를 검사한다.
+오버레이의 표시 영역은 생성할 때마다 창에서 받는다. iced는 배치를 캐시하고 그리기 단계에서 오버레이를 다시 생성하므로 배치 단계에서만 영역을 저장하면 메뉴가 보이지 않는다. `tools/installer/src/gui/filters/dropdown/tests.rs`는 이 수명 주기를 재현하고 렌더링한 메뉴 배경의 픽셀 수를 검사한다.
 
 Visibility는 같은 오버레이의 구분선 아래에서 Visible only, Include hidden과 Hidden only 중 하나를 고른다. 기본값인 Visible only는 숨긴 항목을 제외한다. Include hidden은 숨긴 항목과 일반 항목을 함께 표시하며, Hidden only는 숨긴 항목만 표시한다. 세 방식 모두 현재 상태와 검색 조건을 함께 적용한다. External과 Hidden only를 선택하면 숨긴 외부 파일만 표시하며 New나 Modified인 숨김 항목을 추가하지 않는다.
 
 보기 방식을 바꿔도 숨김 설정 자체는 바꾸지 않는다. Hidden only에서 숨김을 해제한 항목은 목록에서 빠진다. 결과가 없으면 현재 보기에서 숨김 항목이 없다는 안내를 표시한다. Visible only로 돌아갈 때는 기존처럼 숨긴 항목의 체크를 해제한다. TUI의 H는 기존 숨김 제외와 함께 보기를 전환한다.
 
-상태 선택의 단일 기준은 `app/filter.rs`의 `ComponentFilters`이며, 숨김 보기는 `app/visibility.rs`의 `HiddenVisibility`를 사용한다. 목록과 작업 대기열은 같은 선택을 사용한다. TUI의 `f`는 기존 단일 상태 순환을 유지한다. `gui/filters.rs`는 선택 목록을 그리며 `gui/visibility/filters/tests.rs`는 실제 위젯 클릭, Default 복귀와 숨김 표시의 교집합을 검증한다.
+상태 선택의 단일 기준은 `tools/installer/src/app/filter.rs`의 `ComponentFilters`이며, 숨김 보기는 `tools/installer/src/app/visibility.rs`의 `HiddenVisibility`를 사용한다. 목록과 작업 대기열은 같은 선택을 사용한다. TUI의 `f`는 기존 단일 상태 순환을 유지한다. `tools/installer/src/gui/filters.rs`는 선택 목록을 그리며 `tools/installer/src/gui/visibility/filters/tests.rs`는 실제 위젯 클릭, Default 복귀와 숨김 표시의 교집합을 검증한다.
 
 ## 설치와 제거 대상
 
-GUI와 TUI는 `app/selection.rs`에서 계산한 설치와 제거 대상 수를 표시하고 같은 판정으로 실행 대기열을 구성한다. 검색과 필터로 가려진 항목은 작업 범위에서 제외한다. Codex에 이미 등록한 MCP 서버는 설치 대상에서 제외한다. 미설치 파일과 설치 여부를 알 수 없는 MCP 서버 및 플러그인은 제거 대상에서 제외한다.
+GUI와 TUI는 `tools/installer/src/app/selection.rs`에서 계산한 설치와 제거 대상 수를 표시하고 같은 판정으로 실행 대기열을 구성한다. 검색과 필터로 가려진 항목은 작업 범위에서 제외한다. Codex에 이미 등록한 MCP 서버는 설치 대상에서 제외한다. 미설치 파일과 설치 여부를 알 수 없는 MCP 서버 및 플러그인은 제거 대상에서 제외한다.
 
-제거 확인창은 대상 이름을 표시하고 수정한 파일과 외부 파일을 구분한다. 취소하면 체크를 보존한다. 선택한 항목이나 작업 위치가 바뀌면 제거를 시작하기 전에 다시 확인해야 한다. 이 계약은 `app/removal.rs`의 대상 교체와 경로 변경 테스트, `cli/tests.rs`의 설치와 제거 실행 테스트로 검증한다.
+제거 확인창은 대상 이름을 표시하고 수정한 파일과 외부 파일을 구분한다. 취소하면 체크를 보존한다. 선택한 항목이나 작업 위치가 바뀌면 제거를 시작하기 전에 다시 확인해야 한다. TUI 흐름은 [목록 기능맵](installer-list.md)을 참고한다. 이 계약은 `tools/installer/src/app/removal.rs`의 대상 교체와 경로 변경 테스트, `tools/installer/src/cli/tests.rs`의 설치와 제거 실행 테스트로 검증한다.
 
 ## 기존 기능과 GUI의 대응
 
@@ -77,7 +82,7 @@ GUI와 TUI는 `app/selection.rs`에서 계산한 설치와 제거 대상 수를 
 | `gui-search` | 현재 카테고리의 이름, 경로와 출처 검색 | 결과 없음, 한글 정규화, 상태 필터 조합, 가려진 선택의 작업 제외 |
 | `component-list` | 파일 상태와 관계없는 폴더 숨김과 숨김 해제 | 관리 대상과 혼합 폴더, 저장 실패 시 체크와 표시 유지 |
 | `status-bar` | 대상, 상태 메시지와 버전 표시 | 긴 경로와 여러 줄 오류가 잘리지 않음 |
-| `status-bar` | 오른쪽 아래 버전을 눌러 업데이트를 확인하고 설치를 승인 | 패키지 배포 대기, 작업 중 설치 차단, 서명 오류, 번들 교체 실패 후 복구 |
+| `app-update` | 오른쪽 아래 버전을 눌러 업데이트를 확인하고 설치를 승인 | 패키지 배포 대기, 작업 중 설치 차단, 서명 오류, 번들 교체 실패 후 복구 |
 | `help-overlay` | 도움말 제공 | 긴 도움말 스크롤과 닫기 |
 | `exit-confirm` | 선택을 버리기 전 확인 | 취소 후 체크 유지, 처리 중 창 닫기 보호 |
 | `diff-view` | 설치본과 원본 차이 표시 | 새 파일, 외부 파일, 긴 파일, 읽기 오류 |
@@ -85,10 +90,11 @@ GUI와 TUI는 `app/selection.rs`에서 계산한 설치와 제거 대상 수를 
 | `mcp-list` | 서버 목록과 user, local 범위 | CLI 누락, 잘못된 프로젝트 경로, 빈 목록 |
 | `mcp-env-input` | 필요한 환경변수 입력 | 빈 값 제출, 한글 붙여넣기, 여러 서버 입력, 취소 후 재시작 |
 | `plugin-list` | 플러그인 선택과 설치 및 제거 | 마켓플레이스 등록 실패와 비활성 플러그인 |
+| `removal-confirm` | 대상 이름, 수정·외부 표시, 제거 위치 확인 | 선택 변경 시 재확인, 취소 시 체크 보존 |
 | `install-progress` | 사전 검사, 진행률과 로그, 설치 및 제거 | 첫 항목 실패, 중간 취소, 작업 스레드 종료, 새로고침 실패 |
 | `settings-merge` | 설정 항목 선택, 값 비교, 설치와 제거 | 사용자 설정 보존과 권한 오류 |
 | `install-manifest` | 설치 출처와 해시 기록 유지 | 기록 저장 실패, 수정된 옛 파일과 해시 없는 파일 보존 |
-| `theme-toggle` | 다크 모드와 라이트 모드 전환과 설정 저장 | 모든 화면의 제목, 선택, 비활성 버튼과 오류 대비 |
+| `gui-appearance` | 다크 모드와 라이트 모드 전환, 언어 선택과 저장 | 모든 화면의 제목, 선택, 비활성 버튼과 오류 대비 |
 | `sources-screen` | 번들과 사용자 소스 목록, 선택, 수정 및 제거 | 번들 편집과 삭제 금지, 목록 변경 뒤 오래된 인덱스 |
 | `source-wizard` | Git과 로컬 소스 추가 및 수정 | HTTPS 외 URL, 자격증명, 잘못된 브랜치와 경로 거부 |
 | `source-wizard` | 브랜치, 하위 루트, 컴포넌트 매핑 | 빈 선택 기본값, 기존 값 표시, 각 단계 취소, 저장 실패 재시도 |
@@ -97,7 +103,12 @@ GUI와 TUI는 `app/selection.rs`에서 계산한 설치와 제거 대상 수를 
 | `packaging` | 같은 `hibi` 실행 파일 배포 | GUI 기본 빌드와 터미널 전용 빌드 구분 |
 | `component-lookup` | 기존 배포 파일과 한국어 미러 제외 유지 | 미러가 사용자 설치 대상으로 들어가지 않음 |
 
-## 목록 검색
+### `gui-search`: 목록 검색
+
+- **위치**: 목록 상단의 현재 카테고리 검색창
+- **UI 문구**: `"Search this category…"` · ko `"이 범주에서 검색…"`, `"Clear search"`
+- **코드 경로**: `tools/installer/src/gui/list.rs`와 `tools/installer/src/gui/text_input.rs`에서 입력을 받아 `tools/installer/src/app/search.rs`에서 비교한다.
+- **테스트**: `tools/installer/src/gui/keyboard_tests.rs`, `tools/installer/src/app/search.rs`, `tools/installer/tests/gui_smoke.py`
 
 GUI 목록 위 검색창은 현재 카테고리에 적용한다. 이름, 원본과 설치 경로, 출처 이름으로 찾는다. MCP는 설명, 분류, 명령, URL과 필요한 환경변수 이름도 검색한다. 플러그인은 마켓플레이스와 설명, 저장소 주소를 포함한다. 입력한 자격증명 값은 검색하지 않는다.
 
@@ -105,7 +116,7 @@ GUI 목록 위 검색창은 현재 카테고리에 적용한다. 이름, 원본�
 
 검색에 가려진 항목의 선택은 보존하지만 설치와 제거는 현재 보이는 검색 결과만 처리한다. 전체 선택과 해제도 검색 중에는 결과 안에서만 적용한다. 결과가 없으면 실행 버튼을 비활성화하고 이전 항목의 상세 정보도 표시하지 않는다.
 
-검색창은 클릭하거나 Linux와 Windows에서 `Ctrl+F`, macOS에서 `Cmd+F`로 연다. `Enter`는 목록 키보드 탐색으로 돌아간다. `Esc`와 `Clear`는 검색을 비운다. 검색창에 입력한 일반 문자는 설치나 제거 단축키로 처리하지 않는다. 기존 TUI에는 검색창을 추가하지 않는다.
+검색창은 클릭하거나 Linux와 Windows에서 `Ctrl+F`, macOS에서 `Cmd+F`로 연다. `Enter`는 목록 키보드 탐색으로 돌아간다. `Esc`와 `Clear`는 검색을 비운다. 검색창은 입력한 문자를 받아 검색에만 사용한다. TUI는 현재 탭에서 `/`로 검색한다.
 
 검색창 안에서는 `Ctrl+A`와 `Cmd+A`로 검색어 전체를 선택한다. 복사, 잘라내기와 붙여넣기도 두 보조키와 `C`, `X`, `V` 조합으로 사용한다. Linux에 연결한 Mac 키보드에서도 Command 입력을 지원한다. 이 단축키는 검색 결과의 체크 상태를 바꾸지 않는다.
 
@@ -113,7 +124,7 @@ GUI 목록 위 검색창은 현재 카테고리에 적용한다. 이름, 원본�
 
 ## Sources 화면의 구현 경로
 
-`tools/installer/src/gui/sources.rs`와 `source_forms.rs`는 `App`을 읽고 화면을 만든다. 진행 화면과 diff는 `activity.rs`, 입력과 확인 대화상자는 `dialogs.rs`에 둔다. 버튼은 `gui::actions::Action` 메시지를 보낸다. 소스 검증과 저장은 기존 `app::sources`, `app::source_wizard`, `source::config`가 처리한다.
+`tools/installer/src/gui/sources.rs`와 `source_forms.rs`는 `App`을 읽고 화면을 만든다. 진행 화면과 diff는 `activity.rs`, 입력과 확인 대화상자는 `dialogs.rs`에 둔다. 버튼은 `gui::actions::Action` 메시지를 보낸다. 소스 검증과 저장은 기존 `tools/installer/src/app/sources.rs`, `tools/installer/src/app/source_wizard.rs`, `tools/installer/src/source/config.rs`가 처리한다.
 
 | 화면 | GUI 동작 |
 |---|---|
@@ -129,7 +140,7 @@ GUI 목록 위 검색창은 현재 카테고리에 적용한다. 이름, 원본�
 
 `sources.rs`의 단위 테스트는 번들 선택과 범위를 벗어난 선택에서 삭제 대상을 만들지 않는지 확인한다. 빈 입력과 여러 줄 오류, 잘못된 수정 인덱스로 각 소스 화면을 생성하는 경로도 검사한다.
 
-`app/source_wizard.rs`는 저장 성공 뒤에만 목록과 위저드 상태를 바꾼다. 저장 실패 뒤 다시 시도해도 URL, 브랜치와 하위 루트를 유지한다. `app/sources.rs`는 소스 삭제를 설정에 저장한 뒤 Git 캐시를 정리한다. 삭제 저장 실패 시 목록, 커서와 캐시를 유지한다. 삭제 후 소스 해석은 백그라운드에서 실행하고 해석 실패와 캐시 정리 실패를 표시한다.
+`tools/installer/src/app/source_wizard.rs`는 저장 성공 뒤에만 목록과 위저드 상태를 바꾼다. 저장 실패 뒤 다시 시도해도 URL, 브랜치와 하위 루트를 유지한다. `tools/installer/src/app/sources.rs`는 소스 삭제를 설정에 저장한 뒤 Git 캐시를 정리한다. 삭제 저장 실패 시 목록, 커서와 캐시를 유지한다. 삭제 후 소스 해석은 백그라운드에서 실행하고 해석 실패와 캐시 정리 실패를 표시한다.
 
 소스 저장과 제거 테스트는 사용자 홈을 바꾸지 않는다. 임시 설정 경로에서 실제 파일 쓰기 실패를 만들고 상태와 캐시 보존을 확인한다.
 
@@ -137,8 +148,8 @@ GUI 목록 위 검색창은 현재 카테고리에 적용한다. 이름, 원본�
 
 | 대상 | 바이너리와 패키지 |
 |---|---|
-| macOS | universal 바이너리 |
-| Windows | MSVC 바이너리 |
+| macOS | Universal 바이너리, 앱 DMG와 업데이트용 ZIP |
+| Windows | x64 MSVC 바이너리, MSI와 휴대용 ZIP |
 | 일반 Linux | GNU 바이너리, deb와 rpm |
 | Alpine Linux | 동적 musl 바이너리와 apk |
 
@@ -147,34 +158,34 @@ GUI 목록 위 검색창은 현재 카테고리에 적용한다. 이름, 원본�
 ## 검증 명령
 
 ```bash
-python tools/lint-prose.py
-python tools/lint-arch.py
+python3 tools/lint-prose.py
+python3 tools/lint-arch.py
 cargo fmt --manifest-path tools/installer/Cargo.toml --check
-cargo test --manifest-path tools/installer/Cargo.toml
+cargo test --locked --manifest-path tools/installer/Cargo.toml
 ```
 
 화면 검수는 다크 모드와 라이트 모드에서 각각 수행한다. 창을 줄이고 긴 URL과 한글 경로를 입력한다. 설치와 제거에는 임시 사용자 디렉터리를 사용한다. 취소와 실패 뒤에는 다시 실행해 디스크 상태와 목록을 비교한다.
 
 ## 화면 설계 기준
 
-탐색은 왼쪽 사이드바에 모은다. 현재 대상과 카테고리를 유지해 사용자가 화면 위치를 확인할 수 있다. 목록은 이름과 출처, 상태를 구분한다. 현재 필터에 포함된 선택 수와 설치 가능 수를 계산하고, 실행할 항목이 없는 버튼은 비활성화한다.
+탐색은 왼쪽 사이드바에 모은다. 현재 대상과 카테고리를 유지해 사용자가 화면 위치를 확인할 수 있다. 목록은 이름과 출처, 상태를 구분한다. 현재 필터에 포함된 선택 수와 설치·제거 가능 수를 계산하고, 실행할 항목이 없는 버튼은 비활성화한다.
 
-설치는 기본 작업 버튼으로 강조한다. 제거는 보조 작업으로 표시하고 실제 제거 전에 수량을 확인한다. 취소는 선택을 유지하며 Enter 키만으로 제거를 확정하지 않는다.
+설치는 기본 작업 버튼으로 강조한다. 제거는 보조 작업으로 표시한다. 확인창에서 수량, 이름, 작업 위치를 먼저 검토한다. 취소는 선택을 유지하며 Enter 키만으로 제거를 확정하지 않는다.
 
-색상과 간격, 카드와 버튼 상태는 `gui/styles.rs`에서 관리한다. 다크 모드와 라이트 모드는 같은 정보 위계를 사용한다. 본문과 보조 문구, 주요 동작과 오류의 대비를 두 테마에서 자동 검증한다.
+색상과 간격, 카드와 버튼 상태는 `tools/installer/src/gui/styles.rs`에서 관리한다. 다크 모드와 라이트 모드는 같은 정보 위계를 사용한다. 본문과 보조 문구, 주요 동작과 오류의 대비를 두 테마에서 자동 검증한다.
 
-다음 공식 자료의 탐색과 상태 표시 원칙을 참고했다.
+### `gui-appearance`: 창 헤더, 테마와 언어
 
-* [GNOME 탐색 구조](https://developer.gnome.org/hig/guidelines/navigation.html)
-* [GNOME 대화상자](https://developer.gnome.org/hig/patterns/feedback/dialogs.html)
-* [Material 표와 선택 작업](https://m1.material.io/components/data-tables.html)
-* [Material 다크 테마](https://m2.material.io/design/color/dark-theme.html)
+- **위치**: 헤더 오른쪽의 테마 토글, 하단 버전 옆의 언어 선택
+- **UI 문구**: `"Light theme"`, `"Dark theme"`, `"Could not save display settings"`
+- **코드 경로**: `tools/installer/src/gui/window_bar.rs` → `view`, `tools/installer/src/gui/styles.rs`, `tools/installer/src/gui/runtime.rs` → `start_initialization`, `tools/installer/src/gui/preferences.rs` → `Writer`. `tools/installer/src/fs/installer/preferences.rs`의 `load`와 `save`가 파일을 다룬다.
+- **테스트**: `tools/installer/src/gui/window_bar.rs`, `tools/installer/src/gui/keyboard_tests.rs`, `tools/installer/src/gui/locale.rs`, `tools/installer/src/fs/installer/preferences.rs`
 
-디자인 참고에는 [Mobbin의 공개 설정 화면 사례](https://mobbin.com/blog/how-to-use-mobbin-mcp)와 [Raycast 설정 화면](https://manual.raycast.com/settings)을 사용했다. Mobbin에서 공개한 Notion의 카테고리 탐색과 Raycast의 중립 색상 영역 구분을 참고해 사이드바와 작업 영역을 나눴다. 공개 자료를 확인한 범위에 한하며 로그인한 Mobbin 라이브러리 전체나 Pinterest 개인 보드를 열람한 것은 아니다.
+헤더는 테마 버튼과 창 드래그 영역을 나눈다. 유리 스타일의 배경과 카드, 입력과 클릭 상태는 `tools/installer/src/gui/styles.rs`에서 관리한다. 현재 설정 언어는 영어, 한국어, 일본어 중 하나다. 저장한 값이 없으면 운영체제의 선호 언어 목록에서 지원하는 첫 언어를 고르고, 목록에 해당 언어가 없으면 영어를 사용한다. 경로와 외부 도구 로그는 원문을 표시한다.
 
-창 제목 표시줄 오른쪽에서 테마를 바꾼다. 창 하단의 버전 옆에서 한국어, 영어, 일본어를 선택하면 현재 화면에 바로 적용된다. 처음 실행할 때는 운영체제의 선호 언어 중 지원하는 첫 언어를 사용하며, 해당 언어가 없으면 영어로 표시한다. 구성 요소 이름, 경로와 외부 도구의 로그는 원문으로 표시한다.
+GUI는 언어와 테마를 `~/.hibi/preferences.json`에 저장한다. 저장할 키만 바꿔 다른 설정을 보존한다. 파일이 손상되었거나 읽기 전용이면 원인을 표시하고 파일을 보존한다. 창 닫기는 진행 중인 환경설정 쓰기가 끝날 때까지 기다린다.
 
-GUI는 언어와 테마를 `~/.hibi/preferences.json`에 저장한다. 한 설정을 바꾸면 다른 키의 값은 유지한다. 잘못된 설정과 읽기 전용 파일은 보존하고 오류를 표시한다. 종료할 때는 진행 중인 저장이 끝날 때까지 기다린다.
+디자인 참고 자료는 탐색, 표, 대화상자와 테마 원칙을 설명한다. [GNOME 탐색](https://developer.gnome.org/hig/guidelines/navigation.html) · [GNOME 대화상자](https://developer.gnome.org/hig/patterns/feedback/dialogs.html) · [Material 표](https://m1.material.io/components/data-tables.html) · [Material 다크 테마](https://m2.material.io/design/color/dark-theme.html) · [Mobbin 공개 사례](https://mobbin.com/blog/how-to-use-mobbin-mcp) · [Raycast 설정](https://manual.raycast.com/settings)
 
 Claude Code의 MCP는 user와 local 범위를 제공한다. 기존 Codex MCP 설치 경로는 user 범위만 지원하므로 GUI는 local 선택을 비활성화하고 이유를 표시한다.
 
@@ -182,31 +193,12 @@ Claude Code의 MCP는 user와 local 범위를 제공한다. 기존 Codex MCP 설
 
 ```bash
 cargo build --locked --manifest-path tools/installer/Cargo.toml
-python tools/installer/tests/cli_smoke.py --binary tools/installer/target/debug/hibi
-xvfb-run -a python tools/installer/tests/gui_smoke.py --binary tools/installer/target/debug/hibi
+python3 tools/installer/tests/cli_smoke.py --binary tools/installer/target/debug/hibi
+xvfb-run -a python3 tools/installer/tests/gui_smoke.py --binary tools/installer/target/debug/hibi
 ```
 
 릴리즈 검증 작업은 두 스모크 검사를 실행하고 GUI 화면과 로그를 아티팩트로 남긴다.
 
-## 2026년 11월 17일 검증 결과
+## 검수 결과를 확인하는 곳
 
-| 검증 | 결과 |
-|---|---|
-| GUI 포함 Rust 테스트 | 360개 통과 |
-| 터미널 전용 Rust 테스트 | 301개 통과 |
-| 화면 입력 검수 | 실제 X11 입력 시나리오 30개 통과 |
-| CLI와 PTY 검수 | 화면 없는 옵션 실행과 터미널 복원 시나리오 8개 통과 |
-| Ubuntu 22.04 | GNU 릴리즈 빌드, GUI와 CLI 검사 통과, 최대 glibc 요구 버전 2.35 |
-| Alpine 3.24.4 | musl 릴리즈 빌드, 실제 GUI 실행과 테마 복원, CLI와 PTY 검사 통과 |
-| 저장소 검사 | 산문 린트, 구조 린트, Rust 포맷, 워크플로 구문 검사 통과 |
-| macOS와 Windows | 네이티브 CI 빌드 경로 구성, 실제 빌드와 실행은 미검증 |
-
-Rust 테스트에서 제외된 1개는 타임아웃 검사가 자식 프로세스로 실행하는 대기 보조 함수다. 별도 제품 기능을 제외한 것이 아니다. Clippy는 완료했으며 기존 코드의 스타일 경고는 남아 있다.
-
-실행 파일은 `dist/hibi-linux`와 `dist/hibi-linux-musl`에 있다. `dist`에는 한국어 미러를 제외한 번들 설정도 함께 준비했다. 저장소 루트에서 다음 명령으로 GNU GUI를 실행한다.
-
-```bash
-./dist/hibi-linux
-```
-
-`dist/gui-verification`에는 다크와 라이트, 작은 창과 제거 확인 화면, 플랫폼별 검증 JSON을 보관한다. 이 디렉터리는 빌드 산출물이며 Git 추적 대상이 아니다. 실제 GUI와 CLI 검사는 임시 사용자 디렉터리에서 실행했다.
+CI의 `gui-acceptance`에서 실제 X11 입력 스모크의 화면과 로그를 확인한다. 로컬에서 검수할 때는 `--artifacts`로 출력 위치를 지정한다. 확인한 커밋, 플랫폼, 테마, 창 크기를 결과와 함께 기록한다. macOS 활성 창, Wayland, Windows의 창 조작은 해당 환경에서 따로 확인한다. [운영 가이드](../RUNBOOK.md)

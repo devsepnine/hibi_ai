@@ -1,36 +1,40 @@
 # hibi-ai 기능맵
 
-검증 시점 `45b573f` · `2026-10-12` · 구조 뷰: 없음, 컴포넌트 위치는 `docs/INDEX.md`
-전제: 서버 없음, 상태는 로컬 파일 ~/.claude · ~/.codex · ~/.hibi 뿐 · i18n 없음, UI 문구는 Rust 문자열 리터럴 그대로이고 번역본이 없다 · 인스톨러 테스트는 각 모듈의 `#[cfg(test)]` 블록과 `tools/installer/src/cli/tests.rs`, `tools/installer/src/ui/tests.rs` 에 있고 `cargo test --manifest-path tools/installer/Cargo.toml` 로 돈다 · 배포 설정 `src/` 는 산문이라 실행 테스트가 없고 일부 스킬만 `evals/` 평가셋을 가진다
+검증 시점 `cc8978b` · `2026-11-27` · [구조와 문서 인덱스](INDEX.md)
+전제: 인스톨러는 로컬 상태를 `~/.claude`, `~/.codex`, `~/.hibi`에 저장한다. Git 소스와 앱 릴리스는 요청에 따라 원격으로 조회한다. GUI는 영어, 한국어, 일본어를 지원하고 TUI는 영어를 사용한다. 번역은 `tools/installer/src/gui/locale.rs`와 `tools/installer/src/gui/locale/`, 실행 검수는 `tools/installer/tests/`에 있다.
 
 ## 이 맵 사용법
 
-"사이드바에 뭐가 잘 안돼요", "입금 문구가 잘 입력이 안돼요" 같은 모호한 제보를 받으면:
+사이드바나 검색창처럼 화면 일부를 가리키는 제보는 다음 순서로 찾는다.
 
 1. **어디서** 일어났나? → 화면 인덱스 → 후보 기능 ID.
 2. **어떤 단어**를 썼나? → 별칭 인덱스 → 후보 좁히기. `(ambiguous)` 표시된 별칭은 여러 기능에 걸린다. 전부 확인하거나, 둘을 가르는 질문 하나만 한다. `→ 없음` 행은 제품에 없는 기능이다.
-3. **어떤 문구**를 봤나? → 항목에 적힌 실제 문자열로 grep.
+3. **어떤 문구**를 봤나? → 항목에 적힌 원문과 번역을 `rg`로 찾는다.
 4. 항목의 코드 경로를 위에서부터 연다. 디버깅 전에 **함정**부터 읽는다.
 5. 어디에도 없으면 → 코드를 검색한 뒤, 빠진 기능·별칭·문구를 이 맵에 추가한다.
 
-GUI 화면과 실패 경로 검증 항목은 `docs/features/installer-gui.md`에 있다. `v2`는 iced GUI를 기본 실행하며 `--tui`로 기존 터미널 화면을 연다.
+기본 빌드는 iced GUI를 실행하며 `--tui`는 터미널 화면을 연다. GUI 화면과 실패 경로는 [GUI 검수 기준](features/installer-gui.md)을 참고한다.
 
 ## 화면 인덱스
 
 | 화면 / 영역 | 기능 ID |
 |---|---|
-| 첫 화면 HIBI AI 배너와 `Select target` 목록 | `cli-picker`, `sources-screen` |
+| GUI 대상 카드와 TUI `Select target` | `cli-picker`, `sources-screen` |
+| GUI 헤더 오른쪽 테마 토글, 하단 언어 선택 | `gui-appearance` |
+| GUI 오른쪽 아래 버전과 업데이트 대화상자 | `app-update` |
 | 시작 직후와 CLI 선택 직후의 스피너 상자 | `startup-loading` |
 | 터미널 명령행, TUI 없이 | `cli-flags`, `install-script` |
-| 목록 화면 상단 탭 바, 테두리 `[1]-` | `tab-bar`, `theme-toggle` |
+| GUI 왼쪽 Components, TUI 상단 탭 테두리 `[1]-` | `tab-bar`, `theme-toggle` |
 | 목록 화면 본문, 테두리 `[2]-` | `component-list`, `mcp-list`, `plugin-list`, `default-style-statusline` |
+| GUI 목록 위 `Filters` 메뉴 | `gui-filters`, `component-list` |
 | GUI 목록 위 검색창, TUI 목록의 `/` 검색 | `gui-search`, `component-list` |
 | 목록 화면 하단 상태 바 | `status-bar` |
 | `?` 로 뜨는 Keybindings 상자 | `help-overlay` |
 | 본문에서 Esc 를 누르면 뜨는 Confirm 상자 | `exit-confirm` |
 | `d` 나 Enter 로 여는 Diff 화면 | `diff-view` |
 | MCP 탭 위에 뜨는 입력 대화상자 | `mcp-env-input`, `mcp-list` |
-| `i` · `r` 후의 Progress 와 Log 화면 | `install-progress`, `settings-merge`, `install-manifest` |
+| GUI Remove 또는 TUI `r`의 대상 확인창 | `removal-confirm`, `mcp-list`, `settings-merge` |
+| 설치·제거 승인 후의 Progress와 Log | `install-progress`, `settings-merge`, `install-manifest` |
 | Sources 전체 화면 | `sources-screen`, `source-sync` |
 | Sources 위에 뜨는 Add Source 단계 상자 | `source-wizard` |
 | Claude Code 입력창 아래 상태줄 | `statusline-render`, `default-style-statusline` |
@@ -54,8 +58,8 @@ GUI 화면과 실패 경로 검증 항목은 `docs/features/installer-gui.md`에
 | Auto-cleaned, outdated item `(ambiguous)` | `startup-loading`, `install-manifest` |
 | Cannot find source directory, 바이너리 옮겼더니 실행 안 됨 | `startup-loading`, `install-script` |
 | --version, 버전 확인, -v, --help, 도움말 옵션 | `cli-flags` |
-| 버전 `(ambiguous)` | `cli-flags`, `status-bar`, `release-workflow`, `install-manifest` |
-| 동기화, sync, --sync, 업데이트 받기, 최신화 `(ambiguous)` | `source-sync`, `cli-flags` |
+| 버전 `(ambiguous)` | `cli-flags`, `status-bar`, `app-update`, `release-workflow`, `install-manifest` |
+| 동기화, sync, --sync, 업데이트 받기, 최신화 `(ambiguous)` | `source-sync`, `app-update`, `cli-flags` |
 | 탭, 탭 바, 탭 전환, 탭 이동, 탭이 잘림, ‹ › | `tab-bar` |
 | 숫자 키, 1번 2번, pane, 패널, 포커스 `(ambiguous)` | `tab-bar`, `source-wizard` |
 | 목록, 리스트, 체크박스, 전체 선택, 선택 해제, 폴더 펼치기, 트리, 미리 체크됨 | `component-list` |
@@ -63,7 +67,7 @@ GUI 화면과 실패 경로 검증 항목은 `docs/features/installer-gui.md`에
 | Space 안 먹힘, 체크가 안 됨 | `component-list`, `cli-picker` |
 | 에이전트, 커맨드, 스킬, Styles, Config 탭 | `component-list` |
 | modified, installed, new, external, managed, 상태 표시 | `component-list` |
-| 상태 필터, 수정 파일만, 외부 파일만, 미설치 파일만, 필터 결과만 선택 | `component-list` |
+| 상태 필터, 수정 파일만, 외부 파일만, 미설치 파일만, 필터 결과만 선택 | `gui-filters`, `component-list` |
 | 폴더 숨김, 숨김 취소, 숨긴 항목 표시, .system, synced | `component-list` |
 | 바꾼 적 없는데 modified, 줄바꿈 CRLF | `component-list` |
 | 하단 바, 상태 바, 상태 메시지, 메시지가 잘림 | `status-bar` |
@@ -72,8 +76,8 @@ GUI 화면과 실패 경로 검증 항목은 `docs/features/installer-gui.md`에
 | Fedora statusline, Linux에 macOS 경로 등록, statusline_macos | `default-style-statusline` |
 | 단축키, 키 목록, 키바인딩, 도움말, ?, 키가 안 보임 | `help-overlay`, `status-bar` |
 | 종료, 나가기, quit, q 안 먹힘 `(ambiguous)` | `help-overlay`, `install-progress`, `sources-screen`, `exit-confirm` |
-| Esc, 뒤로가기, 선택 날아감, 확인 창 `(ambiguous)` | `exit-confirm`, `tab-bar`, `install-progress` |
-| 엔터로 확인 안 됨, 엔터 안 먹힘, y 눌러야 함 | `exit-confirm`, `sources-screen`, `mcp-env-input` |
+| Esc, 뒤로가기, 선택 날아감, 확인 창 `(ambiguous)` | `exit-confirm`, `tab-bar`, `removal-confirm`, `install-progress` |
+| 엔터로 확인 안 됨, 엔터 안 먹힘, y 눌러야 함 `(ambiguous)` | `exit-confirm`, `removal-confirm`, `sources-screen`, `mcp-env-input` |
 | diff, 비교, 변경사항 보기, 차이, diff 스크롤 | `diff-view` |
 | 인스톨러가 갑자기 꺼짐, 튕김, 패닉, Error: 찍고 종료 | `diff-view`, `default-style-statusline`, `mcp-env-input` |
 | 기본 스타일, output style, 기본값 설정, DEFAULT, s u 키 | `default-style-statusline` |
@@ -88,7 +92,9 @@ GUI 화면과 실패 경로 검증 항목은 `docs/features/installer-gui.md`에
 | CLI not found, claude 못 찾음, PATH | `install-progress`, `mcp-list` |
 | install.json, 매니페스트, 어디서 설치했는지, 출처, 업스트림, 해시 | `install-manifest` |
 | no longer shipped, unverified, 업그레이드 뒤 옛 파일이 안 지워짐, 파일이 저절로 사라짐 | `install-manifest` |
-| 테마, 다크모드, 라이트모드, Mocha, Latte, 색 | `theme-toggle` |
+| 테마, 다크모드, 라이트모드, Mocha, Latte, 색 `(ambiguous)` | `gui-appearance`, `theme-toggle` |
+| 헤더 버튼이 위에 붙음, 테마 버튼 여백, 유리 효과 | `gui-appearance` |
+| 제거 버튼이 꺼짐, 제거 대상 수, 제거할 이름이 잘림, 제거 취소 | `removal-confirm` |
 | 라이트 테마에서 제목이 안 보임 `(ambiguous)` | `sources-screen`, `theme-toggle` |
 | 소스, sources, sources.yaml, 소스 관리, 소스 삭제, bundled 수정 안 됨 | `sources-screen` |
 | 소스 우선순위, 같은 이름 컴포넌트가 다른 소스 것으로 바뀜 | `sources-screen`, `component-list` |
@@ -109,18 +115,19 @@ GUI 화면과 실패 경로 검증 항목은 `docs/features/installer-gui.md`에
 | 커맨드 파일 어디, 스킬 파일 위치, 에이전트 정의, -ko 파일, 한국어 미러 | `component-lookup` |
 | 파일명 검색, 찾기, 출처 검색, Ctrl+F, Cmd+F | `gui-search` |
 | 검색어 전체 선택, Ctrl+A, Cmd+A, 검색창 복사와 붙여넣기 | `gui-search` |
-| 마우스 클릭, 스크롤 휠 | → 없음; 가장 가까운 기능: `help-overlay` |
-| 테마 기억, 테마 저장 | → 없음; 가장 가까운 기능: `theme-toggle` |
+| GUI 마우스 클릭과 스크롤 휠 `(ambiguous)` | `tab-bar`, `component-list`, `gui-filters` |
+| TUI 마우스 입력 | → 없음, 키 조작은 `help-overlay` |
+| 테마 기억, 테마 저장 `(ambiguous)` | `gui-appearance`, `theme-toggle` |
 | MCP diff, 플러그인 diff | → 없음; 가장 가까운 기능: `diff-view` |
 | diff 안에서 검색, PgDn 페이지 넘김 | → 없음; 가장 가까운 기능: `diff-view` |
 | 설치 로그 복사, 로그 저장 | → 없음; 가장 가까운 기능: `install-progress` |
 | 명령행 일괄 설치, --install, 비대화형 설치 | → 없음; 가장 가까운 기능: `cli-flags` |
-| hibi 자동 업데이트, self-update | → 없음; 가장 가까운 기능: `install-script` |
+| hibi 앱 업데이트, self-update, 재실행, 서명 오류, 패키지 배포 대기 | `app-update` |
 | macOS 용 install.sh, arm64 리눅스 설치 | → 없음; 가장 가까운 기능: `install-script` |
 | SSH git 소스, git@ 주소 | → 없음; 가장 가까운 기능: `source-wizard` |
 | 소스 순서 바꾸는 화면, auto_update 토글 | → 없음; 가장 가까운 기능: `sources-screen` |
 | Codex 탭이 적음, Codex 플러그인, Codex 에이전트, Codex 커맨드 `(ambiguous)` | `tab-bar`, `component-lookup`, `cli-picker` |
-| 한국어 UI, 언어 설정 화면 | → 없음 |
+| 한국어 UI, 일본어 UI, 언어 설정 화면, 첫 실행 언어 | `gui-appearance` |
 | 상태줄 색 변경, 상태줄 항목 설정 | → 없음; 가장 가까운 기능: `statusline-render` |
 
 ## 기능
@@ -135,7 +142,11 @@ GUI 화면과 실패 경로 검증 항목은 `docs/features/installer-gui.md`에
 | `tab-bar` | 상단 탭 바와 pane 포커스 이동 | `docs/features/installer-list.md` |
 | `component-list` | 컴포넌트 트리 목록, 상태, 선택 | `docs/features/installer-list.md` |
 | `gui-search` | GUI의 현재 카테고리 검색과 상태 필터 조합 | `docs/features/installer-gui.md` |
-| `status-bar` | 하단 키 힌트, 상태 메시지, 버전 | `docs/features/installer-list.md` |
+| `gui-filters` | 상태와 숨김 보기 오버레이 | `docs/features/installer-gui.md` |
+| `gui-appearance` | 창 헤더, 테마, 언어와 환경설정 저장 | `docs/features/installer-gui.md` |
+| `app-update` | 앱 버전 확인, 설치 방식별 업데이트와 복구 | `docs/features/distribution.md` |
+| `removal-confirm` | 제거 명단, 스코프, 확인과 취소 | `docs/features/installer-list.md` |
+| `status-bar` | TUI 하단 작업 수, 키 힌트, 상태 메시지, 버전 | `docs/features/installer-list.md` |
 | `help-overlay` | `?` 키바인딩 표 | `docs/features/installer-list.md` |
 | `exit-confirm` | Esc 로 CLI 선택 화면 복귀 확인 | `docs/features/installer-list.md` |
 | `diff-view` | 원본과 설치본 diff | `docs/features/installer-list.md` |
