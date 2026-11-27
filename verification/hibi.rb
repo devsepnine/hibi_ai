@@ -1,17 +1,17 @@
 class Hibi < Formula
   desc "Graphical and terminal installer for Claude Code and Codex CLI configurations"
   homepage "https://github.com/devsepnine/hibi_ai"
-  version "2.1.3"
+  version "2.2.0"
   license "MIT"
 
   on_macos do
-    url "https://github.com/devsepnine/hibi_ai/releases/download/v2.1.3/hibi-ai-2.1.3-macos.tar.gz"
-    sha256 "16e1a6441ff5d5bab4ef756f7948d64835574d173a63ace8700122a8f6cdc4dc"
+    url "https://github.com/devsepnine/hibi_ai/releases/download/v2.2.0/hibi-ai-2.2.0-macos.tar.gz"
+    sha256 "10eb04e7eed074fd7dc5d21ac4570aee6c43116b2d64858a75e90774601fa62f"
   end
 
   on_linux do
-    url "https://github.com/devsepnine/hibi_ai/releases/download/v2.1.3/hibi-ai-2.1.3-linux.tar.gz"
-    sha256 "4f03dfce253c460cc9ee6e4c56c3522ad01f7e5dc5a9f3be71b05a7712c58422"
+    url "https://github.com/devsepnine/hibi_ai/releases/download/v2.2.0/hibi-ai-2.2.0-linux.tar.gz"
+    sha256 "a2847a856a3d3acd104b3221ef2577379028e5e5b7c75805cb77a27ed3979c1d"
 
     depends_on "patchelf" => :build
     depends_on "libx11"

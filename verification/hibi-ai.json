@@ -1,13 +1,13 @@
 {
-    "version": "2.1.3",
+    "version": "2.2.0",
     "description": "Graphical and terminal installer for Claude Code and Codex CLI configurations",
     "homepage": "https://github.com/devsepnine/hibi_ai",
     "license": "MIT",
     "architecture": {
         "64bit": {
-          "url": "https://github.com/devsepnine/hibi_ai/releases/download/v2.1.3/hibi-ai-2.1.3-windows.zip",
-          "hash": "bf4db1460b5d7f0558d43cdc8a5cda28e7a3a6f194722a9a0326dcd9c71eda87",
-          "extract_dir": "hibi-ai-2.1.3-windows"
+          "url": "https://github.com/devsepnine/hibi_ai/releases/download/v2.2.0/hibi-ai-2.2.0-windows.zip",
+          "hash": "45a6f0f6d281b7bf86ca9a7d8c54c452437f39a68bffa8b522cd3f8d55f2e9f3",
+          "extract_dir": "hibi-ai-2.2.0-windows"
         }
     },
     "bin": [

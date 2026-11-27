@@ -54,3 +54,28 @@ jobs:
           python -u verification/windows.py $exe driver terminal
           python -u verification/windows.py $exe driver desktop
           python -u verification/windows.py $exe driver tui
+  windows-compatibility:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [windows-2022, windows-11-arm]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Launch the Windows archive referenced by Scoop
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $manifest = Get-Content verification/hibi-ai.json -Raw | ConvertFrom-Json
+          $windows = $manifest.architecture.'64bit'
+          $zip = Join-Path $env:RUNNER_TEMP 'hibi.zip'
+          Invoke-WebRequest $windows.url -OutFile $zip
+          if ((Get-FileHash $zip).Hash -ne $windows.hash) { throw 'Download hash mismatch' }
+          Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP
+          $exe = Join-Path $env:RUNNER_TEMP "$($windows.extract_dir)/hibi.exe"
+          if ((& $exe --version) -ne "hibi v$($manifest.version) (Config Installer)") { throw 'Unexpected binary version' }
+          python -u verification/windows.py $exe driver terminal
+          python -u verification/windows.py $exe driver desktop
+          python -u verification/windows.py $exe driver tui
