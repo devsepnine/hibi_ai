@@ -2,8 +2,21 @@ use std::sync::mpsc::{self, Receiver, TryRecvError};
 
 use anyhow::Result;
 
+use super::runtime::Runtime;
 use crate::app::App;
 use crate::fs::installer::preferences::{self, Appearance, Language, Preferences};
+
+impl Runtime {
+    pub(super) fn restore_preferences(&mut self, saved: Option<&Preferences>) {
+        if self.appearance.busy() {
+            return;
+        }
+        self.theme_choice = saved.and_then(|p| p.appearance.clone()).unwrap_or_default();
+        self.language = saved
+            .and_then(|p| p.language)
+            .unwrap_or_else(|| Language::preferred(sys_locale::get_locales()));
+    }
+}
 
 #[derive(Default)]
 pub(super) struct Writer {
@@ -68,6 +81,21 @@ pub(super) fn report_load_error(app: &mut App, error: anyhow::Error) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::gui::actions::Action;
+
+    #[test]
+    fn retry_keeps_choices_that_are_still_being_saved() {
+        let mut runtime = Runtime::empty();
+        let nord = Appearance::Palette("Nord".into());
+        runtime.dispatch(Action::SetAppearance(nord.clone()));
+        runtime.dispatch(Action::SetLanguage(Language::Korean));
+        runtime.restore_preferences(Some(&Preferences {
+            appearance: Some(Appearance::Dark),
+            language: Some(Language::English),
+        }));
+        assert_eq!(runtime.theme_choice, nord);
+        assert_eq!(runtime.language, Language::Korean);
+    }
 
     #[test]
     fn rapid_theme_changes_coalesce_while_an_earlier_write_is_running() {

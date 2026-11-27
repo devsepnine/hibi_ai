@@ -124,6 +124,10 @@ esac
         bar_top = image.height - 126
         regions.append((image.crop((245, bar_top, image.width - 12, image.height - 64)),
                         245, bar_top, "11"))
+        # A single text line removes the glass buttons' top and bottom borders.
+        actions_left = image.width - 360
+        regions.append((image.crop((actions_left, bar_top + 16, image.width - 40, bar_top + 41)),
+                        actions_left, bar_top + 16, "7"))
         install_left = image.width - 125
         regions.append((image.crop((install_left, bar_top + 8, image.width - 23, image.height - 75)),
                         install_left, bar_top + 8, "7"))

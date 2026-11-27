@@ -4,12 +4,13 @@ use std::thread;
 use anyhow::Result;
 
 use crate::app::{App, View};
+use crate::fs::installer::preferences::Appearance;
 use crate::loading::{self, ProcessingChannels};
 
 pub struct Runtime {
     pub(super) updater: super::updates::State,
     pub language: super::Language,
-    pub(super) theme_choice: crate::fs::installer::preferences::Appearance,
+    pub(super) theme_choice: Appearance,
     pub(super) system_mode: iced::theme::Mode,
     pub app: Option<App>,
     pub error: Option<String>,
@@ -67,16 +68,7 @@ impl Runtime {
         self.init_rx = Some(rx);
         self.error = None;
         let settings = crate::fs::installer::preferences::load();
-        self.theme_choice = settings
-            .as_ref()
-            .ok()
-            .and_then(|saved| saved.appearance.clone())
-            .unwrap_or_default();
-        self.language = settings
-            .as_ref()
-            .ok()
-            .and_then(|saved| saved.language)
-            .unwrap_or_else(|| super::Language::preferred(sys_locale::get_locales()));
+        self.restore_preferences(settings.as_ref().ok());
         thread::spawn(move || {
             let result = App::new().map(|mut app| {
                 if let Err(error) = settings {
