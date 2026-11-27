@@ -99,8 +99,9 @@ esac
         self.capture().save(path)
         return path
 
-    def words(self):
-        image = self.capture(park_pointer=False)
+    def words(self, image=None):
+        if image is None:
+            image = self.capture(park_pointer=False)
         key = image.tobytes()
         if self.ocr_cache and self.ocr_cache[0] == key:
             return self.ocr_cache[1]
@@ -166,45 +167,48 @@ esac
         self.ocr_cache = (key, words)
         return words
 
-    def text(self):
-        return " ".join(word["text"] for word in self.words())
+    def text(self, image=None):
+        return " ".join(word["text"] for word in self.words(image))
 
     def expect(self, label, timeout=8):
         return self.expect_any((label,), timeout)
 
+    def observation_frames(self, timeout):
+        # Parking the pointer can trigger a redraw after the last OCR sample.
+        for park_pointer in (False, True):
+            frame = self.capture(park_pointer=park_pointer)
+            deadline = time.monotonic() + timeout
+            while True:
+                expired = time.monotonic() >= deadline
+                yield frame
+                if expired:
+                    break
+                time.sleep(.1)
+                frame = self.capture(park_pointer=False)
+        frame.save(self.artifacts / "last-unmatched-frame.png")
+
     def expect_any(self, labels, timeout=8):
-        deadline = time.monotonic() + timeout
-        while True:
-            expired = time.monotonic() >= deadline
-            if expired:
-                # Recheck after the pointer is parked before recording a failure.
-                self.capture()
-            recognized = self.text()
+        for frame in self.observation_frames(timeout):
+            recognized = self.text(frame)
             screen = normalized(recognized)
             for label in labels:
                 if normalized(label) in screen:
                     return label
-            if expired:
-                self.screenshot("failure")
-                raise AssertionError(f"Expected one of {labels!r}; recognized: {recognized}")
-            time.sleep(.1)
+        raise AssertionError(f"Expected one of {labels!r}; recognized: {recognized}")
 
     def find(self, label, region=None, timeout=8):
         _, bounds = self.find_any((label,), region, timeout)
         return bounds
 
     def find_any(self, labels, region, timeout=8):
-        deadline = time.monotonic() + timeout
-        while True:
-            words = self.words()
+        for frame in self.observation_frames(timeout):
+            words = self.words(frame)
             for label in labels:
                 bounds = self.label_bounds(words, label, region)
                 if bounds is not None:
                     return label, bounds
-            if time.monotonic() >= deadline:
-                recognized = " ".join(word["text"] for word in words)
-                raise AssertionError(f"Could not locate any of {labels!r}; recognized: {recognized}")
-            time.sleep(.1)
+        recognized = " ".join(word["text"] for word in words)
+        raise AssertionError(f"Could not locate any of {labels!r}; recognized: {recognized}")
 
     @staticmethod
     def label_bounds(words, label, region):
@@ -357,6 +361,11 @@ esac
         self.screenshot("search-focus-failure")
         raise AssertionError("Search input did not show keyboard focus")
 
+    def expect_result_count(self, count, timeout=15):
+        width = self.window.get_geometry().width
+        expected = f"{count} result" if count == 1 else f"{count} results"
+        self.find(expected, (width - 145, 73, width - 8, 121), timeout)
+
     def clear_search(self):
         self.key("Escape")
         self.expect_components()
@@ -393,22 +402,22 @@ esac
             for modifier in ("control", "logo"):
                 keys = {modifier: True}
                 self.search("architect", submit=False)
-                self.expect("1 result")
+                self.expect_result_count(1)
                 # Select-all alone must not insert an 'a' or affect row selection.
                 self.key("a", **keys); self.key("a", **keys)
                 self.key("Return")
-                self.expect("1 result"); self.expect("architect.md")
+                self.expect_result_count(1); self.expect("architect.md")
                 self.expect("1 selected")
                 self.click_text("architect", (220, 130, 1120, 220))
                 self.expect_search_focus()
                 self.key("a", **keys)
                 for char in "auditor": self.key(char)
                 self.key("Return")
-                self.expect("1 result"); self.expect("assurance-auditor.md")
+                self.expect_result_count(1); self.expect("assurance-auditor.md")
                 self.expect("1 selected")
                 # Enter returns focus to the list. Command+A must not toggle rows.
                 self.key("a", **keys)
-                self.expect("1 result"); self.expect("1 selected")
+                self.expect_result_count(1); self.expect("1 selected")
                 self.clear_search()
                 self.expect(f"{selected} selected")
             self.passed(f"03j-{theme}-search-text-select-all")
@@ -421,13 +430,13 @@ esac
         ):
             keys = {modifier: True}
             self.search(copy_query, submit=False)
-            self.expect("1 result")
+            self.expect_result_count(1)
             self.expect(copy_file)
             self.key("a", **keys)
             self.key("c", **keys)
             self.expect_clipboard(copy_query)
             self.search(cut_query, submit=False)
-            self.expect("1 result")
+            self.expect_result_count(1)
             self.expect(cut_file)
             self.key("a", **keys)
             self.key("x", **keys)
@@ -435,7 +444,7 @@ esac
             self.expect(f"{selected} selected")
             self.key("v", **keys)
             self.key("Return")
-            self.expect("1 result")
+            self.expect_result_count(1)
             self.expect(cut_file)
             self.expect("1 selected")
         self.clear_search()
@@ -460,11 +469,11 @@ esac
         self.expect(f"{selected} selected")
         self.passed("03d-search-preserves-hidden-selections-and-focused-escape")
         self.search("BuNdLeD")
-        self.expect(f"{selected} results")
+        self.expect_result_count(selected)
         self.expect(f"{selected} selected")
         self.passed("03e-search-by-source")
         self.search("architect")
-        self.expect("1 result")
+        self.expect_result_count(1)
         self.select_status("Modified")
         self.expect("No matching items")
         self.expect("0 selected")
@@ -490,10 +499,10 @@ esac
         self.key("2")
         self.find("MCP", (235, 70, 550, 115))
         self.search("MEMORY_FILE_PATH")
-        self.expect("1 result")
+        self.expect_result_count(1)
         self.select_one_result("memory")
         self.search("framework")
-        self.expect("2 results")
+        self.expect_result_count(2)
         self.expect("0 selected")
         self.key("a")
         self.clear_search()
@@ -502,7 +511,7 @@ esac
         self.key("1"); self.key("Down"); self.key("2")
         self.find("Plugins", (235, 70, 550, 115))
         self.search("anthropics rust")
-        self.expect("1 result")
+        self.expect_result_count(1)
         self.expect("rust-analyzer")
         self.search("hibi-plugin-no-matches")
         self.expect("No matching items")
@@ -558,7 +567,7 @@ esac
         self.find("0 selected", footer)
 
     def select_one_result(self, label):
-        self.expect("1 result")
+        self.expect_result_count(1)
         self.click_text(label, (235, 218, 1100, 650))
         footer = (220, 600, 1120, 780)
         action, _ = self.find_any(("1 selected", "Select all"), footer)
@@ -798,7 +807,7 @@ esac
         self.click_text("Config", (0, 150, 220, 665))
         self.find("Config", (235, 70, 550, 115))
         self.search("MCP_TIMEOUT")
-        self.expect("1 result")
+        self.expect_result_count(1)
         self.expect("0 selected")
         self.select_one_result("env.MCP_TIMEOUT")
         self.inert("Remove", (220, 160, 1120, 780))
