@@ -33,6 +33,14 @@ def normalized(value):
     return re.sub(r"[^a-z0-9]", "", value.lower())
 
 
+def text_layer(image, dark):
+    # Suppress button outlines while retaining antialiased letter strokes.
+    ink = ImageOps.grayscale(image)
+    if dark:
+        ink = ImageOps.invert(ink)
+    return ink.point(lambda value: (value - 25) * 255 / (130 - 25))
+
+
 class Desktop:
     def __init__(self, args):
         self.args = args
@@ -108,8 +116,9 @@ esac
             return self.ocr_cache[1]
         # Upscaling helps small secondary labels. Keep color so Tesseract can
         # independently recognize light and dark text on colored buttons.
-        words = []
         regions = [(image, 0, 0, "11")]
+        dark = sum(image.getpixel((0, 0))) < 300
+        regions.append((text_layer(image, dark), 0, 0, "11"))
         # The selection count can be skipped in sparse-page recognition.
         # Read the work bar independently of the results and sidebar.
         bar_top = image.height - 126
@@ -118,10 +127,9 @@ esac
         install_left = image.width - 125
         regions.append((image.crop((install_left, bar_top + 8, image.width - 23, image.height - 75)),
                         install_left, bar_top + 8, "7"))
-        # Sparse-page OCR may ignore white text inside filled action buttons.
-        # Recognize their saturated background rectangles independently.
+        # Recognize labels inside solid buttons independently, including neutral palette fills.
         for count, color in sorted(image.getcolors(image.width * image.height), reverse=True)[:24]:
-            if count < 400 or max(color) - min(color) < 55:
+            if count < 400:
                 continue
             difference = ImageChops.difference(image, Image.new("RGB", image.size, color))
             mask = difference.convert("L").point(lambda value: 255 if value == 0 else 0)
@@ -132,7 +140,7 @@ esac
                     starts.append(position)
                 elif not visible and starts:
                     top = starts.pop()
-                    if position - top < 18:
+                    if not 18 <= position - top <= 80:
                         continue
                     band = mask.crop((0, top, image.width, position))
                     columns, _ = band.getprojection()
@@ -143,14 +151,22 @@ esac
                         elif not present and left is not None:
                             if 30 < x - left < 500:
                                 box = (left+3, top+3, x-3, position-3)
+                                if mask.crop(box).histogram()[255] < (box[2]-box[0]) * (box[3]-box[1]) / 2:
+                                    left = None
+                                    continue
                                 gray = ImageOps.grayscale(image.crop(box))
                                 background = .299*color[0] + .587*color[1] + .114*color[2]
                                 if background < 150:
-                                    gray = gray.point(lambda value: 0 if value > 180 else 255)
-                                else:
-                                    gray = gray.point(lambda value: 0 if value < 100 else 255)
+                                    gray = ImageOps.invert(gray)
+                                gray = ImageOps.autocontrast(gray)
                                 regions.append((ImageOps.expand(gray, border=8, fill=255), box[0]-8, box[1]-8, "7"))
                             left = None
+        words = self.recognize(regions, image.height)
+        self.ocr_cache = (key, words)
+        return words
+
+    def recognize(self, regions, window_height):
+        words = []
         for number, (region, offset_x, offset_y, psm) in enumerate(regions):
             path = self.artifacts / f"ocr-input-{number}.png"
             region.resize((region.width * 3, region.height * 3)).save(path)
@@ -160,12 +176,11 @@ esac
                 label = item.get("text", "").strip()
                 if label:
                     # Tesseract can confuse the small Install button's t and l glyphs.
-                    if normalized(label) in {"inslall", "loslall"} and offset_y + int(item["top"])/3 > image.height - 100:
+                    if normalized(label) in {"inslall", "loslall"} and offset_y + int(item["top"])/3 > window_height - 100:
                         label = "Install"
                     words.append(dict(text=label, x=int(item["left"])/3 + offset_x,
                                       y=int(item["top"])/3 + offset_y,
                                       w=int(item["width"])/3, h=int(item["height"])/3))
-        self.ocr_cache = (key, words)
         return words
 
     def text(self, image=None):
@@ -208,12 +223,25 @@ esac
                 bounds = self.label_bounds(words, label, region)
                 if bounds is not None:
                     return label, bounds
+            if region:
+                # Read the requested region as a block when page OCR skips a bordered field.
+                crop = frame.crop(region)
+                dark = sum(frame.getpixel((0, 0))) < 300
+                nearby = self.recognize(
+                    [(layer, *region[:2], "6") for layer in (crop, text_layer(crop, dark))],
+                    frame.height,
+                )
+                for label in labels:
+                    bounds = self.label_bounds(nearby, label, region)
+                    if bounds is not None:
+                        return label, bounds
         recognized = " ".join(word["text"] for word in words)
         raise AssertionError(f"Could not locate any of {labels!r}; recognized: {recognized}")
 
     @staticmethod
     def label_bounds(words, label, region):
         wanted = normalized(label)
+        fallback = None
         for index, first in enumerate(words):
             if region and not (region[0] <= first["x"] <= region[2] and region[1] <= first["y"] <= region[3]):
                 continue
@@ -227,9 +255,14 @@ esac
                 if phrase == wanted:
                     right = max(w["x"] + w["w"] for w in matches)
                     bottom = max(w["y"] + w["h"] for w in matches)
-                    return first["x"], first["y"], right-first["x"], bottom-first["y"]
+                    bounds = first["x"], first["y"], right-first["x"], bottom-first["y"]
+                    if " ".join(w["text"] for w in matches) == label:
+                        return bounds
+                    fallback = fallback or bounds
+                    break
                 if not wanted.startswith(phrase):
                     break
+        return fallback
 
     def click(self, x, y):
         self.window.warp_pointer(round(x), round(y))
@@ -339,13 +372,14 @@ esac
 
     def search(self, query, submit=True):
         self.key("f", control=True)
-        self.expect_search_focus()
+        field = self.expect_search_focus()
         self.key("a", control=True)
         self.key("BackSpace")
         for char in query:
             self.key({"-": "minus", "_": "minus", ".": "period", " ": "space"}.get(char, char.lower()), shift=char.isupper() or char == "_")
         if submit:
             self.key("Return")
+        return field
 
     def expect_search_focus(self):
         # The search outline is visible as soon as the input can receive keys.
@@ -353,11 +387,11 @@ esac
         while time.monotonic() < deadline:
             image = self.capture(park_pointer=False)
             dark = sum(image.getpixel((0, 0))) < 300
-            accent = (209, 191, 255) if dark else (88, 64, 153)
+            accent = (250, 250, 250) if dark else (63, 61, 218)
             center = image.crop((365, 88, 515, 210))
-            if any(color == accent and count >= 100
-                   for count, color in center.getcolors(center.width * center.height)):
-                return
+            for y in range(center.height):
+                if center.crop((0, y, center.width, y + 1)).getcolors(1) == [(center.width, accent)]:
+                    return 365 + center.width // 2, 88 + y + 8
             time.sleep(.1)
         self.screenshot("search-focus-failure")
         raise AssertionError("Search input did not show keyboard focus")
@@ -402,14 +436,14 @@ esac
             self.expect_theme(theme)
             for modifier in ("control", "logo"):
                 keys = {modifier: True}
-                self.search("architect", submit=False)
+                field = self.search("architect", submit=False)
                 self.expect_result_count(1)
                 # Select-all alone must not insert an 'a' or affect row selection.
                 self.key("a", **keys); self.key("a", **keys)
                 self.key("Return")
                 self.expect_result_count(1); self.expect("architect.md")
                 self.expect("1 selected")
-                self.click_text("architect", (220, 130, 1120, 220))
+                self.click(*field)
                 self.expect_search_focus()
                 self.key("a", **keys)
                 for char in "auditor": self.key(char)
@@ -622,6 +656,10 @@ esac
 
     def run(self):
         self.launch()
+        self.expect("System theme")
+        if sum(self.capture().getpixel((0, 0))) >= 300:
+            self.click_theme()
+        self.expect_theme("dark")
         self.passed("01-dark-home")
         self.click_theme()
         self.expect_theme("light")
@@ -783,9 +821,25 @@ esac
         self.launch()
         self.expect_theme("dark")
         self.passed("17-dark-theme-restored")
+        self.check_palette_restore()
         self.close_window()
         self.remove_source_with_busy_cache()
         (self.artifacts / "results.json").write_text(json.dumps({"passed": self.results, "isolated_home": str(self.home)}, indent=2))
+
+    def check_palette_restore(self):
+        width = self.window.get_geometry().width
+        self.click(width - 120, 25)
+        self.click_text("Nord", (width - 320, 32, width - 40, 700))
+        self.wait_for_appearance({"palette": "Nord"})
+        backdrop = self.capture().getpixel((0, 0))
+        self.close_window()
+        self.launch()
+        self.find("Nord", (width - 320, 0, width - 40, 52))
+        assert self.capture().getpixel((0, 0)) == backdrop
+        self.click(width - 120, 25)
+        self.click_text("System theme", (width - 320, 32, width - 40, 700))
+        self.wait_for_appearance("system")
+        self.passed("17a-palette-restored-and-system-reselected")
 
     def manage_individual_settings(self):
         settings_file = self.home / ".claude/settings.json"

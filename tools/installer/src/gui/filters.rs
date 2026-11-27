@@ -99,7 +99,7 @@ pub(super) fn view(lang: Language, app: &App, cursor: Option<Choice>) -> Element
     ))
     .padding(16)
     .width(260)
-    .style(styles::surface)
+    .style(styles::popup)
     .id("filters-menu");
     dropdown::view(anchor.into(), menu.into(), open)
 }

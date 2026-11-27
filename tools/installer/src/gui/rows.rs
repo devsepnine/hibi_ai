@@ -252,7 +252,7 @@ fn file<'a>(
             .padding(12),
             tooltip::Position::Top
         )
-        .style(styles::surface),
+        .style(styles::popup),
     ]
     .spacing(12)
     .padding([0, 6])

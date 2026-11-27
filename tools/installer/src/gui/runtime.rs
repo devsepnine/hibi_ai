@@ -9,6 +9,8 @@ use crate::loading::{self, ProcessingChannels};
 pub struct Runtime {
     pub(super) updater: super::updates::State,
     pub language: super::Language,
+    pub(super) theme_choice: crate::fs::installer::preferences::Appearance,
+    pub(super) system_mode: iced::theme::Mode,
     pub app: Option<App>,
     pub error: Option<String>,
     pub close_requested: bool,
@@ -41,6 +43,8 @@ impl Runtime {
         Self {
             updater: Default::default(),
             language: super::Language::English,
+            theme_choice: Default::default(),
+            system_mode: Default::default(),
             app: None,
             error: None,
             close_requested: false,
@@ -63,6 +67,11 @@ impl Runtime {
         self.init_rx = Some(rx);
         self.error = None;
         let settings = crate::fs::installer::preferences::load();
+        self.theme_choice = settings
+            .as_ref()
+            .ok()
+            .and_then(|saved| saved.appearance.clone())
+            .unwrap_or_default();
         self.language = settings
             .as_ref()
             .ok()
@@ -70,7 +79,9 @@ impl Runtime {
             .unwrap_or_else(|| super::Language::preferred(sys_locale::get_locales()));
         thread::spawn(move || {
             let result = App::new().map(|mut app| {
-                super::preferences::restore(&mut app, settings);
+                if let Err(error) = settings {
+                    super::preferences::report_load_error(&mut app, error);
+                }
                 app
             });
             let _ = tx.send(result);

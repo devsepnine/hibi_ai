@@ -2,9 +2,7 @@ use iced::advanced::{
     Clipboard, Layout, Shell, Widget, layout, mouse, renderer,
     widget::{Tree, tree},
 };
-#[cfg(target_os = "macos")]
-use iced::widget::Space;
-use iced::widget::row;
+use iced::widget::{Space, row};
 use iced::{Element, Event, Fill, Length, Rectangle, Renderer, Size, Task, Theme, window};
 
 use super::{Message, runtime::Runtime, theme_button};
@@ -87,7 +85,7 @@ pub(super) fn view(state: &Runtime) -> Element<'_, Message> {
                     text(state.language.text(label)).size(12),
                     tooltip::Position::Bottom,
                 )
-                .style(styles::surface)
+                .style(styles::popup)
                 .into()
             };
         row![
@@ -108,6 +106,8 @@ pub(super) fn view(state: &Runtime) -> Element<'_, Message> {
     row![
         controls,
         grip(Fill, Fill, Command::Drag),
+        super::appearance::picker(state),
+        Space::new().width(8),
         theme_button(state)
     ]
     .padding([0, 8])

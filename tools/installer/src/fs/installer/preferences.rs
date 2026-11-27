@@ -6,11 +6,14 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Appearance {
+    #[default]
+    System,
     Dark,
     Light,
+    Palette(String),
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -24,7 +27,7 @@ pub enum Language {
     Japanese,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize)]
 pub struct Preferences {
     pub appearance: Option<Appearance>,
     pub language: Option<Language>,
@@ -208,8 +211,13 @@ mod tests {
     fn each_appearance_roundtrips_and_unknown_fields_survive() {
         let fixture = Fixture::new();
         fs::write(fixture.path(), br#"{"future":{"enabled":true},"count":7}"#).unwrap();
-        for mode in [Appearance::Dark, Appearance::Light, Appearance::Dark] {
-            save_to(&fixture.path(), appearance(mode)).unwrap();
+        for mode in [
+            Appearance::Dark,
+            Appearance::Light,
+            Appearance::Palette("Nord".into()),
+            Appearance::System,
+        ] {
+            save_to(&fixture.path(), appearance(mode.clone())).unwrap();
             assert_eq!(load_from(&fixture.path()).unwrap().appearance, Some(mode));
             let value: Value = serde_json::from_slice(&fs::read(fixture.path()).unwrap()).unwrap();
             assert_eq!(value["future"]["enabled"], true);

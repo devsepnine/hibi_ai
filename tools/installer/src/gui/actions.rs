@@ -1,6 +1,7 @@
 use crossterm::event::KeyCode;
 
 use crate::app::{ComponentFilter, HiddenVisibility, Tab, TargetCli, View};
+use crate::fs::installer::preferences::Appearance;
 use crate::{cli, loading};
 
 use super::filters::Choice;
@@ -27,6 +28,7 @@ pub enum Action {
     SetProjectPath(String),
     SetEnvInput(String),
     ToggleTheme,
+    SetAppearance(Appearance),
     SetLanguage(super::Language),
     OpenSources,
     SelectSource(usize),
@@ -123,6 +125,33 @@ impl Runtime {
                 return;
             }
             _ if self.removal_pending() => return,
+            Action::SetAppearance(choice) => {
+                self.appearance.request_theme(choice.clone());
+                self.theme_choice = choice;
+                return;
+            }
+            Action::Key(KeyCode::Char('t'))
+                if self
+                    .app
+                    .as_ref()
+                    .is_some_and(|app| app.current_view == View::List) =>
+            {
+                self.dispatch(Action::ToggleTheme);
+                let message = format!("Theme: {}", super::theme(self));
+                if let Some(app) = &mut self.app {
+                    app.status_message = Some(message);
+                }
+                return;
+            }
+            Action::ToggleTheme => {
+                let choice = if super::theme(self).extended_palette().is_dark {
+                    Appearance::Light
+                } else {
+                    Appearance::Dark
+                };
+                self.dispatch(Action::SetAppearance(choice));
+                return;
+            }
             Action::Key(KeyCode::Char('o'))
                 if self.app.as_ref().is_some_and(|app| {
                     app.current_view == View::List
@@ -162,13 +191,7 @@ impl Runtime {
             }
             _ => {}
         }
-        let previous_theme = self.app.as_ref().map(|app| app.theme.mode());
         let result = self.apply(action);
-        if let Some(app) = self.app.as_mut()
-            && previous_theme != Some(app.theme.mode())
-        {
-            self.appearance.request_theme(app.theme.mode());
-        }
         if let Err(error) = result {
             let message = format!("{error:#}");
             if let Some(app) = self.app.as_mut() {
@@ -197,7 +220,6 @@ impl Runtime {
             return Ok(());
         };
         match action {
-            Action::ToggleTheme => app.theme.toggle(),
             Action::InstallSelected if app.current_view == View::List => {
                 app.focus_content();
                 app.install_selected()?;

@@ -4,7 +4,6 @@ use anyhow::Result;
 
 use crate::app::App;
 use crate::fs::installer::preferences::{self, Appearance, Language, Preferences};
-use crate::theme::ThemeMode;
 
 #[derive(Default)]
 pub(super) struct Writer {
@@ -13,13 +12,10 @@ pub(super) struct Writer {
 }
 
 impl Writer {
-    pub fn request_theme(&mut self, mode: ThemeMode) {
+    pub fn request_theme(&mut self, choice: Appearance) {
         self.pending
             .get_or_insert_with(Preferences::default)
-            .appearance = Some(match mode {
-            ThemeMode::Mocha => Appearance::Dark,
-            ThemeMode::Latte => Appearance::Light,
-        });
+            .appearance = Some(choice);
     }
 
     pub fn request_language(&mut self, language: Language) {
@@ -60,24 +56,13 @@ impl Writer {
     }
 }
 
-pub(super) fn restore(app: &mut App, settings: Result<Preferences>) {
-    match settings {
-        Ok(settings) => {
-            if let Some(appearance) = settings.appearance
-                && (appearance == Appearance::Dark) != (app.theme.mode() == ThemeMode::Mocha)
-            {
-                app.theme.toggle();
-            }
-        }
-        Err(error) => {
-            let warning = format!("Could not load display settings: {error:#}");
-            let message = app.status_message.get_or_insert_with(String::new);
-            if !message.is_empty() {
-                message.push_str("; ");
-            }
-            message.push_str(&warning);
-        }
+pub(super) fn report_load_error(app: &mut App, error: anyhow::Error) {
+    let warning = format!("Could not load display settings: {error:#}");
+    let message = app.status_message.get_or_insert_with(String::new);
+    if !message.is_empty() {
+        message.push_str("; ");
     }
+    message.push_str(&warning);
 }
 
 #[cfg(test)]
@@ -92,9 +77,9 @@ mod tests {
             pending: None,
         };
         writer.request_language(Language::Japanese);
-        writer.request_theme(ThemeMode::Mocha);
+        writer.request_theme(Appearance::Dark);
         writer.request_language(Language::Korean);
-        writer.request_theme(ThemeMode::Latte);
+        writer.request_theme(Appearance::Light);
         assert!(writer.tick().is_none());
         assert_eq!(
             writer.pending,
