@@ -38,3 +38,28 @@ if (Test-Path -LiteralPath $marker) {
 if ((& $hibi --version) -ne "hibi v$Version (Config Installer)" -or $LASTEXITCODE -ne 0) {
     throw 'The upgraded executable did not report the expected version.'
 }
+
+$existing = @(Get-Process hibi -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id)
+function Get-LaunchedHibi {
+    Get-Process hibi -ErrorAction SilentlyContinue |
+        Where-Object { $_.Id -notin $existing -and $_.Path -eq $hibi }
+}
+
+# cmd waits for console executables. Its private console closes when cmd exits.
+$shell = Start-Process -FilePath $env:ComSpec -ArgumentList "/d /c `"`"$hibi`"`"" -PassThru
+try {
+    if (!$shell.WaitForExit(15000) -or $shell.ExitCode -ne 0) {
+        throw 'Launching the desktop installer did not return control to cmd.'
+    }
+    $deadline = [DateTime]::UtcNow.AddSeconds(30)
+    do {
+        $window = Get-LaunchedHibi | Where-Object { $_.MainWindowTitle -eq 'HIBI AI' }
+        if ($window) { break }
+        Start-Sleep -Milliseconds 150
+    } while ([DateTime]::UtcNow -lt $deadline)
+    if (!$window) { throw 'The HIBI AI window did not survive its launching console.' }
+} finally {
+    Get-LaunchedHibi | Stop-Process -Force
+    if (!$shell.HasExited) { $shell.Kill() }
+    $shell.Dispose()
+}

@@ -1,6 +1,6 @@
 [package]
 name = "hibi_ai"
-version = "2.1.2"
+version = "2.1.3"
 edition = "2024"
 rust-version = "1.89"
 
@@ -71,6 +71,7 @@ wait-timeout = "0.2"
 command-group = "5"
 
 [target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_System_Console", "Win32_System_Threading"] }
 base64 = { version = "0.22", optional = true }
 dunce = { version = "1", optional = true }
 

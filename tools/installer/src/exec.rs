@@ -8,8 +8,10 @@ use std::sync::mpsc::{self, Receiver, RecvTimeoutError};
 use std::thread;
 use std::time::{Duration, Instant};
 
+#[cfg(feature = "gui")]
+use anyhow::Context;
 use anyhow::Result;
-use command_group::CommandGroup;
+use command_group::{CommandGroup, GroupChild};
 use wait_timeout::ChildExt;
 
 // Read both pipes while the CLI runs. A large MCP inventory can fill one before it exits.
@@ -23,15 +25,63 @@ fn drain(mut pipe: impl Read + Send + 'static) -> Receiver<std::io::Result<Vec<u
     rx
 }
 
-/// A relaunched application or desktop opener must survive the current GUI.
+#[cfg(feature = "gui")]
+pub(crate) fn launch_gui_from_terminal() -> Result<bool> {
+    #[cfg(unix)]
+    let attached = {
+        use std::io::{IsTerminal, stderr, stdin, stdout};
+        stdin().is_terminal()
+            || stdout().is_terminal()
+            || stderr().is_terminal()
+            // Redirection leaves the controlling terminal attached to the session.
+            || std::fs::File::open("/dev/tty").is_ok()
+    };
+    #[cfg(windows)]
+    let attached = unsafe { windows_sys::Win32::System::Console::GetConsoleCP() != 0 };
+    if !attached {
+        return Ok(false);
+    }
+
+    let mut child = Command::new(std::env::current_exe()?);
+    child.args(std::env::args_os().skip(1));
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        // Only async-signal-safe operations may run between fork and exec.
+        unsafe {
+            child.pre_exec(|| {
+                if libc::setsid() == -1 {
+                    return Err(std::io::Error::last_os_error());
+                }
+                Ok(())
+            });
+        }
+    }
+    launch(&mut child)
+        .context("Cannot launch the desktop installer independently of the terminal")?;
+    Ok(true)
+}
+
 #[cfg(feature = "gui")]
 pub(crate) fn launch(command: &mut Command) -> Result<()> {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(windows_sys::Win32::System::Threading::DETACHED_PROCESS);
+    }
     command
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()?;
     Ok(())
+}
+
+pub(crate) fn spawn_background_group(command: &mut Command) -> std::io::Result<GroupChild> {
+    let mut group = command.group();
+    #[cfg(windows)]
+    group.creation_flags(windows_sys::Win32::System::Threading::CREATE_NO_WINDOW);
+    group.spawn()
 }
 
 /// Run `command` and return its output, or `None` when it outlives
@@ -45,11 +95,11 @@ pub fn run_with_timeout(
     timeout_secs: u64,
     on_spawn_error: impl FnOnce(&Command, std::io::Error) -> anyhow::Error,
 ) -> Result<Option<Output>> {
-    let spawned = command
+    command
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .group_spawn();
+        .stderr(Stdio::piped());
+    let spawned = spawn_background_group(command);
     let mut child = match spawned {
         Ok(child) => child,
         Err(err) => return Err(on_spawn_error(command, err)),

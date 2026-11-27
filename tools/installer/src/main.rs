@@ -54,6 +54,9 @@ fn main() -> Result<()> {
     if !args.iter().any(|a| a == "--tui") {
         #[cfg(target_os = "linux")]
         require_graphical_display(|name| std::env::var_os(name))?;
+        if exec::launch_gui_from_terminal()? {
+            return Ok(());
+        }
         return std::panic::catch_unwind(gui::run)
             .map_err(|_| {
                 anyhow::anyhow!(

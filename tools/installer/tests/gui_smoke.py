@@ -70,7 +70,8 @@ esac
         existing = {w.id for w in self.root.query_tree().children}
         self.process = subprocess.Popen([str(self.args.binary.resolve())], env=env,
                                         cwd=Path(__file__).resolve().parents[3],
-                                        stdin=subprocess.DEVNULL, stdout=self.log, stderr=self.log)
+                                        start_new_session=True, stdin=subprocess.DEVNULL,
+                                        stdout=self.log, stderr=self.log)
         deadline = time.monotonic() + 15
         while time.monotonic() < deadline:
             if self.process.poll() is not None:

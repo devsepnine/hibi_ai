@@ -1,5 +1,5 @@
 use anyhow::Result;
-use command_group::{CommandGroup, GroupChild};
+use command_group::GroupChild;
 use std::io::{BufRead, BufReader, Read};
 use std::process::{Command, Stdio};
 use std::sync::mpsc::Receiver;
@@ -80,12 +80,12 @@ pub(super) fn run_until_output(
         anyhow::bail!("Cancelled by user");
     }
 
-    let mut child = command
+    command
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .group_spawn()
-        .map_err(|e| enrich_spawn_error(command, e))?;
+        .stderr(Stdio::piped());
+    let mut child =
+        crate::exec::spawn_background_group(command).map_err(|e| enrich_spawn_error(command, e))?;
 
     let stdout = child.inner().stdout.take().unwrap();
     let stderr = child.inner().stderr.take().unwrap();
