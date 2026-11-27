@@ -38,7 +38,8 @@ jobs:
           $env:PATH = "$env:SCOOP\shims;$env:PATH"
           $source = Join-Path $env:RUNNER_TEMP 'candidate-bucket'
           git clone -q https://github.com/devsepnine/scoop-bucket $source
-          scoop bucket add hibi-review $source
+          scoop bucket add hibi-review https://github.com/devsepnine/scoop-bucket
+          git -C "$env:SCOOP/buckets/hibi-review" remote set-url origin $source
           scoop install hibi-review/hibi-ai
           if ((hibi --version) -ne 'hibi v2.0.0 (Config Installer)') { throw 'Previous version not installed' }
           Copy-Item verification/hibi-ai.json "$source/hibi-ai.json" -Force

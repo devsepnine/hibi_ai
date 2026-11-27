@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 import pty
-import select
+import tempfile
 import signal
 import subprocess
 import sys
@@ -15,18 +15,11 @@ def start(*args):
         os.execv(str(exe), [str(exe), *args])
     return pid, master
 
-pid, master = start("--tui")
-try:
-    data = b""
-    until = time.monotonic() + 25
-    while time.monotonic() < until and b"Claude" not in data:
-        if select.select([master], [], [], 1)[0]:
-            data += os.read(master, 65536)
-    assert b"Claude" in data, data[-500:]
-finally:
-    os.kill(pid, signal.SIGTERM)
-    os.close(master)
-    os.waitpid(pid, 0)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools/installer/tests"))
+from cli_smoke import terminal
+
+with tempfile.TemporaryDirectory() as home:
+    terminal(exe, Path(home), dict(os.environ, HOME=home, TERM="xterm-256color"), quit_at_picker=True)
 pid, master = start()
 gui = None
 try:
