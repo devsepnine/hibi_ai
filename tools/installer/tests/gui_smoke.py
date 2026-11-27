@@ -41,6 +41,35 @@ def text_layer(image, dark):
     return ink.point(lambda value: (value - 25) * 255 / (130 - 25))
 
 
+def bordered_labels(image):
+    # Pair the straight top and bottom edges so gradients and rounded outlines
+    # stay outside the single-line OCR input.
+    gray = ImageOps.grayscale(image)
+    edges = ImageChops.difference(gray, ImageChops.offset(gray, 0, 1))
+    edges = edges.point(lambda delta: 255 if delta >= 14 else 0).tobytes()
+    previous = []
+    seen = []
+    for y in range(1, image.height):
+        previous = [line for line in previous if y - line[0] <= 52]
+        row = edges[y * image.width:(y + 1) * image.width]
+        for run in re.finditer(b"\xff{14,}", row):
+            left, right = run.span()
+            for top, start, end in reversed(previous):
+                if y - top < 22 or abs(start - left) > 7 or abs(end - right) > 7:
+                    continue
+                if any(abs(left - x) < 8 and abs(y - bottom) < 6 for x, bottom in seen):
+                    break
+                seen.append((left, y))
+                x, top = min(start, left) + 1, top + 3
+                label = gray.crop((x, top, max(end, right) - 1, y - 3))
+                if label.resize((1, 1)).getpixel((0, 0)) < 128:
+                    label = ImageOps.invert(label)
+                label = ImageOps.expand(ImageOps.autocontrast(label), border=8, fill=255)
+                yield label, x - 8, top - 8, "7"
+                break
+            previous.append((y, left, right))
+
+
 class Desktop:
     def __init__(self, args):
         self.args = args
@@ -124,10 +153,6 @@ esac
         bar_top = image.height - 126
         regions.append((image.crop((245, bar_top, image.width - 12, image.height - 64)),
                         245, bar_top, "11"))
-        # A single text line removes the glass buttons' top and bottom borders.
-        actions_left = image.width - 360
-        regions.append((image.crop((actions_left, bar_top + 16, image.width - 40, bar_top + 41)),
-                        actions_left, bar_top + 16, "7"))
         install_left = image.width - 125
         regions.append((image.crop((install_left, bar_top + 8, image.width - 23, image.height - 75)),
                         install_left, bar_top + 8, "7"))
@@ -239,6 +264,11 @@ esac
                     bounds = self.label_bounds(nearby, label, region)
                     if bounds is not None:
                         return label, bounds
+            controls = self.recognize(bordered_labels(frame), frame.height)
+            for label in labels:
+                bounds = self.label_bounds(controls, label, region)
+                if bounds is not None:
+                    return label, bounds
         recognized = " ".join(word["text"] for word in words)
         raise AssertionError(f"Could not locate any of {labels!r}; recognized: {recognized}")
 
