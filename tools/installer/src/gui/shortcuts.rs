@@ -1,8 +1,19 @@
 use super::{Message, actions::Action, runtime::Runtime};
-use crate::app::{App, FocusArea, View};
+use crate::app::{App, CliChoice, FocusArea, View};
 use crossterm::event::KeyCode;
 use iced::{Subscription, Task};
 use std::time::Duration;
+
+pub(super) fn picker_arrow(choice: CliChoice, key: KeyCode) -> Option<CliChoice> {
+    Some(match (choice, key) {
+        (CliChoice::Claude, KeyCode::Right) => CliChoice::Codex,
+        (CliChoice::Codex, KeyCode::Left) => CliChoice::Claude,
+        (CliChoice::Claude | CliChoice::Codex, KeyCode::Down) => CliChoice::Sources,
+        (CliChoice::Sources, KeyCode::Up) => CliChoice::Codex,
+        (_, KeyCode::Left | KeyCode::Right | KeyCode::Up | KeyCode::Down) => choice,
+        _ => return None,
+    })
+}
 
 pub(super) fn sidebar_key(key: KeyCode) -> KeyCode {
     match key {
@@ -12,28 +23,6 @@ pub(super) fn sidebar_key(key: KeyCode) -> KeyCode {
         KeyCode::Left | KeyCode::Char('h') => KeyCode::Null,
         key => key,
     }
-}
-
-pub(super) fn navigation_focus(
-    message: &Message,
-) -> Option<impl iced::advanced::widget::Operation<Message> + use<>> {
-    matches!(
-        message,
-        Message::Action(
-            Action::SelectTab(_)
-                | Action::SelectRow(_)
-                | Action::ToggleRow(_)
-                | Action::ExpandRow(_)
-                | Action::HideSelectedFolders
-                | Action::UnhideSelectedFolders
-                | Action::SetFilter(..)
-                | Action::SetHiddenVisibility(_)
-                | Action::ClearSearch
-                | Action::Command(_)
-                | Action::Key(KeyCode::Tab | KeyCode::BackTab | KeyCode::Char('1' | '2'))
-        )
-    )
-    .then(|| iced::advanced::widget::operation::focusable::focus("component-list".into()))
 }
 
 pub(super) fn scroll_after_key(app: &App, key: KeyCode) -> Task<Message> {
@@ -97,7 +86,7 @@ pub(super) fn scroll_after_key(app: &App, key: KeyCode) -> Task<Message> {
                 operation::snap_to("component-list", RelativeOffset { x: 0.0, y }),
             ])
         }
-        View::Diff | View::Help
+        View::Diff | View::Help | View::ConfirmRemove
             if matches!(key, KeyCode::Up | KeyCode::Down | KeyCode::Char('j' | 'k')) =>
         {
             let y = if matches!(key, KeyCode::Up | KeyCode::Char('k')) {
@@ -106,10 +95,10 @@ pub(super) fn scroll_after_key(app: &App, key: KeyCode) -> Task<Message> {
                 32.0
             };
             operation::scroll_by(
-                if app.current_view == View::Diff {
-                    "diff"
-                } else {
-                    "help"
+                match app.current_view {
+                    View::Diff => "diff",
+                    View::ConfirmRemove => "remove-items",
+                    _ => "help",
                 },
                 AbsoluteOffset { x: 0.0, y },
             )
@@ -151,18 +140,16 @@ pub(super) fn event_message(event: iced::Event, status: iced::event::Status) -> 
     if let iced::Event::Window(iced::window::Event::Resized(size)) = event {
         return Some(Message::Resized(size));
     }
-    if let iced::Event::Keyboard(iced::keyboard::Event::KeyPressed { key, modifiers, .. }) = &event
+    if status == iced::event::Status::Captured
+        && matches!(
+            event,
+            iced::Event::Keyboard(iced::keyboard::Event::KeyPressed {
+                key: iced::keyboard::Key::Named(iced::keyboard::key::Named::Escape),
+                ..
+            })
+        )
     {
-        if modifiers.command()
-            && matches!(key, iced::keyboard::Key::Character(value) if value.eq_ignore_ascii_case("f"))
-        {
-            return Some(Message::FocusSearch);
-        }
-        if status == iced::event::Status::Captured
-            && *key == iced::keyboard::Key::Named(iced::keyboard::key::Named::Escape)
-        {
-            return Some(Message::SearchEscape);
-        }
+        return Some(Message::SearchEscape);
     }
     if status == iced::event::Status::Captured {
         return None;

@@ -7,7 +7,7 @@ use iced::{Element, Fill};
 
 const ROW_HEIGHT: f32 = 40.0;
 
-pub fn items(lang: Language, app: &App) -> Column<'_, Message> {
+pub fn items(lang: Language, app: &App, has_focus: bool) -> Column<'_, Message> {
     let mut rows = Column::new().spacing(2).padding(6).width(Fill);
     let mut count = 0;
     if app.tab == Tab::McpServers {
@@ -16,7 +16,7 @@ pub fn items(lang: Language, app: &App) -> Column<'_, Message> {
                 lang,
                 index,
                 item.selected,
-                index == app.mcp_index,
+                has_focus && index == app.mcp_index,
                 &item.def.name,
                 item.status.display(),
                 &item.source_name,
@@ -45,7 +45,7 @@ pub fn items(lang: Language, app: &App) -> Column<'_, Message> {
                 lang,
                 index,
                 item.selected,
-                index == app.plugin_index,
+                has_focus && index == app.plugin_index,
                 &item.def.name,
                 item.status.display(),
                 &item.source_name,
@@ -98,7 +98,7 @@ pub fn items(lang: Language, app: &App) -> Column<'_, Message> {
                         ]
                         .align_y(iced::Center)
                     )
-                    .style(if tree.cursor == index {
+                    .style(if has_focus && tree.cursor == index {
                         styles::focused_row
                     } else {
                         styles::subtle
@@ -138,7 +138,7 @@ pub fn items(lang: Language, app: &App) -> Column<'_, Message> {
                         lang,
                         index,
                         item.selected,
-                        tree.cursor == index,
+                        has_focus && tree.cursor == index,
                         item.name.rsplit('/').next().unwrap_or(&item.name),
                         item.status.display(),
                         &item.source_name,

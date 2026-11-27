@@ -55,6 +55,7 @@ impl From<ComponentFilter> for ComponentFilters {
 }
 
 impl ComponentFilters {
+    #[cfg(any(feature = "gui", test))]
     pub fn contains(&self, filter: ComponentFilter) -> bool {
         if filter == ComponentFilter::All {
             self.selected.is_empty()
@@ -101,6 +102,7 @@ impl ComponentFilters {
 }
 
 impl App {
+    #[cfg(any(feature = "gui", test))]
     pub fn set_component_filter(&mut self, filter: ComponentFilter, checked: bool) {
         if self.tab.to_component_type().is_none() {
             return;
@@ -249,8 +251,10 @@ mod tests {
         app.install_selected().unwrap();
         assert_eq!(app.processing_queue, [0, 2]);
         app.close_processing();
-        app.remove_confirmed(2).unwrap();
-        assert_eq!(app.processing_queue, [0, 2]);
+        app.request_removal();
+        assert_eq!(app.pending_removal_items().len(), 1);
+        app.confirm_removal().unwrap();
+        assert_eq!(app.processing_queue, [0]);
         app.close_processing();
         app.tab = Tab::McpServers;
         let before = app.component_filter.clone();

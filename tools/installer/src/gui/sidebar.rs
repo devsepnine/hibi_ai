@@ -4,9 +4,9 @@ use iced::widget::{Space, button, column, container, row, rule, scrollable, svg,
 use iced::{Element, Fill};
 
 use super::{Message, actions::Action, key_button, styles};
-use crate::app::{App, FocusArea, Tab, TargetCli};
+use crate::app::{App, Tab, TargetCli};
 
-pub fn view(lang: Language, app: &App) -> Element<'_, Message> {
+pub fn view(lang: Language, app: &App, focused: bool) -> Element<'_, Message> {
     let mut navigation = column![].spacing(4);
     for tab in &app.available_tabs {
         let count = count(app, *tab);
@@ -23,10 +23,10 @@ pub fn view(lang: Language, app: &App) -> Element<'_, Message> {
             )
             .width(Fill)
             .padding([8, 10])
-            .style(if *tab == app.tab {
-                styles::navigation
-            } else {
-                styles::subtle
+            .style(match (*tab == app.tab, focused) {
+                (true, true) => styles::focused_row,
+                (true, _) => styles::navigation,
+                _ => styles::subtle,
             })
             .on_press(Message::Action(Action::SelectTab(*tab))),
         );
@@ -36,13 +36,11 @@ pub fn view(lang: Language, app: &App) -> Element<'_, Message> {
             text(lang.text("Workspace")).size(11).style(styles::muted),
             workspace(lang, app),
             rule::horizontal(1).style(styles::divider),
-            text(lang.text("Components"))
-                .size(11)
-                .style(if app.focus == FocusArea::Tabs {
-                    text::primary
-                } else {
-                    styles::muted
-                }),
+            text(lang.text("Components")).size(11).style(if focused {
+                text::primary
+            } else {
+                styles::muted
+            }),
             scrollable(navigation)
                 .id("component-sidebar")
                 .direction(scrollable::Direction::Vertical(
@@ -71,7 +69,7 @@ pub fn view(lang: Language, app: &App) -> Element<'_, Message> {
     .padding(16)
     .width(208)
     .height(Fill)
-    .style(styles::sidebar)
+    .style(styles::glass)
     .into()
 }
 

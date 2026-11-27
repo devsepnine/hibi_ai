@@ -106,7 +106,6 @@ catalog! {
     "No environment variable is awaiting a value" => "입력할 환경 변수가 없습니다", "入力待ちの環境変数はありません";
     "Minimize" => "최소화", "最小化";
     "Maximize or restore" => "최대화 또는 복원", "最大化または元に戻す";
-    "Your AI workspace" => "내 AI 작업 공간", "AI ワークスペース";
     "Your workspace, configured." => "작업 공간 설정", "ワークスペースの設定";
     "Manage the instructions, tools and workflows your AI assistants use." => "AI 도우미가 사용할 지침, 도구, 워크플로를 관리하세요.", "AI アシスタントが使う指示、ツール、ワークフローを管理します。";
     "Agents, skills, hooks, MCP servers and plugins" => "에이전트, 스킬, 훅, MCP 서버, 플러그인", "エージェント、スキル、フック、MCP サーバー、プラグイン";
@@ -209,8 +208,10 @@ catalog! {
     "The window closes when the active operation stops." => "진행 중인 작업이 중지되면 창을 닫습니다.", "実行中の処理が停止するとウィンドウが閉じます。";
     "Pending selections will be discarded." => "아직 적용하지 않은 선택은 취소됩니다.", "未適用の選択は破棄されます。";
     "Close application" => "앱 종료", "アプリを終了";
-    "This removes the selected installed items in the current category from this environment, including selected external files." => "선택한 외부 파일을 포함하여 현재 범주에서 선택한 설치 항목을 이 환경에서 제거합니다.", "選択した外部ファイルを含め、現在のカテゴリで選択したインストール済み項目をこの環境から削除します。";
     "This action cannot be undone." => "이 작업은 되돌릴 수 없습니다.", "この操作は取り消せません。";
+    "Remove 1 selected item?" => "선택한 항목 1개를 제거할까요?", "選択した 1 件を削除しますか？";
+    "Y to remove · Esc to cancel" => "Y로 제거 · Esc로 취소", "Yで削除 · Escでキャンセル";
+    "Tab or arrow keys to move · Enter to select" => "Tab 또는 방향키로 이동 · Enter로 선택", "Tabまたは矢印キーで移動 · Enterで選択";
     "Remove items" => "항목 제거", "項目を削除";
     "Search" => "검색", "検索";
     "Focus category search" => "범주 검색창으로 이동", "カテゴリ検索に移動";
@@ -227,7 +228,8 @@ catalog! {
     "Focus categories or component list" => "범주 또는 구성 요소 목록으로 이동", "カテゴリまたはコンポーネント一覧に移動";
     "Switch between categories and component list" => "범주와 구성 요소 목록 간 전환", "カテゴリとコンポーネント一覧を切り替え";
     "View changes or open a folder" => "변경 내용 확인 또는 폴더 열기", "差分を表示、またはフォルダーを開く";
-    "Cycle the status filter" => "다음 상태 필터로 전환", "状態フィルターを順に切り替え";
+    "Open or close filters" => "필터 열기 또는 닫기", "フィルターを開くか閉じる";
+    "Move within filters, then apply a choice" => "필터 안에서 이동한 뒤 선택 적용", "フィルター内を移動して選択を適用";
     "Expand or collapse all folders" => "모든 폴더 펼치기 또는 접기", "すべてのフォルダーを展開または折りたたむ";
     "Manage components" => "구성 요소 관리", "コンポーネントの管理";
     "Install selected items" => "선택 항목 설치", "選択した項目をインストール";
@@ -311,6 +313,8 @@ catalog! {
     "Dark theme" => "다크 테마", "ダークテーマ";
     "Cancelled" => "취소됨", "キャンセルしました";
     "No items selected" => "선택한 항목이 없습니다", "項目が選択されていません";
+    "No selected items can be installed in this view." => "현재 보이는 선택 항목 중 설치할 수 있는 항목이 없습니다.", "現在表示中の選択項目にインストールできる項目がありません。";
+    "No selected items are installed and removable in this view." => "현재 보이는 선택 항목 중 제거할 수 있는 설치 항목이 없습니다.", "現在表示中の選択項目に削除できるインストール済み項目がありません。";
     "No selected configuration items can be removed. Check the diff for details." => "선택한 설정 항목은 제거할 수 없습니다. 차이를 확인하세요.", "選択した設定項目は削除できません。差分を確認してください。";
     "Selected configuration items cannot be installed. Check the diff for details." => "선택한 설정 항목은 설치할 수 없습니다. 차이를 확인하세요.", "選択した設定項目はインストールできません。差分を確認してください。";
     "Enter an existing project directory." => "기존 프로젝트 디렉터리를 입력하세요.", "既存のプロジェクトディレクトリを入力してください。";

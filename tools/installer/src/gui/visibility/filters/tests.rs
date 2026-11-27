@@ -33,7 +33,7 @@ fn unified_filters_keep_visibility_in_the_overlay_and_count_active_conditions() 
     desktop.click("New");
     desktop.click("Hidden only");
     assert_eq!(desktop.filters_label(), "Filters · 3");
-    assert!(desktop.state.filter_menu_open);
+    assert!(desktop.state.filter_choice.is_some());
     desktop.click("Default");
     assert_eq!(desktop.filters_label(), "Filters · 1");
     desktop.click("Visible only");
@@ -141,15 +141,15 @@ fn status_dropdown_keeps_multiple_checkboxes_open_and_default_resets_them() {
 fn escape_and_selecting_a_row_close_the_status_menu_without_losing_selection() {
     let mut desktop = Desktop::new();
     desktop.open_filters();
-    assert!(desktop.state.filter_menu_open);
+    assert!(desktop.state.filter_choice.is_some());
     desktop
         .state
         .dispatch(Action::Key(crossterm::event::KeyCode::Esc));
-    assert!(!desktop.state.filter_menu_open);
+    assert!(desktop.state.filter_choice.is_none());
     assert_eq!(desktop.app().current_view, crate::app::View::List);
     desktop.open_filters();
     desktop.click("visible");
-    assert!(!desktop.state.filter_menu_open);
+    assert!(desktop.state.filter_choice.is_none());
     assert!(desktop.app().components[0].selected);
 }
 
@@ -161,7 +161,11 @@ fn hidden_only_bounds_work_queues_and_search_without_touching_visible_files() {
     app.install_selected().unwrap();
     assert_eq!(app.processing_queue, [1, 2]);
     app.close_processing();
-    app.remove_confirmed(2).unwrap();
+    app.components[1].status = crate::component::InstallStatus::Modified;
+    app.components[2].status = crate::component::InstallStatus::Modified;
+    app.request_removal();
+    assert_eq!(app.pending_removal_items().len(), 2);
+    app.confirm_removal().unwrap();
     assert_eq!(app.processing_queue, [1, 2]);
     app.close_processing();
     app.set_search_query("other-hidden".into());
@@ -216,7 +220,7 @@ fn clicking_outside_the_dropdown_closes_it_without_selecting_the_row_underneath(
     let mut desktop = Desktop::new();
     desktop.open_filters();
     desktop.click("other-hidden");
-    assert!(!desktop.state.filter_menu_open);
+    assert!(desktop.state.filter_choice.is_none());
     assert_eq!(desktop.app().get_tree_view().unwrap().cursor, 0);
 }
 

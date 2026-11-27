@@ -66,18 +66,19 @@ fn version_stays_in_the_bottom_right_when_status_appears() {
     let mut tree = Tree::new(super::view(&state).as_widget());
     for (width, height) in [(760, 560), (1120, 780)] {
         state.window_size = Size::new(width as f32, height as f32);
+        state.updater = super::updates::State::Idle;
         state.app.as_mut().unwrap().status_message = None;
         let idle = render_page(&state, &mut tree, &mut renderer);
         state.app.as_mut().unwrap().status_message = Some("Refreshing components".into());
         let busy = render_page(&state, &mut tree, &mut renderer);
+        state.updater = super::updates::State::Checking;
+        let checking = render_page(&state, &mut tree, &mut renderer);
         let mut has_version = false;
-        for y in height - 24..height {
+        for y in height - 36..height {
             let start = (y * width + width - 80) * 4;
             let end = (y + 1) * width * 4;
             assert_eq!(&idle[start..end], &busy[start..end]);
-            has_version |= idle[start..end]
-                .chunks_exact(4)
-                .any(|pixel| pixel != &idle[..4]);
+            has_version |= idle[start..end] != checking[start..end];
         }
         assert!(has_version);
     }
@@ -94,11 +95,19 @@ fn theme_changes_repaint_the_entire_page_background() {
             app.theme.toggle();
         }
         let pixels = render_page(&state, &mut tree, &mut renderer);
-        let expected = if dark { [30, 30, 46] } else { [245, 245, 250] };
-        for (x, y) in [(0, 0), (1119, 0), (0, 779), (1119, 779)] {
+        let corners = [(0, 0), (1119, 0), (0, 779), (1119, 779)].map(|(x, y)| {
             let offset = (y * 1120 + x) * 4;
-            assert_eq!(&pixels[offset..offset + 3], &expected);
+            &pixels[offset..offset + 4]
+        });
+        for pixel in corners {
+            assert_eq!(pixel[3], 255);
+            assert!(pixel[..3].iter().all(|&channel| if dark {
+                channel < 100
+            } else {
+                channel > 200
+            }));
         }
+        assert_ne!(corners[0], corners[3]);
     }
 }
 
@@ -298,13 +307,7 @@ impl Desktop {
     }
 
     fn message(&mut self, message: Message) {
-        let focus = shortcuts::navigation_focus(&message);
         let _ = super::update(&mut self.state, message);
-        if super::search_available(&self.state)
-            && let Some(mut focus) = focus
-        {
-            self.operate(&mut focus);
-        }
     }
 
     fn key(&mut self, name: key::Named) -> iced::event::Status {
@@ -323,6 +326,36 @@ impl Desktop {
             text: None,
             repeat: false,
         });
+        self.event(event, mouse::Cursor::Unavailable)
+    }
+
+    fn click_label(&mut self, label: &str) {
+        struct Label<'a>(&'a str, Option<Rectangle>);
+        impl Operation<Message> for Label<'_> {
+            fn traverse(&mut self, visit: &mut dyn FnMut(&mut dyn Operation<Message>)) {
+                visit(self);
+            }
+
+            fn text(&mut self, _: Option<&iced::widget::Id>, bounds: Rectangle, value: &str) {
+                if value == self.0 {
+                    self.1 = Some(bounds);
+                }
+            }
+        }
+        let mut label = Label(label, None);
+        self.operate(&mut label);
+        let cursor = mouse::Cursor::Available(label.1.expect("visible label").center());
+        self.event(
+            Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)),
+            cursor,
+        );
+        self.event(
+            Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)),
+            cursor,
+        );
+    }
+
+    fn event(&mut self, event: Event, cursor: mouse::Cursor) -> iced::event::Status {
         let mut root = super::view(&self.state);
         self.tree.diff(root.as_widget());
         let node = root.as_widget_mut().layout(
@@ -336,7 +369,7 @@ impl Desktop {
             &mut self.tree,
             &event,
             Layout::new(&node),
-            mouse::Cursor::Unavailable,
+            cursor,
             &self.renderer,
             &mut clipboard::Null,
             &mut shell,
@@ -386,12 +419,13 @@ fn baseline_logical_focus_alone_leaves_search_capturing_folder_arrows() {
 fn clicking_navigation_releases_native_search_focus_before_handling_arrows() {
     let mut desktop = Desktop::new();
     desktop.focus_search();
-    desktop.message(Message::Action(Action::SelectTab(Tab::Skills)));
+    desktop.click_label("Config");
+    assert_eq!(desktop.app().focus, FocusArea::Tabs);
     desktop.key(key::Named::ArrowDown);
-    assert_eq!(desktop.app().tab, Tab::Config);
-    desktop.message(Message::Action(Action::SelectTab(Tab::Skills)));
+    assert_eq!(desktop.app().tab, Tab::McpServers);
+    desktop.click_label("Skills");
     desktop.focus_search();
-    desktop.message(Message::Action(Action::SelectRow(0)));
+    desktop.click_label("folder");
     assert_eq!(
         desktop.key(key::Named::ArrowLeft),
         iced::event::Status::Ignored
@@ -512,4 +546,35 @@ fn version_button_emits_check_and_update_confirmation_blocks_background_actions(
     assert!(matches!(state.updater, State::Offer(_)));
     let _ = super::update(&mut state, Message::Action(Action::Key(KeyCode::Esc)));
     assert!(matches!(state.updater, State::Idle));
+}
+
+#[test]
+fn home_right_arrow_moves_visible_focus_to_codex() {
+    let mut desktop = Desktop::new();
+    desktop.state.app.as_mut().unwrap().current_view = View::CliSelection;
+    let before = render_page(&desktop.state, &mut desktop.tree, &mut desktop.renderer);
+    desktop.key(key::Named::ArrowRight);
+    assert_eq!(desktop.app().cli_choice, crate::app::CliChoice::Codex);
+    let after = render_page(&desktop.state, &mut desktop.tree, &mut desktop.renderer);
+    assert!(before != after, "the focused card must visibly change");
+}
+
+#[test]
+fn keyboard_can_open_filter_move_apply_and_dismiss_without_moving_between_panes() {
+    let mut desktop = Desktop::new();
+    desktop.message(Message::Action(Action::Key(KeyCode::Char('f'))));
+    assert!(desktop.state.filter_choice.is_some());
+    desktop.key(key::Named::Tab);
+    assert_eq!(desktop.app().focus, FocusArea::Content);
+    desktop.key(key::Named::Enter);
+    assert!(
+        desktop
+            .app()
+            .component_filter
+            .contains(crate::app::ComponentFilter::Modified)
+    );
+    assert!(desktop.state.filter_choice.is_some());
+    desktop.key(key::Named::Escape);
+    assert!(desktop.state.filter_choice.is_none());
+    assert_eq!(desktop.app().current_view, View::List);
 }

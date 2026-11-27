@@ -12,13 +12,11 @@ pub struct Runtime {
     pub app: Option<App>,
     pub error: Option<String>,
     pub close_requested: bool,
-    pub remove_requested: bool,
-    pub remove_count: usize,
     pub should_close: bool,
     #[cfg(target_os = "windows")]
     pub window_position: Option<iced::Point>,
     pub window_size: iced::Size,
-    pub filter_menu_open: bool,
+    pub(super) filter_choice: Option<super::filters::Choice>,
     pub(super) operation_log: super::activity::LogScroll,
     pub(super) channels: ProcessingChannels,
     pub(super) init_rx: Option<Receiver<Result<App>>>,
@@ -46,13 +44,11 @@ impl Runtime {
             app: None,
             error: None,
             close_requested: false,
-            remove_requested: false,
-            remove_count: 0,
             should_close: false,
             #[cfg(target_os = "windows")]
             window_position: None,
             window_size: iced::Size::new(1120.0, 780.0),
-            filter_menu_open: false,
+            filter_choice: None,
             operation_log: Default::default(),
             channels: ProcessingChannels::new(),
             init_rx: None,
@@ -139,27 +135,21 @@ impl Runtime {
         }
     }
 
-    pub(super) fn request_removal(&mut self) {
-        let Some(app) = self.app.as_mut() else {
-            return;
-        };
-        self.remove_count = app.removal_confirmation_count();
-        self.remove_requested = self.remove_count > 0;
+    pub(super) fn removal_pending(&self) -> bool {
+        self.app
+            .as_ref()
+            .is_some_and(|app| app.current_view == View::ConfirmRemove)
     }
 
     pub(super) fn confirm_removal(&mut self) {
-        if !self.remove_requested {
+        if !self.removal_pending() {
             return;
         }
-        self.remove_requested = false;
         let Some(app) = self.app.as_mut() else {
             return;
         };
-        let count = std::mem::take(&mut self.remove_count);
-        if let Err(error) = app.remove_confirmed(count) {
-            let message = format!("{error:#}");
-            app.status_message = Some(message.clone());
-            self.error = Some(message);
+        if let Err(error) = app.confirm_removal() {
+            self.error = Some(format!("{error:#}"));
         }
     }
 
@@ -260,12 +250,9 @@ mod removal_tests {
     }
 
     fn selected_component(state: &mut Runtime) {
-        state
-            .app
-            .as_mut()
-            .unwrap()
-            .components
-            .push(make_component("demo"));
+        let mut component = make_component("demo");
+        component.status = InstallStatus::Modified;
+        state.app.as_mut().unwrap().components.push(component);
     }
 
     #[test]
@@ -275,8 +262,8 @@ mod removal_tests {
         server.selected = true;
         state.app.as_mut().unwrap().mcp_servers.push(server);
         state.dispatch(Action::Command(KeyCode::Char('r')));
-        assert!(!state.remove_requested);
-        assert_eq!(state.remove_count, 0);
+        assert!(!state.removal_pending());
+        assert_eq!(state.app.as_ref().unwrap().pending_removal_items().len(), 0);
         assert_eq!(state.app.as_ref().unwrap().current_view, View::List);
         assert!(state.app.as_ref().unwrap().processing_queue.is_empty());
     }
@@ -299,8 +286,8 @@ mod removal_tests {
             .insert(app.dest_dir.join("skills/hidden"));
         app.component_filter = ComponentFilter::External.into();
         state.dispatch(Action::Key(KeyCode::Char('r')));
-        assert!(state.remove_requested);
-        assert_eq!(state.remove_count, 1);
+        assert!(state.removal_pending());
+        assert_eq!(state.app.as_ref().unwrap().pending_removal_items().len(), 1);
         assert!(state.app.as_ref().unwrap().processing_queue.is_empty());
         state.dispatch(Action::ConfirmRemove);
         let app = state.app.as_ref().unwrap();
@@ -322,7 +309,7 @@ mod removal_tests {
             selected_component(&mut state);
             state.dispatch(Action::Command(KeyCode::Char('r')));
             state.dispatch(cancel);
-            assert!(!state.remove_requested);
+            assert!(!state.removal_pending());
             assert_eq!(state.app.as_ref().unwrap().current_view, View::List);
             assert!(state.app.as_ref().unwrap().components[0].selected);
             assert!(state.app.as_ref().unwrap().processing_queue.is_empty());
@@ -339,7 +326,7 @@ mod removal_tests {
         state.dispatch(Action::ConfirmRemove);
         let first_log = state.app.as_ref().unwrap().processing_log.clone();
         state.dispatch(Action::ConfirmRemove);
-        assert!(!state.remove_requested);
+        assert!(!state.removal_pending());
         assert_eq!(state.app.as_ref().unwrap().processing_queue, vec![0]);
         assert_eq!(state.app.as_ref().unwrap().processing_log, first_log);
     }
@@ -361,7 +348,7 @@ mod removal_tests {
         ] {
             state.dispatch(action);
         }
-        assert!(state.remove_requested);
+        assert!(state.removal_pending());
         let app = state.app.as_ref().unwrap();
         assert_eq!(app.tab, Tab::Skills);
         assert_eq!(
@@ -369,7 +356,7 @@ mod removal_tests {
             crate::app::ComponentFilters::default()
         );
         assert!(app.components[0].selected);
-        assert_eq!(app.current_view, View::List);
+        assert_eq!(app.current_view, View::ConfirmRemove);
         assert!(app.processing_queue.is_empty());
     }
 
@@ -380,7 +367,7 @@ mod removal_tests {
         state.dispatch(Action::Key(KeyCode::Char('r')));
         state.dispatch(Action::RequestClose);
         assert!(state.close_requested);
-        assert!(!state.remove_requested);
+        assert!(!state.removal_pending());
         state.dispatch(Action::ConfirmRemove);
         state.dispatch(Action::DismissClose);
         state.dispatch(Action::ConfirmRemove);
@@ -396,7 +383,7 @@ mod removal_tests {
         state.dispatch(Action::Key(KeyCode::Char('r')));
         state.app.as_mut().unwrap().components[0].selected = false;
         state.dispatch(Action::ConfirmRemove);
-        assert!(!state.remove_requested);
+        assert!(!state.removal_pending());
         assert!(
             state
                 .error
@@ -404,7 +391,9 @@ mod removal_tests {
                 .unwrap()
                 .contains("Selection changed")
         );
-        assert!(state.app.as_ref().unwrap().processing_queue.is_empty());
+        let app = state.app.as_ref().unwrap();
+        assert!(app.status_message.is_none());
+        assert!(app.processing_queue.is_empty());
     }
 }
 

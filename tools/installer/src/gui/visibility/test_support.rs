@@ -207,14 +207,14 @@ impl Desktop {
     }
 
     pub(super) fn open_filters(&mut self) {
-        if !self.state.filter_menu_open {
+        if self.state.filter_choice.is_none() {
             let label = self.filters_label();
             self.click(&label);
         }
     }
 
     pub(super) fn close_filters(&mut self) {
-        if self.state.filter_menu_open {
+        if self.state.filter_choice.is_some() {
             let label = self.filters_label();
             self.click(&label);
         }

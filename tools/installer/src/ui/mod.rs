@@ -110,7 +110,7 @@ pub fn draw(f: &mut Frame, app: &App) {
     // own keys on their own borders.
     match app.current_view {
         View::Help => help::render(f, app, f.area()),
-        View::ConfirmExit | View::ConfirmRemove(_) => confirm::render(f, app, f.area()),
+        View::ConfirmExit | View::ConfirmRemove => confirm::render(f, app, f.area()),
         View::ConfirmHide => confirm_hide::render(f, app, f.area()),
         _ => {}
     }
@@ -181,7 +181,7 @@ fn render_content_pane(f: &mut Frame, app: &App, area: Rect) {
         | View::Search
         | View::Help
         | View::ConfirmExit
-        | View::ConfirmRemove(_)
+        | View::ConfirmRemove
         | View::ConfirmHide => render_tab_list(f, app, area),
         View::Diff => diff::render(f, app, area),
         // The dialogs sit over the MCP list they were opened from, which stays
@@ -266,7 +266,7 @@ fn status_help(app: &App) -> &'static str {
         // Overlays name their own keys on their own frames, and the List
         // keys behind them are no longer live — repeating them here would
         // advertise a pane jump the modal will not answer.
-        View::Help | View::ConfirmExit | View::ConfirmRemove(_) | View::ConfirmHide => "",
+        View::Help | View::ConfirmExit | View::ConfirmRemove | View::ConfirmHide => "",
         View::Diff => "[j/k/↑/↓] Scroll  [q/Esc] Close",
         View::EnvInput => "[Enter] Submit  [Esc] Cancel  [Backspace] Delete",
         View::ProjectPath => "[Enter] Confirm  [Esc] Cancel  [Backspace] Delete",

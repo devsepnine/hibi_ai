@@ -14,10 +14,12 @@ fn terminal_search_consumes_shortcuts_and_removal_uses_only_visible_rows() -> Re
         for name in ["other", "한글 riq"] {
             let mut server = make_mcp_server();
             server.def.name = name.into();
+            server.status = crate::mcp::McpStatus::Installed;
             server.selected = true;
             app.mcp_servers.push(server);
             let mut plugin = make_plugin();
             plugin.def.name = name.into();
+            plugin.status = crate::plugin::PluginStatus::Installed;
             plugin.selected = true;
             app.plugins.push(plugin);
         }
@@ -35,10 +37,12 @@ fn terminal_search_consumes_shortcuts_and_removal_uses_only_visible_rows() -> Re
         assert_eq!(app.focus, FocusArea::Content);
         assert_eq!((app.mcp_index, app.plugin_index), (1, 1));
         dispatch_terminal_key(&mut app, KeyCode::Char('r'), &tx)?;
-        assert_eq!(app.current_view, View::ConfirmRemove(1));
+        assert_eq!(app.current_view, View::ConfirmRemove);
+        assert_eq!(app.pending_removal_items().len(), 1);
         for key in [KeyCode::Char('/'), KeyCode::Char('o'), KeyCode::Enter] {
             dispatch_terminal_key(&mut app, key, &tx)?;
-            assert_eq!(app.current_view, View::ConfirmRemove(1));
+            assert_eq!(app.current_view, View::ConfirmRemove);
+            assert_eq!(app.pending_removal_items().len(), 1);
             assert!(app.processing_queue.is_empty());
         }
         dispatch_terminal_key(&mut app, KeyCode::Esc, &tx)?;
@@ -84,10 +88,12 @@ fn claude_config_removal_confirms_only_matching_installed_keys() -> Result<()> {
 
     app.components[0].selected = true;
     dispatch_key(&mut app, KeyCode::Char('r'), &tx)?;
-    assert_eq!(app.current_view, View::ConfirmRemove(1));
+    assert_eq!(app.current_view, View::ConfirmRemove);
+    assert_eq!(app.pending_removal_items().len(), 1);
     for key in [KeyCode::Enter, KeyCode::Char('i'), KeyCode::Char(' ')] {
         dispatch_key(&mut app, key, &tx)?;
-        assert_eq!(app.current_view, View::ConfirmRemove(1));
+        assert_eq!(app.current_view, View::ConfirmRemove);
+        assert_eq!(app.pending_removal_items().len(), 1);
         assert!(app.processing_queue.is_empty());
     }
     dispatch_key(&mut app, KeyCode::Esc, &tx)?;
@@ -438,7 +444,8 @@ mod status_filter {
             press(&mut app, 'f');
             press(&mut app, key);
             if key == 'r' {
-                assert_eq!(app.current_view, View::ConfirmRemove(1));
+                assert_eq!(app.current_view, View::ConfirmRemove);
+                assert_eq!(app.pending_removal_items().len(), 1);
                 press(&mut app, 'y');
             }
             assert_eq!(app.processing_queue, [0]);
@@ -449,9 +456,13 @@ mod status_filter {
         press(&mut app, 'f');
         press(&mut app, 'i');
         assert_eq!(app.current_view, View::List);
-        assert_eq!(app.status_message.as_deref(), Some("No items selected"));
+        assert_eq!(
+            app.status_message.as_deref(),
+            Some("No selected items can be installed in this view.")
+        );
         press(&mut app, 'r');
-        assert_eq!(app.current_view, View::ConfirmRemove(1));
+        assert_eq!(app.current_view, View::ConfirmRemove);
+        assert_eq!(app.pending_removal_items().len(), 1);
         press(&mut app, 'y');
         assert_eq!(app.processing_queue, [2]);
     }
@@ -604,7 +615,8 @@ mod status_filter {
                 assert!(!screen.contains("same.md"), "{screen}");
                 press(&mut app, action);
                 if action == 'r' {
-                    assert_eq!(app.current_view, View::ConfirmRemove(1));
+                    assert_eq!(app.current_view, View::ConfirmRemove);
+                    assert_eq!(app.pending_removal_items().len(), 1);
                     assert!(dest.join("local.md").is_file());
                     press(&mut app, 'y');
                 }

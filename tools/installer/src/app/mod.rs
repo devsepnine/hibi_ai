@@ -2,6 +2,7 @@ mod filter;
 mod input;
 mod navigation;
 mod processing;
+mod removal;
 mod search;
 mod selection;
 mod settings;
@@ -13,7 +14,12 @@ mod types;
 mod visibility;
 
 pub use crate::target::TargetCli;
-pub use filter::{ComponentFilter, ComponentFilters};
+#[cfg(any(feature = "gui", test))]
+pub use filter::ComponentFilter;
+pub use filter::ComponentFilters;
+#[cfg(feature = "gui")]
+pub(crate) use selection::WorkSelection;
+pub(crate) use types::CliChoice;
 pub use types::{FocusArea, SyncStatus, Tab, View};
 pub use visibility::{HiddenVisibility, HideConfirmation};
 
@@ -34,9 +40,7 @@ pub struct App {
     pub tab: Tab,
     pub current_view: View,
     pub focus: FocusArea,
-    /// Cursor row on the initial CLI-selection screen.
-    /// 0 = Claude Code, 1 = Codex CLI, 2 = Manage Sources.
-    pub cli_selection_index: usize,
+    pub(crate) cli_choice: CliChoice,
     pub should_quit: bool,
     pub theme: Theme,
 
@@ -47,6 +51,7 @@ pub struct App {
     pub hidden_visibility: HiddenVisibility,
     pub visibility_path: PathBuf,
     pub hide_confirmation: Option<HideConfirmation>,
+    pending_removal: Option<removal::RemovalPlan>,
     pub list_index: usize, // Index within current tab's filtered list (legacy, for MCP/Plugins)
     pub tree_views: HashMap<Tab, TreeView>, // Tree views for component tabs
 
@@ -183,7 +188,7 @@ impl App {
             tab: Tab::Agents,
             current_view: View::CliSelection,
             focus: FocusArea::default(),
-            cli_selection_index: 0,
+            cli_choice: CliChoice::default(),
             should_quit: false,
             theme: Theme::default(),
             components: Vec::new(),
@@ -193,6 +198,7 @@ impl App {
             hidden_visibility: HiddenVisibility::default(),
             visibility_path: d.visibility_path,
             hide_confirmation: None,
+            pending_removal: None,
             list_index: 0,
             tree_views: HashMap::new(),
             mcp_servers: Vec::new(),
@@ -246,6 +252,10 @@ impl App {
     pub fn select_cli(&mut self, cli: TargetCli) -> Result<()> {
         self.target_cli = Some(cli);
         self.dest_dir = cli.get_dest_dir()?;
+        self.cli_choice = match cli {
+            TargetCli::Claude => CliChoice::Claude,
+            TargetCli::Codex => CliChoice::Codex,
+        };
         if cli == TargetCli::Codex {
             self.mcp_scope = McpScope::User;
         }

@@ -43,6 +43,7 @@ fn each_managed_status_can_be_hidden_persisted_and_unhidden_without_changing_fil
 fn hidden_managed_items_are_excluded_from_bulk_selection_and_both_work_queues() {
     for status in MANAGED_STATUSES {
         let (_fixture, mut app) = with_status(status);
+        app.components[1].status = InstallStatus::Modified;
         hide(&mut app);
         press(&mut app, 'a');
         press(&mut app, 'a');
@@ -52,7 +53,8 @@ fn hidden_managed_items_are_excluded_from_bulk_selection_and_both_work_queues() 
         for command in ['i', 'r'] {
             press(&mut app, command);
             if command == 'r' {
-                assert_eq!(app.current_view, View::ConfirmRemove(1));
+                assert_eq!(app.current_view, View::ConfirmRemove);
+                assert_eq!(app.pending_removal_items().len(), 1);
                 press(&mut app, 'y');
             }
             assert_eq!(app.processing_queue, [1]);

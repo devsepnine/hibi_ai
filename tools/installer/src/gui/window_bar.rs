@@ -9,7 +9,7 @@ use iced::{Element, Event, Fill, Length, Rectangle, Renderer, Size, Task, Theme,
 
 use super::{Message, runtime::Runtime, theme_button};
 
-pub(super) const HEIGHT: f32 = 36.0;
+pub(super) const HEIGHT: f32 = 52.0;
 
 pub(super) fn settings() -> window::Settings {
     window::Settings {
@@ -292,7 +292,7 @@ mod tests {
             &renderer,
             &layout::Limits::new(Size::ZERO, viewport.size()),
         );
-        let mut click = |x| {
+        let mut click = |x, y| {
             let mut messages = Vec::new();
             for event in [
                 mouse::Event::ButtonPressed(Button::Left),
@@ -302,7 +302,7 @@ mod tests {
                     &mut tree,
                     &Event::Mouse(event),
                     Layout::new(&node),
-                    mouse::Cursor::Available(Point::new(x, HEIGHT / 2.0)),
+                    mouse::Cursor::Available(Point::new(x, y)),
                     &renderer,
                     &mut clipboard::Null,
                     &mut Shell::new(&mut messages),
@@ -311,16 +311,17 @@ mod tests {
             }
             messages
         };
+        assert!(click(734.0, 7.0).is_empty());
         assert!(matches!(
-            click(734.0).as_slice(),
+            click(734.0, HEIGHT / 2.0).as_slice(),
             [Message::Action(Action::ToggleTheme)]
         ));
         assert!(matches!(
-            click(380.0).as_slice(),
+            click(380.0, HEIGHT / 2.0).as_slice(),
             [Message::Window(Command::Drag)]
         ));
         assert!(matches!(
-            click(380.0).as_slice(),
+            click(380.0, HEIGHT / 2.0).as_slice(),
             [Message::Window(Command::Maximize)]
         ));
     }

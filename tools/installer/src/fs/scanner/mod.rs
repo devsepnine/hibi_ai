@@ -136,28 +136,24 @@ pub fn scan_all_sources(
 }
 
 /// Scan MCP servers from all sources. Later sources override earlier ones.
-/// CLI command for installed servers runs only once (not per-source).
+/// Read client registrations once, then reuse the result for each source.
 pub fn scan_all_mcp_sources(
     sources: &[ResolvedSource],
     target_cli: TargetCli,
     project: Option<&Path>,
 ) -> Result<(Vec<McpServer>, Option<String>)> {
-    let (installed, warning) = match target_cli {
-        TargetCli::Claude => mcp::get_installed_claude_servers(project),
-        TargetCli::Codex => match crate::fs::codex_mcp_names() {
-            Ok(names) => (names, None),
-            Err(error) => (Vec::new(), Some(format!("Codex MCP scan failed: {error}"))),
-        },
+    let registrations = match target_cli {
+        TargetCli::Claude => mcp::installed_claude_names(project),
+        TargetCli::Codex => crate::fs::codex_mcp_names(),
     };
+    let warning = registrations
+        .as_ref()
+        .err()
+        .map(|error| format!("{} MCP scan failed: {error}", target_cli.display_name()));
 
     let servers = merge_scanned(
         sources,
-        |source| {
-            mcp::scan_with_installed(
-                &source.path,
-                warning.is_none().then_some(installed.as_slice()),
-            )
-        },
+        |source| mcp::scan_with_installed(&source.path, registrations.as_deref().ok()),
         |s| s.def.name.clone(),
         |s, label| s.source_name = label.to_string(),
     )?;

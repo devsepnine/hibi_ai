@@ -1,39 +1,44 @@
 use super::Language;
 use iced::widget::{Space, button, column, container, row, text};
-use iced::{Element, Fill};
+use iced::{Element, Fill, Font, font};
 
 use super::{Message, actions::Action, styles};
-use crate::app::{App, TargetCli};
+use crate::app::{App, CliChoice, TargetCli};
 
 pub fn view(lang: Language, app: &App) -> Element<'_, Message> {
     let intro = column![
-        text(lang.text("Your AI workspace"))
-            .size(11)
-            .style(styles::muted),
-        text(lang.text("Your workspace, configured.")).size(28),
+        text(lang.text("Your workspace, configured."))
+            .size(38)
+            .font(Font {
+                weight: font::Weight::Semibold,
+                ..super::fonts::interface()
+            })
+            .align_x(iced::Center),
         text(lang.text("Manage the instructions, tools and workflows your AI assistants use."))
-            .size(13)
+            .size(14)
             .align_x(iced::Center)
             .style(styles::muted),
     ]
     .spacing(10)
     .align_x(iced::Center)
     .width(Fill);
-    let choices = column![
+    let choices = row![
         target(
             "C",
             "Claude Code",
             lang.text("Agents, skills, hooks, MCP servers and plugins"),
-            TargetCli::Claude
+            TargetCli::Claude,
+            app.cli_choice == CliChoice::Claude,
         ),
         target(
-            ">",
+            ">_",
             "Codex CLI",
             lang.text("Skills, shared configuration and MCP servers"),
-            TargetCli::Codex
+            TargetCli::Codex,
+            app.cli_choice == CliChoice::Codex,
         ),
     ]
-    .spacing(12);
+    .spacing(14);
     let sources = container(
         row![
             column![
@@ -52,19 +57,34 @@ pub fn view(lang: Language, app: &App) -> Element<'_, Message> {
             Space::new().width(Fill),
             button(lang.text("Manage sources"))
                 .padding([9, 12])
-                .style(styles::secondary)
+                .style(if app.cli_choice == CliChoice::Sources {
+                    styles::focused_secondary
+                } else {
+                    styles::secondary
+                })
                 .on_press(Message::Action(Action::OpenSources)),
         ]
         .align_y(iced::Center)
         .spacing(12),
     )
     .padding(16)
-    .style(styles::sidebar);
+    .style(styles::surface);
     container(
-        container(column![intro, choices, sources].spacing(24))
-            .width(Fill)
-            .max_width(680)
-            .id("home-panel"),
+        container(
+            column![
+                intro,
+                choices,
+                sources,
+                text(lang.text("Tab or arrow keys to move · Enter to select"))
+                    .size(12)
+                    .style(styles::muted)
+            ]
+            .spacing(22)
+            .align_x(iced::Center),
+        )
+        .width(Fill)
+        .max_width(680)
+        .id("home-panel"),
     )
     .center_x(Fill)
     .center_y(Fill)
@@ -76,36 +96,34 @@ fn target<'a>(
     name: &'a str,
     description: &'a str,
     target: TargetCli,
+    focused: bool,
 ) -> Element<'a, Message> {
     button(
-        row![
-            container(text(icon).size(20))
-                .width(40)
-                .height(40)
-                .center_x(40)
-                .center_y(40)
-                .style(styles::badge),
-            column![
-                text(name).size(17),
-                text(description).size(12).style(styles::muted)
+        column![
+            row![
+                container(text(icon).size(19).style(text::primary))
+                    .center_x(38)
+                    .center_y(38)
+                    .style(styles::badge),
+                Space::new().width(Fill),
+                text("›").size(24).style(styles::muted),
             ]
-            .spacing(6)
-            .width(Fill),
-            text("›").size(24).style(styles::muted),
+            .align_y(iced::Center),
+            column![
+                text(name).size(19),
+                text(description).size(12).style(styles::muted),
+            ]
+            .spacing(5),
         ]
         .spacing(16)
-        .align_y(iced::Center),
+        .width(Fill),
     )
-    .padding(18)
+    .padding(20)
     .width(Fill)
-    .style(|theme, status| {
-        let mut style = styles::subtle(theme, status);
-        let surface = styles::surface(theme);
-        style.border = surface.border;
-        if matches!(status, button::Status::Active | button::Status::Disabled) {
-            style.background = surface.background;
-        }
-        style
+    .style(if focused {
+        styles::focused_glass_button
+    } else {
+        styles::glass_button
     })
     .on_press(Message::Action(Action::SelectTarget(target)))
     .into()

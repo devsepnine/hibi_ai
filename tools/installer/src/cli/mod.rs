@@ -50,6 +50,7 @@ pub(crate) fn dispatch_terminal_key(
             app.current_view = app::View::List;
         }
         (app::View::Search, _) => {}
+        (app::View::CliSelection, KeyCode::Tab | KeyCode::BackTab) => {}
         _ => return dispatch_key(app, code, refresh_tx),
     }
     Ok(())
@@ -87,15 +88,14 @@ pub(crate) fn dispatch_key(
             handle_confirm_exit(app, code);
             Ok(())
         }
-        app::View::ConfirmRemove(count) => {
+        app::View::ConfirmRemove => {
             match code {
                 KeyCode::Char('y') => {
-                    app.current_view = app::View::List;
-                    if let Err(error) = app.remove_confirmed(count) {
+                    if let Err(error) = app.confirm_removal() {
                         app.status_message = Some(error.to_string());
                     }
                 }
-                KeyCode::Esc | KeyCode::Char('n' | 'q') => app.current_view = app::View::List,
+                KeyCode::Esc | KeyCode::Char('n' | 'q') => app.cancel_removal(),
                 _ => {}
             }
             Ok(())
@@ -218,12 +218,7 @@ fn handle_content_focus_keys(app: &mut App, key: KeyCode) -> Result<()> {
         KeyCode::Enter => handle_enter(app)?,
         KeyCode::Char('d') => app.show_diff()?,
         KeyCode::Char('i') => app.install_selected()?,
-        KeyCode::Char('r') => {
-            let count = app.removal_confirmation_count();
-            if count > 0 {
-                app.current_view = app::View::ConfirmRemove(count);
-            }
-        }
+        KeyCode::Char('r') => app.request_removal(),
         KeyCode::Char('s') | KeyCode::Char('u') => handle_default_toggle(app, key),
         KeyCode::Char('o') => {
             if app.tab == app::Tab::McpServers {
@@ -336,25 +331,22 @@ fn help_max_scroll() -> u16 {
     crate::ui::help::max_scroll(height)
 }
 
-/// Number of rows on the CLI selection screen: Claude, Codex, Sources.
-const CLI_SELECTION_OPTIONS: usize = 3;
-
 fn handle_cli_selection(
     app: &mut App,
     key: KeyCode,
     refresh_tx: &std::sync::mpsc::Sender<Result<RefreshResult>>,
 ) -> Result<()> {
+    use app::CliChoice;
+
     match key {
-        KeyCode::Up | KeyCode::Char('k') => {
-            if app.cli_selection_index > 0 {
-                app.cli_selection_index -= 1;
-            }
+        KeyCode::Up | KeyCode::Char('k') if app.cli_choice != CliChoice::Claude => {
+            app.cli_choice = app.cli_choice.previous();
         }
-        KeyCode::Down | KeyCode::Char('j') => {
-            if app.cli_selection_index + 1 < CLI_SELECTION_OPTIONS {
-                app.cli_selection_index += 1;
-            }
+        KeyCode::Down | KeyCode::Char('j') if app.cli_choice != CliChoice::Sources => {
+            app.cli_choice = app.cli_choice.next();
         }
+        KeyCode::BackTab => app.cli_choice = app.cli_choice.previous(),
+        KeyCode::Tab => app.cli_choice = app.cli_choice.next(),
         KeyCode::Enter => confirm_cli_selection(app, refresh_tx)?,
         KeyCode::Char('q') => app.should_quit = true,
         _ => {}
@@ -362,26 +354,22 @@ fn handle_cli_selection(
     Ok(())
 }
 
-/// Apply the currently highlighted option on the CLI selection screen.
-/// Split out from the key handler so the row → action mapping lives in
-/// one place and stays in sync with the renderer's option list order.
 fn confirm_cli_selection(
     app: &mut App,
     refresh_tx: &std::sync::mpsc::Sender<Result<RefreshResult>>,
 ) -> Result<()> {
-    match app.cli_selection_index {
-        0 => {
+    match app.cli_choice {
+        app::CliChoice::Claude => {
             app.select_cli(app::TargetCli::Claude)?;
             loading::start_loading_thread(app, refresh_tx);
         }
-        1 => {
+        app::CliChoice::Codex => {
             app.select_cli(app::TargetCli::Codex)?;
             loading::start_loading_thread(app, refresh_tx);
         }
-        2 => {
+        app::CliChoice::Sources => {
             app.current_view = app::View::Sources;
         }
-        _ => {}
     }
     Ok(())
 }

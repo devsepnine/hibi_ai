@@ -3,6 +3,7 @@ use crossterm::event::KeyCode;
 use crate::app::{ComponentFilter, HiddenVisibility, Tab, TargetCli, View};
 use crate::{cli, loading};
 
+use super::filters::Choice;
 use super::runtime::Runtime;
 
 #[derive(Debug, Clone)]
@@ -36,21 +37,23 @@ pub enum Action {
     RequestClose,
     ConfirmClose,
     DismissClose,
+    InstallSelected,
+    RequestRemove,
     ConfirmRemove,
     CancelRemove,
 }
 
 impl Runtime {
     pub fn dispatch(&mut self, action: Action) {
-        if self.filter_menu_open && matches!(action, Action::Key(KeyCode::Esc)) {
-            self.filter_menu_open = false;
+        if let (Some(choice), Action::Key(key)) = (self.filter_choice, &action) {
+            self.filter_key(choice, *key);
             return;
         }
         if !matches!(
             action,
             Action::ToggleFilterMenu | Action::SetFilter(..) | Action::SetHiddenVisibility(_)
         ) {
-            self.filter_menu_open = false;
+            self.filter_choice = None;
         }
         match action {
             Action::SetLanguage(language) => {
@@ -61,12 +64,13 @@ impl Runtime {
                 return;
             }
             Action::CloseFilterMenu => {
-                self.filter_menu_open = false;
+                self.filter_choice = None;
                 return;
             }
             Action::RequestClose => {
-                self.remove_requested = false;
-                self.remove_count = 0;
+                if let Some(app) = self.app.as_mut() {
+                    app.cancel_removal();
+                }
                 let selected = self.app.as_ref().is_some_and(|app| app.has_selection());
                 if self.operation_active() || selected {
                     self.close_requested = true;
@@ -103,25 +107,22 @@ impl Runtime {
                 self.confirm_removal();
                 return;
             }
-            Action::CancelRemove | Action::Cancel | Action::Back if self.remove_requested => {
-                self.remove_requested = false;
-                self.remove_count = 0;
+            Action::Key(KeyCode::Char('y')) if self.removal_pending() => {
+                self.confirm_removal();
                 return;
             }
-            Action::Key(KeyCode::Esc | KeyCode::Char('n')) if self.remove_requested => {
-                self.remove_requested = false;
-                self.remove_count = 0;
-                return;
-            }
-            _ if self.remove_requested => return,
-            Action::Key(KeyCode::Char('r'))
-                if self.app.as_ref().is_some_and(|app| {
-                    app.current_view == View::List && app.focus == crate::app::FocusArea::Content
-                }) =>
+            Action::CancelRemove
+            | Action::Cancel
+            | Action::Back
+            | Action::Key(KeyCode::Esc | KeyCode::Char('n'))
+                if self.removal_pending() =>
             {
-                self.request_removal();
+                if let Some(app) = self.app.as_mut() {
+                    app.cancel_removal();
+                }
                 return;
             }
+            _ if self.removal_pending() => return,
             Action::Key(KeyCode::Char('o'))
                 if self.app.as_ref().is_some_and(|app| {
                     app.current_view == View::List
@@ -177,12 +178,34 @@ impl Runtime {
         }
     }
 
+    fn filter_key(&mut self, choice: Choice, key: KeyCode) {
+        match key {
+            KeyCode::Esc | KeyCode::Char('f') => self.filter_choice = None,
+            KeyCode::Down | KeyCode::Tab => self.filter_choice = Some(choice.step(1)),
+            KeyCode::Up | KeyCode::BackTab => self.filter_choice = Some(choice.step(-1)),
+            KeyCode::Enter | KeyCode::Char(' ') => {
+                if let Some(app) = self.app.as_ref() {
+                    self.dispatch(choice.action(app));
+                }
+            }
+            _ => {}
+        }
+    }
+
     fn apply(&mut self, action: Action) -> anyhow::Result<()> {
         let Some(app) = self.app.as_mut() else {
             return Ok(());
         };
         match action {
             Action::ToggleTheme => app.theme.toggle(),
+            Action::InstallSelected if app.current_view == View::List => {
+                app.focus_content();
+                app.install_selected()?;
+            }
+            Action::RequestRemove if app.current_view == View::List => {
+                app.focus_content();
+                app.request_removal();
+            }
             Action::SelectTarget(target) if app.current_view == View::CliSelection => {
                 app.select_cli(target)?;
                 loading::start_loading_thread(app, &self.channels.refresh_tx);
@@ -233,15 +256,21 @@ impl Runtime {
             {
                 app.focus_content();
                 app.set_component_filter(filter, checked);
+                if self.filter_choice.is_some() {
+                    self.filter_choice = Some(Choice::Status(filter));
+                }
             }
-            Action::ToggleFilterMenu
+            Action::ToggleFilterMenu | Action::Key(KeyCode::Char('f'))
                 if app.current_view == View::List && app.tab.to_component_type().is_some() =>
             {
-                self.filter_menu_open = !self.filter_menu_open;
+                self.filter_choice = self.filter_choice.is_none().then_some(Choice::FIRST);
             }
             Action::SetHiddenVisibility(visibility) if app.current_view == View::List => {
                 app.focus_content();
                 app.set_hidden_visibility(visibility);
+                if self.filter_choice.is_some() {
+                    self.filter_choice = Some(Choice::Visibility(visibility));
+                }
             }
             Action::SetInput(value) if source_input_view(app.current_view) => {
                 app.source_input_buffer = value;
@@ -254,6 +283,7 @@ impl Runtime {
                 app.env_input_buffer = value;
             }
             Action::OpenSources if app.current_view == View::CliSelection => {
+                app.cli_choice = crate::app::CliChoice::Sources;
                 app.current_view = View::Sources;
             }
             Action::Back if app.current_view == View::Installing && app.processing_complete => {
@@ -269,6 +299,12 @@ impl Runtime {
                 app.set_search_query(String::new());
             }
             Action::Key(key) => {
+                if app.current_view == View::CliSelection
+                    && let Some(choice) = super::shortcuts::picker_arrow(app.cli_choice, key)
+                {
+                    app.cli_choice = choice;
+                    return Ok(());
+                }
                 if app.current_view == View::SourceConfirmRemove
                     && key == KeyCode::Char('y')
                     && app.source_list_index == 0
@@ -726,14 +762,15 @@ mod search_tests {
             .map(|name| {
                 let mut server = make_mcp_server();
                 server.def.name = name.into();
+                server.status = crate::mcp::McpStatus::Installed;
                 server.selected = true;
                 server
             })
             .into();
         state.dispatch(Action::SetSearch("target".into()));
         state.dispatch(Action::Command(KeyCode::Char('r')));
-        assert!(state.remove_requested);
-        assert_eq!(state.remove_count, 1);
+        assert!(state.removal_pending());
+        assert_eq!(state.app.as_ref().unwrap().pending_removal_items().len(), 1);
         state.dispatch(Action::SetSearch("hidden".into()));
         state.dispatch(Action::ClearSearch);
         assert_eq!(state.app.as_ref().unwrap().search_query, "target");

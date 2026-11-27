@@ -18,49 +18,18 @@ impl App {
         self.tab == Tab::Config && self.target_cli == Some(crate::target::TargetCli::Claude)
     }
 
-    fn has_selected_config_items(&self) -> bool {
-        self.is_claude_config() && self.visible_components().iter().any(|(_, c)| c.selected)
-    }
-
     pub fn install_selected(&mut self) -> Result<()> {
-        // Build install queue
-        let indices: Vec<usize> = if self.tab == Tab::McpServers {
-            self.visible_mcp_servers()
-                .into_iter()
-                .filter(|(_, m)| {
-                    m.selected
-                        && !(self.target_cli == Some(crate::target::TargetCli::Codex)
-                            && m.status == crate::mcp::McpStatus::Installed)
-                })
-                .map(|(i, _)| i)
-                .collect()
-        } else if self.tab == Tab::Plugins {
-            self.visible_plugins()
-                .into_iter()
-                .filter(|(_, p)| p.selected)
-                .map(|(i, _)| i)
-                .collect()
-        } else {
-            self.visible_components()
-                .into_iter()
-                .filter(|(_, c)| c.selected && c.is_install_eligible())
-                .map(|(i, _)| i)
-                .collect()
-        };
-
-        if indices.is_empty() {
+        let selection = self.work_selection();
+        if selection.install.is_empty() {
             self.status_message = Some(
-                if self.has_selected_config_items() {
+                if selection.selected == 0 {
+                    "No items selected"
+                } else if self.is_claude_config() {
                     "Selected configuration items cannot be installed. Check the diff for details."
-                } else if self.tab == Tab::McpServers
-                    && self
-                        .visible_mcp_servers()
-                        .iter()
-                        .any(|(_, server)| server.selected)
-                {
+                } else if self.tab == Tab::McpServers {
                     "Selected MCP servers are already registered"
                 } else {
-                    "No items selected"
+                    "No selected items can be installed in this view."
                 }
                 .into(),
             );
@@ -69,7 +38,7 @@ impl App {
 
         self.clear_env_inputs();
         self.processing_complete = false;
-        self.processing_queue = indices;
+        self.processing_queue = selection.install;
         self.is_removing = false;
 
         // Plugin/MCP install shells out to the CLI; hand off to the
@@ -85,54 +54,7 @@ impl App {
         self.complete_install_setup()
     }
 
-    pub(crate) fn removal_selection(&self) -> Vec<usize> {
-        if self.tab == Tab::McpServers {
-            self.visible_mcp_servers()
-                .into_iter()
-                .filter(|(_, m)| m.selected)
-                .map(|(i, _)| i)
-                .collect()
-        } else if self.tab == Tab::Plugins {
-            self.visible_plugins()
-                .into_iter()
-                .filter(|(_, p)| p.selected)
-                .map(|(i, _)| i)
-                .collect()
-        } else {
-            self.visible_components()
-                .into_iter()
-                .filter(|(_, c)| c.selected && c.is_remove_eligible())
-                .map(|(i, _)| i)
-                .collect()
-        }
-    }
-
-    pub(crate) fn removal_confirmation_count(&mut self) -> usize {
-        let count = self.removal_selection().len();
-        if count == 0 {
-            self.status_message = Some(
-                if self.has_selected_config_items() {
-                    "No selected configuration items can be removed. Check the diff for details."
-                } else {
-                    "Select items in this category to remove."
-                }
-                .into(),
-            );
-        }
-        count
-    }
-
-    pub(crate) fn remove_confirmed(&mut self, count: usize) -> Result<()> {
-        let indices = self.removal_selection();
-        anyhow::ensure!(
-            self.current_view == View::List && count > 0 && indices.len() == count,
-            "Selection changed. Review your selection before removing items."
-        );
-        self.start_removal(indices);
-        Ok(())
-    }
-
-    fn start_removal(&mut self, indices: Vec<usize>) {
+    pub(super) fn start_removal(&mut self, indices: Vec<usize>) {
         self.clear_env_inputs();
         self.processing_complete = false;
         self.processing_queue = indices;
@@ -408,7 +330,9 @@ mod tests {
                 )
             })
             .into();
-        app.remove_confirmed(1).unwrap();
+        app.request_removal();
+        assert_eq!(app.pending_removal_items().len(), 1);
+        app.confirm_removal().unwrap();
         assert_eq!(app.processing_queue, vec![1]);
         assert_eq!(app.current_view, View::Installing);
     }
@@ -587,7 +511,15 @@ mod search_tests {
                 let mut app = app_with_selected_lists();
                 app.tab = tab;
                 if removing {
-                    app.remove_confirmed(1).unwrap();
+                    for server in &mut app.mcp_servers {
+                        server.status = crate::mcp::McpStatus::Installed;
+                    }
+                    for plugin in &mut app.plugins {
+                        plugin.status = crate::plugin::PluginStatus::Installed;
+                    }
+                    app.request_removal();
+                    assert_eq!(app.pending_removal_items().len(), 1);
+                    app.confirm_removal().unwrap();
                 } else {
                     app.install_selected().unwrap();
                 }
@@ -619,7 +551,8 @@ mod search_tests {
             app.tab = tab;
             app.set_search_query("no-match".into());
             app.install_selected().unwrap();
-            assert_eq!(app.removal_confirmation_count(), 0);
+            app.request_removal();
+            assert!(app.pending_removal_items().is_empty());
             assert!(app.processing_queue.is_empty());
             assert_eq!(app.current_view, View::List);
         }

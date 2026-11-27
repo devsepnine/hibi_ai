@@ -42,16 +42,16 @@ pub(crate) fn start_loading_thread(app: &App, refresh_tx: &Sender<Result<Refresh
                 fs::scanner::scan_all_mcp_sources(&sources, target_cli, project.as_deref());
             let plugins = fs::scanner::scan_all_plugin_sources(&sources);
 
-            let result = match (components, mcp_result, plugins) {
-                (Ok(c), Ok((m, _mcp_warning)), Ok(p)) => Ok(RefreshResult::InitialLoad {
+            match (components, mcp_result, plugins) {
+                (Ok(c), Ok((m, mcp_warning)), Ok(p)) => Ok(RefreshResult::InitialLoad {
                     components: c,
                     mcp_servers: m,
+                    mcp_warning,
                     plugins: p,
                     cleaned_items: cleaned,
                 }),
                 (Err(e), _, _) | (_, Err(e), _) | (_, _, Err(e)) => Err(e),
-            };
-            result
+            }
         });
         let _ = tx_clone.send(result);
     });
@@ -81,10 +81,17 @@ pub(crate) fn tick_loading(app: &mut App, refresh_rx: &Receiver<Result<RefreshRe
         Ok(Ok(RefreshResult::InitialLoad {
             components,
             mcp_servers,
+            mcp_warning,
             plugins,
             cleaned_items,
         })) => {
             app.finish_loading(components, mcp_servers, plugins, cleaned_items);
+            if let Some(warning) = mcp_warning {
+                app.status_message = Some(match app.status_message.take() {
+                    Some(message) => format!("{message}; {warning}"),
+                    None => warning,
+                });
+            }
         }
         Ok(Ok(RefreshResult::Mcp(mut servers, warning))) if app.refreshing => {
             for server in &mut servers {

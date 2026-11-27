@@ -1,6 +1,34 @@
 use crate::component::ComponentType;
 use crate::target::TargetCli;
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) enum CliChoice {
+    #[default]
+    Claude,
+    Codex,
+    Sources,
+}
+
+impl CliChoice {
+    pub const ALL: [Self; 3] = [Self::Claude, Self::Codex, Self::Sources];
+
+    pub fn next(self) -> Self {
+        match self {
+            Self::Claude => Self::Codex,
+            Self::Codex => Self::Sources,
+            Self::Sources => Self::Claude,
+        }
+    }
+
+    pub fn previous(self) -> Self {
+        match self {
+            Self::Claude => Self::Sources,
+            Self::Codex => Self::Claude,
+            Self::Sources => Self::Codex,
+        }
+    }
+}
+
 /// Which pane the keyboard is currently driving.
 ///
 /// `1`/`2` address the panes directly and `Tab`/`Shift+Tab` toggles between
@@ -117,7 +145,7 @@ pub enum View {
     /// back, so leaving with a selection throws it away, and leaving without
     /// one costs nothing worth a keystroke to confirm.
     ConfirmExit,
-    ConfirmRemove(usize),
+    ConfirmRemove,
     ConfirmHide,
     EnvInput,
     ProjectPath,

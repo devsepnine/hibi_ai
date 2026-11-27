@@ -69,6 +69,7 @@ pub fn view(lang: Language, app: &App, follow_log: bool) -> Element<'_, Message>
             lang.text("Your pending selections in every category will be cleared. Installed components stay in place."),
             lang.text("Discard selections"),
         ),
+        View::ConfirmRemove => remove(lang, app),
         View::ConfirmHide => {
             let mut description = String::from(
                 lang.text("These folders will be hidden from the component list and excluded from install and remove actions. Their files stay in place."),
@@ -91,14 +92,10 @@ pub fn view(lang: Language, app: &App, follow_log: bool) -> Element<'_, Message>
 
 fn card<'a>(content: impl Into<Element<'a, Message>>) -> Element<'a, Message> {
     container(
-        container(scrollable(
-            container(content)
-                .padding(30)
-                .width(Fill)
-                .style(styles::surface),
-        ))
-        .max_width(620)
-        .width(Fill),
+        container(scrollable(container(content).padding(30).width(Fill)))
+            .max_width(620)
+            .width(Fill)
+            .style(styles::glass),
     )
     .center_x(Fill)
     .center_y(Fill)
@@ -188,13 +185,66 @@ pub fn close(lang: Language, busy: bool) -> Element<'static, Message> {
     )
 }
 
-pub fn remove(lang: Language, count: usize) -> Element<'static, Message> {
-    card(column![
-        text(localized_format!(lang, "Remove {count} selected items?", "선택한 항목 {count}개를 제거할까요?", "選択した {count} 件を削除しますか？")).size(24),
-        text(lang.text("This removes the selected installed items in the current category from this environment, including selected external files.")).style(styles::muted),
-        text(lang.text("This action cannot be undone.")).size(13).style(text::danger),
-        row![neutral(lang.text("Cancel"), Action::CancelRemove), Space::new().width(Fill), button(lang.text("Remove items")).style(styles::destructive).padding([10,16]).on_press(Message::Action(Action::ConfirmRemove))].spacing(12),
-    ].spacing(20))
+fn remove(lang: Language, app: &App) -> Element<'_, Message> {
+    use crate::component::InstallStatus;
+
+    let items = app.pending_removal_items();
+    let count = items.len();
+    let question = if count == 1 {
+        lang.text("Remove 1 selected item?").to_owned()
+    } else {
+        localized_format!(
+            lang,
+            "Remove {count} selected items?",
+            "선택한 항목 {count}개를 제거할까요?",
+            "選択した {count} 件を削除しますか？"
+        )
+    };
+    let names = items.iter().fold(column![].spacing(8), |names, item| {
+        let mut line = row![text(item.display_name()).size(14).width(Fill)].spacing(10);
+        if let Some(status @ (InstallStatus::Modified | InstallStatus::External)) = &item.status {
+            line = line.push(
+                text(lang.text(status.display()))
+                    .size(12)
+                    .style(text::danger),
+            );
+        }
+        names.push(line)
+    });
+    let panel = column![
+        text(question).size(24),
+        text(lang.text("This action cannot be undone."))
+            .size(13)
+            .style(text::danger),
+        container(scrollable(names).id("remove-items").height(iced::Shrink))
+            .padding(12)
+            .max_height(188)
+            .style(styles::surface),
+        row![
+            neutral(lang.text("Cancel"), Action::CancelRemove),
+            Space::new().width(Fill),
+            button(lang.text("Remove items"))
+                .style(styles::destructive)
+                .padding([10, 16])
+                .on_press_maybe((count > 0).then_some(Message::Action(Action::ConfirmRemove)))
+        ]
+        .spacing(12),
+        text(lang.text("Y to remove · Esc to cancel"))
+            .size(12)
+            .style(styles::muted),
+    ]
+    .spacing(12);
+    container(
+        container(panel)
+            .padding(24)
+            .width(Fill)
+            .max_width(620)
+            .max_height(390)
+            .style(styles::glass),
+    )
+    .center_x(Fill)
+    .center_y(Fill)
+    .into()
 }
 
 fn help(lang: Language) -> Element<'static, Message> {
@@ -237,7 +287,8 @@ fn help(lang: Language) -> Element<'static, Message> {
                     "Switch between categories and component list",
                 ),
                 ("d / Enter", "View changes or open a folder"),
-                ("f", "Cycle the status filter"),
+                ("f", "Open or close filters"),
+                ("↑/↓ · Enter", "Move within filters, then apply a choice"),
                 ("E", "Expand or collapse all folders"),
             ][..],
         ),

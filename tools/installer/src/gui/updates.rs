@@ -50,7 +50,7 @@ fn work<T: Send + 'static>(
 }
 
 pub(super) fn handle(state: &mut Runtime, event: Event) -> Task<Message> {
-    if state.closing || state.close_requested || state.remove_requested {
+    if state.closing || state.close_requested || state.removal_pending() {
         if matches!(event, Event::Checked(_)) {
             state.updater = State::Idle;
         }
@@ -108,7 +108,7 @@ pub(super) fn footer(state: &Runtime) -> Element<'_, Message> {
         .on_press_maybe(
             (!state.closing
                 && !state.close_requested
-                && !state.remove_requested
+                && !state.removal_pending()
                 && matches!(state.updater, State::Idle | State::Current(_)))
             .then_some(Message::Update(Event::Check)),
         )

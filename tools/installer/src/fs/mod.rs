@@ -57,8 +57,7 @@ pub const VERSION: &str = concat!("v", env!("CARGO_PKG_VERSION"));
 /// only auto-appends `.exe` when no extension is given — it does NOT
 /// honor PATHEXT to also try `.cmd` / `.bat` / `.ps1`. npm-installed
 /// CLIs ship as `.cmd` shims (e.g. `%APPDATA%\npm\claude.cmd`), so the
-/// bare name silently fails to resolve them and `mcp list` returns no
-/// servers, making every MCP look "Not Installed". Probe PATH manually
+/// bare name silently fails to resolve them. Probe PATH manually
 /// for `.exe` (native install) before `.cmd` / `.bat` (npm shim) so
 /// native installs win when both formats are present, and npm installs
 /// still resolve when only the shim exists.

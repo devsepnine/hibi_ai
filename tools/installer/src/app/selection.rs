@@ -1,7 +1,71 @@
 use super::App;
 use super::types::Tab;
+use crate::component::{Component, InstallStatus};
+use crate::mcp::McpStatus;
+use crate::plugin::PluginStatus;
+use crate::target::TargetCli;
+
+#[derive(Default)]
+pub(crate) struct WorkSelection {
+    pub visible: usize,
+    pub selected: usize,
+    pub install: Vec<usize>,
+    pub remove: Vec<usize>,
+}
+
+impl WorkSelection {
+    fn from_visible<T>(
+        items: Vec<(usize, &T)>,
+        is_selected: impl Fn(&T) -> bool,
+        can_install: impl Fn(&T) -> bool,
+        can_remove: impl Fn(&T) -> bool,
+    ) -> Self {
+        let mut selection = Self {
+            visible: items.len(),
+            ..Self::default()
+        };
+        for (index, item) in items.into_iter().filter(|(_, item)| is_selected(item)) {
+            selection.selected += 1;
+            if can_install(item) {
+                selection.install.push(index);
+            }
+            if can_remove(item) {
+                selection.remove.push(index);
+            }
+        }
+        selection
+    }
+}
 
 impl App {
+    pub(crate) fn work_selection(&self) -> WorkSelection {
+        match self.tab {
+            Tab::McpServers => WorkSelection::from_visible(
+                self.visible_mcp_servers(),
+                |server| server.selected,
+                |server| {
+                    self.target_cli != Some(TargetCli::Codex)
+                        || server.status != McpStatus::Installed
+                },
+                |server| server.status == McpStatus::Installed,
+            ),
+            Tab::Plugins => WorkSelection::from_visible(
+                self.visible_plugins(),
+                |plugin| plugin.selected,
+                |_| true,
+                |plugin| plugin.status == PluginStatus::Installed,
+            ),
+            _ => WorkSelection::from_visible(
+                self.visible_components(),
+                |component| component.selected,
+                Component::is_install_eligible,
+                |component| {
+                    component.status != InstallStatus::New && component.is_remove_eligible()
+                },
+            ),
+        }
+    }
+
     pub fn toggle_selected(&mut self) {
         if self.tab == Tab::McpServers {
             if !self
@@ -134,6 +198,77 @@ impl App {
         for p in &mut self.plugins {
             p.selected = false;
         }
+    }
+}
+
+#[cfg(test)]
+mod work_tests {
+    use super::*;
+    use crate::app::test_support::{fresh_app, make_mcp_server, make_plugin};
+    use crate::tree::test_support::make_component;
+
+    #[test]
+    fn file_status_distinguishes_install_and_remove_targets() {
+        let mut app = fresh_app();
+        app.components = [
+            InstallStatus::New,
+            InstallStatus::Modified,
+            InstallStatus::Unchanged,
+            InstallStatus::Managed,
+            InstallStatus::External,
+            InstallStatus::Blocked("invalid".into()),
+        ]
+        .into_iter()
+        .enumerate()
+        .map(|(index, status)| {
+            let mut component = make_component(&format!("{index}.md"));
+            component.status = status;
+            component
+        })
+        .collect();
+        let selection = app.work_selection();
+        assert_eq!(selection.visible, 6);
+        assert_eq!(selection.selected, 6);
+        assert_eq!(selection.install, [0, 1, 2, 3]);
+        assert_eq!(selection.remove, [1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn mcp_and_plugin_removal_requires_confirmed_installation_status() {
+        let mut app = fresh_app();
+        app.mcp_servers = [
+            McpStatus::NotInstalled,
+            McpStatus::Unknown,
+            McpStatus::Installed,
+        ]
+        .map(|status| {
+            let mut server = make_mcp_server();
+            server.status = status;
+            server.selected = true;
+            server
+        })
+        .into();
+        app.plugins = [
+            PluginStatus::NotInstalled,
+            PluginStatus::Unknown,
+            PluginStatus::Installed,
+        ]
+        .map(|status| {
+            let mut plugin = make_plugin();
+            plugin.status = status;
+            plugin.selected = true;
+            plugin
+        })
+        .into();
+        for tab in [Tab::McpServers, Tab::Plugins] {
+            app.tab = tab;
+            assert_eq!(app.work_selection().remove, [2]);
+        }
+        app.tab = Tab::McpServers;
+        app.target_cli = Some(TargetCli::Codex);
+        assert_eq!(app.work_selection().install, [0, 1]);
+        app.target_cli = Some(TargetCli::Claude);
+        assert_eq!(app.work_selection().install, [0, 1, 2]);
     }
 }
 

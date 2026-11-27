@@ -52,8 +52,11 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
             "Leave for the CLI picker?".into(),
             "Selected items will be discarded.",
         ),
-        View::ConfirmRemove(count) => (
-            format!("Remove {count} selected items?"),
+        View::ConfirmRemove => (
+            format!(
+                "Remove {} selected items?",
+                app.pending_removal_items().len()
+            ),
             "This action cannot be undone.",
         ),
         _ => return,

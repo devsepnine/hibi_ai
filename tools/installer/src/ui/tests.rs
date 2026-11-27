@@ -309,7 +309,7 @@ fn a_modal_view_leaves_both_panes_plain() {
         View::Diff,
         View::Help,
         View::ConfirmExit,
-        View::ConfirmRemove(1),
+        View::ConfirmRemove,
         View::ConfirmHide,
     ] {
         for (name, render, setup) in CASES {

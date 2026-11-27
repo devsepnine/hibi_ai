@@ -12,9 +12,11 @@ pub fn view(
     lang: Language,
     app: &App,
     compact: bool,
-    filter_menu_open: bool,
+    filter_choice: Option<filters::Choice>,
 ) -> Element<'_, Message> {
-    let (selected, eligible, total) = selection_summary(app);
+    let selection = app.work_selection();
+    let total = selection.visible;
+    let focus = filter_choice.is_none().then_some(app.focus);
     let selected_folders = app.selected_folders().len();
     let expand = app.get_tree_view().is_some_and(|tree| {
         tree.nodes
@@ -46,8 +48,8 @@ pub fn view(
         main = main
             .push(
                 row![
-                    search(lang, app),
-                    filters::view(lang, app, filter_menu_open)
+                    search(lang, app, filter_choice.is_none()),
+                    filters::view(lang, app, filter_choice)
                 ]
                 .spacing(8)
                 .align_y(iced::Top),
@@ -98,7 +100,7 @@ pub fn view(
                 .wrap(),
             );
     } else {
-        main = main.push(search(lang, app));
+        main = main.push(search(lang, app, true));
     }
     if app.tab == Tab::McpServers {
         main = main.push(
@@ -162,7 +164,7 @@ pub fn view(
         row![
             text(lang.text("Component"))
                 .size(11)
-                .style(if app.focus == FocusArea::Content {
+                .style(if focus == Some(FocusArea::Content) {
                     text::primary
                 } else {
                     styles::muted
@@ -172,18 +174,34 @@ pub fn view(
         ]
         .padding([10, 16]),
         rule::horizontal(1).style(styles::divider),
-        scrollable(rows::items(lang, app))
+        scrollable(rows::items(lang, app, focus == Some(FocusArea::Content)))
             .id("component-list")
             .height(Fill),
     ];
     main = main.push(container(table).style(styles::surface).height(Fill));
-    let controls = column![
-        rule::horizontal(1).style(styles::divider),
+    row![
+        sidebar::view(lang, app, focus == Some(FocusArea::Tabs)),
+        main.push(work_bar(lang, app, &selection)).height(Fill)
+    ]
+    .spacing(18)
+    .height(Fill)
+    .into()
+}
+
+fn work_bar<'a>(
+    lang: Language,
+    app: &'a App,
+    selection: &crate::app::WorkSelection,
+) -> Element<'a, Message> {
+    let selected = selection.selected;
+    let install = selection.install.len();
+    let remove = selection.remove.len();
+    container(
         row![
             selection_label(lang, app, selected),
             Space::new().width(Fill),
             key_button(
-                if selected > 0 && selected == total {
+                if selected > 0 && selected == selection.visible {
                     lang.text("Clear selection")
                 } else {
                     lang.text("Select all")
@@ -191,7 +209,7 @@ pub fn view(
                 KeyCode::Char('a')
             )
             .style(styles::subtle)
-            .on_press_maybe((total > 0).then_some(command('a'))),
+            .on_press_maybe((selection.visible > 0).then_some(command('a'))),
             key_button(lang.text("Diff"), KeyCode::Char('d'))
                 .style(styles::secondary)
                 .on_press_maybe(
@@ -199,32 +217,49 @@ pub fn view(
                         .is_some()
                         .then_some(command('d'))
                 ),
-            key_button(lang.text("Remove"), KeyCode::Char('r'))
-                .style(styles::danger)
-                .on_press_maybe((!app.removal_selection().is_empty()).then_some(command('r'))),
-            key_button(lang.text("Install"), KeyCode::Char('i'))
-                .padding([9, 18])
-                .on_press_maybe((eligible > 0).then_some(command('i'))),
+            button(
+                text(localized_format!(
+                    lang,
+                    "Remove {remove}",
+                    "{remove}개 제거",
+                    "{remove} 件削除"
+                ))
+                .size(12)
+            )
+            .padding([7, 10])
+            .style(styles::danger)
+            .on_press_maybe((remove > 0).then_some(Message::Action(Action::RequestRemove))),
+            button(
+                text(localized_format!(
+                    lang,
+                    "Install {install}",
+                    "{install}개 설치",
+                    "{install} 件インストール"
+                ))
+                .size(12)
+            )
+            .padding([9, 18])
+            .style(styles::primary)
+            .on_press_maybe((install > 0).then_some(Message::Action(Action::InstallSelected))),
         ]
         .spacing(8)
         .align_y(iced::Center),
-    ]
-    .spacing(10);
-    row![sidebar::view(lang, app), main.push(controls).height(Fill)]
-        .spacing(18)
-        .height(Fill)
-        .into()
+    )
+    .padding([8, 12])
+    .style(styles::glass)
+    .into()
 }
 
-fn search(lang: Language, app: &App) -> Element<'_, Message> {
-    let mut field = row![super::text_input::current_modifiers(
+fn search(lang: Language, app: &App, search_shortcut: bool) -> Element<'_, Message> {
+    let mut field = row![super::text_input::search_input(
         text_input(lang.text("Search this category…"), &app.search_query)
             .id("component-search")
             .size(13)
             .padding([10, 12])
             .style(styles::input)
             .on_input(|query| Message::Action(Action::SetSearch(query)))
-            .on_submit(Message::FocusResults)
+            .on_submit(Message::SearchSubmitted),
+        search_shortcut,
     )]
     .spacing(4)
     .align_y(iced::Center);
@@ -285,32 +320,6 @@ fn description(tab: Tab) -> &'static str {
     }
 }
 
-pub(super) fn selection_summary(app: &App) -> (usize, usize, usize) {
-    match app.tab {
-        Tab::McpServers => {
-            let shown = app.visible_mcp_servers();
-            let selected = shown.iter().filter(|(_, item)| item.selected).count();
-            (selected, selected, shown.len())
-        }
-        Tab::Plugins => {
-            let shown = app.visible_plugins();
-            let selected = shown.iter().filter(|(_, item)| item.selected).count();
-            (selected, selected, shown.len())
-        }
-        _ => {
-            let shown = app.visible_components();
-            (
-                shown.iter().filter(|(_, item)| item.selected).count(),
-                shown
-                    .iter()
-                    .filter(|(_, item)| item.selected && item.is_install_eligible())
-                    .count(),
-                shown.len(),
-            )
-        }
-    }
-}
-
 fn focused_details(app: &App) -> Option<String> {
     match app.tab {
         Tab::McpServers => app
@@ -355,7 +364,7 @@ mod tests {
         app.set_search_query("no-such-result".into());
         for tab in [Tab::McpServers, Tab::Plugins] {
             app.tab = tab;
-            assert_eq!(selection_summary(&app), (0, 0, 0));
+            assert_eq!(app.work_selection().visible, 0);
             assert!(focused_details(&app).is_none());
         }
     }
@@ -381,8 +390,28 @@ mod tests {
                 InstallStatus::New,
             ),
         ];
-        assert_eq!(selection_summary(&app), (1, 0, 1));
+        let selection = app.work_selection();
+        assert_eq!(selection.selected, 1);
+        assert!(selection.install.is_empty());
+        assert_eq!(selection.remove, [0]);
+        assert_eq!(selection.visible, 1);
         app.component_filter = ComponentFilter::New.into();
-        assert_eq!(selection_summary(&app), (0, 0, 0));
+        assert_eq!(app.work_selection().visible, 0);
+    }
+
+    #[test]
+    fn installed_codex_mcp_is_excluded_from_the_install_count() {
+        let mut app = fresh_app();
+        app.target_cli = Some(crate::app::TargetCli::Codex);
+        app.tab = Tab::McpServers;
+        let mut server = crate::app::test_support::make_mcp_server();
+        server.status = crate::mcp::McpStatus::Installed;
+        server.selected = true;
+        app.mcp_servers.push(server);
+
+        let selection = app.work_selection();
+        assert_eq!(selection.selected, 1);
+        assert!(selection.install.is_empty());
+        assert_eq!(selection.remove, [0]);
     }
 }

@@ -4,17 +4,25 @@ use iced::keyboard::{self, Modifiers};
 use iced::widget::TextInput;
 use iced::{Element, Event, Length, Rectangle, Renderer, Size, Theme, Vector};
 
-pub(super) fn current_modifiers<'a, Message: Clone + 'a>(
+pub(super) fn search_input<'a, Message: Clone + 'a>(
     input: TextInput<'a, Message>,
+    search_shortcut: bool,
 ) -> Element<'a, Message> {
-    Element::new(CurrentModifiers { input })
+    Element::new(SearchInput {
+        input,
+        search_shortcut,
+    })
 }
 
-struct CurrentModifiers<'a, Message> {
+type InputState =
+    iced::widget::text_input::State<<Renderer as iced::advanced::text::Renderer>::Paragraph>;
+
+struct SearchInput<'a, Message> {
     input: TextInput<'a, Message>,
+    search_shortcut: bool,
 }
 
-impl<Message: Clone> Widget<Message, Theme, Renderer> for CurrentModifiers<'_, Message> {
+impl<Message: Clone> Widget<Message, Theme, Renderer> for SearchInput<'_, Message> {
     fn size(&self) -> Size<Length> {
         Widget::size(&self.input)
     }
@@ -98,6 +106,25 @@ impl<Message: Clone> Widget<Message, Theme, Renderer> for CurrentModifiers<'_, M
             ..
         }) = event
         {
+            // Focus before further key events in the same batch reach the list.
+            if self.search_shortcut
+                && modifiers.command()
+                && key.to_latin(*physical_key) == Some('f')
+            {
+                tree.state.downcast_mut::<InputState>().focus();
+                shell.capture_event();
+                shell.request_redraw();
+                return;
+            }
+            if *key == keyboard::Key::Named(keyboard::key::Named::Tab)
+                && !modifiers.intersects(Modifiers::CTRL | Modifiers::LOGO | Modifiers::ALT)
+            {
+                let state = tree.state.downcast_mut::<InputState>();
+                if state.is_focused() {
+                    state.unfocus();
+                    shell.request_redraw();
+                }
+            }
             // Native TextInput reads its modifier cache, which can be stale after focus changes.
             let editing_command =
                 matches!(key.to_latin(*physical_key), Some('a' | 'c' | 'x' | 'v'));
@@ -131,6 +158,19 @@ impl<Message: Clone> Widget<Message, Theme, Renderer> for CurrentModifiers<'_, M
             shell,
             viewport,
         );
+        if shell.event_status() == iced::event::Status::Captured
+            && matches!(
+                event,
+                Event::Keyboard(keyboard::Event::KeyPressed {
+                    key: keyboard::Key::Named(keyboard::key::Named::Enter),
+                    ..
+                })
+            )
+        {
+            // A deferred unfocus could undo a later Find shortcut in the same batch.
+            tree.state.downcast_mut::<InputState>().unfocus();
+            shell.request_redraw();
+        }
     }
 
     fn mouse_interaction(
@@ -167,12 +207,9 @@ impl<Message: Clone> Widget<Message, Theme, Renderer> for CurrentModifiers<'_, M
 mod tests {
     use super::*;
     use iced::advanced::clipboard;
-    use iced::advanced::text;
     use iced::keyboard::{Key, Location, key};
-    use iced::widget::text_input::{State, Value};
+    use iced::widget::text_input::Value;
     use iced::{Font, Pixels, Point};
-
-    type InputState = State<<Renderer as text::Renderer>::Paragraph>;
 
     #[derive(Default)]
     struct FakeClipboard(Option<String>);
@@ -199,12 +236,19 @@ mod tests {
         clipboard: FakeClipboard,
     }
 
-    fn element(value: &str, wrapped: bool) -> Element<'static, String> {
+    #[derive(Clone, Debug, PartialEq)]
+    enum Edit {
+        SetValue(String),
+        Submit,
+    }
+
+    fn element(value: &str, wrapped: bool) -> Element<'static, Edit> {
         let input = TextInput::new("Search", value)
             .id("search-test")
-            .on_input(|value| value);
+            .on_input(Edit::SetValue)
+            .on_submit(Edit::Submit);
         if wrapped {
-            current_modifiers(input)
+            search_input(input, true)
         } else {
             input.into()
         }
@@ -242,7 +286,7 @@ mod tests {
             );
         }
 
-        fn send(&mut self, event: Event) -> (iced::event::Status, Vec<String>) {
+        fn send(&mut self, event: Event) -> (iced::event::Status, Vec<Edit>) {
             let mut input = element(&self.value, self.wrapped);
             self.tree.diff(input.as_widget());
             let node = input.as_widget_mut().layout(
@@ -263,7 +307,7 @@ mod tests {
                 &Rectangle::new(Point::ORIGIN, Size::new(400.0, 80.0)),
             );
             let status = shell.event_status();
-            if let Some(value) = messages.last() {
+            if let Some(Edit::SetValue(value)) = messages.last() {
                 self.value = value.clone();
             }
             (status, messages)
@@ -284,6 +328,8 @@ mod tests {
             "c" => key::Code::KeyC,
             "x" => key::Code::KeyX,
             "v" => key::Code::KeyV,
+            "f" => key::Code::KeyF,
+            "r" => key::Code::KeyR,
             _ => key::Code::KeyB,
         };
         Event::Keyboard(keyboard::Event::KeyPressed {
@@ -298,10 +344,14 @@ mod tests {
     }
 
     fn escape(modifiers: Modifiers) -> Event {
+        named_key(key::Named::Escape, key::Code::Escape, modifiers)
+    }
+
+    fn named_key(name: key::Named, code: key::Code, modifiers: Modifiers) -> Event {
         Event::Keyboard(keyboard::Event::KeyPressed {
-            key: Key::Named(key::Named::Escape),
-            modified_key: Key::Named(key::Named::Escape),
-            physical_key: key::Physical::Code(key::Code::Escape),
+            key: Key::Named(name),
+            modified_key: Key::Named(name),
+            physical_key: key::Physical::Code(code),
             location: Location::Standard,
             modifiers,
             text: None,
@@ -382,6 +432,51 @@ mod tests {
         assert_eq!(input.value, "a");
         input.send(press("b", Modifiers::NONE));
         assert_eq!(input.value, "ab");
+    }
+
+    #[test]
+    fn find_shortcut_captures_the_next_typed_key_without_waiting_for_an_app_update() {
+        let mut input = Harness::new("", true);
+        input.send(escape(Modifiers::NONE));
+        let (status, messages) = input.send(press("f", Modifiers::COMMAND));
+        assert_eq!(status, iced::event::Status::Captured);
+        assert!(messages.is_empty());
+        let (status, _) = input.send(press("r", Modifiers::NONE));
+        assert_eq!(status, iced::event::Status::Captured);
+        assert_eq!(input.value, "r");
+    }
+
+    #[test]
+    fn submitting_search_returns_the_next_key_to_results_without_a_deferred_focus_change() {
+        let mut input = Harness::new("architect", true);
+        let (status, messages) = input.send(named_key(
+            key::Named::Enter,
+            key::Code::Enter,
+            Modifiers::NONE,
+        ));
+        assert_eq!(status, iced::event::Status::Captured);
+        assert_eq!(messages, [Edit::Submit]);
+        let (status, messages) = input.send(press("r", Modifiers::NONE));
+        assert_eq!(status, iced::event::Status::Ignored);
+        assert!(messages.is_empty());
+
+        input.send(press("f", Modifiers::COMMAND));
+        let (status, _) = input.send(press("r", Modifiers::NONE));
+        assert_eq!(status, iced::event::Status::Captured);
+        assert_eq!(input.value, "architectr");
+    }
+
+    #[test]
+    fn tab_releases_the_search_before_the_pane_navigation_message() {
+        let mut input = Harness::new("architect", true);
+        let (status, messages) =
+            input.send(named_key(key::Named::Tab, key::Code::Tab, Modifiers::SHIFT));
+        assert_eq!(status, iced::event::Status::Ignored);
+        assert!(messages.is_empty());
+        let (status, messages) = input.send(press("r", Modifiers::NONE));
+        assert_eq!(status, iced::event::Status::Ignored);
+        assert!(messages.is_empty());
+        assert_eq!(input.value, "architect");
     }
 
     #[test]

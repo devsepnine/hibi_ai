@@ -64,7 +64,8 @@ esac
         env = os.environ.copy()
         env.update(LANGUAGE="en", HOME=str(self.home), DISPLAY=self.args.display, WAYLAND_DISPLAY="",
                    XDG_CONFIG_HOME=str(self.home / ".config"), XDG_CACHE_HOME=str(self.home / ".cache"),
-                   XDG_DATA_HOME=str(self.home / ".local/share"), PATH=f"{stub}:/usr/bin:/bin")
+                   XDG_DATA_HOME=str(self.home / ".local/share"), PATH=f"{stub}:/usr/bin:/bin",
+                   CLAUDE_CONFIG_DIR=str(self.home / ".claude"))
         self.log = (self.artifacts / "application.log").open("a")
         existing = {w.id for w in self.root.query_tree().children}
         self.process = subprocess.Popen([str(self.args.binary.resolve())], env=env,
@@ -107,6 +108,14 @@ esac
         # independently recognize light and dark text on colored buttons.
         words = []
         regions = [(image, 0, 0, "11")]
+        # The selection count can be skipped in sparse-page recognition.
+        # Read the work bar independently of the results and sidebar.
+        bar_top = image.height - 126
+        regions.append((image.crop((245, bar_top, image.width - 12, image.height - 64)),
+                        245, bar_top, "11"))
+        install_left = image.width - 125
+        regions.append((image.crop((install_left, bar_top + 8, image.width - 23, image.height - 75)),
+                        install_left, bar_top + 8, "7"))
         # Sparse-page OCR may ignore white text inside filled action buttons.
         # Recognize their saturated background rectangles independently.
         for count, color in sorted(image.getcolors(image.width * image.height), reverse=True)[:24]:
@@ -165,21 +174,27 @@ esac
 
     def expect_any(self, labels, timeout=8):
         deadline = time.monotonic() + timeout
-        while time.monotonic() < deadline:
-            screen = normalized(self.text())
+        while True:
+            expired = time.monotonic() >= deadline
+            if expired:
+                # Recheck after the pointer is parked before recording a failure.
+                self.capture()
+            recognized = self.text()
+            screen = normalized(recognized)
             for label in labels:
                 if normalized(label) in screen:
                     return label
+            if expired:
+                self.screenshot("failure")
+                raise AssertionError(f"Expected one of {labels!r}; recognized: {recognized}")
             time.sleep(.1)
-        self.screenshot("failure")
-        raise AssertionError(f"Expected one of {labels!r}; recognized: {self.text()}")
 
-    def find(self, label, region=None):
-        _, bounds = self.find_any((label,), region)
+    def find(self, label, region=None, timeout=8):
+        _, bounds = self.find_any((label,), region, timeout)
         return bounds
 
-    def find_any(self, labels, region):
-        deadline = time.monotonic() + 8
+    def find_any(self, labels, region, timeout=8):
+        deadline = time.monotonic() + timeout
         while True:
             words = self.words()
             for label in labels:
@@ -253,6 +268,17 @@ esac
             time.sleep(.1)
         raise AssertionError(f"{label} did not scroll")
 
+    def check_sidebar_repaint(self):
+        # The panel margin should stay stable while hover redraws the sidebar rows.
+        margin = (30, 175, 37, 620)
+        before = self.capture().crop(margin)
+        for label in ("Agents", "Commands", "Skills", "Hooks", "Styles"):
+            x, y, w, h = self.find(label, (40, 200, 210, 620))
+            self.window.warp_pointer(round(x + w/2), round(y + h/2))
+            self.d.sync(); time.sleep(.15)
+        after = self.capture().crop(margin)
+        assert ImageChops.difference(before, after).getbbox() is None, "Sidebar glass changed outside hover rows"
+
     def key(self, name, shift=False, control=False, logo=False):
         controlcode = self.d.keysym_to_keycode(XK.string_to_keysym("Control_L"))
         if control:
@@ -276,8 +302,39 @@ esac
         self.d.sync(); time.sleep(.12)
         self.ocr_cache = None
 
+    def expect_clipboard(self, expected):
+        connection = display.Display(self.args.display)
+        receiver = connection.screen().root.create_window(0, 0, 1, 1, 0, X.CopyFromParent)
+        try:
+            clipboard = connection.intern_atom("CLIPBOARD")
+            utf8 = connection.intern_atom("UTF8_STRING")
+            property_atom = connection.intern_atom("HIBI_GUI_SMOKE_CLIPBOARD")
+            deadline = time.monotonic() + 8
+            while time.monotonic() < deadline:
+                receiver.convert_selection(clipboard, utf8, property_atom, X.CurrentTime)
+                connection.flush()
+                reply_deadline = min(deadline, time.monotonic() + .5)
+                while time.monotonic() < reply_deadline:
+                    if not connection.pending_events():
+                        time.sleep(.03)
+                        continue
+                    reply = connection.next_event()
+                    if reply.type != X.SelectionNotify:
+                        continue
+                    if reply.property == property_atom:
+                        content = receiver.get_full_property(property_atom, utf8)
+                        receiver.delete_property(property_atom)
+                        if content is not None and content.value == expected.encode("utf-8"):
+                            return
+                    break
+                time.sleep(.1)
+            raise AssertionError(f"X11 clipboard did not receive {expected!r}")
+        finally:
+            connection.close()
+
     def search(self, query, submit=True):
         self.key("f", control=True)
+        self.expect_search_focus()
         self.key("a", control=True)
         self.key("BackSpace")
         for char in query:
@@ -285,16 +342,46 @@ esac
         if submit:
             self.key("Return")
 
+    def expect_search_focus(self):
+        # The search outline is visible as soon as the input can receive keys.
+        deadline = time.monotonic() + 8
+        while time.monotonic() < deadline:
+            image = self.capture(park_pointer=False)
+            dark = sum(image.getpixel((0, 0))) < 300
+            accent = (209, 191, 255) if dark else (88, 64, 153)
+            center = image.crop((365, 88, 515, 210))
+            if any(color == accent and count >= 100
+                   for count, color in center.getcolors(center.width * center.height)):
+                return
+            time.sleep(.1)
+        self.screenshot("search-focus-failure")
+        raise AssertionError("Search input did not show keyboard focus")
+
     def clear_search(self):
-        # Escape must clear a nonempty query while retaining the environment.
         self.key("Escape")
-        self.expect("COMPONENTS")
+        self.expect_components()
+        # Selection counts are scoped to the query until the field is cleared.
+        self.find("Search this category", (240, 95, 700, 210), timeout=15)
+
+    def expect_components(self):
+        self.find("Components", (15, 80, 230, 280), timeout=20)
+
+    def close_diff(self):
+        self.key("Escape")
+        self.expect_components()
 
     def select_status(self, label):
         x, y, width, height = self.find("Filters", (220, 70, 1120, 350))
         self.click(x + width/2, y + height/2)
         self.click_text(label, (max(220, x-260), y+height+4, 1120, 560))
         self.click_text("Filters", (220, 70, 1120, 350))
+
+    def reset_status(self):
+        self.key("f")
+        self.find("Visibility", (800, 180, 1120, 560))
+        self.key("Return")
+        self.key("Escape")
+        self.find("Filters Default", (800, 70, 1120, 220))
 
     def text_selection_checks(self):
         match = re.search(r"(\d+)\s+selected", self.text())
@@ -306,12 +393,14 @@ esac
             for modifier in ("control", "logo"):
                 keys = {modifier: True}
                 self.search("architect", submit=False)
+                self.expect("1 result")
                 # Select-all alone must not insert an 'a' or affect row selection.
                 self.key("a", **keys); self.key("a", **keys)
                 self.key("Return")
                 self.expect("1 result"); self.expect("architect.md")
                 self.expect("1 selected")
                 self.click_text("architect", (220, 130, 1120, 220))
+                self.expect_search_focus()
                 self.key("a", **keys)
                 for char in "auditor": self.key(char)
                 self.key("Return")
@@ -323,21 +412,32 @@ esac
                 self.clear_search()
                 self.expect(f"{selected} selected")
             self.passed(f"03j-{theme}-search-text-select-all")
-        self.search("architect", submit=False)
-        for modifier in ("control", "logo"):
+        self.clipboard_shortcuts(selected)
+
+    def clipboard_shortcuts(self, selected):
+        for modifier, (copy_query, copy_file), (cut_query, cut_file) in (
+            ("control", ("architect", "architect.md"), ("auditor", "assurance-auditor.md")),
+            ("logo", ("e2e", "e2e-runner.md"), ("refactor", "refactor-cleaner.md")),
+        ):
             keys = {modifier: True}
-            self.key("a", **keys); self.key("c", **keys)
-            self.key("Return")
-            self.expect("1 result"); self.expect("architect.md")
-            self.key("f", control=True)
-            self.key("a", **keys); self.key("x", **keys)
+            self.search(copy_query, submit=False)
+            self.expect("1 result")
+            self.expect(copy_file)
+            self.key("a", **keys)
+            self.key("c", **keys)
+            self.expect_clipboard(copy_query)
+            self.search(cut_query, submit=False)
+            self.expect("1 result")
+            self.expect(cut_file)
+            self.key("a", **keys)
+            self.key("x", **keys)
+            self.expect_clipboard(cut_query)
             self.expect(f"{selected} selected")
             self.key("v", **keys)
             self.key("Return")
-            self.expect("1 result"); self.expect("architect.md")
+            self.expect("1 result")
+            self.expect(cut_file)
             self.expect("1 selected")
-            self.key("f", control=True)
-        self.key("Return")
         self.clear_search()
         self.expect(f"{selected} selected")
         self.passed("03k-search-text-copy-cut-paste")
@@ -360,13 +460,15 @@ esac
         self.expect(f"{selected} selected")
         self.passed("03d-search-preserves-hidden-selections-and-focused-escape")
         self.search("BuNdLeD")
+        self.expect(f"{selected} results")
         self.expect(f"{selected} selected")
         self.passed("03e-search-by-source")
         self.search("architect")
+        self.expect("1 result")
         self.select_status("Modified")
         self.expect("No matching items")
         self.expect("0 selected")
-        self.select_status("Default")
+        self.reset_status()
         self.expect("1 selected")
         self.passed("03f-search-and-status-filter-intersection")
         self.search("hibi-search-no-matches")
@@ -386,11 +488,10 @@ esac
         self.key("1")
         for _ in range(9): self.key("Down")
         self.key("2")
+        self.find("MCP", (235, 70, 550, 115))
         self.search("MEMORY_FILE_PATH")
         self.expect("1 result")
-        self.find("memory", (220, 250, 1120, 640))
-        self.click_text("memory", (220, 250, 1120, 640)); self.key("space")
-        self.expect("1 selected")
+        self.select_one_result("memory")
         self.search("framework")
         self.expect("2 results")
         self.expect("0 selected")
@@ -399,6 +500,7 @@ esac
         self.expect("3 selected")
         self.passed("03h-mcp-metadata-and-hidden-selection")
         self.key("1"); self.key("Down"); self.key("2")
+        self.find("Plugins", (235, 70, 550, 115))
         self.search("anthropics rust")
         self.expect("1 result")
         self.expect("rust-analyzer")
@@ -423,11 +525,16 @@ esac
 
     def resize(self, width, height):
         self.window.configure(width=width, height=height)
-        self.d.sync(); time.sleep(.25)
+        self.d.sync()
         self.ocr_cache = None
+        # A window may already have its new size while still showing the old layout.
+        self.find("Install", (410, height - 126, width, height - 64), timeout=15)
 
     def inert(self, label, compare_region=None):
         before = self.capture()
+        left, top, right, bottom = compare_region or (0, 52, before.width, before.height)
+        # Hover and focus can change the work bar and footer without starting an action.
+        content = (left, top, right, min(bottom, before.height - 134))
         try:
             self.click_text(label)
         except AssertionError:
@@ -438,10 +545,7 @@ esac
             x, y, w, h = self.find("Remove", (220, 300, 1120, 780))
             self.click(x + w + 50, y + h / 2)
         after = self.capture()
-        if compare_region is not None:
-            before = before.crop(compare_region)
-            after = after.crop(compare_region)
-        assert ImageChops.difference(before, after).getbbox() is None, f"Disabled {label} changed the screen"
+        assert ImageChops.difference(before.crop(content), after.crop(content)).getbbox() is None, f"Disabled {label} changed the content"
 
     def clear_selection(self):
         footer = (220, 300, 1120, 780)
@@ -453,11 +557,26 @@ esac
         self.click_text("Clear selection", footer)
         self.find("0 selected", footer)
 
+    def select_one_result(self, label):
+        self.expect("1 result")
+        self.click_text(label, (235, 218, 1100, 650))
+        footer = (220, 600, 1120, 780)
+        action, _ = self.find_any(("1 selected", "Select all"), footer)
+        if action == "Select all":
+            self.click_text("Select all", footer)
+            self.find("1 selected", footer)
+
+    def confirm_single_removal(self, label):
+        self.find("Remove 1 selected item?")
+        self.expect(label)
+        self.key("y")
+
     def back_to_home(self):
-        self.click_text("Switch CLI")
-        if self.expect_any(("Your workspace", "Leave this environment")) == "Leave this environment":
-            self.click_text("Discard selections")
-            self.expect("Your workspace")
+        self.click_text("Switch CLI", (35, 80, 215, 205))
+        screen = self.expect_any(("Your workspace", "Leave this environment"), timeout=20)
+        if screen == "Leave this environment":
+            self.key("y")
+            self.expect("Your workspace", timeout=20)
 
     def wait_for_appearance(self, appearance):
         deadline = time.monotonic() + 8
@@ -504,13 +623,15 @@ esac
         self.expect_theme("light")
         self.passed("02b-light-theme-restored")
         self.click_text("Claude Code")
-        self.expect("COMPONENTS")
+        self.expect_components()
         self.expect("Agents")
         # A normal-size capture records the entire category sidebar for visual review.
         self.passed("03-claude-sidebar")
+        self.check_sidebar_repaint()
         self.click_theme()
         self.expect_theme("dark")
         self.passed("03a-dark-claude-sidebar")
+        self.check_sidebar_repaint()
         self.click_theme()
         self.expect_theme("light")
         sidebar_text = " ".join(w["text"] for w in self.words() if w["x"] < 210)
@@ -530,7 +651,7 @@ esac
         self.expect("Nothing to show")
         self.expect("0 selected")
         self.passed("05-empty-filter")
-        self.select_status("Default")
+        self.reset_status()
         self.expect("architect.md")
         self.clear_selection()
         # Keep nonmatching rows selected to prove search constrains installation.
@@ -543,7 +664,7 @@ esac
         self.key("Down"); self.key("Down")
         self.expect_scroll(before, "Diff")
         self.passed("06-diff-keyboard-scroll")
-        self.click_text("Back to components")
+        self.close_diff()
         self.click_text("Install", (220, 300, 1120, 780))
         installed = self.home / ".claude/agents/architect.md"
         self.expect("Operation complete", timeout=15)
@@ -553,11 +674,11 @@ esac
         assert manifest["components"] == ["agents/architect.md"], manifest
         self.passed("07-install-and-manifest")
         self.click_text("Back to components")
-        self.expect("COMPONENTS")
+        self.expect_components()
         self.clear_search()
         self.clear_selection()
         self.search("assurance-auditor")
-        self.click_text("assurance-auditor.md"); self.key("space")
+        self.select_one_result("assurance-auditor.md")
         self.click_text("Install", (220, 300, 1120, 780))
         self.expect("Operation complete", timeout=15)
         other_installed = installed.parent / "assurance-auditor.md"
@@ -565,19 +686,22 @@ esac
         self.click_text("Back to components")
         self.clear_search()
         self.clear_selection()
-        self.click_text("architect.md"); self.key("space")
+        self.search("architect")
+        self.select_one_result("architect.md")
         self.search("assurance-auditor")
-        self.click_text("assurance-auditor.md"); self.key("space")
+        self.select_one_result("assurance-auditor.md")
         self.search("architect")
         self.expect("1 selected")
         self.click_text("Remove", (220, 300, 1120, 780))
-        self.expect("Remove 1 selected items")
+        self.find("Remove 1 selected item?")
+        self.expect("architect.md")
+        assert self.label_bounds(self.words(), "assurance-auditor.md", None) is None, "Confirmation shows a hidden item"
         self.click_text("Cancel")
         assert installed.is_file() and other_installed.is_file(), "Cancelling removal changed an installed file"
-        self.expect("COMPONENTS")
+        self.expect_components()
         self.passed("08-remove-cancel")
         self.click_text("Remove", (220, 300, 1120, 780))
-        self.click_text("Remove items")
+        self.confirm_single_removal("architect.md")
         self.expect("Operation complete", timeout=15)
         assert not installed.exists(), "Confirmed removal left the component installed"
         manifest = json.loads((self.home / ".hibi/install.json").read_text())
@@ -587,9 +711,9 @@ esac
         self.click_text("Back to components")
         self.clear_search()
         self.search("assurance-auditor")
-        self.click_text("assurance-auditor.md"); self.key("space")
+        self.select_one_result("assurance-auditor.md")
         self.click_text("Remove", (220, 300, 1120, 780))
-        self.click_text("Remove items")
+        self.confirm_single_removal("assurance-auditor.md")
         self.expect("Operation complete", timeout=15)
         assert not other_installed.exists()
         self.click_text("Back to components")
@@ -608,7 +732,7 @@ esac
         self.manage_individual_settings()
         self.back_to_home()
         self.click_text("Codex CLI")
-        self.expect("COMPONENTS")
+        self.expect_components()
         sidebar = " ".join(w["text"] for w in self.words() if w["x"] < 210)
         assert all(name in sidebar for name in ["Skills", "Config", "MCP"]), sidebar
         assert all(name not in sidebar for name in ["Agents", "Commands", "Plugins"]), sidebar
@@ -619,18 +743,21 @@ esac
         self.inert("Remove source")
         self.inert("Edit source")
         self.passed("13-bundled-source-protected")
-        self.click_text("Add source")
+        self.key("a")
+        self.expect("Where are your components")
         self.click_text("Git repository")
         self.expect("Connect a Git repository")
-        self.click_text("Continue")
+        self.key("Return")
         self.expect("Only HTTPS git URLs are allowed")
         self.passed("14-invalid-empty-git-url")
         self.click_text("Cancel")
         assert not (self.home / ".hibi/sources.yaml").exists()
-        self.click_text("Add source")
+        self.expect("Bundled library")
+        self.key("a")
+        self.expect("Where are your components")
         self.click_text("Local folder")
-        self.click_text("Continue")
         self.expect("Choose a local folder")
+        self.key("Return")
         self.expect("Local source path is empty")
         self.passed("15-empty-local-path")
         self.click_text("Cancel")
@@ -640,7 +767,6 @@ esac
         self.click_theme()
         self.expect_theme("dark")
         self.passed("16-dark-home-final")
-        assert sum(self.capture().getpixel((0, 0))) < 150
         self.wait_for_appearance("dark")
         self.close_window()
         self.launch()
@@ -652,6 +778,7 @@ esac
 
     def manage_individual_settings(self):
         settings_file = self.home / ".claude/settings.json"
+        settings_file.parent.mkdir(parents=True, exist_ok=True)
         instructions = settings_file.with_name("CLAUDE.md")
         user_instructions = "# Custom workspace instructions\n"
         instructions.write_text(user_instructions)
@@ -665,21 +792,20 @@ esac
         settings_file.write_text(json.dumps(original))
         self.back_to_home()
         self.click_text("Claude Code")
-        self.expect("COMPONENTS")
+        self.expect_components()
         self.wheel(140, 420, -10)
         self.click_text("Config", (0, 150, 220, 665))
+        self.find("Config", (235, 70, 550, 115))
         self.search("MCP_TIMEOUT")
         self.expect("1 result")
         self.expect("0 selected")
-        self.click_text("env.MCP_TIMEOUT")
-        self.key("space")
-        self.expect("1 selected")
+        self.select_one_result("env.MCP_TIMEOUT")
         self.inert("Remove", (220, 160, 1120, 780))
         self.click_text("Diff", (220, 300, 1120, 780))
-        self.expect("Compare configuration")
+        self.expect("Compare configuration", timeout=20)
         self.expect("5000")
         self.expect("10000")
-        self.click_text("Back to components")
+        self.close_diff()
         self.clear_search()
         self.expect("1 selected")
         self.click_text("Install", (220, 300, 1120, 780))
@@ -691,10 +817,9 @@ esac
 
         self.click_text("Back to components")
         self.search("MCP_TIMEOUT")
-        self.click_text("env.MCP_TIMEOUT")
-        self.key("space")
+        self.select_one_result("env.MCP_TIMEOUT")
         self.click_text("Remove", (220, 300, 1120, 780))
-        self.click_text("Remove items")
+        self.confirm_single_removal("env.MCP_TIMEOUT")
         self.expect("Operation complete", timeout=15)
         del expected["env"]["MCP_TIMEOUT"]
         assert json.loads(settings_file.read_text()) == expected
@@ -707,21 +832,20 @@ esac
         settings_file.write_text("{broken")
         self.back_to_home()
         self.click_text("Claude Code")
-        self.expect("COMPONENTS")
+        self.expect_components()
         self.wheel(140, 420, -10)
         self.click_text("Config", (0, 150, 220, 665))
+        self.find("Config", (235, 70, 550, 115))
         self.search("MCP_TIMEOUT")
         self.expect("blocked")
-        self.click_text("env.MCP_TIMEOUT")
-        self.key("space")
-        self.expect("1 selected")
+        self.select_one_result("env.MCP_TIMEOUT")
         self.inert("Install", (220, 160, 1120, 780))
         self.inert("Remove", (220, 160, 1120, 780))
         self.click_text("Diff", (220, 300, 1120, 780))
         self.expect("Invalid JSON")
         assert settings_file.read_text() == "{broken"
         self.passed("11c-settings-read-error")
-        self.click_text("Back to components")
+        self.close_diff()
 
     def remove_source_with_busy_cache(self):
         url = "https://example.invalid/gui-smoke.git"
@@ -741,7 +865,7 @@ esac
         self.expect("Disconnect this library?")
         with cache.with_suffix(".lock").open("wb") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            self.click_text("Remove source")
+            self.key("y")
             self.expect("Git cache is in use", timeout=15)
             assert "sources: []" in config.read_text()
             assert marker.read_text() == "Shared cache fixture"

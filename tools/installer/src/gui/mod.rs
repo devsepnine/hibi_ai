@@ -46,8 +46,7 @@ pub enum Message {
     TouchWindowDrag(iced::Vector),
     Tick,
     Resized(iced::Size),
-    FocusSearch,
-    FocusResults,
+    SearchSubmitted,
     SearchEscape,
     OperationLogScrolled(scrollable::Viewport),
 }
@@ -89,13 +88,12 @@ fn update(state: &mut Runtime, message: Message) -> Task<Message> {
         match &message {
             Message::Action(Action::Key(KeyCode::Esc) | Action::RequestClose)
             | Message::SearchEscape => return updates::handle(state, updates::Event::Dismiss),
-            Message::Action(_) | Message::FocusSearch | Message::FocusResults => {
+            Message::Action(_) | Message::SearchSubmitted => {
                 return Task::none();
             }
             _ => {}
         }
     }
-    let focus_navigation = shortcuts::navigation_focus(&message);
     let scroll = match &message {
         Message::Action(Action::Key(key)) => Some(*key),
         Message::Action(
@@ -129,22 +127,18 @@ fn update(state: &mut Runtime, message: Message) -> Task<Message> {
                 return iced::advanced::widget::operate(operation);
             }
         }
-        Message::FocusSearch if search_available(state) => {
-            return iced::widget::operation::focus("component-search");
-        }
-        Message::FocusResults if search_available(state) => {
+        Message::SearchSubmitted if search_available(state) && state.filter_choice.is_none() => {
             if let Some(app) = state.app.as_mut() {
                 app.focus_content();
             }
-            return iced::widget::operation::focus("component-list");
         }
-        Message::SearchEscape if search_available(state) => {
+        Message::SearchEscape if search_available(state) && state.filter_choice.is_none() => {
             state.dispatch(Action::ClearSearch);
             if let Some(app) = state.app.as_mut() {
                 app.focus_content();
             }
         }
-        Message::FocusSearch | Message::FocusResults | Message::SearchEscape => {}
+        Message::SearchSubmitted | Message::SearchEscape => {}
     }
     if state.should_close {
         return iced::exit();
@@ -156,21 +150,14 @@ fn update(state: &mut Runtime, message: Message) -> Task<Message> {
     {
         state.operation_log = Default::default();
     }
-    let scroll = match (scroll, state.app.as_ref()) {
-        (Some(key), Some(app)) => scroll_after_key(app, key),
+    match (scroll, state.app.as_ref()) {
+        (Some(key), Some(app)) if state.filter_choice.is_none() => scroll_after_key(app, key),
         _ => Task::none(),
-    };
-    let focus = if search_available(state) {
-        focus_navigation.map_or_else(Task::none, iced::advanced::widget::operate)
-    } else {
-        Task::none()
-    };
-    Task::batch([focus, scroll])
+    }
 }
 
 fn search_available(state: &Runtime) -> bool {
     !state.close_requested
-        && !state.remove_requested
         && state
             .app
             .as_ref()
@@ -194,14 +181,12 @@ fn view(state: &Runtime) -> Element<'_, Message> {
         page = page.push(updates::dialog(state));
     } else if state.close_requested {
         page = page.push(dialogs::close(lang, state.busy()));
-    } else if state.remove_requested {
-        page = page.push(dialogs::remove(lang, state.remove_count));
     } else if let Some(app) = &state.app {
         page = page.push(content(
             lang,
             app,
             compact,
-            state.filter_menu_open,
+            state.filter_choice,
             state.operation_log.following,
         ));
     } else if state.error.is_none() {
@@ -218,6 +203,7 @@ fn view(state: &Runtime) -> Element<'_, Message> {
                     } else {
                         lang.text("Retry")
                     })
+                    .style(styles::secondary)
                     .on_press(Message::Action(if state.app.is_some() {
                         Action::DismissError
                     } else {
@@ -227,7 +213,7 @@ fn view(state: &Runtime) -> Element<'_, Message> {
                 .spacing(8),
             )
             .padding(12)
-            .style(container::rounded_box),
+            .style(styles::surface),
         );
     }
     let message = state
@@ -252,7 +238,8 @@ fn view(state: &Runtime) -> Element<'_, Message> {
             |language| Message::Action(Action::SetLanguage(language)),
         )
         .text_size(12)
-        .padding([3, 8]),
+        .padding([4, 10])
+        .style(styles::selector),
     );
     let version = updates::footer(state);
     let footer = container(footer.push(version))
@@ -266,7 +253,7 @@ fn view(state: &Runtime) -> Element<'_, Message> {
     container(page)
         .width(Fill)
         .height(Fill)
-        .style(|theme: &Theme| container::Style::default().background(theme.palette().background))
+        .style(styles::backdrop)
         .into()
 }
 
@@ -298,7 +285,7 @@ fn theme_button(state: &Runtime) -> Element<'static, Message> {
             .padding(9)
             .width(36)
             .height(36)
-            .style(styles::subtle)
+            .style(styles::glass_button)
             .on_press_maybe(enabled.then_some(Message::Action(Action::ToggleTheme))),
         text(if dark {
             lang.text("Light theme")
@@ -317,12 +304,12 @@ fn content(
     lang: Language,
     app: &App,
     compact: bool,
-    filter_menu_open: bool,
+    filter_choice: Option<filters::Choice>,
     follow_log: bool,
 ) -> Element<'_, Message> {
     match app.current_view {
         View::CliSelection => home::view(lang, app),
-        View::List => list::view(lang, app, compact, filter_menu_open),
+        View::List => list::view(lang, app, compact, filter_choice),
         View::Sources
         | View::SourceAddType
         | View::SourceAddUrl

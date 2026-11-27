@@ -8,7 +8,53 @@ use super::{Message, actions::Action, styles};
 use crate::app::{App, ComponentFilter, HiddenVisibility};
 mod dropdown;
 
-pub(super) fn view(lang: Language, app: &App, open: bool) -> Element<'_, Message> {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Choice {
+    Status(ComponentFilter),
+    Visibility(HiddenVisibility),
+}
+
+const STATUS_CHOICES: [ComponentFilter; 4] = [
+    ComponentFilter::All,
+    ComponentFilter::Modified,
+    ComponentFilter::External,
+    ComponentFilter::New,
+];
+const VISIBILITY_CHOICES: [HiddenVisibility; 3] = [
+    HiddenVisibility::Exclude,
+    HiddenVisibility::Include,
+    HiddenVisibility::Only,
+];
+
+impl Choice {
+    pub const FIRST: Self = Self::Status(ComponentFilter::All);
+
+    pub fn step(self, offset: isize) -> Self {
+        let choices = || {
+            STATUS_CHOICES
+                .into_iter()
+                .map(Self::Status)
+                .chain(VISIBILITY_CHOICES.into_iter().map(Self::Visibility))
+        };
+        let count = STATUS_CHOICES.len() + VISIBILITY_CHOICES.len();
+        let current = choices().position(|choice| choice == self).unwrap_or(0);
+        let next = (current as isize + offset).rem_euclid(count as isize) as usize;
+        choices().nth(next).unwrap_or(Self::FIRST)
+    }
+
+    pub fn action(self, app: &App) -> Action {
+        match self {
+            Self::Status(filter) => Action::SetFilter(
+                filter,
+                filter == ComponentFilter::All || !app.component_filter.contains(filter),
+            ),
+            Self::Visibility(mode) => Action::SetHiddenVisibility(mode),
+        }
+    }
+}
+
+pub(super) fn view(lang: Language, app: &App, cursor: Option<Choice>) -> Element<'_, Message> {
+    let open = cursor.is_some();
     let active = [
         ComponentFilter::Modified,
         ComponentFilter::External,
@@ -45,9 +91,9 @@ pub(super) fn view(lang: Language, app: &App, open: bool) -> Element<'_, Message
     let menu = container(scrollable(
         column![
             text(lang.text("Status")).size(11).style(styles::muted),
-            status_choices(lang, app),
+            status_choices(lang, app, cursor),
             rule::horizontal(1).style(styles::divider),
-            visibility_choices(lang, app),
+            visibility_choices(lang, app, cursor),
         ]
         .spacing(14),
     ))
@@ -72,50 +118,29 @@ fn caret(open: bool) -> iced::widget::Svg<'static> {
         })
 }
 
-fn status_choices(lang: Language, app: &App) -> Column<'_, Message> {
-    [
-        ComponentFilter::All,
-        ComponentFilter::Modified,
-        ComponentFilter::External,
-        ComponentFilter::New,
-    ]
-    .into_iter()
-    .fold(column![].spacing(12), |choices, filter| {
-        choices.push(
-            checkbox(app.component_filter.contains(filter))
-                .style(styles::check)
-                .label(if filter == ComponentFilter::All {
-                    lang.text("Default")
-                } else {
-                    lang.text(filter.display())
-                })
-                .size(14)
-                .text_size(13)
-                .on_toggle(move |checked| Message::Action(Action::SetFilter(filter, checked))),
-        )
-    })
+fn status_choices(lang: Language, app: &App, cursor: Option<Choice>) -> Column<'_, Message> {
+    STATUS_CHOICES
+        .into_iter()
+        .fold(column![].spacing(4), |choices, filter| {
+            choices.push(choice_row(
+                checkbox(app.component_filter.contains(filter))
+                    .style(styles::check)
+                    .label(if filter == ComponentFilter::All {
+                        lang.text("Default")
+                    } else {
+                        lang.text(filter.display())
+                    })
+                    .size(14)
+                    .width(Fill)
+                    .text_size(13)
+                    .on_toggle(move |checked| Message::Action(Action::SetFilter(filter, checked))),
+                cursor == Some(Choice::Status(filter)),
+            ))
+        })
 }
 
-fn visibility_choices(lang: Language, app: &App) -> Column<'_, Message> {
-    [
-        (
-            HiddenVisibility::Exclude,
-            lang.text("Visible only"),
-            "visibility-visible",
-        ),
-        (
-            HiddenVisibility::Include,
-            lang.text("Include hidden"),
-            "visibility-include",
-        ),
-        (
-            HiddenVisibility::Only,
-            lang.text("Hidden only"),
-            "visibility-only",
-        ),
-    ]
-    .into_iter()
-    .fold(
+fn visibility_choices(lang: Language, app: &App, cursor: Option<Choice>) -> Column<'_, Message> {
+    VISIBILITY_CHOICES.into_iter().fold(
         column![
             text(localized_format!(
                 lang,
@@ -129,18 +154,44 @@ fn visibility_choices(lang: Language, app: &App) -> Column<'_, Message> {
         ]
         .spacing(6)
         .width(Fill),
-        |choices, (mode, label, id)| {
+        |choices, mode| {
+            let (label, id) = match mode {
+                HiddenVisibility::Exclude => ("Visible only", "visibility-visible"),
+                HiddenVisibility::Include => ("Include hidden", "visibility-include"),
+                HiddenVisibility::Only => ("Hidden only", "visibility-only"),
+            };
             choices.push(
-                container(
-                    radio(label, mode, Some(app.hidden_visibility), |mode| {
-                        Message::Action(Action::SetHiddenVisibility(mode))
-                    })
+                choice_row(
+                    radio(
+                        lang.text(label),
+                        mode,
+                        Some(app.hidden_visibility),
+                        |mode| Message::Action(Action::SetHiddenVisibility(mode)),
+                    )
                     .size(14)
+                    .width(Fill)
                     .text_size(13)
                     .spacing(8),
+                    cursor == Some(Choice::Visibility(mode)),
                 )
                 .id(id),
             )
         },
     )
+}
+
+fn choice_row<'a>(
+    control: impl Into<Element<'a, Message>>,
+    focused: bool,
+) -> iced::widget::Container<'a, Message> {
+    container(control)
+        .width(Fill)
+        .padding(4)
+        .style(move |theme| {
+            if focused {
+                styles::focus_ring(theme)
+            } else {
+                Default::default()
+            }
+        })
 }

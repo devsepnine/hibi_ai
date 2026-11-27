@@ -6,7 +6,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 
-use crate::app::App;
+use crate::app::{App, CliChoice};
 
 /// ANSI Shadow figlet rendering of "HIBI AI". 6 lines tall, ~50 cols wide.
 const BRAND_ART: &[&str] = &[
@@ -108,8 +108,8 @@ fn render_options(f: &mut Frame, app: &App, area: Rect) {
     // anchors the column.
     let mut lines: Vec<Line> = Vec::with_capacity(OPTIONS.len() * 3);
 
-    for (idx, opt) in OPTIONS.iter().enumerate() {
-        let selected = idx == app.cli_selection_index;
+    for (choice, opt) in CliChoice::ALL.into_iter().zip(OPTIONS) {
+        let selected = choice == app.cli_choice;
         let (marker, label_color, label_mod) = if selected {
             ("▶ ", app.theme.accent_primary(), Modifier::BOLD)
         } else {

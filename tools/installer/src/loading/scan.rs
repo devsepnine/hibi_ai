@@ -9,10 +9,7 @@ use crate::fs;
 use crate::mcp;
 use crate::plugin;
 
-/// Outcome of a scan thread, scoped to the kind of data it actually
-/// touched. Used to skip the expensive `claude/codex mcp list` shell
-/// call (which dominates refresh wall time) when an install only
-/// affected filesystem-backed components or plugin metadata.
+/// Outcome of a scan thread, scoped to the kind of data it actually touched.
 pub(crate) enum RefreshResult {
     /// First-time scan after CLI selection. Returns the full picture so
     /// every tab has something to render, and reports any deprecated
@@ -20,6 +17,7 @@ pub(crate) enum RefreshResult {
     InitialLoad {
         components: Vec<component::Component>,
         mcp_servers: Vec<mcp::McpServer>,
+        mcp_warning: Option<String>,
         plugins: Vec<plugin::Plugin>,
         cleaned_items: Vec<String>,
     },
@@ -33,9 +31,7 @@ pub(crate) enum RefreshResult {
         /// stays the only writer of the processing log.
         manifest_warning: Option<String>,
     },
-    /// Refresh limited to MCP servers. Always shells out to the CLI
-    /// (`mcp list`) and is the slow path — only run when the user
-    /// actually installed/removed an MCP server.
+    /// Refresh limited to MCP servers and any registration lookup warning.
     Mcp(Vec<mcp::McpServer>, Option<String>),
     /// Refresh limited to plugins (filesystem only).
     Plugins(Vec<plugin::Plugin>),
@@ -64,12 +60,7 @@ impl RefreshScope {
 /// Start a background thread to rescan only the data the just-finished
 /// install/remove could have changed.
 ///
-/// Before this was scope-aware, every refresh re-ran all three scans
-/// including `claude/codex mcp list` — a CLI shell-out with up to a
-/// 30-second timeout — even when the user installed e.g. an Agent
-/// (filesystem-only). Now we look at `app.tab` to pick the single scan
-/// that's actually relevant, dropping non-MCP refresh latency from
-/// "several seconds" to "tens of milliseconds".
+/// An unrelated refresh should not wait for Codex's CLI registration lookup.
 pub(crate) fn start_refresh_thread(app: &mut App, refresh_tx: &Sender<Result<RefreshResult>>) {
     app.refreshing = true;
 
