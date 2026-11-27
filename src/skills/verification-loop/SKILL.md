@@ -49,7 +49,7 @@ Exercise the changed behavior with the repository's test runner. Record passed, 
 
 ### Phase 5: Security checks
 
-Follow the data and permission boundaries affected by the change. Check input handling, credential exposure, and logs. Use the repository's scanner where available and select the relevant file types. Report paths only for potential secrets. An `rg` exit code of 1 means no matches. A code of 2 or higher means the scan failed.
+Follow the data and permission boundaries affected by the change. Check input handling, credential exposure, and logs. Use the repository's scanner where available and select the relevant file types. Report paths only for potential secrets. If using a shell search, check which tool the name invokes and whether its file filters cover the intended paths. For a normal `rg` or `grep` search, exit code 1 means no matches and a value above 1 indicates an error.
 
 ### Phase 6: Diff Review
 ```bash

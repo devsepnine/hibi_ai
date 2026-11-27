@@ -22,14 +22,11 @@ description: "Runtime walkthrough: how code works, traced as a real call chain w
 
 분산하기 전에 모든 explorer가 필요로 하는 것을 모은다. 동작을 시작시키는 진입점, 즉 라우트, 명령, 이벤트 핸들러, 스케줄 잡과 관련된 상위 디렉터리다.
 
-```bash
-rg -n '<route|command|event name>' --type-add 'src:*.{ts,tsx,js,py,rs,go}' -t src
-rg -n 'fn <symbol>|function <symbol>|def <symbol>|class <symbol>'
-```
+현재 사용할 수 있는 본문 검색 도구로 관련 소스 파일을 찾는다. 예를 들어 Git이 추적하는 소스에서 이름을 그대로 찾으려면 `git grep -n -F -e "$symbol" -- src/`를 쓴다. 진입점이 미추적 파일에 있을 수 있으면 내장 검색, `rg` 또는 `grep`으로 그 파일까지 확인한다.
 
 ## Step 3. 조각마다 explorer 하나를 띄운다
 
-질문을 서브시스템의 서로 다른 부분 2개에서 4개로 나눈다. 예를 들면 요청 경로, 영속 계층, 백그라운드 워커다. 모든 explorer를 한 메시지에서 띄운다. 조각마다 `subagent_type: Explore`에 very thorough 탐색을 요청하는 `Agent` 하나를 쓰고, 각각에 질문, 진입점, 맡은 조각, `references/explorer-prompt.md`의 템플릿을 준다. subagent는 skill의 references 경로를 해석하지 못하므로, 리드가 그 템플릿을 각 Agent 프롬프트에 붙여 넣는다.
+질문을 서브시스템의 서로 다른 부분 2개에서 4개로 나눈다. 예를 들면 요청 경로, 영속 계층, 백그라운드 워커다. 위임할 수 없거나 위임 권한이 없으면 각 조각을 직접 추적한다. 위임할 때는 explorer들을 한 메시지에서 띄운다. 조각마다 `subagent_type: Explore`에 very thorough 탐색을 요청하는 `Agent` 하나를 쓰고, 각각에 질문, 진입점, 맡은 조각, `references/explorer-prompt.md`의 템플릿을 준다. subagent는 skill의 references 경로를 해석하지 못하므로, 리드가 그 템플릿을 각 Agent 프롬프트에 붙여 넣는다.
 
 연결을 추적하지 못한 explorer는 그렇다고 말한다. "X를 누가 호출하는지 찾지 못했다"는 발견이다. 짐작한 연결은 결함이다.
 

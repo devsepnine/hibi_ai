@@ -28,7 +28,7 @@ ls .dependency-cruiser.* .eslintrc* eslint.config.* importlinter* .importlinter 
 - **Document exists**: update mode, see [Update mode](#update-mode).
 - **No document**: full build, steps 2 to 7.
 - Note the stack from the manifests: `package.json` and workspaces, `Cargo.toml` workspace, `go.mod`, `pyproject.toml`. Note any boundary lint already configured, because its rules are decided rules and need no question.
-- Use `technical-writing` → Artifact language for the document's prose: default to the conversation's language and honor an explicitly requested language. Keep the template's headings and field labels, rule IDs, `MUST`, and `SHOULD` in English, because the verify block below greps for them.
+- Use `technical-writing` → Artifact language for the document's prose: default to the conversation's language and honor an explicitly requested language. Keep the template's headings and field labels, rule IDs, `MUST`, and `SHOULD` in English, because the checker reads the field labels.
 - Write every path relative to the repository root, including inside a monorepo package.
 
 ### 2. Find the units
@@ -100,27 +100,13 @@ Writing the document is a content change, so the post-work review gate in `CLAUD
 
 ### Verify before handing back
 
-```bash
-DOC=docs/ARCHITECTURE.md
-# every repo-relative path exists; globs and <placeholders> are skipped
-grep -ohE '`[^`<> /][^`<> ]*/[^`<> ]*`' $DOC | tr -d '`' | grep -v '[*?{[]' | sort -u \
-  | while read -r p; do test -e "$p" || echo "MISSING $p"; done
-# rule IDs are unique as headings; the same ID may recur in Known violations
-grep -oE '^### `arch-[a-z0-9-]+`' $DOC | sort | uniq -d | sed 's/^/DUPLICATE /'
-# every rule carries every field
-rules=$(grep -c '^### `arch-' $DOC)
-for f in Level Rule Why Evidence Exceptions 'Enforced by'; do
-  n=$(grep -c "^- \*\*$f\*\*" $DOC); [ "$n" = "$rules" ] || echo "FIELD $f: $n of $rules rules"
-done
-```
-
-The block prints nothing when the document is sound. Then rerun each evidence command and confirm the counts in the document still match.
+From the repository root, run the bundled [rule checker](scripts/check_rules.py) with Python 3. It exits with a nonzero status for an unreadable document, a missing path, duplicate rule IDs, or missing or repeated fields within a rule. After it passes, rerun each evidence command and confirm the counts still match.
 
 ## Update mode
 
 1. Diff from the recorded SHA: `git diff --name-status -M <sha>..HEAD`. When the SHA is unreachable, say so and remeasure every rule.
 2. Repoint paths for renamed files, marked `R`, in Units, Exceptions, and Known violations. Drop an exception or a violation whose file was deleted, marked `D`.
-3. Rerun each rule's evidence command. A rule whose count did not move stays as written. When most rules are suspect, run the verify block over the whole document first, and reopen a Decision only when the files it named appear in the diff.
+3. Rerun each rule's evidence command. A rule whose count did not move stays as written. When most rules are suspect, run the checker on the whole document first, and reopen a Decision only when the files it named appear in the diff.
 4. A new counter-example is a question, not an edit: fix it, allow it as an exception, or relax the rule. Ask in the step-5 format.
 5. A new unit, or a unit that disappeared, goes through steps 2 to 5 for its rules only.
 6. Never rewrite a decided rule silently. Report the rules added, changed, and removed, then move the header SHA to HEAD.

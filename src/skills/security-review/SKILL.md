@@ -114,11 +114,9 @@ const validated = CreateUserSchema.parse(input) // throws on invalid
 
 ### 10. Dependency Security: OWASP A06 Vulnerable Components / CWE-1104, CWE-937
 
-- [ ] `npm audit` / `pnpm audit` clean, with no high/critical findings
-- [ ] Lock files, meaning `package-lock.json` / `pnpm-lock.yaml`, committed
-- [ ] CI uses `npm ci`, not `npm install`, for reproducibility
-- [ ] Dependabot / Renovate enabled
-- [ ] Periodic `npm outdated` review; security patches applied promptly
+- [ ] Identify the package manager and lockfile used by the project. Run the applicable audit and report high or critical findings affecting resolved versions.
+- [ ] Check that CI reproduces locked versions where the project uses a lockfile. Examples include `npm ci` for npm and `pnpm install --frozen-lockfile` for pnpm.
+- [ ] Verify how the project detects outdated dependencies and applies security patches.
 - Refs: [CWE-1104](https://cwe.mitre.org/data/definitions/1104.html), [npm audit docs](https://docs.npmjs.com/cli/v10/commands/npm-audit)
 
 ## Verify scanner findings

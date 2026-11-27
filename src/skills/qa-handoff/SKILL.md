@@ -64,6 +64,8 @@ git log --no-merges --stat <range>     # which files moved
 git show <sha> -- <path>               # when the subject is not enough
 ```
 
+For a comparison between releases, cross-check the final file changes with `git diff --name-status <base> <head>`. An edit made during a merge can be absent from the ordinary commits, and a reverted change can appear in history but disappear from the final tree.
+
 Commit subjects lie by omission. `fix: guard empty input` says nothing about
 what the user now sees. Read the diff for anything you cannot classify with
 confidence. A guessed checklist is worse than a short one, because QA cannot

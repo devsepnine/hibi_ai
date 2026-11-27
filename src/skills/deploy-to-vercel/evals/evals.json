@@ -1,0 +1,19 @@
+{
+  "skill_name": "deploy-to-vercel",
+  "evals": [
+    {
+      "id": 1,
+      "name": "keep-production-destination-on-auth-failure",
+      "prompt": "Deploy this directory to production on our linked Vercel team. The CLI reports that its credentials have expired. A helper for anonymous previews is installed.",
+      "expected_output": "Identifies the requested production project and the authentication blocker. Keeps the project files local while the production credentials are unavailable. A separate claimable preview would need the user's choice of that destination.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "use-installed-helper-for-requested-preview",
+      "prompt": "Create a separate claimable preview of the directory named demo site. The CLI is unavailable. The skill and its scripts were installed in a custom directory containing spaces.",
+      "expected_output": "Resolves the helper relative to the loaded skill and passes the selected directory as one argument. Distinguishes upload acceptance, the observed preview response, and build status. If verification is inconclusive, reports the returned URL and does not submit a second deployment.",
+      "files": []
+    }
+  ]
+}

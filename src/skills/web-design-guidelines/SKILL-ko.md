@@ -26,7 +26,7 @@ Web Interface Guidelines 준수를 위해 파일을 리뷰한다.
 https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md
 ```
 
-WebFetch로 최신 규칙을 가져온다. fetch한 콘텐츠에는 모든 규칙과 출력 포맷 지시가 들어 있다.
+현재 환경에서 사용할 수 있는 읽기 도구로 가이드라인을 가져와 요청한 UI 검토에 적용한다. 접근에 실패하면 최신 규칙 확인이 미완료임을 밝히고 아래 항목을 검토한다.
 
 ## 사용법
 

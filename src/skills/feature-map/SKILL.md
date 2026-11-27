@@ -160,33 +160,7 @@ wrong path with the authority of documentation behind it.
 
 ### 6. Verify, then wire it in
 
-Before reporting, run the four checks below, then the review bullets after
-them. They run under `bash` whatever shell calls them, because zsh keeps an
-unquoted `$MAP` or `$SRC` as one word and every check then prints nothing,
-which reads as a pass. Edit the `SRC=` line inside the block to list every
-root that holds code or locale catalogs, such as `src` and `public/locales`.
-Never use `docs/`, which contains the strings being checked:
-
-```bash
-bash <<'EOF'
-MAP="docs/FEATURES.md $(ls docs/features/*.md 2>/dev/null)"; SRC="src"
-
-# every path exists — repo-relative, contains `/`; route URLs start with `/` and are skipped
-grep -ohE '`[^`/ ][^` ]*/[^` ]*\.[A-Za-z0-9]{1,10}`' $MAP | tr -d '`' | sort -u \
-  | while read -r p; do test -e "$p" || echo "MISSING $p"; done
-
-# every literal UI string and control label greps in the source
-grep -hE '^- \*\*(UI strings|Controls|UI 문구|컨트롤)\*\*' $MAP | grep -oE '"[^"]+"' | tr -d '"' | sort -u \
-  | while IFS= read -r s; do grep -rqF -- "$s" $SRC || echo "MISSING-STRING $s"; done
-
-# every cited symbol exists in its file — written as `path` → `symbol`
-grep -ohE '`[^`/ ][^` ]*/[^` ]*\.[A-Za-z0-9]{1,10}` → `[A-Za-z_$][A-Za-z0-9_$]*`' $MAP | tr -d '`' | sort -u \
-  | while read -r p _ sym; do grep -qF -- "$sym" "$p" 2>/dev/null || echo "MISSING-SYMBOL $p → $sym"; done
-
-# every pitfall states a cause: `symptom → cause` before the `source:` part
-grep -hE '^- \*\*(Pitfalls|함정)\*\*:' $MAP | grep -vE ': none$|: [^→]+ → .+, (source|근거): ' | sed 's/^/NO-CAUSE /'
-EOF
-```
+From the repository root, run the bundled [feature map checker](scripts/check_map.py) with Python 3. Pass each directory containing code or translations as a separate argument, for example `src` and `public/locales` if both exist. Choose source directories so the map cannot match its own labels. The checker verifies cited paths, symbols, UI text, and the cause recorded for each pitfall. On exit code zero, continue with the review below.
 
 - A missing string is paraphrased or stale: fix it, do not keep it.
 - Write paths in full from the repo root; a shortened path fails the check.
@@ -242,7 +216,7 @@ Diff from the recorded SHA: `git diff --name-status -M <sha>..HEAD`.
 
 Use `assets/feature-map-template.md`. Follow `technical-writing` → Artifact language
 for the map's prose: default to the conversation's language and honor an explicitly requested language. Keep the template's headings and field labels in
-English, because the step-6 checks grep for them. A map written earlier with
+English, because the checker reads them. A map written earlier with
 Korean labels such as `검증 시점` still verifies, since the checks accept both.
 Keep the section order: the header, holding the SHA and
 optional `Premises` and `Note` lines, then the lookup protocol, which the AI reads before

@@ -25,6 +25,8 @@ skills_dir="$PWD/src/skills"
 
 ### 스킬 설명이 실제로 트리거되는가
 
+이 검사는 설명을 보고 선택적으로 호출하는 스킬에 사용한다. 시작할 때 항상 불러오는 스킬은 세션 입력에 지침이 포함됐는지 확인하고 실제 응답을 평가한다. 이 경우 `Skill` 호출 기록이 없어도 지침이 적용될 수 있다.
+
 ```bash
 python3 "$skills_dir/eval-harness/scripts/trigger_eval.py" --skill do-178c \
   --eval-set "$skills_dir/do-178c/evals/trigger-eval.json" --timeout 300 --jobs 4
@@ -46,7 +48,7 @@ frontmatter 의 `name:` 이 아니라 디렉터리명이다.
   보고하지 않는다. "dirty" 를 보고할 수 없는 검출기의 "clean" 은 아무것도
   증명하지 않는다.
 - **완료 추적.** 스킬이 선택되지 **않았다**고 증언할 수 있는 것은 자기 답변까지
-  도달한 실행, 즉 오류 보고 없이 subtype이 `success`인 `result` 이벤트뿐이다.
+  도달한 실행이다. 오류 보고 없이 subtype이 `success`인 `result` 이벤트가 있고 CLI도 정상 종료해야 한다.
   스킬이 발동하지 않았고 `is_error: true`이면 subtype이 `success`여도 INCONCLUSIVE로 기록한다. 타임아웃은
   `result` 를 아예 내보내지 않고, `error_max_turns` 는 턴 예산이 먼저 소진된
   것이다. **발동하지 않은** 행이 이렇게 끝나면 INCONCLUSIVE 이며 PASS 도 FAIL 도
@@ -139,16 +141,13 @@ Result: X/Y passed (previously Y/Y)
 ## Grader 타입
 
 ### 1. Code-Based Grader
-코드 사용 결정론적 체크:
+프로젝트에 정의된 검사 명령을 실행하고 종료 코드를 보존한다. 아래 Bash 예시는 npm 프로젝트에서 테스트 러너가 경로 필터를 받는 경우에 해당한다.
+
 ```bash
-# Check if file contains expected pattern
-grep -q "export function handleAuth" src/auth.ts && echo "PASS" || echo "FAIL"
-
-# Check if tests pass
-npm test -- --testPathPattern="auth" && echo "PASS" || echo "FAIL"
-
-# Check if build succeeds
-npm run build && echo "PASS" || echo "FAIL"
+set -e
+grep -qF "export function handleAuth" src/auth.ts
+npm test -- auth
+npm run build
 ```
 
 ### 2. Model-Based Grader
@@ -218,7 +217,7 @@ Risk Level: LOW/MEDIUM/HIGH
 [Run each capability eval, record PASS/FAIL]
 
 # Run regression evals
-npm test -- --testPathPattern="existing"
+npm test -- existing
 
 # Generate report
 ```

@@ -22,4 +22,4 @@
 ## 4. React 19 APIs, prefix `react19`
 
 **Impact:** MEDIUM  
-**Description:** React 19+ only. `forwardRef`를 사용하지 않는다; `useContext()` 대신 `use()`를 사용한다.
+**Description:** React 19+. 함수 컴포넌트는 `ref`를 prop으로 받고, 조건부 컨텍스트 읽기에는 `use`를 쓸 수 있다.

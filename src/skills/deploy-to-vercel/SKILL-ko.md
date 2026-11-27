@@ -10,7 +10,9 @@ metadata:
 
 어떤 프로젝트든 Vercel에 배포한다. **사용자가 production을 명시적으로 요청하지 않는 한 항상 preview로 배포한다**, production이 아님.
 
-사용자가 지정한 프로젝트와 배포 환경을 사용한다.
+사용자가 지정한 프로젝트와 배포 환경을 사용한다. 아래 CLI 예시에서 `.`는 요청받은 프로젝트 디렉터리다. 다른 디렉터리에서 실행하면 대상 경로를 전달한다.
+
+두 폴백 스크립트는 업로드를 받아 별도로 소유권을 가져갈 수 있는 프리뷰를 만든다. 요청한 팀, 연결된 프로젝트 또는 프로덕션이 목적지인데 인증에 실패하면 인증 문제를 보고한다. 사용자가 별도 프리뷰를 선택한 경우에만 그 경로로 업로드한다.
 
 ## Step 1: 프로젝트 상태 수집
 
@@ -37,7 +39,7 @@ vercel teams list --format json 2>/dev/null
 이후의 모든 CLI 명령어, `vercel deploy`, `vercel link`, `vercel inspect` 등, 에 `--scope`로 팀 슬러그를 전달한다:
 
 ```bash
-vercel deploy [path] --environment=preview -y --no-wait --scope <team-slug>
+vercel deploy . --environment=preview -y --no-wait --scope <team-slug>
 ```
 
 프로젝트가 이미 연결되어 있으면, `.vercel/project.json` 또는 `.vercel/repo.json` 존재, 해당 파일의 `orgId`가 팀을 결정한다, 다시 묻지 않는다. 팀이 하나, 또는 개인 계정뿐, 이면, 프롬프트를 건너뛰고 직접 사용한다.
@@ -57,7 +59,7 @@ vercel deploy [path] --environment=preview -y --no-wait --scope <team-slug>
 어느 브랜치에서든 현재 작업 내용의 프리뷰를 배포할 때는 CLI를 사용한다. 사용자가 Git 배포를 지정하면 Vercel에서 프로젝트의 Git 연동과 프로덕션 브랜치를 먼저 확인한다. 프로덕션 브랜치에 푸시하려면 프로덕션 배포 요청과 해당 푸시 승인이 필요하다. Git으로 배포한 결과는 프로젝트, 배포 환경, 커밋 SHA가 일치하는 항목으로 확인한다.
 
 ```bash
-vercel deploy [path] --environment=preview -y --no-wait
+vercel deploy . --environment=preview -y --no-wait
 ```
 
 `--no-wait`을 사용해 빌드 완료까지 차단하지 않고 즉시 배포 URL을 반환받는다, 빌드는 시간이 걸릴 수 있다. 그 후 배포 상태를 확인한다:
@@ -68,7 +70,7 @@ vercel inspect <deployment-url> --wait --timeout=5m
 
 production 배포, 사용자가 명시적으로 요청한 경우만:
 ```bash
-vercel deploy [path] --prod -y --no-wait
+vercel deploy . --prod -y --no-wait
 ```
 
 ---
@@ -114,7 +116,7 @@ Vercel CLI가 전혀 설정되지 않은 상태.
    ```bash
    vercel login
    ```
-   사용자가 브라우저에서 인증을 완료한다. 로그인이 불가능한 비인터랙티브 환경이라면, 아래 **no-auth fallback**으로 건너뛴다.
+   브라우저로 로그인할 수 없는 환경에서는 아래 CI 인증 절차를 확인한다. 별도 프리뷰가 요청된 경우에만 폴백을 사용한다.
 
 3. **어느 팀에 배포할지 묻는다**: `vercel teams list --format json`의 팀 슬러그를 글머리 기호 목록으로 제시. 팀이 하나/개인 계정이면 건너뛴다. 선택되면 즉시 진행.
 
@@ -132,34 +134,15 @@ Vercel CLI가 전혀 설정되지 않은 상태.
 
 **사용 시점:** claude.ai sandbox에서 CLI를 설치하거나 인증할 수 없을 때의 최후의 수단. 인증이 필요하지 않다, **Preview URL**, 라이브 사이트, 과 **Claim URL**, Vercel 계정으로 이전, 을 반환한다.
 
-```bash
-bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh [path]
-```
-
-**Arguments:**
-- `path` - 배포할 디렉토리 또는 `.tgz` 파일, 기본값: 현재 디렉토리
+불러온 `SKILL.md`의 디렉터리를 기준으로 [배포 스크립트](scripts/deploy.sh)를 찾는다. Bash로 실행하고 프로젝트 디렉터리나 `.tgz` 파일을 인자 하나로 전달한다. 인자를 생략하면 현재 디렉터리를 배포한다. 업로드에 사용할 디렉터리를 먼저 확인한다.
 
 아카이브 최상위에 디렉터리가 하나이고 그 안에 `package.json`, `vercel.json`, `.vercelignore` 또는 HTML 페이지가 있으면 해당 디렉터리가 배포 루트다. 그 밖의 아카이브는 최상위 구조를 유지한다.
-
-**Examples:**
-```bash
-# Deploy current directory
-bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh
-
-# Deploy specific project
-bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh /path/to/project
-
-# Deploy existing tarball
-bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh /path/to/project.tgz
-```
-
-스크립트는 업로드 전에 프로젝트의 `.vercelignore`를 적용한다. 업로드가 접수되면 배포 응답을 출력한다. 아래 출력 지침에 따라 종료 코드와 확인 결과를 보고한다.
 
 ---
 
 ### No-Auth Fallback: Codex sandbox
 
-**사용 시점:** CLI가 인증되지 않을 수 있는 Codex sandbox에서. Codex는 기본적으로 sandboxed 환경에서 실행된다, 먼저 CLI를 시도하고, 인증 실패 시 deploy 스크립트로 폴백한다.
+사용자가 소유권을 가져갈 수 있는 별도 프리뷰를 요청했고 CLI를 사용할 수 없을 때 이 스크립트를 쓴다.
 
 1. **Vercel CLI가 설치되어 있는지 확인**, 이 체크는 권한 상승 불필요:
    ```bash
@@ -168,10 +151,10 @@ bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh /path/to/project.tgz
 
 2. **`vercel`이 설치되어 있으면**, CLI로 배포 시도:
    ```bash
-   vercel deploy [path] --environment=preview -y --no-wait
+   vercel deploy . --environment=preview -y --no-wait
    ```
 
-3. **`vercel`이 설치되지 않았거나 CLI가 "No existing credentials found"로 실패하면**, fallback 스크립트 사용:
+3. CLI로 인증할 수 없고 별도 프리뷰가 요청된 경우, 스킬에 포함된 스크립트를 실행한다.
    ```bash
    skill_dir="<path-to-skill>"
 
@@ -187,28 +170,21 @@ bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh /path/to/project.tgz
 
 스크립트는 업로드 전에 프로젝트의 `.vercelignore`를 적용한다. 업로드가 접수되면 배포 응답을 출력한다. 아래 출력 지침에 따라 종료 코드와 확인 결과를 보고한다.
 
-
 ---
 
 ## 에이전트별 노트
 
 ### Claude Code / 터미널 기반 에이전트
 
-전체 셸 접근 권한이 있다. `/mnt/skills/` 경로를 사용하지 말 것. CLI를 직접 사용해 위 결정 흐름을 따른다.
-
-no-auth fallback은 skill의 설치 위치에서 deploy 스크립트를 실행한다:
-```bash
-bash ~/.claude/skills/deploy-to-vercel/scripts/deploy.sh [path]
-```
-경로는 사용자가 skill을 어디에 설치했는지에 따라 달라질 수 있다.
+현재 세션에서 허용된 CLI를 사용한다. 인증 없는 프리뷰를 배포할 때는 이 스킬에 포함된 [배포 스크립트](scripts/deploy.sh)를 사용한다.
 
 ### Sandboxed 환경, claude.ai
 
-`vercel login`이나 `git push`를 실행할 수 없을 가능성이 높다. **no-auth fallback, claude.ai sandbox**로 직접 간다.
+별도 프리뷰가 요청되었고 이 환경에서 CLI를 사용할 수 없으면 claude.ai용 프리뷰 스크립트를 사용한다.
 
 ### Codex
 
-Codex는 sandbox에서 실행된다. CLI가 사용 가능한지 먼저 확인하고, 그 후 deploy 스크립트로 폴백한다. **no-auth fallback, Codex sandbox**로 간다.
+현재 세션에서 CLI를 사용할 수 있는지 확인한다. 별도 프리뷰가 요청되었으면 Codex용 폴백을 사용할 수 있다.
 
 ---
 
@@ -240,7 +216,7 @@ Deployment failed due to network restrictions. To fix this:
 
 ### CLI Auth Failure
 
-`vercel login` 또는 `vercel deploy`가 인증 에러로 실패하면, no-auth deploy 스크립트로 폴백한다, 환경에 따라 claude.ai 또는 Codex 변형.
+팀 또는 프로젝트에 인증할 수 없으면 목적지와 인증 오류를 보고한다. 별도 프리뷰를 요청받았을 때는 해당 환경의 폴백을 사용한다.
 
 ---
 

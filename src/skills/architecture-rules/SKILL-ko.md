@@ -28,7 +28,7 @@ ls .dependency-cruiser.* .eslintrc* eslint.config.* importlinter* .importlinter 
 - **문서가 있다**: 갱신 모드다. [Update mode](#update-mode)를 본다.
 - **문서가 없다**: 전체 작성이고 2단계부터 7단계까지 진행한다.
 - 매니페스트에서 스택을 파악한다: `package.json`과 workspaces, `Cargo.toml` workspace, `go.mod`, `pyproject.toml`. 이미 설정된 경계 lint가 있으면 기록한다. 그 규칙은 이미 결정된 규칙이라 질문이 필요 없다.
-- 문서 산문은 `technical-writing`의 산출물 언어 정책을 따른다. 대화 언어를 기본으로 하며, 사용자가 언어를 명시하면 해당 언어를 우선한다. 템플릿의 제목과 필드 라벨, 규칙 ID, `MUST`, `SHOULD`는 영어로 둔다. 아래 검증 블록이 그 문자열을 grep하기 때문이다.
+- 문서 산문은 `technical-writing`의 산출물 언어 정책을 따른다. 대화 언어를 기본으로 하며, 사용자가 언어를 명시하면 해당 언어를 우선한다. 템플릿의 제목과 필드 라벨, 규칙 ID, `MUST`, `SHOULD`는 영어로 둔다. 검증 스크립트가 필드 라벨을 읽기 때문이다.
 - 모든 경로는 모노레포 패키지 안에서도 저장소 루트 기준 상대 경로로 쓴다.
 
 ### 2. 단위를 찾는다
@@ -100,27 +100,13 @@ ls .dependency-cruiser.* .eslintrc* eslint.config.* importlinter* .importlinter 
 
 ### 넘기기 전에 검증한다
 
-```bash
-DOC=docs/ARCHITECTURE.md
-# every repo-relative path exists; globs and <placeholders> are skipped
-grep -ohE '`[^`<> /][^`<> ]*/[^`<> ]*`' $DOC | tr -d '`' | grep -v '[*?{[]' | sort -u \
-  | while read -r p; do test -e "$p" || echo "MISSING $p"; done
-# rule IDs are unique as headings; the same ID may recur in Known violations
-grep -oE '^### `arch-[a-z0-9-]+`' $DOC | sort | uniq -d | sed 's/^/DUPLICATE /'
-# every rule carries every field
-rules=$(grep -c '^### `arch-' $DOC)
-for f in Level Rule Why Evidence Exceptions 'Enforced by'; do
-  n=$(grep -c "^- \*\*$f\*\*" $DOC); [ "$n" = "$rules" ] || echo "FIELD $f: $n of $rules rules"
-done
-```
-
-문서에 문제가 없으면 이 블록은 아무것도 출력하지 않는다. 그다음 각 증거 명령을 다시 실행해 문서의 횟수가 여전히 맞는지 확인한다.
+저장소 루트에서 이 스킬에 포함된 [검증 스크립트](scripts/check_rules.py)를 Python 3으로 실행한다. 문서가 없거나, 경로가 없거나, 규칙 ID가 중복되거나, 한 규칙 안에서 필드가 빠지거나 중복되면 종료 코드가 0이 아니다. 통과한 뒤에는 각 증거 명령을 다시 실행해 문서의 횟수가 여전히 맞는지 확인한다.
 
 ## Update mode
 
 1. 기록된 SHA부터 diff를 본다: `git diff --name-status -M <sha>..HEAD`. SHA에 도달할 수 없으면 그렇게 밝히고 모든 규칙을 다시 측정한다.
 2. 이름이 바뀐 파일, 즉 `R`로 표시된 파일은 Units, Exceptions, Known violations의 경로를 새 경로로 고친다. 삭제된 파일, 즉 `D`로 표시된 파일의 예외나 위반은 뺀다.
-3. 각 규칙의 증거 명령을 다시 실행한다. 횟수가 움직이지 않은 규칙은 쓰인 그대로 둔다. 대부분의 규칙이 의심스러우면 먼저 문서 전체에 검증 블록을 돌리고, Decision은 그것이 이름을 든 파일이 diff에 나타날 때만 다시 연다.
+3. 각 규칙의 증거 명령을 다시 실행한다. 횟수가 움직이지 않은 규칙은 쓰인 그대로 둔다. 대부분의 규칙이 의심스러우면 먼저 문서 전체에 검증 스크립트를 돌리고, Decision은 그것이 이름을 든 파일이 diff에 나타날 때만 다시 연다.
 4. 새 반례는 수정이 아니라 질문이다: 고치거나, 예외로 허용하거나, 규칙을 완화한다. 5단계 형식으로 묻는다.
 5. 새 단위나 사라진 단위는 그 단위의 규칙에 한해 2단계부터 5단계까지 거친다.
 6. 결정된 규칙을 조용히 다시 쓰지 않는다. 추가, 변경, 삭제된 규칙을 보고한 뒤 헤더의 SHA를 HEAD로 옮긴다.

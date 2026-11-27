@@ -22,14 +22,11 @@ When in doubt, take the simple path.
 
 Before fanning out, collect what every explorer needs: the entry points that trigger the behavior, such as a route, a command, an event handler, or a scheduled job, and the top directories involved.
 
-```bash
-rg -n '<route|command|event name>' --type-add 'src:*.{ts,tsx,js,py,rs,go}' -t src
-rg -n 'fn <symbol>|function <symbol>|def <symbol>|class <symbol>'
-```
+Search the relevant source files with an available text search tool. For example, use `git grep -n -F -e "$symbol" -- src/` for a literal name in tracked source. If the entry point could be in an untracked file, include that file with native search, `rg`, or `grep`.
 
 ## Step 3. Fan out one explorer per slice
 
-Split the question into 2 to 4 slices, each a distinct part of the subsystem: for example the request path, the persistence layer, and the background worker. Launch every explorer in one message, one `Agent` per slice with `subagent_type: Explore` and a prompt that asks for very thorough breadth, each given the question, the entry points, its slice, and the template in `references/explorer-prompt.md`. The lead pastes that template into each Agent prompt, because a subagent cannot resolve the skill's references path.
+Split the question into 2 to 4 slices, each a distinct part of the subsystem: for example the request path, the persistence layer, and the background worker. Trace the slices directly when delegation is unavailable or not authorized. When delegating, launch the explorers in one message, one `Agent` per slice with `subagent_type: Explore` and a prompt that asks for very thorough breadth, each given the question, the entry points, its slice, and the template in `references/explorer-prompt.md`. The lead pastes that template into each Agent prompt, because a subagent cannot resolve the skill's references path.
 
 An explorer that cannot trace a link says so. "I could not find what calls X" is a finding. A guessed link is a defect.
 

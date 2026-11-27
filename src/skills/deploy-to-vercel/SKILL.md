@@ -10,7 +10,9 @@ metadata:
 
 Deploy any project to Vercel. **Always deploy as preview**, not production, unless the user explicitly asks for production.
 
-Use the project and deployment environment the user requested.
+Use the project and deployment environment the user requested. In the CLI examples, `.` refers to the requested project directory. Pass its path when running elsewhere.
+
+Both fallback scripts upload to a separate claimable preview. If authentication fails for a requested team, linked project, or production environment, report the authentication issue. Upload to a separate preview only if the user chooses that destination.
 
 ## Step 1: Gather Project State
 
@@ -37,7 +39,7 @@ If the user belongs to multiple teams, present all available team slugs as a bul
 Pass the team slug via `--scope` on all subsequent CLI commands, `vercel deploy`, `vercel link`, `vercel inspect`, etc.:
 
 ```bash
-vercel deploy [path] --environment=preview -y --no-wait --scope <team-slug>
+vercel deploy . --environment=preview -y --no-wait --scope <team-slug>
 ```
 
 If the project is already linked, `.vercel/project.json` or `.vercel/repo.json` exists, the `orgId` in those files determines the team, no need to ask again. If there is only one team, or just a personal account, skip the prompt and use it directly.
@@ -57,7 +59,7 @@ Either file means the project is linked. Check for both.
 Use the CLI to deploy a preview from the working tree on any branch. If the user specifically requests a Git deployment, verify the configured production branch and Git integration in Vercel first. A push to the production branch requires an explicit production request and authorization for the push. When Git deployment is authorized, identify the result by project, environment, and commit SHA.
 
 ```bash
-vercel deploy [path] --environment=preview -y --no-wait
+vercel deploy . --environment=preview -y --no-wait
 ```
 
 Use `--no-wait` so the CLI returns immediately with the deployment URL instead of blocking until the build finishes, builds can take a while. Then check on the deployment status with:
@@ -68,7 +70,7 @@ vercel inspect <deployment-url> --wait --timeout=5m
 
 For production deploys, only if user explicitly asks:
 ```bash
-vercel deploy [path] --prod -y --no-wait
+vercel deploy . --prod -y --no-wait
 ```
 
 ---
@@ -114,7 +116,7 @@ The Vercel CLI isn't set up at all.
    ```bash
    vercel login
    ```
-   The user completes auth in their browser. If running in a non-interactive environment where login is not possible, skip to the **no-auth fallback** below.
+   If browser login is unavailable, check the CI authentication instructions below. Use the fallback only for a separate claimable preview.
 
 3. **Ask which team to deploy to**: present team slugs from `vercel teams list --format json` as a bulleted list. If only one team / personal account, skip. Once selected, proceed immediately.
 
@@ -132,34 +134,15 @@ The Vercel CLI isn't set up at all.
 
 **When to use:** Last resort when the CLI can't be installed or authenticated in the claude.ai sandbox. This requires no authentication, it returns a **Preview URL**, live site, and a **Claim URL**, transfer to your Vercel account.
 
-```bash
-bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh [path]
-```
-
-**Arguments:**
-- `path` - Directory to deploy, or a `.tgz` file, defaults to current directory
+Resolve the bundled [deployment script](scripts/deploy.sh) relative to the loaded skill. Invoke it with Bash and pass the project directory or a `.tgz` archive as one argument. Omitting the argument uploads the current directory, so check which directory is selected first.
 
 For an archive containing one top level directory, use that directory as the deployment root when it contains `package.json`, `vercel.json`, `.vercelignore`, or an HTML page. Other archives retain their top level layout.
-
-**Examples:**
-```bash
-# Deploy current directory
-bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh
-
-# Deploy specific project
-bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh /path/to/project
-
-# Deploy existing tarball
-bash /mnt/skills/user/deploy-to-vercel/scripts/deploy.sh /path/to/project.tgz
-```
-
-The script applies the project’s `.vercelignore` before uploading. It prints the deployment response on acceptance. Use the exit status and output guidance below to report verification.
 
 ---
 
 ### No-Auth Fallback: Codex sandbox
 
-**When to use:** In the Codex sandbox where the CLI may not be authenticated. Codex runs in a sandboxed environment by default, try the CLI first, and fall back to the deploy script if auth fails.
+Use this fallback when a separate claimable preview is the requested destination and the CLI cannot deploy it.
 
 1. **Check whether the Vercel CLI is installed**, no escalation needed for this check:
    ```bash
@@ -168,10 +151,10 @@ The script applies the project’s `.vercelignore` before uploading. It prints t
 
 2. **If `vercel` is installed**, try deploying with the CLI:
    ```bash
-   vercel deploy [path] --environment=preview -y --no-wait
+   vercel deploy . --environment=preview -y --no-wait
    ```
 
-3. **If `vercel` is not installed, or the CLI fails with "No existing credentials found"**, use the fallback script:
+3. If CLI authentication is unavailable and the requested destination is a claimable preview, invoke the bundled script.
    ```bash
    skill_dir="<path-to-skill>"
 
@@ -187,28 +170,21 @@ The script applies the project’s `.vercelignore` before uploading. It prints t
 
 The script applies the project’s `.vercelignore` before uploading. It prints the deployment response on acceptance. Use the exit status and output guidance below to report verification.
 
-
 ---
 
 ## Agent-Specific Notes
 
 ### Claude Code / terminal-based agents
 
-You have full shell access. Do NOT use the `/mnt/skills/` path. Follow the decision flow above using the CLI directly.
-
-For the no-auth fallback, run the deploy script from the skill's installed location:
-```bash
-bash ~/.claude/skills/deploy-to-vercel/scripts/deploy.sh [path]
-```
-The path may vary depending on where the user installed the skill.
+Use the CLI available in the current session. For an authorized anonymous preview, use the [deployment script bundled with this skill](scripts/deploy.sh).
 
 ### Sandboxed environments, claude.ai
 
-You likely cannot run `vercel login` or `git push`. Go directly to the **no-auth fallback, claude.ai sandbox**.
+Use the claude.ai script for a requested claimable preview when the CLI is unavailable.
 
 ### Codex
 
-Codex runs in a sandbox. Check if the CLI is available first, then fall back to the deploy script. Go to the **no-auth fallback, Codex sandbox**.
+Check CLI availability in the current session. The Codex fallback can handle a requested claimable preview.
 
 ---
 
@@ -240,7 +216,7 @@ If a connection drops while waiting for a response, use the deployment URL, ID o
 
 ### CLI Auth Failure
 
-If `vercel login` or `vercel deploy` fails with authentication errors, fall back to the no-auth deploy script, claude.ai or Codex variant, depending on the environment.
+Report which requested destination needs authentication. Use the fallback for the current environment when the user has selected a separate claimable preview.
 
 ---
 

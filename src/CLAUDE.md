@@ -9,6 +9,8 @@ Defines always-on workflow and decision-making procedures. Detailed, situational
 - **Understand file structure**: read related code and dependencies
 - **Stay in scope**: do not change anything outside the requested area
 - **Simple requests**: execute immediately. Only complex requests warrant a planning step.
+- Before first using a command in an environment, check what its name runs in the shell that will execute it. It may resolve to an alias, function, builtin, cmdlet, or executable on `PATH`. For example, use `type -a find` in Bash or Zsh, or `Get-Command find -All` in PowerShell.
+- Even executables with the same name can have different flags and output across platforms. Check the local help or manual for the behavior the task needs. If a skill gives an example command that is unavailable, use an available tool that performs the same operation.
 - **Execution tools**: before running code, builds, tests, or development servers, discover `rundebugconfig` MCP tools and confirm the connection with `list_configurations` when available.
 - **Prefer saved runs**: when connected, prefer matching saved configurations and session tools over direct shell execution. Follow the `verification-loop` skill's execution setup for selection, permissions, fallback, and result checks.
 

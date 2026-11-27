@@ -51,7 +51,7 @@ Reference these guidelines when:
 
 > **⚠️ React 19+ only.** Skip this section if using React 18 or earlier.
 
-- `react19-no-forwardref` - Don't use `forwardRef`; use `use()` instead of `useContext()`
+- `react19-no-forwardref` Function components can receive `ref` as a prop and can use `use` to read context conditionally.
 - `react19-actions` - Compose forms around Actions + `useActionState` / `useFormStatus` / `useOptimistic`; remove hand-rolled loading/error plumbing
 
 ## How to Use

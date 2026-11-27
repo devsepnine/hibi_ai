@@ -7,7 +7,7 @@ tags: async, parallelization, dependencies, better-all
 
 ## Dependency-Based Parallelization
 
-부분 의존성이 있는 작업들에 대해서는 `better-all`을 사용해 병렬성을 극대화한다. 각 작업을 가능한 가장 이른 시점에 자동으로 시작한다.
+필요한 입력이 준비된 작업부터 시작한다. 기본 Promise로 아래 예시를 구현할 수 있고, 프로젝트에서 이미 `better-all`을 사용한다면 같은 의존 관계를 그 도구로 표현할 수 있다.
 
 **Incorrect, profile waits for config unnecessarily:**
 

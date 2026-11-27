@@ -51,7 +51,7 @@ component, 상태 끌어올리기, 내부 컴포지션을 사용해 boolean prop
 
 > **⚠️ React 19+ 전용.** React 18 이하 사용 시 이 섹션은 건너뛴다.
 
-- `react19-no-forwardref` - `forwardRef` 사용 금지; `useContext()` 대신 `use()` 사용
+- `react19-no-forwardref` 함수 컴포넌트는 `ref`를 prop으로 받고, 조건부 컨텍스트 읽기에는 `use`를 쓸 수 있다.
 - `react19-actions` - Actions + `useActionState` / `useFormStatus` / `useOptimistic`로 폼을 구성한다; 직접 만든 loading/error 배선은 제거
 
 ## 사용 방법

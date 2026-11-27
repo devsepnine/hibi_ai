@@ -141,7 +141,7 @@ SELECT sum(amount) FROM account_balances FINAL WHERE is_deleted = 0;
 ## 파이프라인 패턴
 
 - **ETL**: 스케줄에 맞춰 Postgres/MySQL 같은 OLTP에서 추출, 분석 스키마로 변환, 일괄 INSERT.
-- **CDC**: Postgres `LISTEN/NOTIFY` 또는 Debezium 스타일 스트림 → ClickHouse의 append-only 이벤트 테이블; 현재 상태 뷰가 필요하면 `ReplacingMergeTree` 사용.
+- 모든 변경을 보관해야 하면 다시 읽을 수 있는 변경 로그를 ClickHouse 이력 테이블에 적재한다. PostgreSQL의 `NOTIFY`는 저장된 변경을 확인하라는 신호로 쓸 수 있다. 같은 트랜잭션의 동일한 알림은 합쳐질 수 있고, 수신하려면 해당 채널을 구독 중이어야 한다. [PostgreSQL NOTIFY](https://www.postgresql.org/docs/current/sql-notify.html)
 - 분석에는 비정규화된 테이블을 선호한다; 대용량 테이블 간의 무거운 JOIN은 피한다. 저카디널리티 룩업에는 dictionary인 `dictGet`을 사용한다.
 
 문서: https://clickhouse.com/docs/en/sql-reference/dictionaries

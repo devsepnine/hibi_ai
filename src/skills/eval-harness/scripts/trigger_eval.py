@@ -134,15 +134,19 @@ def run_query(query: str, expect: bool, target: str, cwd: Path, timeout: int,
     # The prompt travels in argv, so an inherited stdin only makes the nested CLI
     # stall 3s waiting for input it will never get and emit a warning on every
     # row, which would crowd out the real stderr this reports.
+    process_error = ""
     try:
         proc = subprocess.run(
             cmd, cwd=cwd, stdin=subprocess.DEVNULL,
             capture_output=True, timeout=timeout,
         )
         raw, err = as_text(proc.stdout), as_text(proc.stderr)
+        if proc.returncode:
+            process_error = f"CLI exited with status {proc.returncode}"
     except subprocess.TimeoutExpired as exc:
         raw = as_text(exc.stdout)
-        err = f"{as_text(exc.stderr)}\ntimeout after {timeout}s".strip()
+        process_error = f"timeout after {timeout}s"
+        err = f"{as_text(exc.stderr)}\n{process_error}".strip()
     except FileNotFoundError:
         # Also raised when `cwd` has been deleted under us, so name both causes
         # rather than sending the operator after a PATH problem they don't have.
@@ -150,6 +154,8 @@ def run_query(query: str, expect: bool, target: str, cwd: Path, timeout: int,
                          "scratch cwd no longer exists")
 
     fired, completed, subtype, tools, skills = parse_stream(raw, target)
+    if subtype == "success" and process_error:
+        subtype = process_error
     return Outcome(query, expect, fired, completed, subtype, tools, skills, err.strip())
 
 

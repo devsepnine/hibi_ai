@@ -27,7 +27,7 @@ Vercel이 유지 관리하는 React 및 Next.js 애플리케이션 성능 최적
 - `async-cheap-condition-before-await` - 플래그나 원격 값을 await 하기 전에 저렴한 동기 조건을 먼저 검사한다
 - `async-defer-await` - 실제로 사용되는 분기 안으로 await를 옮긴다
 - `async-parallel` - 독립적 연산에는 `Promise.all()`을 사용한다
-- `async-dependencies` - 부분 의존성에는 better-all을 사용한다
+- `async-dependencies` 각 비동기 작업을 필요한 입력이 준비되면 시작한다.
 - `async-api-routes` - API 라우트에서 promise를 일찍 시작하고 늦게 await 한다
 - `async-suspense-boundaries` - Suspense로 콘텐츠를 스트리밍한다
 - `async-optimistic-ui` - Action 내부에서 `useOptimistic`을 써서 자동 롤백 가능한 무지연 mutation을 만든다

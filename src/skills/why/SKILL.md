@@ -43,7 +43,7 @@ Trace back past the latest commit. The current shape is usually several earlier 
 
 ## Step 4. Fan out one investigator per evidence source
 
-Source control is always available. For the rest, check which MCP servers this session actually has, and map each to one category:
+Check whether this checkout has history for the change. For the rest, check which MCP servers this session actually has, and map each to one category:
 
 | Category | Typical source | Best at surfacing |
 |---|---|---|
@@ -54,7 +54,7 @@ Source control is always available. For the rest, check which MCP servers this s
 | Analytics | ClickHouse MCP | where a threshold or flag value came from |
 | Observability | A metrics MCP available in the project | the runtime signal a timeout or rate limit reacts to |
 
-Launch every matching investigator in one message, one `Agent` per source, each given the code anchor, the user's question, and the tiers from `references/epistemics.md`. An investigator that finds nothing still reports what it searched. Skip a category only for a written reason: no source is available, or the source is provably irrelevant, such as error tracking for a build script.
+Investigate the sources directly when delegation is unavailable or not authorized. When delegating, launch matching investigators in one message, one `Agent` per source, each given the code anchor, the user's question, and the tiers from `references/epistemics.md`. An investigator that finds nothing still reports what it searched. Skip a category only for a written reason: no source is available, or the source is provably irrelevant, such as error tracking for a build script.
 
 When the PR body already answers the question completely, say so and answer inline after checking the other sources would add nothing.
 

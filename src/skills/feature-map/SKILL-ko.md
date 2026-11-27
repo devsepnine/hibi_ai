@@ -150,32 +150,7 @@ Enter를 처리". 증상으로 표현할 수 없는 사실, 예를 들어 "렌�
 
 ### 6. 검증하고, 연결한다
 
-보고 전에 아래 네 가지 검사를 돌리고, 이어지는 점검 항목을 확인한다. 검사는
-호출한 셸과 상관없이 `bash` 에서 돈다. zsh는 따옴표 없는 `$MAP`, `$SRC` 를 한
-단어로 두기 때문에 모든 검사가 아무것도 출력하지 않고, 그게 통과처럼 보인다.
-블록 안의 `SRC=` 줄에 코드나 locale 카탈로그가 있는 루트를 전부 넣는다. 예:
-`src`, `public/locales`. 검사 대상 문구가 들어 있는 `docs/` 는 절대 넣지 않는다:
-
-```bash
-bash <<'EOF'
-MAP="docs/FEATURES.md $(ls docs/features/*.md 2>/dev/null)"; SRC="src"
-
-# 경로가 전부 존재하는지 — 저장소 루트 기준, `/` 포함. `/` 로 시작하는 라우트 URL은 제외
-grep -ohE '`[^`/ ][^` ]*/[^` ]*\.[A-Za-z0-9]{1,10}`' $MAP | tr -d '`' | sort -u \
-  | while read -r p; do test -e "$p" || echo "MISSING $p"; done
-
-# 실제 UI 문구와 컨트롤 라벨이 전부 소스에서 grep되는지
-grep -hE '^- \*\*(UI strings|Controls|UI 문구|컨트롤)\*\*' $MAP | grep -oE '"[^"]+"' | tr -d '"' | sort -u \
-  | while IFS= read -r s; do grep -rqF -- "$s" $SRC || echo "MISSING-STRING $s"; done
-
-# 인용한 심볼이 해당 파일에 있는지 — `path` → `symbol` 형식
-grep -ohE '`[^`/ ][^` ]*/[^` ]*\.[A-Za-z0-9]{1,10}` → `[A-Za-z_$][A-Za-z0-9_$]*`' $MAP | tr -d '`' | sort -u \
-  | while read -r p _ sym; do grep -qF -- "$sym" "$p" 2>/dev/null || echo "MISSING-SYMBOL $p → $sym"; done
-
-# 함정마다 원인이 있는지, `근거:` 앞에 `증상 → 원인`
-grep -hE '^- \*\*(Pitfalls|함정)\*\*:' $MAP | grep -vE ': none$|: [^→]+ → .+, (source|근거): ' | sed 's/^/NO-CAUSE /'
-EOF
-```
+저장소 루트에서 이 스킬의 [기능맵 검증 스크립트](scripts/check_map.py)를 Python 3으로 실행한다. 명령 인자로 코드와 번역 파일이 있는 디렉터리를 하나씩 전달한다. 예를 들어 두 경로가 모두 있으면 `src`와 `public/locales`를 전달한다. 기능맵 자체가 검색 결과에 들어가지 않도록 소스 디렉터리를 지정한다. 스크립트는 문서에 인용한 경로, 심볼, UI 문구, 함정의 원인 표기를 검사한다. 종료 코드가 0이면 아래 리뷰를 계속한다.
 
 - 안 걸리는 문구는 바꿔 쓴 것이거나 낡은 것이다. 남겨두지 말고 고친다.
 - 경로는 저장소 루트부터 전부 적는다. 줄여 쓴 경로는 검사에서 걸린다.
@@ -223,7 +198,7 @@ EOF
 ## 문서 템플릿
 
 `assets/feature-map-template.md`를 쓴다. 맵의 산문은 `technical-writing`의 산출물 언어 정책을 따른다.
-대화 언어를 기본으로 하며, 사용자가 언어를 명시하면 해당 언어를 우선한다. 템플릿의 제목과 필드 라벨은 영어로 둔다. 6단계 검사가 그 라벨을 grep하기
+대화 언어를 기본으로 하며, 사용자가 언어를 명시하면 해당 언어를 우선한다. 템플릿의 제목과 필드 라벨은 영어로 둔다. 6단계 검사가 그 라벨을 읽기
 때문이다. 예전에 `검증 시점` 같은 한국어 라벨로 쓴 맵도 검사가 둘 다 받으므로
 그대로 검증된다. 섹션 순서를 지킨다. 헤더에는 SHA와
 선택 사항인 `전제`·`참고` 줄을 담고, 그다음은 AI가 가장 먼저 읽는 조회 절차, 그다음 두

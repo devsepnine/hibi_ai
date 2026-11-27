@@ -176,7 +176,7 @@ GUI의 화면 모듈은 `App`을 읽고 메시지를 만든다. `tools/installer
 - **Level**: MUST
 - **Rule**: skill 디렉터리에는 `SKILL.md`, 각 마크다운의 `-ko.md` 미러, 하위 폴더 `src/skills/<name>/references/`, `src/skills/<name>/assets/`, `src/skills/<name>/scripts/`, `src/skills/<name>/rules/`, `src/skills/<name>/evals/`만 둔다.
 - **평가 산출물**: 실행 기록과 benchmark는 저장소 루트의 `skill-evaluations/<skill-name>/`에 보관한다. 이 경로는 Git과 배포 대상에서 제외한다. 재사용할 평가 정의는 기존 `src/skills/<name>/evals/`에 둔다.
-- **Why**: 표준 skill 구조로 고정한다. 2026-10-04 결정. 셸 스크립트는 `scripts/`로, 규칙 묶음의 유지보수 안내는 `rules/_README.md`로 옮겼다.
+- **Why**: 표준 skill 구조로 고정한다. 2026-10-04 결정. 셸 스크립트는 `src/skills/<name>/scripts/`로, 규칙 묶음의 유지보수 안내는 `src/skills/<name>/rules/_README.md`로 옮겼다.
 - **Evidence**: 위반 0건 · `python tools/lint-arch.py`
 - **Exceptions**: none
 - **Enforced by**: `tools/lint-arch.py`

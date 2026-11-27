@@ -25,6 +25,8 @@ skills_dir="$PWD/src/skills"
 
 ### Does a skill's description actually trigger?
 
+Use this test for skills selected on demand. For a skill loaded at startup, check that its instructions reached the session and evaluate the resulting response. An imported instruction can affect the answer without a `Skill` tool call.
+
 ```bash
 python3 "$skills_dir/eval-harness/scripts/trigger_eval.py" --skill do-178c \
   --eval-set "$skills_dir/do-178c/evals/trigger-eval.json" --timeout 300 --jobs 4
@@ -46,7 +48,7 @@ look like measurements but are not:
   reports no score at all. A detector that cannot report "dirty" proves
   nothing by reporting "clean".
 - **Completion tracking.** Only a run that reached its own answer, meaning a `result`
-  event with subtype `success` and no reported error, can testify that the skill was *not* chosen.
+  event with subtype `success`, no reported error, and a successful CLI exit, can testify that the skill was *not* chosen.
   An unfired run with `is_error: true` is INCONCLUSIVE even if its subtype says `success`. A
   timeout emits no `result` at all, and `error_max_turns` means the turn budget
   ran out first. An **unfired** row that ended either way is INCONCLUSIVE, never
@@ -144,16 +146,13 @@ Result: X/Y passed (previously Y/Y)
 ## Grader Types
 
 ### 1. Code-Based Grader
-Deterministic checks using code:
+Use the project’s checks and preserve their exit status. This Bash example assumes an npm project whose test runner accepts a path filter.
+
 ```bash
-# Check if file contains expected pattern
-grep -q "export function handleAuth" src/auth.ts && echo "PASS" || echo "FAIL"
-
-# Check if tests pass
-npm test -- --testPathPattern="auth" && echo "PASS" || echo "FAIL"
-
-# Check if build succeeds
-npm run build && echo "PASS" || echo "FAIL"
+set -e
+grep -qF "export function handleAuth" src/auth.ts
+npm test -- auth
+npm run build
 ```
 
 ### 2. Model-Based Grader
@@ -223,7 +222,7 @@ Write code to pass the defined evals.
 [Run each capability eval, record PASS/FAIL]
 
 # Run regression evals
-npm test -- --testPathPattern="existing"
+npm test -- existing
 
 # Generate report
 ```

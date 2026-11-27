@@ -27,7 +27,7 @@ Reference these guidelines when:
 - `async-cheap-condition-before-await` - Check cheap sync conditions before awaiting flags or remote values
 - `async-defer-await` - Move await into branches where actually used
 - `async-parallel` - Use `Promise.all()` for independent operations
-- `async-dependencies` - Use better-all for partial dependencies
+- `async-dependencies` Start each asynchronous operation when its own inputs are ready.
 - `async-api-routes` - Start promises early, await late in API routes
 - `async-suspense-boundaries` - Use Suspense to stream content
 - `async-optimistic-ui` - Use `useOptimistic` inside Actions for zero-latency mutations with auto-rollback

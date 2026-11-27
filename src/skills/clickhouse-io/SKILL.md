@@ -141,7 +141,7 @@ For a metric that counts every change event, read a separate append only history
 ## Pipeline Patterns
 
 - **ETL**: extract from OLTP sources such as Postgres/MySQL on schedule, transform to analytical schema, batch insert.
-- **CDC**: Postgres `LISTEN/NOTIFY` or Debezium-style stream → append-only event table in ClickHouse; use `ReplacingMergeTree` if you need current-state views.
+- For CDC that must retain every change, feed the ClickHouse history table from a replayable change log. PostgreSQL `NOTIFY` can wake a consumer to read stored changes. Delivery requires an active listener, and identical notifications can be folded within a transaction. [PostgreSQL NOTIFY](https://www.postgresql.org/docs/current/sql-notify.html)
 - Prefer denormalized tables for analytics; avoid heavy JOINs across large tables. Use dictionaries via `dictGet` for low-cardinality lookups.
 
 Docs: https://clickhouse.com/docs/en/sql-reference/dictionaries

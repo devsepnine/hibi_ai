@@ -61,7 +61,8 @@ All four must pass equally. See the `coding-standards` skill → `references/rev
 
 - Before running code, builds, tests, or development servers, discover `rundebugconfig` MCP tools and confirm the connection with `list_configurations` when available.
 - When connected, prefer matching saved configurations and session tools over direct shell execution. Follow the `verification-loop` skill's execution setup for selection, permissions, fallback, and result checks.
-- Prefer `rg` / `rg --files` for search.
+- Before first using a command in an environment, check what its name runs in the shell that will execute it. It may resolve to an alias, function, builtin, cmdlet, or executable on `PATH`. For example, use `type -a find` in Bash or Zsh, or `Get-Command find -All` in PowerShell.
+- Even executables with the same name can have different flags and output across platforms. Check the local help or manual for the behavior the task needs. If a skill gives an example command that is unavailable, use an available tool that performs the same operation.
 - Run independent lookups and analyses in parallel.
 - For an independent session in WezTerm, list panes with `wezterm cli list` and reuse an idle pane if available. If a new pane is needed, split it with `wezterm cli split-pane`.
 - Prefer patch-based edits for single-file changes.
