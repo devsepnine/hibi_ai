@@ -1,6 +1,5 @@
 use anyhow::Result;
 use std::path::Path;
-use walkdir::WalkDir;
 
 use crate::component::{
     Component, ComponentType, HookConfig, InstallStatus, statusline_binary_name,
@@ -12,9 +11,16 @@ pub(super) fn scan_flat(
     source_dir: &Path,
     dest_dir: &Path,
     component_type: ComponentType,
+    target_cli: TargetCli,
 ) -> Result<Vec<Component>> {
     let mut components = Vec::new();
-    scan_directory(source_dir, dest_dir, component_type, &mut components)?;
+    scan_directory(
+        source_dir,
+        dest_dir,
+        component_type,
+        target_cli,
+        &mut components,
+    )?;
     Ok(components)
 }
 
@@ -26,59 +32,21 @@ pub(super) fn scan_components(
 ) -> Result<Vec<Component>> {
     let mut components = Vec::new();
 
-    match target_cli {
-        TargetCli::Claude => {
-            scan_directory(
-                &source_dir.join("agents"),
-                &dest_dir.join("agents"),
-                ComponentType::Agents,
-                &mut components,
-            )?;
-            scan_directory(
-                &source_dir.join("commands"),
-                &dest_dir.join("commands"),
-                ComponentType::Commands,
-                &mut components,
-            )?;
-            scan_directory(
-                &source_dir.join("contexts"),
-                &dest_dir.join("contexts"),
-                ComponentType::Contexts,
-                &mut components,
-            )?;
-            scan_directory(
-                &source_dir.join("rules"),
-                &dest_dir.join("rules"),
-                ComponentType::Rules,
-                &mut components,
-            )?;
-            scan_directory(
-                &source_dir.join("skills"),
-                &dest_dir.join("skills"),
-                ComponentType::Skills,
-                &mut components,
-            )?;
-            scan_directory(
-                &source_dir.join("output-styles"),
-                &dest_dir.join("output-styles"),
-                ComponentType::OutputStyles,
-                &mut components,
-            )?;
-            scan_statusline(source_dir, dest_dir, &mut components)?;
-            scan_hooks(source_dir, dest_dir, &mut components)?;
-            add_config_files(source_dir, dest_dir, target_cli, &mut components)?;
-        }
-        TargetCli::Codex => {
-            scan_directory(
-                &source_dir.join("skills"),
-                &dest_dir.join("skills"),
-                ComponentType::Skills,
-                &mut components,
-            )?;
-            add_config_files(source_dir, dest_dir, target_cli, &mut components)?;
-        }
+    for kind in super::tree_types(target_cli) {
+        let directory = kind.display_name();
+        scan_directory(
+            &source_dir.join(directory),
+            &dest_dir.join(directory),
+            kind.clone(),
+            target_cli,
+            &mut components,
+        )?;
     }
-
+    if target_cli == TargetCli::Claude {
+        scan_statusline(source_dir, dest_dir, &mut components)?;
+        scan_hooks(source_dir, dest_dir, &mut components)?;
+    }
+    add_config_files(source_dir, dest_dir, target_cli, &mut components)?;
     Ok(components)
 }
 
@@ -86,22 +54,14 @@ fn scan_directory(
     source_dir: &Path,
     dest_dir: &Path,
     component_type: ComponentType,
+    target_cli: TargetCli,
     components: &mut Vec<Component>,
 ) -> Result<()> {
     if !source_dir.exists() {
         return Ok(());
     }
 
-    // Skip skill-development artifacts.
-    // Convention: skill-creator writes iteration/benchmark outputs to
-    // `<skill>/workspace/`. See `src/skills/*/workspace/` and `.gitignore`.
-    // Pruning via `filter_entry` avoids descending the subtree entirely.
-    for entry in WalkDir::new(source_dir)
-        .min_depth(1)
-        .into_iter()
-        .filter_entry(|e| !(e.file_type().is_dir() && e.file_name() == "workspace"))
-        .filter_map(|e| e.ok())
-    {
+    for entry in super::component_entries(source_dir, &component_type, target_cli) {
         let path = entry.path();
         if !path.is_file() {
             continue;
@@ -178,7 +138,7 @@ fn scan_hooks(source_dir: &Path, dest_dir: &Path, components: &mut Vec<Component
         let entry = entry?;
         let path = entry.path();
 
-        if !path.is_dir() {
+        if !path.is_dir() || crate::fs::is_system_entry(&entry.file_name(), true) {
             continue;
         }
 
@@ -370,7 +330,14 @@ mod tests {
         std::fs::write(src.join("skill-a/workspace/benchmark.json"), "{}").unwrap();
 
         let mut out = Vec::new();
-        scan_directory(&src, &dst, ComponentType::Skills, &mut out).unwrap();
+        scan_directory(
+            &src,
+            &dst,
+            ComponentType::Skills,
+            TargetCli::Claude,
+            &mut out,
+        )
+        .unwrap();
 
         assert_eq!(out.len(), 1, "only SKILL.md should be scanned");
         assert!(out[0].name.ends_with("SKILL.md"));
@@ -395,7 +362,14 @@ mod tests {
         std::fs::write(src.join("skill-b/awesome-ko-thing.md"), "keep").unwrap();
 
         let mut out = Vec::new();
-        scan_directory(&src, &dst, ComponentType::Skills, &mut out).unwrap();
+        scan_directory(
+            &src,
+            &dst,
+            ComponentType::Skills,
+            TargetCli::Claude,
+            &mut out,
+        )
+        .unwrap();
 
         let names: Vec<_> = out.iter().map(|c| c.name.as_str()).collect();
         assert!(names.iter().any(|n| n.ends_with("SKILL.md")));

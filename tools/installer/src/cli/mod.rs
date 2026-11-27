@@ -92,6 +92,28 @@ pub(crate) fn dispatch_key(
             Ok(())
         }
         app::View::Diff => handle_diff_input(app, code),
+        app::View::Filters(choice) => {
+            use app::FilterChoice;
+            match code {
+                KeyCode::Esc | KeyCode::Char('q' | 'f') => app.current_view = app::View::List,
+                KeyCode::Up | KeyCode::BackTab | KeyCode::Char('k') => {
+                    app.current_view = app::View::Filters(choice.step(-1))
+                }
+                KeyCode::Down | KeyCode::Tab | KeyCode::Char('j') => {
+                    app.current_view = app::View::Filters(choice.step(1))
+                }
+                KeyCode::Enter | KeyCode::Char(' ') => match choice {
+                    FilterChoice::Status(filter) => app.set_component_filter(
+                        filter,
+                        filter == app::ComponentFilter::Default
+                            || !app.component_filter.contains(filter),
+                    ),
+                    FilterChoice::Visibility(mode) => app.set_hidden_visibility(mode),
+                },
+                _ => {}
+            }
+            Ok(())
+        }
         app::View::Help => handle_help_input(app, code),
         app::View::ConfirmExit => {
             handle_confirm_exit(app, code);
@@ -219,7 +241,9 @@ fn handle_content_focus_keys(app: &mut App, key: KeyCode) -> Result<()> {
         KeyCode::Up | KeyCode::Char('k') => app.prev_item(),
         KeyCode::Char(' ') => app.toggle_selected(),
         KeyCode::Char('a') => app.toggle_all_selected(),
-        KeyCode::Char('f') => app.cycle_component_filter(),
+        KeyCode::Char('f') if app.tab.to_component_type().is_some() => {
+            app.current_view = app::View::Filters(app::FilterChoice::FIRST)
+        }
         KeyCode::Char('x') => app.toggle_folder_visibility(),
         KeyCode::Char('X') => app.hide_selected_folders(),
         KeyCode::Char('H') => app.toggle_show_hidden(),

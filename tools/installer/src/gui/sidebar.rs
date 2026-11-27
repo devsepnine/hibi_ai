@@ -148,7 +148,10 @@ fn count(app: &App, tab: Tab) -> usize {
         _ => app
             .components
             .iter()
-            .filter(|item| tab.to_component_type().as_ref() == Some(&item.component_type))
+            .filter(|item| {
+                tab.to_component_type().as_ref() == Some(&item.component_type)
+                    && app.component_filter.matches(&item.status)
+            })
             .count(),
     }
 }

@@ -9,7 +9,6 @@ pub enum HiddenVisibility {
     #[default]
     Exclude,
     Include,
-    #[cfg(feature = "gui")]
     Only,
 }
 
@@ -22,7 +21,6 @@ impl HiddenVisibility {
         match self {
             Self::Exclude => !hidden,
             Self::Include => true,
-            #[cfg(feature = "gui")]
             Self::Only => hidden,
         }
     }
@@ -126,10 +124,7 @@ impl App {
                     "Showing hidden folders. Press x on a hidden folder to unhide it."
                 }
                 HiddenVisibility::Exclude => "Hidden folders concealed; hidden selections cleared.",
-                #[cfg(feature = "gui")]
-                HiddenVisibility::Only => {
-                    "Showing only hidden folders. Unhide selected restores their visibility."
-                }
+                HiddenVisibility::Only => "Showing only hidden folders.",
             }
             .to_string(),
         );

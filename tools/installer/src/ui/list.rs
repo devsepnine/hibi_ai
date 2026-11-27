@@ -7,13 +7,15 @@ use ratatui::{
 };
 
 use super::{pane_border_style, pane_title};
-use crate::app::{App, FocusArea, Tab};
+use crate::app::{App, FocusArea, HiddenVisibility, Tab};
 use crate::component::InstallStatus;
 use crate::tree::TreeNode;
 
 pub fn render(f: &mut Frame, app: &App, area: Rect) {
     if app.visible_components().is_empty() {
-        let mut message = if app.search_query.trim().is_empty() {
+        let mut message = if app.hidden_visibility == HiddenVisibility::Only {
+            "No hidden files match these filters. Press f to change filter.".into()
+        } else if app.search_query.trim().is_empty() {
             format!(
                 "No {} files. Press f to change filter.",
                 app.component_filter.display()
@@ -54,7 +56,7 @@ fn list_block(app: &App) -> Block<'static> {
         }
     }
 
-    title = if app.hidden_folder_count() == 0 {
+    title = if app.hidden_folder_count() == 0 && app.hidden_visibility != HiddenVisibility::Only {
         format!(
             "{} | Filter: {} | Files: {} | Selected: {}",
             title.trim(),
@@ -71,10 +73,10 @@ fn list_block(app: &App) -> Block<'static> {
             app.component_filter.display(),
             components.len(),
             app.hidden_folder_count(),
-            if app.hidden_visibility.shows_hidden() {
-                " [shown]"
-            } else {
-                ""
+            match app.hidden_visibility {
+                HiddenVisibility::Exclude => "",
+                HiddenVisibility::Include => " [shown]",
+                HiddenVisibility::Only => " [hidden only]",
             }
         )
     };

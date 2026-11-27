@@ -4,6 +4,7 @@ pub(crate) use confirm::{removal_scroll_limit, render_source_error};
 pub(crate) mod confirm_hide;
 mod diff;
 mod env_input;
+mod filters;
 pub mod help;
 mod installing;
 mod layout;
@@ -110,6 +111,7 @@ pub fn draw(f: &mut Frame, app: &App) {
     // the help overlay needs every row it can take, and the boxes carry their
     // own keys on their own borders.
     match app.current_view {
+        View::Filters(cursor) => filters::render(f, app, cursor),
         View::Help => help::render(f, app, f.area()),
         View::ConfirmExit => confirm::render(f, app, f.area()),
         View::ConfirmRemove => confirm::render_remove(f, app, f.area()),
@@ -181,6 +183,7 @@ fn render_content_pane(f: &mut Frame, app: &App, area: Rect) {
         // Overlays retain the list so dismissing them restores the same context.
         View::List
         | View::Search
+        | View::Filters(_)
         | View::Help
         | View::ConfirmExit
         | View::ConfirmRemove
@@ -268,7 +271,11 @@ fn status_help(app: &App) -> &'static str {
         // Overlays name their own keys on their own frames, and the List
         // keys behind them are no longer live — repeating them here would
         // advertise a pane jump the modal will not answer.
-        View::Help | View::ConfirmExit | View::ConfirmRemove | View::ConfirmHide => "",
+        View::Filters(_)
+        | View::Help
+        | View::ConfirmExit
+        | View::ConfirmRemove
+        | View::ConfirmHide => "",
         View::Diff => "[j/k/↑/↓] Scroll  [q/Esc] Close",
         View::EnvInput => "[Enter] Submit  [Esc] Cancel  [Backspace] Delete",
         View::ProjectPath => "[Enter] Confirm  [Esc] Cancel  [Backspace] Delete",

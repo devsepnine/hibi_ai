@@ -15,6 +15,49 @@ use crate::plugin::Plugin;
 use crate::source::ResolvedSource;
 use crate::target::TargetCli;
 
+fn tree_types(target: TargetCli) -> &'static [ComponentType] {
+    match target {
+        TargetCli::Claude => ComponentType::TREE_MIRRORED,
+        TargetCli::Codex => &[ComponentType::Skills],
+    }
+}
+
+fn component_entries(
+    root: &Path,
+    kind: &ComponentType,
+    target: TargetCli,
+) -> impl Iterator<Item = walkdir::DirEntry> {
+    let codex_skills = target == TargetCli::Codex && *kind == ComponentType::Skills;
+    walkdir::WalkDir::new(root)
+        .min_depth(1)
+        .into_iter()
+        .filter_entry(move |entry| {
+            let name = entry.file_name();
+            let is_dir = entry.file_type().is_dir();
+            let codex_system_skills =
+                codex_skills && entry.depth() == 1 && is_dir && name == ".system";
+            !(super::is_system_entry(name, is_dir)
+                || (is_dir && name == "workspace")
+                || codex_system_skills
+                || is_apple_double(entry))
+        })
+        .filter_map(Result::ok)
+}
+
+fn is_apple_double(entry: &walkdir::DirEntry) -> bool {
+    use std::io::Read;
+
+    if !entry.file_type().is_file() || !entry.file_name().as_encoded_bytes().starts_with(b"._") {
+        return false;
+    }
+    // RFC 1740 distinguishes AppleDouble metadata from ordinary user files with the same prefix.
+    let mut magic = [0; 4];
+    std::fs::File::open(entry.path())
+        .and_then(|mut file| file.read_exact(&mut magic))
+        .is_ok()
+        && magic == 0x0005_1607_u32.to_be_bytes()
+}
+
 /// Merge items from multiple sources using a last-wins strategy.
 ///
 /// For each source, `scan_fn` produces a list of items. Items with the same
@@ -92,7 +135,7 @@ pub fn scan_all_sources(
                 if let Some(comp_type) = parse_map_to(map_to) {
                     let type_dir = comp_type.display_name().to_lowercase();
                     let dest = dest_dir.join(&type_dir);
-                    components::scan_flat(&source.path, &dest, comp_type)
+                    components::scan_flat(&source.path, &dest, comp_type, target_cli)
                 } else {
                     Ok(Vec::new()) // Unknown map_to value, skip silently
                 }
@@ -177,6 +220,62 @@ mod tests {
     use super::*;
     use crate::component::InstallStatus;
     use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn system_metadata_is_pruned_from_sources_and_external_components() -> Result<()> {
+        let fixture = tempfile::tempdir()?;
+        let source = fixture.path().join("source");
+        let dest = fixture.path().join(".codex");
+        for root in [&source, &dest] {
+            for name in [
+                ".system/internal/SKILL.md",
+                "synced/copy/SKILL.md",
+                ".trash/old/SKILL.md",
+                "demo/examples/synced/sample.md",
+                "demo/__MACOSX/copy.md",
+                "demo/.Spotlight-V100/index",
+                "demo/.DS_store",
+                "demo/._notes.md",
+                "demo/Desktop.ini",
+                "demo/Thumbs.db",
+            ] {
+                let path = root.join("skills").join(name);
+                std::fs::create_dir_all(path.parent().unwrap())?;
+                std::fs::write(path, "metadata")?;
+            }
+            std::fs::write(root.join("skills/demo/._SKILL.md"), [0, 5, 0x16, 7])?;
+        }
+        std::fs::write(source.join("skills/demo/SKILL.md"), "skill")?;
+        std::fs::write(source.join("skills/demo/.gitignore"), "build/")?;
+        std::fs::create_dir_all(dest.join("skills/.system-other"))?;
+        std::fs::write(dest.join("skills/.system-other/custom.md"), "keep")?;
+
+        let mut flat = ResolvedSource::bundled(&source.join("skills"));
+        flat.map_to = Some("skills".into());
+        for source in [ResolvedSource::bundled(&source), flat] {
+            for target in [TargetCli::Claude, TargetCli::Codex] {
+                let rows = scan_all_sources(std::slice::from_ref(&source), &dest, target)?;
+                let mut names: Vec<_> =
+                    rows.iter().map(|row| row.name.replace('\\', "/")).collect();
+                names.sort();
+                let mut expected = vec![
+                    ".system-other/custom.md",
+                    "demo/.gitignore",
+                    "demo/._notes.md",
+                    "demo/SKILL.md",
+                    "demo/examples/synced/sample.md",
+                    "synced/copy/SKILL.md",
+                    ".trash/old/SKILL.md",
+                ];
+                if target == TargetCli::Claude {
+                    expected.push(".system/internal/SKILL.md");
+                }
+                expected.sort();
+                assert_eq!(names, expected);
+            }
+        }
+        Ok(())
+    }
 
     #[test]
     fn settings_rows_install_and_remove_only_selected_keys() -> Result<()> {

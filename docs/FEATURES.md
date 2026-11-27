@@ -67,8 +67,8 @@
 | Space 안 먹힘, 체크가 안 됨 | `component-list`, `cli-picker` |
 | 에이전트, 커맨드, 스킬, Styles, Config 탭 | `component-list` |
 | modified, installed, new, external, managed, 상태 표시 | `component-list` |
-| 상태 필터, 수정 파일만, 외부 파일만, 미설치 파일만, 필터 결과만 선택 | `gui-filters`, `component-list` |
-| 폴더 숨김, 숨김 취소, 숨긴 항목 표시, .system, synced | `component-list` |
+| TUI 필터 모달, 상태 필터, 수정 파일만, 외부 파일만, 설치된 파일만, 미설치 파일만, 필터 결과만 선택 | `gui-filters`, `component-list` |
+| 폴더 숨김, 숨김 취소, 숨긴 항목 표시, 시스템 파일 제외, `.system`, `.DS_Store`, `__MACOSX`, `synced` | `component-list` |
 | 바꾼 적 없는데 modified, 줄바꿈 CRLF | `component-list` |
 | 하단 바, 상태 바, 상태 메시지, 메시지가 잘림 | `status-bar` |
 | 상태줄, 상태표시줄, statusline `(ambiguous)` | `statusline-render`, `default-style-statusline`, `status-bar`, `settings-merge` |

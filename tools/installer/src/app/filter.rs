@@ -1,4 +1,4 @@
-use super::{App, Tab};
+use super::{App, HiddenVisibility, Tab};
 use crate::component::{Component, InstallStatus};
 use crate::tree::TreeView;
 use std::collections::BTreeSet;
@@ -6,16 +6,18 @@ use std::collections::BTreeSet;
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ComponentFilter {
     #[default]
-    All,
+    Default,
     Modified,
     External,
     New,
+    Installed,
 }
 
 impl ComponentFilter {
     pub fn display(self) -> &'static str {
         match self {
-            Self::All => "All",
+            Self::Default => "Default",
+            Self::Installed => "Installed",
             Self::Modified => "Modified",
             Self::External => "External",
             Self::New => "New",
@@ -24,20 +26,51 @@ impl ComponentFilter {
 
     pub fn matches(self, status: &InstallStatus) -> bool {
         match self {
-            Self::All => true,
+            Self::Default => *status != InstallStatus::External,
+            Self::Installed => matches!(status, InstallStatus::Unchanged | InstallStatus::Managed),
             Self::Modified => *status == InstallStatus::Modified,
             Self::External => *status == InstallStatus::External,
             Self::New => *status == InstallStatus::New,
         }
     }
+}
 
-    fn next(self) -> Self {
-        match self {
-            Self::All => Self::Modified,
-            Self::Modified => Self::External,
-            Self::External => Self::New,
-            Self::New => Self::All,
-        }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FilterChoice {
+    Status(ComponentFilter),
+    Visibility(HiddenVisibility),
+}
+
+pub const STATUS_CHOICES: [ComponentFilter; 5] = [
+    ComponentFilter::Default,
+    ComponentFilter::Modified,
+    ComponentFilter::External,
+    ComponentFilter::New,
+    ComponentFilter::Installed,
+];
+pub const VISIBILITY_CHOICES: [HiddenVisibility; 3] = [
+    HiddenVisibility::Exclude,
+    HiddenVisibility::Include,
+    HiddenVisibility::Only,
+];
+
+impl FilterChoice {
+    pub const FIRST: Self = Self::Status(ComponentFilter::Default);
+
+    pub fn choices() -> impl Iterator<Item = Self> {
+        STATUS_CHOICES
+            .into_iter()
+            .map(Self::Status)
+            .chain(VISIBILITY_CHOICES.into_iter().map(Self::Visibility))
+    }
+
+    pub fn step(self, offset: isize) -> Self {
+        let count = STATUS_CHOICES.len() + VISIBILITY_CHOICES.len();
+        let current = Self::choices()
+            .position(|choice| choice == self)
+            .unwrap_or(0);
+        let next = (current as isize + offset).rem_euclid(count as isize) as usize;
+        Self::choices().nth(next).unwrap_or(Self::FIRST)
     }
 }
 
@@ -55,9 +88,8 @@ impl From<ComponentFilter> for ComponentFilters {
 }
 
 impl ComponentFilters {
-    #[cfg(any(feature = "gui", test))]
     pub fn contains(&self, filter: ComponentFilter) -> bool {
-        if filter == ComponentFilter::All {
+        if filter == ComponentFilter::Default {
             self.selected.is_empty()
         } else {
             self.selected.contains(&filter)
@@ -65,7 +97,7 @@ impl ComponentFilters {
     }
 
     pub fn set(&mut self, filter: ComponentFilter, checked: bool) {
-        if filter == ComponentFilter::All {
+        if filter == ComponentFilter::Default {
             if checked {
                 self.selected.clear();
             }
@@ -77,12 +109,16 @@ impl ComponentFilters {
     }
 
     pub fn matches(&self, status: &InstallStatus) -> bool {
-        self.selected.is_empty() || self.selected.iter().any(|filter| filter.matches(status))
+        if self.selected.is_empty() {
+            ComponentFilter::Default.matches(status)
+        } else {
+            self.selected.iter().any(|filter| filter.matches(status))
+        }
     }
 
     pub fn display(&self) -> String {
         if self.selected.is_empty() {
-            "All".into()
+            ComponentFilter::Default.display().into()
         } else {
             self.selected
                 .iter()
@@ -91,32 +127,14 @@ impl ComponentFilters {
                 .join(" / ")
         }
     }
-
-    fn next(&self) -> Self {
-        match self.selected.first() {
-            None => ComponentFilter::Modified.into(),
-            Some(filter) if self.selected.len() == 1 => filter.next().into(),
-            _ => Self::default(),
-        }
-    }
 }
 
 impl App {
-    #[cfg(any(feature = "gui", test))]
     pub fn set_component_filter(&mut self, filter: ComponentFilter, checked: bool) {
         if self.tab.to_component_type().is_none() {
             return;
         }
         self.component_filter.set(filter, checked);
-        self.list_index = 0;
-        self.rebuild_tree_views();
-    }
-
-    pub fn cycle_component_filter(&mut self) {
-        if self.tab.to_component_type().is_none() {
-            return;
-        }
-        self.component_filter = self.component_filter.next();
         self.list_index = 0;
         self.rebuild_tree_views();
     }
@@ -183,7 +201,6 @@ mod tests {
         for (mode, visible, hidden) in [
             (HiddenVisibility::Exclude, true, false),
             (HiddenVisibility::Include, true, true),
-            #[cfg(feature = "gui")]
             (HiddenVisibility::Only, false, true),
         ] {
             assert_eq!(mode.matches(false), visible);
@@ -193,19 +210,20 @@ mod tests {
     }
 
     #[test]
-    fn default_matches_every_status_and_last_uncheck_restores_default() {
+    fn default_matches_managed_sources_and_last_uncheck_restores_default() {
         let mut filters = ComponentFilters::default();
         for status in [
             InstallStatus::New,
             InstallStatus::Modified,
-            InstallStatus::External,
+            InstallStatus::Blocked("invalid config".into()),
             InstallStatus::Unchanged,
             InstallStatus::Managed,
         ] {
             assert!(filters.matches(&status));
         }
-        filters.set(ComponentFilter::All, false);
-        assert!(filters.contains(ComponentFilter::All));
+        assert!(!filters.matches(&InstallStatus::External));
+        filters.set(ComponentFilter::Default, false);
+        assert!(filters.contains(ComponentFilter::Default));
         filters.set(ComponentFilter::Modified, true);
         filters.set(ComponentFilter::New, true);
         assert!(filters.matches(&InstallStatus::Modified));
@@ -213,12 +231,12 @@ mod tests {
         assert!(!filters.matches(&InstallStatus::Unchanged));
         filters.set(ComponentFilter::Modified, false);
         filters.set(ComponentFilter::New, false);
-        assert!(filters.contains(ComponentFilter::All));
+        assert!(filters.contains(ComponentFilter::Default));
         assert!(filters.matches(&InstallStatus::Managed));
     }
 
     #[test]
-    fn checking_all_three_statuses_is_distinct_from_default_and_default_resets_them() {
+    fn checking_multiple_statuses_is_distinct_from_default_and_default_resets_them() {
         let mut filters = ComponentFilters::default();
         for filter in [
             ComponentFilter::Modified,
@@ -231,9 +249,11 @@ mod tests {
         assert!(!filters.matches(&InstallStatus::Unchanged));
         assert!(!filters.matches(&InstallStatus::Managed));
         assert_eq!(filters.display(), "Modified / External / New");
-        assert_eq!(filters.next(), ComponentFilters::default());
-        filters.set(ComponentFilter::All, true);
-        assert!(filters.contains(ComponentFilter::All));
+        filters.set(ComponentFilter::Installed, true);
+        assert!(filters.matches(&InstallStatus::Managed));
+        assert!(filters.matches(&InstallStatus::Unchanged));
+        filters.set(ComponentFilter::Default, true);
+        assert!(filters.contains(ComponentFilter::Default));
         assert!(!filters.contains(ComponentFilter::Modified));
         assert!(filters.matches(&InstallStatus::Unchanged));
     }
@@ -258,7 +278,7 @@ mod tests {
         app.close_processing();
         app.tab = Tab::McpServers;
         let before = app.component_filter.clone();
-        app.set_component_filter(ComponentFilter::All, true);
+        app.set_component_filter(ComponentFilter::Default, true);
         assert_eq!(app.component_filter, before);
     }
 }

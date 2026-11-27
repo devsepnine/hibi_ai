@@ -171,7 +171,7 @@ fn filter_summary_keeps_the_statusline_default_visible_at_80_columns() {
     let buf = paint_at(&app, list::render, 80, 10);
     let title = row(&buf, 0);
     assert!(title.contains("[Default: statusline_linux]"), "{title}");
-    assert!(title.contains("Filter: All"), "{title}");
+    assert!(title.contains("Filter: Default"), "{title}");
 }
 
 #[test]
@@ -182,17 +182,23 @@ fn list_labels_the_filter_count_and_bulk_selection_scope() {
         ("changed.md", InstallStatus::Modified),
         ("local.md", InstallStatus::External),
         ("new.md", InstallStatus::New),
+        ("installed.md", InstallStatus::Unchanged),
     ] {
         let mut component = crate::tree::test_support::make_component(name);
         component.status = status;
         app.components.push(component);
     }
-    for (label, name) in [
-        ("All", "changed.md"),
-        ("Modified", "changed.md"),
-        ("External", "local.md"),
-        ("New", "new.md"),
+    use crate::app::ComponentFilter::*;
+    for (filter, name) in [
+        (Default, "changed.md"),
+        (Modified, "changed.md"),
+        (External, "local.md"),
+        (New, "new.md"),
+        (Installed, "installed.md"),
     ] {
+        app.set_component_filter(Default, true);
+        app.set_component_filter(filter, true);
+        let label = filter.display();
         let buf = paint_at(&app, list::render, 100, 10);
         let screen: String = (0..10).map(|y| row(&buf, y)).collect();
         assert!(screen.contains(&format!("Filter: {label}")), "{screen}");
@@ -201,15 +207,39 @@ fn list_labels_the_filter_count_and_bulk_selection_scope() {
         assert!(screen.contains("[a] Toggle all"), "{screen}");
         assert!(screen.contains("[E] Fold all"), "{screen}");
         assert!(
-            screen.contains(if label == "All" {
+            screen.contains(if filter == Default {
                 "Files: 3"
             } else {
                 "Files: 1"
             }),
             "{screen}"
         );
-        app.cycle_component_filter();
     }
+}
+
+#[test]
+fn filter_modal_shows_the_checked_statuses_and_scrolls_to_the_cursor_after_resize() {
+    use crate::app::{ComponentFilter, FilterChoice, HiddenVisibility};
+    let mut app = fresh_app();
+    app.set_component_filter(ComponentFilter::External, true);
+    app.set_component_filter(ComponentFilter::Installed, true);
+    let cursor = FilterChoice::Visibility(HiddenVisibility::Only);
+    app.current_view = View::Filters(cursor);
+    let draw: PaneRenderer = |f, app, _| super::draw(f, app);
+    let buf = paint_at(&app, draw, 80, 24);
+    let lines: String = (0..24).map(|y| row(&buf, y)).collect();
+    for label in [
+        "Filters",
+        "[ ] Default",
+        "[x] External",
+        "[x] Installed",
+        "> ( ) Hidden only",
+        "Esc Close",
+    ] {
+        assert!(lines.contains(label), "{label} missing: {lines}");
+    }
+    let buf = paint_at(&app, draw, 36, 7);
+    assert!((0..7).any(|y| row(&buf, y).contains("> ( ) Hidden only")));
 }
 
 #[test]
@@ -217,7 +247,7 @@ fn empty_filter_explains_how_to_show_other_files() {
     let mut app = fresh_app();
     app.components
         .push(crate::tree::test_support::make_component("new.md"));
-    app.cycle_component_filter();
+    app.set_component_filter(crate::app::ComponentFilter::Modified, true);
     for use_tree in [true, false] {
         if !use_tree {
             app.tree_views.clear();
@@ -402,6 +432,7 @@ fn removal_scroll_reaches_the_end_of_a_single_wrapped_name() -> anyhow::Result<(
     let mut file = crate::tree::test_support::make_component(&name);
     file.status = InstallStatus::External;
     app.components = vec![file];
+    app.set_component_filter(crate::app::ComponentFilter::External, true);
     let (tx, _rx) = std::sync::mpsc::channel();
     let area = Rect::new(0, 0, 40, 10);
     let press = |app: &mut App, key, area| crate::cli::dispatch_terminal_key(app, key, area, &tx);
@@ -581,7 +612,7 @@ fn the_overlay_documents_the_keys_the_status_bar_no_longer_lists() {
         "toggle selection",
         "toggle all shown selections",
         "toggle all folders open / closed",
-        "file filter: All/Modified/External/New",
+        "open file filters",
         "hide / unhide folder",
         "hide checked folders",
         "show / conceal hidden folders",

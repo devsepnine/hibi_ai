@@ -92,7 +92,7 @@ pub fn auto_cleanup_deprecated_hooks(source_dir: &Path, dest_dir: &Path) -> Vec<
 
     for entry in entries.filter_map(|e| e.ok()) {
         let path = entry.path();
-        if !path.is_dir() {
+        if !path.is_dir() || super::is_system_entry(&entry.file_name(), true) {
             continue;
         }
 

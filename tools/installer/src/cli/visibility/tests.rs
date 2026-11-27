@@ -1,5 +1,5 @@
 use super::*;
-use crate::app::{Tab, TargetCli, View};
+use crate::app::{ComponentFilter, Tab, TargetCli, View};
 use crate::component::{Component, InstallStatus};
 use crate::tree::{TreeNode, test_support::make_component};
 #[path = "managed/tests.rs"]
@@ -39,13 +39,21 @@ fn fixture() -> (Fixture, App) {
     app.available_tabs = vec![Tab::Skills];
     app.finish_loading(
         vec![
-            external(".system/tool/SKILL.md", true),
+            external(".custom/tool/SKILL.md", true),
             make_component("demo/SKILL.md"),
         ],
         vec![],
         vec![],
         vec![],
     );
+    for filter in [
+        ComponentFilter::New,
+        ComponentFilter::Modified,
+        ComponentFilter::External,
+        ComponentFilter::Installed,
+    ] {
+        app.set_component_filter(filter, true);
+    }
     (Fixture(dir), app)
 }
 
@@ -56,6 +64,11 @@ fn key(app: &mut App, code: KeyCode) {
 
 fn press(app: &mut App, character: char) {
     key(app, KeyCode::Char(character));
+}
+
+fn choose(app: &mut App, filter: ComponentFilter) {
+    app.set_component_filter(ComponentFilter::Default, true);
+    app.set_component_filter(filter, true);
 }
 
 fn hide(app: &mut App) {
@@ -111,13 +124,13 @@ fn screen(app: &App) -> String {
 #[test]
 fn cursor_hide_requests_confirmation_before_clearing_selection_and_preserves_disk_files() {
     let (_fixture, mut app) = fixture();
-    let file = app.dest_dir.join("skills/.system/tool/SKILL.md");
+    let file = app.dest_dir.join("skills/.custom/tool/SKILL.md");
     std::fs::create_dir_all(file.parent().unwrap()).unwrap();
     std::fs::write(&file, "service owned").unwrap();
     press(&mut app, 'x');
     assert_eq!(app.current_view, View::ConfirmHide);
     let confirmation = app.hide_confirmation.as_ref().unwrap();
-    assert_eq!(confirmation.folders, [".system"]);
+    assert_eq!(confirmation.folders, [".custom"]);
     assert_eq!(confirmation.selected_files, 1);
     assert_eq!(confirmation.scroll, 0);
     assert!(app.components[0].selected);
@@ -125,7 +138,7 @@ fn cursor_hide_requests_confirmation_before_clearing_selection_and_preserves_dis
     press(&mut app, 'y');
     assert_eq!(app.current_view, View::List);
     assert!(app.hide_confirmation.is_none());
-    assert!(!screen(&app).contains(".system/"));
+    assert!(!screen(&app).contains(".custom/"));
     assert!(screen(&app).contains("Hidden: 1"));
     assert!(screen(&app).contains("demo/"));
     assert_eq!(app.components.len(), 2);
@@ -148,15 +161,17 @@ fn hidden_folder_survives_restart_and_unhide_does_not_restore_checks() {
     restarted.dest_dir = app.dest_dir.clone();
     restarted.visibility_path = app.visibility_path.clone();
     restarted.finish_loading(app.components.clone(), vec![], vec![], vec![]);
-    assert!(!screen(&restarted).contains(".system/"));
+    assert!(!screen(&restarted).contains(".custom/"));
     press(&mut restarted, 'H');
-    assert!(screen(&restarted).contains(".system/ [hidden]"));
-    focus_folder(&mut restarted, ".system");
+    assert!(!screen(&restarted).contains(".custom/"));
+    choose(&mut restarted, ComponentFilter::External);
+    assert!(screen(&restarted).contains(".custom/ [hidden]"));
+    focus_folder(&mut restarted, ".custom");
     press(&mut restarted, 'x');
     assert_eq!(restarted.current_view, View::List);
     assert!(restarted.hide_confirmation.is_none());
     press(&mut restarted, 'H');
-    assert!(screen(&restarted).contains(".system/"));
+    assert!(screen(&restarted).contains(".custom/"));
     assert!(!restarted.components[0].selected);
     assert_eq!(
         crate::fs::installer::visibility::load(&app.visibility_path)
@@ -178,7 +193,7 @@ fn cancel_keys_preserve_files_selections_and_preferences() {
         assert!(app.hidden_folders.is_empty());
         assert!(!app.visibility_path.exists());
         assert!(!app.should_quit);
-        assert!(screen(&app).contains(".system/"));
+        assert!(screen(&app).contains(".custom/"));
     }
 }
 
@@ -247,10 +262,9 @@ fn corrupt_preferences_are_reported_and_preserved() {
 #[test]
 fn hide_accepts_mixed_folders_even_when_filter_only_shows_external_children() {
     let (_fixture, mut app) = fixture();
-    app.components.push(make_component(".system/managed.md"));
+    app.components.push(make_component(".custom/managed.md"));
     app.finish_loading(app.components.clone(), vec![], vec![], vec![]);
-    press(&mut app, 'f');
-    press(&mut app, 'f');
+    choose(&mut app, ComponentFilter::External);
     hide(&mut app);
     assert_eq!(app.hidden_folder_count(), 1);
     assert!(!app.components[0].selected);
@@ -331,15 +345,15 @@ fn batch_skips_partial_folders_and_hides_fully_selected_mixed_parents() {
 #[test]
 fn batch_respects_status_filter_and_ignores_non_component_tabs() {
     let (_fixture, mut app) = fixture();
-    press(&mut app, 'f');
+    choose(&mut app, ComponentFilter::Modified);
     press(&mut app, 'X');
     assert_eq!(app.current_view, View::List);
     assert!(app.hide_confirmation.is_none());
     assert!(app.components[0].selected);
-    press(&mut app, 'f');
+    choose(&mut app, ComponentFilter::External);
     press(&mut app, 'X');
     assert_eq!(app.current_view, View::ConfirmHide);
-    assert_eq!(app.hide_confirmation.as_ref().unwrap().folders, [".system"]);
+    assert_eq!(app.hide_confirmation.as_ref().unwrap().folders, [".custom"]);
     press(&mut app, 'n');
     app.tab = Tab::McpServers;
     press(&mut app, 'X');
@@ -439,7 +453,7 @@ fn concealing_hidden_folders_clears_their_checks_without_restoring_them() {
     app.close_processing();
     press(&mut app, 'H');
     assert!(!app.components[0].selected);
-    assert!(screen(&app).contains(".system/ [hidden]"));
+    assert!(screen(&app).contains(".custom/ [hidden]"));
     assert_eq!(std::fs::read(&app.visibility_path).unwrap(), saved);
 }
 
@@ -450,19 +464,19 @@ fn concealing_clears_hidden_checks_across_tabs_and_status_filters_only() {
     hide(&mut app);
     let mut hidden_rule = external("private/rule.md", true);
     hidden_rule.component_type = ComponentType::Rules;
-    let mut managed = make_component(".system/managed.md");
+    let mut managed = make_component(".custom/managed.md");
     managed.status = InstallStatus::Modified;
     app.components.extend([
         hidden_rule,
         managed,
-        external(".system-other/SKILL.md", true),
+        external(".custom-other/SKILL.md", true),
     ]);
     app.hidden_folders
         .insert(app.dest_dir.join("rules/private"));
     press(&mut app, 'H');
     press(&mut app, 'a');
     app.tab = Tab::Rules;
-    press(&mut app, 'f');
+    choose(&mut app, ComponentFilter::Modified);
     press(&mut app, 'H');
     assert_eq!(
         app.components
@@ -492,7 +506,7 @@ fn confirmation_names_counts_and_keys_fit_an_eighty_column_terminal() {
         "Hide 1 folder(s)?",
         "Clear 1 selected file(s).",
         "Files remain on disk.",
-        ".system",
+        ".custom",
         "[y] Hide",
         "[Esc/n/q] Cancel",
     ] {
@@ -647,24 +661,24 @@ fn hidden_paths_remain_target_scoped_after_status_changes_and_new_managed_files(
     let (_fixture, mut app) = fixture();
     hide(&mut app);
     app.components[0].status = InstallStatus::Modified;
-    app.components.push(make_component(".system/new/SKILL.md"));
+    app.components.push(make_component(".custom/new/SKILL.md"));
     app.apply_components_refresh(app.components.clone());
-    assert!(!screen(&app).contains(".system/"));
+    assert!(!screen(&app).contains(".custom/"));
     app.components[0].status = InstallStatus::External;
     app.dest_dir = app.dest_dir.with_file_name(".claude");
     app.apply_components_refresh(app.components.clone());
-    assert!(screen(&app).contains(".system/"));
+    assert!(screen(&app).contains(".custom/"));
 }
 
 #[test]
 fn nested_hidden_folder_requires_unhiding_the_parent_first() {
     let (_fixture, mut app) = fixture();
-    focus_folder(&mut app, ".system/tool");
+    focus_folder(&mut app, ".custom/tool");
     hide(&mut app);
     press(&mut app, 'H');
-    focus_folder(&mut app, ".system");
+    focus_folder(&mut app, ".custom");
     hide(&mut app);
-    focus_folder(&mut app, ".system/tool");
+    focus_folder(&mut app, ".custom/tool");
     press(&mut app, 'x');
     assert!(
         app.status_message
@@ -673,9 +687,9 @@ fn nested_hidden_folder_requires_unhiding_the_parent_first() {
             .ends_with("Unhide that parent folder first.")
     );
     assert_eq!(app.hidden_folder_count(), 2);
-    focus_folder(&mut app, ".system");
+    focus_folder(&mut app, ".custom");
     press(&mut app, 'x');
-    focus_folder(&mut app, ".system/tool");
+    focus_folder(&mut app, ".custom/tool");
     press(&mut app, 'x');
     assert_eq!(app.hidden_folder_count(), 0);
     assert!(!app.components[0].selected);
@@ -744,13 +758,13 @@ fn visibility_hints_account_for_status_filter_and_already_shown_state() {
     app.components[0].status = InstallStatus::Modified;
     hide(&mut app);
     assert!(screen_at_width(&app, 80).contains("[H] Hidden"));
-    press(&mut app, 'f');
+    choose(&mut app, ComponentFilter::Modified);
     press(&mut app, 'H');
     assert_eq!(
         app.status_message.as_deref(),
         Some("Showing hidden folders. Press x on a hidden folder to unhide it.")
     );
-    assert!(screen(&app).contains(".system/ [hidden]"));
+    assert!(screen(&app).contains(".custom/ [hidden]"));
     assert!(!screen(&app).contains("Press H to show hidden folders."));
 }
 

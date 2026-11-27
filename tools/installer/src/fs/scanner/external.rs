@@ -1,7 +1,6 @@
 use anyhow::Result;
 use std::collections::HashSet;
 use std::path::Path;
-use walkdir::WalkDir;
 
 use crate::component::{Component, ComponentType, InstallStatus};
 use crate::target::TargetCli;
@@ -9,26 +8,6 @@ use crate::target::TargetCli;
 /// Source label applied to externally-discovered files (those present in
 /// dest_dir but not produced by any configured source).
 const EXTERNAL_LABEL: &str = "external";
-
-/// Component types we surface external files for.
-/// Excludes Hooks (binaries), Statusline (binaries), ConfigFile (special-case).
-///
-/// Subdirectory name is derived from `ComponentType::display_name()` to keep
-/// a single source of truth (matches `scan_components` in components.rs and
-/// the `map_to` dispatch in scanner/mod.rs).
-fn external_types(target_cli: TargetCli) -> &'static [ComponentType] {
-    match target_cli {
-        TargetCli::Claude => &[
-            ComponentType::Agents,
-            ComponentType::Commands,
-            ComponentType::Contexts,
-            ComponentType::Rules,
-            ComponentType::Skills,
-            ComponentType::OutputStyles,
-        ],
-        TargetCli::Codex => &[ComponentType::Skills],
-    }
-}
 
 /// Whether a component type should surface non-markdown companion files
 /// when scanning for externals.
@@ -56,12 +35,18 @@ pub(super) fn scan_externals(
 ) -> Result<Vec<Component>> {
     let mut external = Vec::new();
 
-    for comp_type in external_types(target_cli) {
+    for comp_type in super::tree_types(target_cli) {
         let type_dir = dest_dir.join(comp_type.display_name());
         if !type_dir.exists() {
             continue;
         }
-        scan_type_directory(&type_dir, comp_type, existing_keys, &mut external)?;
+        scan_type_directory(
+            &type_dir,
+            comp_type,
+            target_cli,
+            existing_keys,
+            &mut external,
+        )?;
     }
 
     Ok(external)
@@ -70,16 +55,11 @@ pub(super) fn scan_externals(
 fn scan_type_directory(
     type_dir: &Path,
     component_type: &ComponentType,
+    target_cli: TargetCli,
     existing_keys: &HashSet<(ComponentType, String)>,
     out: &mut Vec<Component>,
 ) -> Result<()> {
-    // Mirror scan_directory's pruning: skip workspace/ subtrees.
-    for entry in WalkDir::new(type_dir)
-        .min_depth(1)
-        .into_iter()
-        .filter_entry(|e| !(e.file_type().is_dir() && e.file_name() == "workspace"))
-        .filter_map(|e| e.ok())
-    {
+    for entry in super::component_entries(type_dir, component_type, target_cli) {
         let path = entry.path();
         let Some(name) = external_component_name(path, type_dir, component_type, existing_keys)
         else {

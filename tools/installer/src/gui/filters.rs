@@ -8,45 +8,15 @@ use super::{Message, actions::Action, styles};
 use crate::app::{App, ComponentFilter, HiddenVisibility};
 mod dropdown;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum Choice {
-    Status(ComponentFilter),
-    Visibility(HiddenVisibility),
-}
-
-const STATUS_CHOICES: [ComponentFilter; 4] = [
-    ComponentFilter::All,
-    ComponentFilter::Modified,
-    ComponentFilter::External,
-    ComponentFilter::New,
-];
-const VISIBILITY_CHOICES: [HiddenVisibility; 3] = [
-    HiddenVisibility::Exclude,
-    HiddenVisibility::Include,
-    HiddenVisibility::Only,
-];
+pub(super) use crate::app::FilterChoice as Choice;
+use crate::app::{STATUS_CHOICES, VISIBILITY_CHOICES};
 
 impl Choice {
-    pub const FIRST: Self = Self::Status(ComponentFilter::All);
-
-    pub fn step(self, offset: isize) -> Self {
-        let choices = || {
-            STATUS_CHOICES
-                .into_iter()
-                .map(Self::Status)
-                .chain(VISIBILITY_CHOICES.into_iter().map(Self::Visibility))
-        };
-        let count = STATUS_CHOICES.len() + VISIBILITY_CHOICES.len();
-        let current = choices().position(|choice| choice == self).unwrap_or(0);
-        let next = (current as isize + offset).rem_euclid(count as isize) as usize;
-        choices().nth(next).unwrap_or(Self::FIRST)
-    }
-
     pub fn action(self, app: &App) -> Action {
         match self {
             Self::Status(filter) => Action::SetFilter(
                 filter,
-                filter == ComponentFilter::All || !app.component_filter.contains(filter),
+                filter == ComponentFilter::Default || !app.component_filter.contains(filter),
             ),
             Self::Visibility(mode) => Action::SetHiddenVisibility(mode),
         }
@@ -55,14 +25,12 @@ impl Choice {
 
 pub(super) fn view(lang: Language, app: &App, cursor: Option<Choice>) -> Element<'_, Message> {
     let open = cursor.is_some();
-    let active = [
-        ComponentFilter::Modified,
-        ComponentFilter::External,
-        ComponentFilter::New,
-    ]
-    .into_iter()
-    .filter(|filter| app.component_filter.contains(*filter))
-    .count()
+    let active = STATUS_CHOICES
+        .into_iter()
+        .filter(|filter| {
+            *filter != ComponentFilter::Default && app.component_filter.contains(*filter)
+        })
+        .count()
         + usize::from(app.hidden_visibility.shows_hidden());
     let label = if active == 0 {
         lang.text("Filters · Default").into()
@@ -125,11 +93,7 @@ fn status_choices(lang: Language, app: &App, cursor: Option<Choice>) -> Column<'
             choices.push(choice_row(
                 checkbox(app.component_filter.contains(filter))
                     .style(styles::check)
-                    .label(if filter == ComponentFilter::All {
-                        lang.text("Default")
-                    } else {
-                        lang.text(filter.display())
-                    })
+                    .label(lang.text(filter.display()))
                     .size(14)
                     .width(Fill)
                     .text_size(13)

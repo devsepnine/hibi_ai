@@ -307,7 +307,7 @@ mod tree_controls {
         press(&mut app, 'E');
         assert_eq!(app.get_tree_view().unwrap().visible_indices.len(), 2);
         app.focus = FocusArea::Content;
-        press(&mut app, 'f');
+        app.set_component_filter(crate::app::ComponentFilter::Modified, true);
         assert!(app.get_tree_view().unwrap().visible_indices.is_empty());
         for key in ['E', 'E'] {
             press(&mut app, key);
@@ -324,7 +324,7 @@ mod tree_controls {
 
 mod status_filter {
     use super::*;
-    use crate::app::{Tab, TargetCli, View};
+    use crate::app::{ComponentFilter, Tab, TargetCli, View};
     use crate::component::{ComponentType, InstallStatus};
     use crate::tree::{TreeNode, test_support::make_component};
 
@@ -369,42 +369,65 @@ mod status_filter {
             .collect()
     }
 
+    fn choose(app: &mut App, filter: ComponentFilter) {
+        use crate::app::FilterChoice;
+        press(app, 'f');
+        assert_eq!(app.current_view, View::Filters(FilterChoice::FIRST));
+        press(app, ' ');
+        for choice in FilterChoice::choices() {
+            if choice == FilterChoice::Status(filter) {
+                break;
+            }
+            press(app, 'j');
+        }
+        assert_eq!(
+            app.current_view,
+            View::Filters(FilterChoice::Status(filter))
+        );
+        press(app, ' ');
+        press(app, 'f');
+        assert_eq!(app.current_view, View::List);
+    }
+
     #[test]
-    fn cycles_file_statuses_and_restores_the_full_list() {
+    fn modal_combines_statuses_and_keeps_list_commands_inside_the_dialog() {
         let mut app = fixture();
-        press(&mut app, 'f');
-        assert_eq!(listed(&app), ["group/changed.md"]);
-        let tree = app.get_tree_view().unwrap();
-        assert_eq!(tree.visible_indices.len(), 2);
-        assert!(matches!(
-            tree.nodes[tree.visible_indices[0]],
-            TreeNode::Folder { .. }
-        ));
-        press(&mut app, 'f');
-        assert_eq!(listed(&app), ["group/local.md"]);
-        press(&mut app, 'f');
-        assert_eq!(listed(&app), ["group/new.md"]);
-        press(&mut app, 'f');
         assert_eq!(
             listed(&app),
             [
                 "group/changed.md",
                 "group/new.md",
-                "group/local.md",
                 "installed.md",
                 "managed.md"
             ]
         );
+        for ch in ['f', 'j', ' ', 'j', ' ', 'i', 'r', 'a'] {
+            press(&mut app, ch);
+        }
+        assert!(matches!(app.current_view, View::Filters(_)));
+        assert!(app.processing_queue.is_empty());
+        assert_eq!(listed(&app), ["group/changed.md", "group/local.md"]);
+        let tree = app.get_tree_view().unwrap();
+        assert!(matches!(
+            tree.nodes[tree.visible_indices[0]],
+            TreeNode::Folder { .. }
+        ));
+        for ch in ['k', 'k', ' ', 'f'] {
+            press(&mut app, ch);
+        }
+        assert_eq!(app.current_view, View::List);
+        assert_eq!(listed(&app).len(), 4);
+        assert!(!listed(&app).contains(&"group/local.md"));
     }
 
     #[test]
     fn bulk_toggle_replaces_only_the_current_tabs_selection() {
         let mut app = fixture();
         app.components[0].selected = false;
-        press(&mut app, 'f');
+        choose(&mut app, ComponentFilter::Modified);
         press(&mut app, 'a');
         assert_eq!(selected(&app), ["group/changed.md", "config.md"]);
-        press(&mut app, 'f');
+        choose(&mut app, ComponentFilter::External);
         press(&mut app, 'a');
         assert_eq!(selected(&app), ["group/local.md", "config.md"]);
         press(&mut app, 'a');
@@ -415,9 +438,7 @@ mod status_filter {
     fn new_filter_selects_and_installs_only_uninstalled_files() {
         let mut app = fixture();
         app.components[1].selected = false;
-        for _ in 0..3 {
-            press(&mut app, 'f');
-        }
+        choose(&mut app, ComponentFilter::New);
         press(&mut app, 'a');
         assert_eq!(selected(&app), ["group/new.md", "config.md"]);
         press(&mut app, 'i');
@@ -428,7 +449,7 @@ mod status_filter {
     #[test]
     fn folder_selection_does_not_toggle_hidden_descendants() {
         let mut app = fixture();
-        press(&mut app, 'f');
+        choose(&mut app, ComponentFilter::Modified);
         press(&mut app, ' ');
         assert_eq!(
             selected(&app),
@@ -458,7 +479,7 @@ mod status_filter {
     fn queues_exclude_selected_files_hidden_by_the_filter() {
         for key in ['i', 'r'] {
             let mut app = fixture();
-            press(&mut app, 'f');
+            choose(&mut app, ComponentFilter::Modified);
             press(&mut app, key);
             if key == 'r' {
                 assert_eq!(app.current_view, View::ConfirmRemove);
@@ -469,8 +490,7 @@ mod status_filter {
             assert_eq!(app.current_view, View::Installing);
         }
         let mut app = fixture();
-        press(&mut app, 'f');
-        press(&mut app, 'f');
+        choose(&mut app, ComponentFilter::External);
         press(&mut app, 'i');
         assert_eq!(app.current_view, View::List);
         assert_eq!(
@@ -489,7 +509,7 @@ mod status_filter {
         let mut app = fixture();
         app.components[0].status = InstallStatus::Unchanged;
         app.list_index = 4;
-        press(&mut app, 'f');
+        choose(&mut app, ComponentFilter::Modified);
         assert_eq!(listed(&app), Vec::<&str>::new());
         for key in ['j', 'k', ' ', 'i', 'r'] {
             press(&mut app, key);
@@ -497,7 +517,7 @@ mod status_filter {
         assert_eq!(app.selected_component_index(), None);
         assert_eq!(app.current_view, View::List);
         assert!(app.processing_queue.is_empty());
-        press(&mut app, 'f');
+        choose(&mut app, ComponentFilter::External);
         press(&mut app, 'j');
         assert_eq!(app.selected_component_index(), Some(2));
     }
@@ -505,7 +525,7 @@ mod status_filter {
     #[test]
     fn filter_survives_tab_switches_and_status_refresh() {
         let mut app = fixture();
-        press(&mut app, 'f');
+        choose(&mut app, ComponentFilter::Modified);
         app.next_tab();
         assert_eq!(listed(&app), Vec::<&str>::new());
         app.prev_tab();
@@ -518,7 +538,7 @@ mod status_filter {
         app.next_item();
         assert_eq!(app.selected_component_index(), Some(1));
         app.select_cli(TargetCli::Codex).unwrap();
-        assert_eq!(listed(&app).len(), 5);
+        assert_eq!(listed(&app).len(), 4);
     }
 
     #[test]
@@ -535,10 +555,10 @@ mod status_filter {
         assert!(app.mcp_servers[0].selected);
         assert!(app.plugins[0].selected);
         app.tab = Tab::Skills;
-        assert_eq!(listed(&app).len(), 5);
+        assert_eq!(listed(&app).len(), 4);
         app.focus = FocusArea::Tabs;
         press(&mut app, 'f');
-        assert_eq!(listed(&app).len(), 5);
+        assert_eq!(listed(&app).len(), 4);
     }
 
     struct DiskFixture(std::path::PathBuf);
@@ -611,12 +631,27 @@ mod status_filter {
         for cli in [TargetCli::Claude, TargetCli::Codex] {
             let (_fixture, mut app) = disk_fixture(cli);
             let dest = app.dest_dir.join("skills/demo");
-            for (name, action, log) in [
-                ("changed.md", 'i', "[OK] Installed demo/changed.md"),
-                ("local.md", 'r', "[OK] Removed demo/local.md"),
-                ("new.md", 'i', "[OK] Installed demo/new.md"),
+            for (filter, name, action, log) in [
+                (
+                    ComponentFilter::Modified,
+                    "changed.md",
+                    'i',
+                    "[OK] Installed demo/changed.md",
+                ),
+                (
+                    ComponentFilter::External,
+                    "local.md",
+                    'r',
+                    "[OK] Removed demo/local.md",
+                ),
+                (
+                    ComponentFilter::New,
+                    "new.md",
+                    'i',
+                    "[OK] Installed demo/new.md",
+                ),
             ] {
-                press(&mut app, 'f');
+                choose(&mut app, filter);
                 press(&mut app, 'a');
                 let mut terminal =
                     ratatui::Terminal::new(ratatui::backend::TestBackend::new(100, 24)).unwrap();
@@ -656,7 +691,7 @@ mod status_filter {
     #[test]
     fn filtered_install_reports_a_missing_source_without_overwriting_destination() {
         let (_fixture, mut app) = disk_fixture(TargetCli::Codex);
-        press(&mut app, 'f');
+        choose(&mut app, ComponentFilter::Modified);
         press(&mut app, 'a');
         std::fs::remove_file(app.source_dir.join("skills/demo/changed.md")).unwrap();
         press(&mut app, 'i');

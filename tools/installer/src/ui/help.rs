@@ -42,7 +42,7 @@ const SECTIONS: [(&str, &[Binding]); 4] = [
             ("E", "toggle all folders open / closed"),
             ("Space", "toggle selection"),
             ("a", "toggle all shown selections"),
-            ("f", "file filter: All/Modified/External/New"),
+            ("f", "open file filters"),
             ("x", "hide / unhide folder"),
             ("X", "hide checked folders"),
             ("H", "show / conceal hidden folders"),

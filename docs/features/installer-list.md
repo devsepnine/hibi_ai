@@ -27,16 +27,17 @@ TUI 목록은 상단 탭 바 `[1]`, 본문 `[2]`, 하단 상태 바로 구성한
 
 - **위치**: 본문 pane, 테두리 제목 `[2]-Agents` 처럼 현재 탭 이름. MCP · Plugins 탭은 별도 목록이다
 - **별칭**: 목록, 체크박스, 전체 선택, 폴더 펼치기, 에이전트, 커맨드, 스킬, modified, external
-- **상태 필터**: 본문에서 `f`로 `All → Modified → External → New → All` 순서로 전환한다. `New`는 미설치 파일이다. 파일 탭 사이에 필터가 유지되고 CLI를 다시 선택하면 `All`로 초기화된다. MCP와 Plugins에는 적용하지 않는다
+- **상태 필터**: 파일 목록에서 `f`를 누르면 상태와 숨김 범위를 고르는 모달이 열린다. 방향키나 `j`, `k`로 이동하고 Space 또는 Enter로 선택하며 Esc로 닫는다. 기본 목록은 등록한 소스의 신규, 수정됨, 설치됨과 설정 오류 항목을 표시한다. 설치 경로에서만 발견한 파일은 External을 선택하면 표시한다. 파일 탭을 옮겨도 선택을 유지하고 CLI를 다시 선택하면 기본값으로 돌아간다. MCP와 Plugins는 각각의 목록을 사용한다.
 - **전체 선택 토글**: `a`는 현재 탭에서 필터와 숨김 표시 상태에 맞는 항목을 모두 선택한다. 그 범위가 이미 모두 선택되어 있으면 해제한다. 검색어가 비어 있는 파일 탭에서는 범위 밖에 있는 체크를 해제한다. 검색 중에는 결과 안에서만 변경하고 다른 탭의 체크도 유지한다. 접힌 폴더 안의 일치 파일도 포함한다. MCP와 Plugins도 `a`로 전체 선택과 해제를 전환한다. 폴더 선택과 `i`, `r`도 필터와 숨김 표시 상태에 맞는 파일만 대상으로 한다
 - **필터 표시**: 제목에 `Filter:`, `Files:`, `Selected:`를 표시한다. 결과가 없으면 `Press f to change filter.`로 안내한다. 필터 전환 자체는 체크 상태를 바꾸지 않는다
 - **전체 폴더 토글**: 본문에서 `E`는 현재 탭의 폴더가 모두 펼쳐져 있으면 모두 접고, 아니면 모두 펼친다. 체크와 상태 필터, 숨김 설정은 유지한다. 모두 접으면 현재 항목의 최상위 폴더로 커서를 옮긴다. 탭 바와 MCP, Plugins에는 적용하지 않는다
-- **폴더 숨김**: 본문에서 폴더에 `x`를 누르면 파일 상태와 관계없이 확인 레이어를 연다. `X`는 현재 탭과 상태 필터에서 완전히 체크한 폴더들을 모은다. 상위 폴더가 포함되면 그 안의 폴더는 중복으로 세지 않는다. 일부만 체크한 폴더는 제외한다. `.system`이나 `synced` 같은 이름을 자동으로 숨기지는 않는다
+- **폴더 숨김**: 본문에서 폴더에 `x`를 누르면 파일 상태와 관계없이 확인 레이어를 연다. `X`는 현재 탭과 상태 필터에서 완전히 체크한 폴더들을 모은다. 상위 폴더가 포함되면 그 안의 폴더는 중복으로 세지 않는다. 일부만 체크한 폴더는 제외한다
+- **자동 제외**: 소스와 설치 경로를 읽을 때 Codex 스킬 최상위의 `.system`과 운영체제 메타데이터를 건너뛴다. macOS의 `.DS_Store`, `._`로 시작하며 AppleDouble 헤더가 있는 파일, `__MACOSX` 폴더와 Windows의 `Thumbs.db`, `desktop.ini`가 여기에 해당한다. 이 항목들은 검색과 숨긴 항목 보기에도 나타나지 않는다. `synced` 폴더와 `.gitignore` 같은 사용자 파일은 일반 파일과 같은 상태 필터를 따른다.
 - **숨김 확인**: 레이어에 대상 폴더 목록과 해제할 체크 수를 표시한다. 긴 경로는 줄바꿈하며 `j`, `k`로 본문 전체를 스크롤한다. `y`로 확인하면 저장 성공 후 대상 폴더의 체크를 해제하고 숨긴다. `Esc`, `n`, `q`는 취소하며 저장값과 체크를 유지한다. `H`로 숨긴 폴더를 표시하고 `[hidden]` 폴더에서 `x`를 누르면 숨김을 취소한다. 체크는 자동 복원하지 않는다
 - **숨김 저장**: `~/.hibi/visibility.json`에 대상 디렉터리와 파일 종류를 포함한 폴더 경로를 저장한다. 재실행해도 유지되고 Claude와 Codex는 따로 적용된다. 잠금으로 동시 저장을 막고 임시 파일을 교체한다. 다른 installer가 저장 중이면 재시도를 안내한다. 저장 실패 시 표시를 유지하고 오류를 알린다
 - **숨김과 처리**: 실제 파일과 AI 서비스 동작은 바꾸지 않는다. 숨긴 항목이 표시되지 않는 동안 `a`와 설치·제거 대기열에서 제외한다. `H`로 표시한 뒤 명시적으로 체크하면 설치나 제거 대상에 포함할 수 있다. 다시 `H`로 감추면 모든 파일 탭과 상태 필터에 걸쳐 숨긴 항목의 체크를 해제한다. 일반 항목의 선택과 숨김 저장값은 유지하며 다시 표시해도 체크는 복원하지 않는다. 숨긴 폴더에는 이후 소스에 추가된 파일과 상태가 바뀐 파일도 표시하지 않는다. `Hidden:`은 현재 대상과 탭에 저장된 숨김 설정 수이며 폴더가 사라져도 설정은 유지한다
 - **UI 문구**: `"[x]"`, `"[-]"`, `"[ ]"`, `"new"`, `"modified"`, `"installed"`, `"managed"`, `"external"`, `"[DEPRECATED]"`, `"[{}]"`, `"No selected items can be installed in this view."`
-- **컨트롤**: `"move the cursor"` → `next_item`, `"collapse folder, or parent"` → `handle_folder_collapse`, `"expand folder"` → `expand_folder`, `"toggle selection"` → `toggle_selected`, `"toggle all shown selections"` → `toggle_all_selected`, `"toggle all folders open / closed"` → `toggle_all_folders`, `"file filter: All/Modified/External/New"` → `cycle_component_filter`, `"expand folder, or diff file"` → `handle_enter`, `"install selected in filter"` → `install_selected`, `r` → `request_removal`, `y` → `confirm_removal`
+- **컨트롤**: `"move the cursor"` → `next_item`, `"collapse folder, or parent"` → `handle_folder_collapse`, `"expand folder"` → `expand_folder`, `"toggle selection"` → `toggle_selected`, `"toggle all shown selections"` → `toggle_all_selected`, `"toggle all folders open / closed"` → `toggle_all_folders`, `"open file filters"` → `View::Filters`, `"expand folder, or diff file"` → `handle_enter`, `"install selected in filter"` → `install_selected`, `r` → `request_removal`, `y` → `confirm_removal`
 - **코드 경로**:
   - UI: `tools/installer/src/ui/list.rs` → `render_tree_node`
   - 상태 / 핸들러: `tools/installer/src/cli/mod.rs` → `handle_content_focus_keys`

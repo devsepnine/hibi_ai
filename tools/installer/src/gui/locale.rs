@@ -100,7 +100,7 @@ catalog! {
     "The source being edited is no longer available" => "편집 중인 소스를 더 이상 사용할 수 없습니다", "編集中のソースは利用できなくなりました";
     "Folder contents changed. Review the folders before hiding." => "폴더 내용이 변경되었습니다. 숨기기 전에 다시 확인하세요.", "フォルダーの内容が変わりました。非表示にする前に確認してください。";
     "Showing hidden folders. Press x on a hidden folder to unhide it." => "숨긴 폴더를 표시합니다. 폴더에서 x를 누르면 숨김이 해제됩니다.", "非表示フォルダーを表示しています。対象のフォルダーで x を押すと再表示できます。";
-    "Showing only hidden folders. Unhide selected restores their visibility." => "숨긴 폴더만 표시합니다. 선택한 폴더 표시로 숨김을 해제하세요.", "非表示フォルダーのみ表示しています。選択したフォルダーを再表示できます。";
+    "Showing only hidden folders." => "숨긴 폴더만 표시합니다.", "非表示フォルダーのみ表示しています。";
     "Cancelling; waiting for the source worker to stop..." => "취소 중입니다. 소스 작업이 중지될 때까지 기다려 주세요.", "キャンセル中です。ソース処理が停止するまでお待ちください。";
     "Sync thread crashed" => "동기화가 중단되었습니다", "同期が中断されました";
     "Preflight thread crashed" => "사전 점검이 중단되었습니다", "事前チェックが中断されました";
@@ -175,6 +175,7 @@ catalog! {
     "new" => "신규", "新規";
     "not installed" => "미설치", "未インストール";
     "modified" => "수정됨", "変更あり";
+    "Installed" => "설치됨", "インストール済み";
     "installed" => "설치됨", "インストール済み";
     "managed" => "관리 중", "管理対象";
     "blocked" => "변경 불가", "変更不可";

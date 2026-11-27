@@ -17,24 +17,24 @@ fn with_status(status: InstallStatus) -> (Fixture, App) {
 fn each_managed_status_can_be_hidden_persisted_and_unhidden_without_changing_files() {
     for status in MANAGED_STATUSES {
         let (_fixture, mut app) = with_status(status);
-        let file = app.dest_dir.join("skills/.system/tool/SKILL.md");
+        let file = app.dest_dir.join("skills/.custom/tool/SKILL.md");
         std::fs::create_dir_all(file.parent().unwrap()).unwrap();
         std::fs::write(&file, "managed contents").unwrap();
         hide(&mut app);
-        assert!(!screen(&app).contains(".system/"));
+        assert!(!screen(&app).contains(".custom/"));
         assert!(!app.components[0].selected);
         assert_eq!(std::fs::read_to_string(&file).unwrap(), "managed contents");
         assert_eq!(
             crate::fs::installer::visibility::load(&app.visibility_path).unwrap(),
-            std::collections::BTreeSet::from([app.dest_dir.join("skills/.system")])
+            std::collections::BTreeSet::from([app.dest_dir.join("skills/.custom")])
         );
         app.finish_loading(app.components.clone(), vec![], vec![], vec![]);
-        assert!(!screen(&app).contains(".system/"));
+        assert!(!screen(&app).contains(".custom/"));
         press(&mut app, 'H');
-        focus_folder(&mut app, ".system");
+        focus_folder(&mut app, ".custom");
         press(&mut app, 'x');
         assert!(app.hidden_folders.is_empty());
-        assert!(screen(&app).contains(".system/"));
+        assert!(screen(&app).contains(".custom/"));
         assert!(!app.components[0].selected);
     }
 }
@@ -82,7 +82,7 @@ fn cancelling_or_failing_to_save_managed_hide_preserves_checks_and_visibility() 
         hide(&mut app);
         assert!(app.components[0].selected);
         assert!(app.hidden_folders.is_empty());
-        assert!(screen(&app).contains(".system/"));
+        assert!(screen(&app).contains(".custom/"));
         assert!(
             app.status_message
                 .as_deref()

@@ -47,7 +47,7 @@ Hide selected와 Unhide selected는 완전히 체크한 폴더 수를 표시하�
 - **코드 경로**: `tools/installer/src/gui/filters.rs` → `view`, 키 입력은 `tools/installer/src/gui/actions.rs`
 - **테스트**: `tools/installer/src/gui/visibility/filters/tests.rs`, `tools/installer/src/gui/filters/dropdown/tests.rs`, `tools/installer/tests/gui_smoke.py`
 
-GUI의 Filters 버튼은 Status와 Visibility를 하나의 오버레이에 모은다. 기본 표시는 Filters · Default이며, 세부 상태 수와 기본값에서 바꾼 Visibility 한 개를 합쳐 적용 조건 수를 표시한다. Status는 탭 대신 Default, Modified, External과 New를 체크하는 목록을 사용한다. 세부 상태는 OR로 합친다. Default를 체크하면 세부 선택을 초기화하며, 마지막 세부 상태를 해제해도 Default로 돌아간다. Default는 설치됨과 관리 중인 항목도 포함하므로 세부 상태 세 개를 모두 체크한 경우와 다르다.
+GUI의 Filters 버튼은 Status와 Visibility를 하나의 오버레이에 모은다. 기본 표시는 Filters · Default이며, 세부 상태 수와 기본값에서 바꾼 Visibility 한 개를 합쳐 적용 조건 수를 표시한다. 기본 목록은 등록한 소스에서 제공하는 항목을 표시한다. Modified, New, Installed, External 중 여러 상태를 함께 선택할 수 있다. 설치 경로에서만 발견한 파일은 External을 선택하면 표시한다. Default를 체크하면 세부 선택을 초기화하며, 마지막 세부 상태를 해제해도 Default로 돌아간다. Installed는 설치본이 소스와 일치하는 파일과 관리 중인 설정을 포함한다.
 
 필터 오버레이는 컴포넌트 목록의 위치와 크기를 바꾸지 않는다. 상태와 Visibility를 고르는 동안 메뉴를 유지한다. 버튼을 다시 누르거나 Esc 또는 메뉴 바깥 클릭으로 닫는다. 바깥 클릭은 메뉴만 닫고 뒤쪽 항목을 선택하지 않는다. `tools/installer/src/gui/filters/dropdown.rs`는 앵커 버튼과 오버레이를 분리하고 화면 가장자리에서 메뉴를 배치한다. 작은 창에서는 메뉴 안을 스크롤할 수 있다.
 
@@ -59,7 +59,7 @@ Visibility는 같은 오버레이의 구분선 아래에서 Visible only, Includ
 
 보기 방식을 바꿔도 숨김 설정 자체는 바꾸지 않는다. Hidden only에서 숨김을 해제한 항목은 목록에서 빠진다. 결과가 없으면 현재 보기에서 숨김 항목이 없다는 안내를 표시한다. Visible only로 돌아갈 때는 기존처럼 숨긴 항목의 체크를 해제한다. TUI의 H는 기존 숨김 제외와 함께 보기를 전환한다.
 
-상태 선택의 단일 기준은 `tools/installer/src/app/filter.rs`의 `ComponentFilters`이며, 숨김 보기는 `tools/installer/src/app/visibility.rs`의 `HiddenVisibility`를 사용한다. 목록과 작업 대기열은 같은 선택을 사용한다. TUI의 `f`는 기존 단일 상태 순환을 유지한다. `tools/installer/src/gui/filters.rs`는 선택 목록을 그리며 `tools/installer/src/gui/visibility/filters/tests.rs`는 실제 위젯 클릭, Default 복귀와 숨김 표시의 교집합을 검증한다.
+상태 선택의 단일 기준은 `tools/installer/src/app/filter.rs`의 `ComponentFilters`이며, 숨김 보기는 `tools/installer/src/app/visibility.rs`의 `HiddenVisibility`를 사용한다. 목록과 작업 대기열은 같은 선택을 사용한다. TUI의 `f`는 같은 상태와 숨김 범위를 고르는 모달을 연다. `tools/installer/src/gui/filters.rs`는 선택 목록을 그리며 `tools/installer/src/gui/visibility/filters/tests.rs`는 실제 위젯 클릭, Default 복귀와 숨김 표시의 교집합을 검증한다.
 
 ## 설치와 제거 대상
 

@@ -87,9 +87,9 @@ fn multiple_statuses_are_unioned_and_hidden_visibility_is_a_separate_intersectio
     app.components[3].status = InstallStatus::Unchanged;
     app.hidden_visibility = HiddenVisibility::Exclude;
     app.apply_components_refresh(app.components.clone());
-    assert_eq!(indices(desktop.app()), [0, 3]);
+    assert_eq!(indices(desktop.app()), [3]);
     desktop.choose_visibility("Include hidden");
-    assert_eq!(indices(desktop.app()), [0, 1, 2, 3]);
+    assert_eq!(indices(desktop.app()), [1, 2, 3]);
     desktop
         .state
         .dispatch(Action::SetFilter(ComponentFilter::External, true));
@@ -101,8 +101,8 @@ fn multiple_statuses_are_unioned_and_hidden_visibility_is_a_separate_intersectio
     assert_eq!(indices(desktop.app()), [0]);
     desktop
         .state
-        .dispatch(Action::SetFilter(ComponentFilter::All, true));
-    assert_eq!(indices(desktop.app()), [0, 3]);
+        .dispatch(Action::SetFilter(ComponentFilter::Default, true));
+    assert_eq!(indices(desktop.app()), [3]);
 }
 
 #[test]

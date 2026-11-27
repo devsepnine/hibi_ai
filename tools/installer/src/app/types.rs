@@ -136,6 +136,7 @@ pub enum View {
     Loading,
     List,
     Search,
+    Filters(super::FilterChoice),
     Diff,
     /// The `?` keybinding reference, overlaid on the List view.
     Help,

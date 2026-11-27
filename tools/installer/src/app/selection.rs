@@ -227,10 +227,13 @@ mod work_tests {
         })
         .collect();
         let selection = app.work_selection();
-        assert_eq!(selection.visible, 6);
-        assert_eq!(selection.selected, 6);
+        assert_eq!(selection.visible, 5);
+        assert_eq!(selection.selected, 5);
         assert_eq!(selection.install, [0, 1, 2, 3]);
-        assert_eq!(selection.remove, [1, 2, 3, 4]);
+        assert_eq!(selection.remove, [1, 2, 3]);
+        app.set_component_filter(crate::app::ComponentFilter::External, true);
+        assert_eq!(app.work_selection().remove, [4]);
+        assert!(app.work_selection().install.is_empty());
     }
 
     #[test]

@@ -14,9 +14,9 @@ mod types;
 mod visibility;
 
 pub use crate::target::TargetCli;
-#[cfg(any(feature = "gui", test))]
-pub use filter::ComponentFilter;
-pub use filter::ComponentFilters;
+pub use filter::{ComponentFilter, ComponentFilters, FilterChoice};
+#[cfg(feature = "gui")]
+pub use filter::{STATUS_CHOICES, VISIBILITY_CHOICES};
 #[cfg(feature = "gui")]
 pub(crate) use selection::WorkSelection;
 pub(crate) use types::CliChoice;

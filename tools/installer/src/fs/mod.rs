@@ -9,6 +9,32 @@ use crate::target::TargetCli;
 use anyhow::Result;
 use std::process::{Command, Stdio};
 
+fn is_system_entry(name: &std::ffi::OsStr, is_dir: bool) -> bool {
+    let name = name.as_encoded_bytes();
+    let metadata: &[&[u8]] = if is_dir {
+        &[
+            b"__MACOSX",
+            b".AppleDouble",
+            b".Spotlight-V100",
+            b".Trashes",
+            b".fseventsd",
+            b".TemporaryItems",
+        ]
+    } else {
+        &[
+            b".DS_Store",
+            b".localized",
+            b"Icon\r",
+            b"Thumbs.db",
+            b"desktop.ini",
+        ]
+    };
+    name.eq_ignore_ascii_case(b".git")
+        || metadata
+            .iter()
+            .any(|entry| name.eq_ignore_ascii_case(entry))
+}
+
 /// Read registrations immediately before a Codex add, which can replace an entire existing entry.
 pub(crate) fn codex_mcp_names() -> Result<Vec<String>> {
     #[derive(serde::Deserialize)]

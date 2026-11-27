@@ -390,6 +390,8 @@ mod tests {
                 InstallStatus::New,
             ),
         ];
+        assert_eq!(app.work_selection().visible, 0);
+        app.set_component_filter(ComponentFilter::External, true);
         let selection = app.work_selection();
         assert_eq!(selection.selected, 1);
         assert!(selection.install.is_empty());
