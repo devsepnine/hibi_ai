@@ -24,7 +24,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: 25a9c795e59939abeb7ac5c6663555428af3a258
           fetch-depth: 0
+      - name: Apply the reviewed selection count OCR crop to the tagged test suite
+        run: |
+          git show "$GITHUB_SHA:verification/selection.patch" | git apply
+          test "$(git diff --name-only)" = tools/installer/tests/gui_smoke.py
       - uses: dtolnay/rust-toolchain@stable
       - name: Install Linux display and GUI test dependencies
         run: |
@@ -84,6 +89,8 @@ jobs:
       - name: Exercise signed update and rollback with two native builds
         run: xvfb-run -a python3 tools/installer/tests/update_smoke.py
       - name: Exercise desktop GUI with isolated configuration
+        env:
+          OMP_THREAD_LIMIT: "1"
         run: |
           cargo build --locked --manifest-path tools/installer/Cargo.toml
           python3 tools/installer/tests/cli_smoke.py --binary tools/installer/target/debug/hibi --artifacts /tmp/hibi-cli-smoke
@@ -116,6 +123,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 25a9c795e59939abeb7ac5c6663555428af3a258
       - uses: dtolnay/rust-toolchain@stable
         if: runner.os != 'Linux'
       - uses: Swatinem/rust-cache@v2
@@ -162,6 +171,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 25a9c795e59939abeb7ac5c6663555428af3a258
       - name: Build Alpine desktop installer
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work rust:alpine sh -ec '
@@ -179,6 +190,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 25a9c795e59939abeb7ac5c6663555428af3a258
       - uses: actions/download-artifact@v4
         with:
           pattern: installer-*
@@ -228,6 +241,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 25a9c795e59939abeb7ac5c6663555428af3a258
       - uses: actions/download-artifact@v4
         with:
           name: windows-msi-smoke-fixtures
@@ -251,6 +266,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 25a9c795e59939abeb7ac5c6663555428af3a258
       - uses: actions/download-artifact@v4
         with:
           name: release-packages

@@ -1,0 +1,19 @@
+diff --git a/tools/installer/tests/gui_smoke.py b/tools/installer/tests/gui_smoke.py
+index 2977b5f..a2f846d 100644
+--- a/tools/installer/tests/gui_smoke.py
++++ b/tools/installer/tests/gui_smoke.py
+@@ -160,8 +160,12 @@ esac
+         count = image.crop((257, count_top, 395, count_top + 20)).convert("L")
+         if count.getpixel((0, 0)) < 128:
+             count = ImageOps.invert(count)
+-        count = ImageOps.expand(ImageOps.autocontrast(count), border=7, fill=255)
+-        regions.append((count, 250, count_top - 7, "7"))
++        count = ImageOps.autocontrast(count)
++        ink = count.point(lambda value: 255 if value < 160 else 0).getbbox()
++        if ink:
++            padding = 10
++            line = ImageOps.expand(count.crop(ink), border=padding, fill=255)
++            regions.append((line, 257 + ink[0] - padding, count_top + ink[1] - padding, "8"))
+         install_left = image.width - 125
+         regions.append((image.crop((install_left, bar_top + 8, image.width - 23, image.height - 75)),
+                         install_left, bar_top + 8, "7"))
