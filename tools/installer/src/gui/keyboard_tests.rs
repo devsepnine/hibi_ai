@@ -514,6 +514,9 @@ fn home_panel_stays_centered_and_title_aligns_with_list_in_each_language() {
                 .find(|(label, _)| label == title)
                 .unwrap();
             assert!((title_bounds.x - panel.x).abs() <= 1.0);
+            if lang == super::Language::English {
+                assert!(title_bounds.width > 100.0 && title_bounds.height > 20.0);
+            }
         }
     }
 }
