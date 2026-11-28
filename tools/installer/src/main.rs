@@ -46,6 +46,12 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
+    #[cfg(feature = "gui")]
+    if args.iter().any(|a| a == "--font-licenses") {
+        print!("{}", include_str!("../assets/fonts/FONT-LICENSES.txt"));
+        return Ok(());
+    }
+
     if args.iter().any(|a| a == "--sync") {
         return cli::run_sync();
     }

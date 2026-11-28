@@ -65,7 +65,8 @@ pub fn run() -> iced::Result {
         update,
         view,
     )
-    .default_font(fonts::interface())
+    .default_font(fonts::REGULAR)
+    .font(fonts::COLLECTION)
     .title("HIBI AI")
     .theme(|state: &Runtime| appearance::window_theme(&state.theme_choice, state.accent))
     .subscription(subscription)

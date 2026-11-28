@@ -40,8 +40,8 @@ pub fn view(lang: Language, app: &App) -> Element<'_, Message> {
     .padding(8);
     let launcher = column![
         text(lang.text("Choose a workspace"))
-            .font(fonts::display())
-            .size(38),
+            .font(fonts::BOLD)
+            .size(32),
         container(choices).width(Fill).style(styles::surface),
         text(lang.text("Tab or arrow keys to move · Enter to select"))
             .size(12)
@@ -68,7 +68,7 @@ fn destination(
 ) -> Element<'static, Message> {
     button(
         row![
-            container(text(mark).font(fonts::monospace()).size(17))
+            container(text(mark).font(fonts::REGULAR).size(17))
                 .center_x(40)
                 .center_y(40)
                 .style(styles::badge),

@@ -52,7 +52,7 @@ pub(super) fn diff(lang: Language, app: &App) -> Element<'_, Message> {
             } else {
                 text::default
             };
-            lines.push(text(line).font(fonts::monospace()).size(13).style(style))
+            lines.push(text(line).font(fonts::REGULAR).size(13).style(style))
         });
     column![
         row![
@@ -132,7 +132,7 @@ pub(super) fn progress(lang: Language, app: &App, follow_log: bool) -> Element<'
             } else {
                 text::default
             };
-            column.push(text(line).font(fonts::monospace()).size(12).style(style))
+            column.push(text(line).font(fonts::REGULAR).size(12).style(style))
         });
     let mut body = column![
         text(title).size(24),

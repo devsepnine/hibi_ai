@@ -25,7 +25,7 @@ pub fn view(
     });
     let mut heading = column![
         text(lang.text(app.tab.display_name()))
-            .font(super::fonts::display())
+            .font(super::fonts::BOLD)
             .size(if compact { 22 } else { 26 })
     ]
     .spacing(5);
@@ -186,9 +186,11 @@ pub fn view(
             .height(Fill),
     ];
     main = main.push(container(table).style(styles::surface).height(Fill));
+    let work = iced::widget::responsive(move |size| work_bar(lang, app, &selection, size.width))
+        .height(iced::Shrink);
     row![
         sidebar::view(lang, app, focus == Some(FocusArea::Tabs)),
-        main.push(work_bar(lang, app, &selection)).height(Fill)
+        main.push(work).height(Fill)
     ]
     .spacing(18)
     .height(Fill)
@@ -199,62 +201,71 @@ fn work_bar<'a>(
     lang: Language,
     app: &'a App,
     selection: &crate::app::WorkSelection,
+    available_width: f32,
 ) -> Element<'a, Message> {
     let selected = selection.selected;
     let install = selection.install.len();
     let remove = selection.remove.len();
-    container(
-        row![
-            selection_label(lang, app, selected),
-            Space::new().width(Fill),
-            key_button(
-                if selected > 0 && selected == selection.visible {
-                    lang.text("Clear selection")
-                } else {
-                    lang.text("Select all")
-                },
-                KeyCode::Char('a')
-            )
-            .style(styles::subtle)
-            .on_press_maybe((selection.visible > 0).then_some(command('a'))),
-            key_button(lang.text("Diff"), KeyCode::Char('d'))
-                .style(styles::secondary)
-                .on_press_maybe(
-                    app.selected_component_index()
-                        .is_some()
-                        .then_some(command('d'))
-                ),
-            button(
-                text(localized_format!(
-                    lang,
-                    "Remove {remove}",
-                    "{remove}개 제거",
-                    "{remove} 件削除"
-                ))
-                .size(12)
-            )
-            .padding([7, 10])
-            .style(styles::danger)
-            .on_press_maybe((remove > 0).then_some(Message::Action(Action::RequestRemove))),
-            button(
-                text(localized_format!(
-                    lang,
-                    "Install {install}",
-                    "{install}개 설치",
-                    "{install} 件インストール"
-                ))
-                .size(12)
-            )
-            .padding([9, 18])
-            .style(styles::install)
-            .on_press_maybe((install > 0).then_some(Message::Action(Action::InstallSelected))),
-        ]
-        .spacing(8)
-        .align_y(iced::Center),
-    )
-    .padding([8, 12])
-    .style(styles::glass)
-    .into()
+    let actions = row![
+        key_button(
+            if selected > 0 && selected == selection.visible {
+                lang.text("Clear selection")
+            } else {
+                lang.text("Select all")
+            },
+            KeyCode::Char('a')
+        )
+        .style(styles::subtle)
+        .on_press_maybe((selection.visible > 0).then_some(command('a'))),
+        key_button(lang.text("Diff"), KeyCode::Char('d'))
+            .style(styles::secondary)
+            .on_press_maybe(
+                app.selected_component_index()
+                    .is_some()
+                    .then_some(command('d'))
+            ),
+        button(
+            text(localized_format!(
+                lang,
+                "Remove {remove}",
+                "{remove}개 제거",
+                "{remove} 件削除"
+            ))
+            .size(12)
+        )
+        .padding([7, 10])
+        .style(styles::danger)
+        .on_press_maybe((remove > 0).then_some(Message::Action(Action::RequestRemove))),
+        button(
+            text(localized_format!(
+                lang,
+                "Install {install}",
+                "{install}개 설치",
+                "{install} 件インストール"
+            ))
+            .size(13)
+            .font(super::fonts::BOLD)
+        )
+        .padding([8, 14])
+        .style(styles::install)
+        .on_press_maybe((install > 0).then_some(Message::Action(Action::InstallSelected))),
+    ]
+    .spacing(8)
+    .align_y(iced::Center)
+    .wrap()
+    .align_x(iced::Right);
+    let label = selection_label(lang, app, selected);
+    let bar: Element<'_, Message> = if available_width < 620.0 {
+        column![label, container(actions).align_right(Fill)]
+            .spacing(4)
+            .into()
+    } else {
+        row![label, Space::new().width(Fill), actions]
+            .spacing(8)
+            .align_y(iced::Center)
+            .into()
+    };
+    container(bar).padding([8, 12]).style(styles::glass).into()
 }
 
 fn search(lang: Language, app: &App, search_shortcut: bool) -> Element<'_, Message> {

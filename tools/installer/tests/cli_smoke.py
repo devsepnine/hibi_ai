@@ -204,6 +204,11 @@ def main():
             if "precedes" in name:
                 assert b"Syncing sources" not in output
             results.append({"test": name, "status": "passed"})
+        if gui_enabled:
+            licenses = cli(copied, ["--font-licenses"], isolated, env)
+            expected = repository / "tools/installer/assets/fonts/FONT-LICENSES.txt"
+            assert licenses.splitlines() == expected.read_bytes().splitlines()
+            results.append({"test": "bundled_font_notices_without_display", "status": "passed"})
         if gui_enabled and os.uname().sysname == "Linux":
             result = subprocess.run(
                 [str(copied)], cwd=isolated, env=env, stdin=subprocess.DEVNULL,

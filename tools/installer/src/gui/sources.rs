@@ -20,9 +20,7 @@ pub fn view(lang: Language, app: &App) -> Element<'_, Message> {
         _ => source_input(lang, app),
     };
     column![
-        text(lang.text("Sources"))
-            .font(super::fonts::display())
-            .size(26),
+        text(lang.text("Sources")).font(super::fonts::BOLD).size(26),
         content,
     ]
     .spacing(14)

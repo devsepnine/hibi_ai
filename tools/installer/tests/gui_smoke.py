@@ -155,6 +155,13 @@ esac
         bar_top = image.height - 126
         regions.append((image.crop((245, bar_top, image.width - 12, image.height - 64)),
                         245, bar_top, "11"))
+        # Isolate the count from its caption so the dotted zero reads as a digit.
+        count_top = image.height - (157 if image.width < 894 else 115)
+        count = image.crop((257, count_top, 395, count_top + 20)).convert("L")
+        if count.getpixel((0, 0)) < 128:
+            count = ImageOps.invert(count)
+        count = ImageOps.expand(ImageOps.autocontrast(count), border=7, fill=255)
+        regions.append((count, 250, count_top - 7, "7"))
         install_left = image.width - 125
         regions.append((image.crop((install_left, bar_top + 8, image.width - 23, image.height - 75)),
                         install_left, bar_top + 8, "7"))
@@ -196,13 +203,14 @@ esac
         self.ocr_cache = (key, words)
         return words
 
-    def recognize(self, regions, window_height):
+    def recognize(self, regions, window_height, *, alphabet=None):
         words = []
+        alphabet_option = ["-c", f"tessedit_char_whitelist={alphabet}"] if alphabet else []
         for number, (region, offset_x, offset_y, psm) in enumerate(regions):
             path = self.artifacts / f"ocr-input-{number}.png"
             region.resize((region.width * 3, region.height * 3)).save(path)
             result = subprocess.run([self.args.tesseract, str(path), "stdout", "--psm", psm,
-                                     "-c", "tessedit_create_tsv=1"], text=True, capture_output=True, check=True)
+                                     "-c", "tessedit_create_tsv=1", *alphabet_option], text=True, capture_output=True, check=True)
             for item in csv.DictReader(io.StringIO(result.stdout), delimiter="\t", quoting=csv.QUOTE_NONE):
                 label = item.get("text", "").strip()
                 if label:
@@ -599,8 +607,9 @@ esac
         self.passed("03i-plugin-metadata-and-empty-inspector")
         self.clear_search()
         self.key("1"); self.key("Down"); self.key("2")
-        self.expect("Agents")
-        self.expect(f"{selected} selected")
+        self.find("Agents", (235, 70, 550, 115), timeout=20)
+        height = self.window.get_geometry().height
+        self.find(f"{selected} selected", (245, height - 126, 445, height - 64))
 
     def wheel(self, x, y, steps):
         self.window.warp_pointer(x, y)
@@ -827,9 +836,9 @@ esac
         self.back_to_home()
         self.click_text("Codex CLI")
         self.expect_components()
-        sidebar = " ".join(w["text"] for w in self.words() if w["x"] < 210)
-        assert all(name in sidebar for name in ["Skills", "Config", "MCP"]), sidebar
-        assert all(name not in sidebar for name in ["Agents", "Commands", "Plugins"]), sidebar
+        sidebar = {normalized(w["text"]) for w in self.words() if w["x"] < 210}
+        assert {"skills", "config", "mcp"} <= sidebar, sidebar
+        assert sidebar.isdisjoint({"agents", "commands", "plugins"}), sidebar
         self.passed("12-codex-three-categories")
         self.back_to_home()
         self.click_text("Manage sources")
@@ -929,8 +938,15 @@ esac
         self.inert("Remove", (220, 160, 1120, 780))
         self.click_text("Diff", (220, 300, 1120, 780))
         self.expect("Compare configuration", timeout=20)
-        self.expect("5000")
-        self.expect("10000")
+        # Read the two signed values as numbers, separately from the file paths above.
+        for frame in self.observation_frames(8):
+            hunk = frame.crop((24, 233, 260, 280))
+            words = self.recognize([(hunk, 24, 233, "6")], frame.height, alphabet="+-0123456789")
+            values = [word["text"] for word in words]
+            if values == ["-5000", "+10000"]:
+                break
+        else:
+            raise AssertionError(f"Expected -5000 and +10000 in the settings diff, recognized {values}")
         self.close_diff()
         self.clear_search()
         self.expect("1 selected")

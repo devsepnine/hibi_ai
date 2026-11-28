@@ -438,6 +438,8 @@ pub(crate) fn print_help() {
     println!("  -v, --version    Show version");
     println!("      --sync       Sync git sources without a window or TUI");
     println!("      --tui        Launch the terminal installer");
+    #[cfg(feature = "gui")]
+    println!("      --font-licenses  Show notices for the bundled desktop font");
     println!();
     #[cfg(feature = "gui")]
     println!("Run without options to launch the desktop installer.");

@@ -119,7 +119,7 @@ pub(super) fn view(state: &Runtime) -> Element<'_, Message> {
         controls,
         iced::widget::container(
             iced::widget::text("HIBI AI")
-                .font(super::fonts::display())
+                .font(super::fonts::BOLD)
                 .size(16)
         )
         .padding(iced::Padding {

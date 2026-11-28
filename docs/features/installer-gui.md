@@ -174,6 +174,8 @@ cargo test --locked --manifest-path tools/installer/Cargo.toml
 
 색상과 간격, 카드와 버튼 상태는 `tools/installer/src/gui/styles.rs`에서 관리한다. 다크 모드와 라이트 모드는 같은 정보 위계를 사용한다. 본문과 보조 문구, 주요 동작과 오류의 대비를 두 테마에서 자동 검증한다.
 
+GUI는 앱에 포함된 JetBrainsMonoHangul Nerd Font Mono를 한글, 영문, 파일 경로에 사용한다. 제목과 설치 버튼은 Bold, 본문은 Regular로 표시한다. 일본어 등 내장 글꼴에 없는 문자는 운영체제의 대체 글꼴을 사용한다. 작업 표시줄의 폭이 620px 미만이면 선택 개수 아래에 작업 버튼을 배치한다. 글꼴의 저작권 고지와 라이선스는 `hibi --font-licenses`로 확인할 수 있다. TUI 글꼴은 사용자의 터미널 설정을 따른다.
+
 ### `gui-appearance`: 창 헤더, 테마와 언어
 
 - **위치**: 헤더 오른쪽의 강조색 선택, 팔레트 선택과 밝기 전환, 하단 버전 옆의 언어 선택
