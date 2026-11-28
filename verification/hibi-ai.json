@@ -1,0 +1,27 @@
+{
+    "version": "2.4.1",
+    "description": "Graphical and terminal installer for Claude Code and Codex CLI configurations",
+    "homepage": "https://github.com/devsepnine/hibi_ai",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+          "url": "https://github.com/devsepnine/hibi_ai/releases/download/v2.4.1/hibi-ai-2.4.1-windows.zip",
+          "hash": "5798608915a7e6bad3147d422fa24a4fc9f3c6a7bc0e924614fee16752cf99fb",
+          "extract_dir": "hibi-ai-2.4.1-windows"
+        }
+    },
+    "bin": [
+        ["hibi.exe", "hibi"]
+    ],
+    "checkver": {
+        "github": "https://github.com/devsepnine/hibi_ai"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/devsepnine/hibi_ai/releases/download/v$version/hibi-ai-$version-windows.zip",
+                "extract_dir": "hibi-ai-$version-windows"
+            }
+        }
+    }
+}
