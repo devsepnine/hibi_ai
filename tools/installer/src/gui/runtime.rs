@@ -4,12 +4,13 @@ use std::thread;
 use anyhow::Result;
 
 use crate::app::{App, View};
-use crate::fs::installer::preferences::Appearance;
+use crate::fs::installer::preferences::{Accent, Appearance};
 use crate::loading::{self, ProcessingChannels};
 
 pub struct Runtime {
     pub(super) updater: super::updates::State,
     pub language: super::Language,
+    pub(super) accent: Accent,
     pub(super) theme_choice: Appearance,
     pub(super) system_mode: iced::theme::Mode,
     pub app: Option<App>,
@@ -45,6 +46,7 @@ impl Runtime {
             updater: Default::default(),
             language: super::Language::English,
             theme_choice: Default::default(),
+            accent: Accent::default(),
             system_mode: Default::default(),
             app: None,
             error: None,

@@ -27,9 +27,22 @@ pub enum Language {
     Japanese,
 }
 
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Accent {
+    #[default]
+    Blue,
+    Lavender,
+    Mint,
+    Peach,
+    Rose,
+    Red,
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize)]
 pub struct Preferences {
     pub appearance: Option<Appearance>,
+    pub accent: Option<Accent>,
     pub language: Option<Language>,
 }
 
@@ -69,8 +82,7 @@ fn save_to(path: &Path, settings: Preferences) -> Result<()> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
-    // Theme and language can be edited by different installer windows.
-    // Lock a stable sibling because saving replaces the preferences file.
+    // Lock a stable sibling because saving from another window replaces the preferences file.
     let lock = OpenOptions::new()
         .create(true)
         .truncate(false)
@@ -90,6 +102,9 @@ fn write_settings(path: &Path, settings: Preferences) -> Result<()> {
         .context("Invalid display preferences")?;
     if let Some(appearance) = settings.appearance {
         object.insert("appearance".into(), serde_json::to_value(appearance)?);
+    }
+    if let Some(accent) = settings.accent {
+        object.insert("accent".into(), serde_json::to_value(accent)?);
     }
     if let Some(language) = settings.language {
         object.insert("language".into(), serde_json::to_value(language)?);
@@ -150,7 +165,7 @@ mod tests {
     fn appearance(value: Appearance) -> Preferences {
         Preferences {
             appearance: Some(value),
-            language: None,
+            ..Preferences::default()
         }
     }
 
@@ -236,7 +251,7 @@ mod tests {
                 &fixture.path(),
                 Preferences {
                     language: Some(language),
-                    appearance: None,
+                    ..Preferences::default()
                 },
             )
             .unwrap();
@@ -245,7 +260,8 @@ mod tests {
                 load_from(&fixture.path()).unwrap(),
                 Preferences {
                     language: Some(language),
-                    appearance: Some(Appearance::Light)
+                    appearance: Some(Appearance::Light),
+                    ..Preferences::default()
                 }
             );
             let stored: Value = serde_json::from_slice(&fs::read(fixture.path()).unwrap()).unwrap();

@@ -2,8 +2,8 @@ use iced::theme::palette::{mix, readable};
 use iced::widget::{button, checkbox, container, overlay::menu, pick_list, rule, text, text_input};
 use iced::{Border, Color, Degrees, Theme, gradient};
 
-const PANEL_RADIUS: f32 = 18.0;
-const CONTROL_RADIUS: f32 = 10.0;
+const PANEL_RADIUS: f32 = 8.0;
+const CONTROL_RADIUS: f32 = 8.0;
 
 pub(super) fn glass_theme(source: &Theme) -> Theme {
     let mut palette = source.palette();
@@ -46,23 +46,65 @@ fn glass_tint(theme: &Theme) -> Color {
 
 pub fn backdrop(theme: &Theme) -> container::Style {
     let p = theme.palette();
-    let dark = theme.extended_palette().is_dark;
-    let start = if dark {
-        mix(p.background, p.primary, 0.075)
+    let strength = if theme.extended_palette().is_dark {
+        0.075
     } else {
-        mix(p.background, Color::WHITE, 0.75)
+        0.12
     };
-    let end = if dark {
-        mix(p.background, Color::BLACK, 0.48)
-    } else {
-        glass_tint(theme)
-    };
+    let band = mix(p.background, p.primary, strength);
     container::Style::default().background(
-        gradient::Linear::new(Degrees(126.0))
-            .add_stop(0.0, start)
-            .add_stop(0.48, p.background)
-            .add_stop(1.0, end),
+        gradient::Linear::new(Degrees(115.0))
+            .add_stop(0.0, p.background)
+            .add_stop(0.31, p.background)
+            .add_stop(0.311, band)
+            .add_stop(0.49, mix(p.background, p.primary, strength * 0.4))
+            .add_stop(0.491, p.background)
+            .add_stop(0.516, p.background)
+            .add_stop(0.517, band)
+            .add_stop(0.524, p.background),
     )
+}
+
+fn gold(theme: &Theme) -> Color {
+    if theme.extended_palette().is_dark {
+        iced::color!(0xe2c98c)
+    } else {
+        iced::color!(0xcead68)
+    }
+}
+
+pub fn wordmark(theme: &Theme) -> container::Style {
+    let gold = gold(theme);
+    container::Style::default()
+        .color(iced::color!(0x28252b))
+        .background(
+            gradient::Linear::new(Degrees(105.0))
+                .add_stop(0.0, gold)
+                .add_stop(0.87, gold)
+                .add_stop(0.872, Color::TRANSPARENT),
+        )
+}
+
+pub fn install(theme: &Theme, status: button::Status) -> button::Style {
+    if status == button::Status::Disabled {
+        return secondary(theme, status);
+    }
+    let gold = gold(theme);
+    let fill = match status {
+        button::Status::Hovered => mix(gold, Color::WHITE, 0.16),
+        button::Status::Pressed => mix(gold, Color::BLACK, 0.12),
+        _ => gold,
+    };
+    button::Style {
+        background: Some(fill.into()),
+        text_color: iced::color!(0x28252b),
+        border: Border {
+            radius: CONTROL_RADIUS.into(),
+            width: 1.0,
+            color: mix(fill, Color::BLACK, 0.35),
+        },
+        ..Default::default()
+    }
 }
 
 pub fn divider(theme: &Theme) -> rule::Style {
@@ -98,37 +140,35 @@ pub fn surface(theme: &Theme) -> container::Style {
 }
 
 fn glass_fill(theme: &Theme, base: Color) -> gradient::Linear {
-    let dark = theme.extended_palette().is_dark;
-    let highlight = if dark {
-        glass_tint(theme)
-    } else {
-        mix(base, Color::WHITE, 0.94)
-    };
-    gradient::Linear::new(Degrees(153.0))
-        .add_stop(0.0, highlight.scale_alpha(0.90))
-        .add_stop(0.36, base.scale_alpha(0.52))
-        .add_stop(
-            1.0,
-            mix(
-                base,
-                theme.palette().primary,
-                if dark { 0.065 } else { 0.15 },
-            )
-            .scale_alpha(0.78),
-        )
+    gradient::Linear::new(Degrees(105.0))
+        .add_stop(0.0, mix(base, theme.palette().primary, 0.035))
+        .add_stop(0.6, base)
 }
 
 pub fn glass(theme: &Theme) -> container::Style {
-    let fill = glass_fill(theme, theme.palette().background);
     container::Style {
-        background: Some(fill.into()),
+        background: Some(glass_fill(theme, theme.palette().background).into()),
         border: Border {
-            color: mix(theme.palette().primary, Color::WHITE, 0.45).scale_alpha(0.55),
+            color: theme.palette().text.scale_alpha(0.22),
             width: 1.0,
             radius: PANEL_RADIUS.into(),
         },
         ..Default::default()
     }
+}
+
+pub fn table_header(theme: &Theme) -> container::Style {
+    let palette = theme.palette();
+    let field = mix(surface_color(theme), palette.primary, 0.045);
+    container::Style::default()
+        .background(
+            gradient::Linear::new(Degrees(115.0))
+                .add_stop(0.0, field)
+                .add_stop(0.72, field)
+                .add_stop(0.721, mix(field, palette.primary, 0.045))
+                .add_stop(1.0, field),
+        )
+        .border(Border::default().rounded(iced::border::Radius::default().top(PANEL_RADIUS)))
 }
 
 pub fn popup(theme: &Theme) -> container::Style {
@@ -185,7 +225,7 @@ fn control_border(theme: &Theme) -> Border {
     let strength = (target - base) / (end.relative_luminance() - base);
     Border {
         color: mix(tint, end, strength),
-        width: 1.5,
+        width: 1.0,
         radius: CONTROL_RADIUS.into(),
     }
 }
@@ -217,18 +257,6 @@ pub fn glass_button(theme: &Theme, status: button::Status) -> button::Style {
     if status == button::Status::Active {
         style.background = glass(theme).background;
     }
-    style
-}
-
-pub fn focused_glass_button(theme: &Theme, status: button::Status) -> button::Style {
-    let mut style = glass_button(theme, status);
-    style.border = focus_border(theme, style.border.radius);
-    style
-}
-
-pub fn focused_secondary(theme: &Theme, status: button::Status) -> button::Style {
-    let mut style = secondary(theme, status);
-    style.border = focus_border(theme, style.border.radius);
     style
 }
 
@@ -366,6 +394,13 @@ mod tests {
         }
     }
 
+    fn themes() -> impl Iterator<Item = Theme> {
+        Theme::ALL
+            .iter()
+            .map(glass_theme)
+            .chain(super::super::appearance::workspace_palettes())
+    }
+
     fn luminance(color: Color) -> f32 {
         fn linear(v: f32) -> f32 {
             if v <= 0.04045 {
@@ -413,7 +448,7 @@ mod tests {
 
     #[test]
     fn body_and_secondary_copy_meet_aa_contrast_in_all_palettes() {
-        for theme in Theme::ALL.iter().map(glass_theme) {
+        for theme in themes() {
             let backgrounds = [
                 backdrop(&theme).background,
                 surface(&theme).background,
@@ -446,9 +481,10 @@ mod tests {
                 button::Status::Hovered,
                 button::Status::Pressed,
             ] {
-                let style = primary(&theme, status);
-                for color in colors(style.background.unwrap()) {
-                    assert_contrast(style.text_color, color, 4.5);
+                for style in [primary(&theme, status), install(&theme, status)] {
+                    for color in colors(style.background.unwrap()) {
+                        assert_contrast(style.text_color, color, 4.5);
+                    }
                 }
             }
         }
@@ -469,7 +505,7 @@ mod tests {
 
     #[test]
     fn enabled_buttons_stay_visible_on_every_backdrop() {
-        for theme in Theme::ALL.iter().map(glass_theme) {
+        for theme in themes() {
             let parents = button_backdrops(&theme);
             for status in [
                 button::Status::Active,
@@ -480,13 +516,7 @@ mod tests {
                     for fill in colors(primary(&theme, status).background.unwrap()) {
                         assert_contrast(fill, parent, 3.0);
                     }
-                    for style in [
-                        secondary,
-                        glass_button,
-                        navigation,
-                        focused_secondary,
-                        focused_glass_button,
-                    ] {
+                    for style in [secondary, glass_button, navigation] {
                         let button = style(&theme, status);
                         assert_contrast(button.border.color, parent, 3.0);
                         for fill in colors(button.background.unwrap()) {
@@ -502,13 +532,11 @@ mod tests {
 
     #[test]
     fn focus_indicators_have_three_to_one_contrast_in_all_palettes() {
-        for theme in Theme::ALL.iter().map(glass_theme) {
+        for theme in themes() {
             let status = button::Status::Active;
             let focus = [
                 focus_ring(&theme).border,
                 focused_row(&theme, status).border,
-                focused_glass_button(&theme, status).border,
-                focused_secondary(&theme, status).border,
             ];
             let backdrop_colors = colors(backdrop(&theme).background.unwrap());
             let fills = [

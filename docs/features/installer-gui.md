@@ -17,7 +17,7 @@ GUI를 실행하려면 데스크톱 디스플레이가 필요하다. GUI 시작�
 
 ## 방향키 탐색
 
-GUI의 시작 화면은 좌우 방향키로 대상 카드를 고르고 위아래 방향키로 소스 관리와 대상 카드 사이를 이동한다. GUI와 TUI의 시작 화면에서 Tab과 Shift+Tab은 세 선택지를 순서대로 돌며 Enter는 현재 표시한 선택지를 연다.
+GUI의 시작 화면은 위아래 방향키로 Claude Code, Codex CLI, 소스 관리 사이를 이동한다. 좌우 방향키로 두 CLI 사이를 이동할 수도 있다. GUI와 TUI의 시작 화면에서 Tab과 Shift+Tab은 세 선택지를 순서대로 돌며 Enter는 현재 표시한 선택지를 연다.
 
 왼쪽 Components에서 카테고리를 클릭하면 해당 영역이 키보드 포커스를 유지한다. 위아래 방향키로 카테고리를 이동하고 오른쪽 방향키나 Enter로 목록에 들어간다. 목록 항목을 클릭하면 위아래 방향키로 항목을 이동하고 왼쪽과 오른쪽 방향키로 폴더를 접거나 펼친다. 파일에서 왼쪽 방향키를 누르면 부모 폴더로 이동해 접는다.
 
@@ -176,14 +176,14 @@ cargo test --locked --manifest-path tools/installer/Cargo.toml
 
 ### `gui-appearance`: 창 헤더, 테마와 언어
 
-- **위치**: 헤더 오른쪽의 팔레트 선택과 테마 토글, 하단 버전 옆의 언어 선택
+- **위치**: 헤더 오른쪽의 강조색 선택, 팔레트 선택과 밝기 전환, 하단 버전 옆의 언어 선택
 - **UI 문구**: `"System theme"`, `"Light"`, `"Dark"`, `"Could not save display settings"`
 - **코드 경로**: `tools/installer/src/gui/window_bar.rs` → `view`, `tools/installer/src/gui/styles.rs`, `tools/installer/src/gui/runtime.rs` → `start_initialization`, `tools/installer/src/gui/preferences.rs` → `Writer`. `tools/installer/src/fs/installer/preferences.rs`의 `load`와 `save`가 파일을 다룬다.
 - **테스트**: `tools/installer/src/gui/window_bar.rs`, `tools/installer/src/gui/keyboard_tests.rs`, `tools/installer/src/gui/locale.rs`, `tools/installer/src/fs/installer/preferences.rs`
 
-첫 실행에는 시스템의 밝기 설정을 따르고 실행 중 변경도 반영한다. 헤더에서 iced 팔레트를 고르면 다음 실행에도 그 선택을 쓴다. 해와 달 버튼은 Light와 Dark를 빠르게 선택한다. 시스템 설정을 다시 따르려면 목록에서 시스템 테마 따르기를 선택한다. 유리 스타일의 배경과 카드, 입력과 클릭 상태는 `tools/installer/src/gui/styles.rs`에서 관리한다. 현재 설정 언어는 영어, 한국어, 일본어 중 하나다. 저장한 값이 없으면 운영체제의 선호 언어 목록에서 지원하는 첫 언어를 고르고, 목록에 해당 언어가 없으면 영어를 사용한다. 경로와 외부 도구 로그는 원문을 표시한다.
+첫 실행에는 시스템의 밝기 설정을 따르고 실행 중 변경도 반영한다. 기본 밝은 테마와 어두운 테마에서는 여섯 강조색 중 하나를 선택할 수 있다. 금빛은 브랜드 표시와 활성 설치 버튼에 사용한다. 헤더에서 iced 팔레트를 고르면 다음 실행에도 그 선택을 쓴다. 해와 달 버튼은 Light와 Dark를 빠르게 선택한다. 시스템 설정을 다시 따르려면 목록에서 시스템 테마 따르기를 선택한다. 유리 스타일의 배경과 카드, 입력과 클릭 상태는 `tools/installer/src/gui/styles.rs`에서 관리한다. 현재 설정 언어는 영어, 한국어, 일본어 중 하나다. 저장한 값이 없으면 운영체제의 선호 언어 목록에서 지원하는 첫 언어를 고르고, 목록에 해당 언어가 없으면 영어를 사용한다. 경로와 외부 도구 로그는 원문을 표시한다.
 
-GUI는 언어와 테마를 `~/.hibi/preferences.json`에 저장한다. 저장할 키만 바꿔 다른 설정을 보존한다. 파일이 손상되었거나 읽기 전용이면 원인을 표시하고 파일을 보존한다. 창 닫기는 진행 중인 환경설정 쓰기가 끝날 때까지 기다린다.
+GUI는 언어, 테마와 강조색을 `~/.hibi/preferences.json`에 저장한다. 저장할 키만 바꿔 다른 설정을 보존한다. 파일이 손상되었거나 읽기 전용이면 원인을 표시하고 파일을 보존한다. 창 닫기는 진행 중인 환경설정 쓰기가 끝날 때까지 기다린다.
 
 디자인 참고 자료는 탐색, 표, 대화상자와 테마 원칙을 설명한다. [GNOME 탐색](https://developer.gnome.org/hig/guidelines/navigation.html) · [GNOME 대화상자](https://developer.gnome.org/hig/patterns/feedback/dialogs.html) · [Material 표](https://m1.material.io/components/data-tables.html) · [Material 다크 테마](https://m2.material.io/design/color/dark-theme.html) · [Mobbin 공개 사례](https://mobbin.com/blog/how-to-use-mobbin-mcp) · [Raycast 설정](https://manual.raycast.com/settings)
 

@@ -6,9 +6,9 @@ use std::time::Duration;
 
 pub(super) fn picker_arrow(choice: CliChoice, key: KeyCode) -> Option<CliChoice> {
     Some(match (choice, key) {
-        (CliChoice::Claude, KeyCode::Right) => CliChoice::Codex,
-        (CliChoice::Codex, KeyCode::Left) => CliChoice::Claude,
-        (CliChoice::Claude | CliChoice::Codex, KeyCode::Down) => CliChoice::Sources,
+        (CliChoice::Claude, KeyCode::Right | KeyCode::Down) => CliChoice::Codex,
+        (CliChoice::Codex, KeyCode::Left | KeyCode::Up) => CliChoice::Claude,
+        (CliChoice::Codex, KeyCode::Down) => CliChoice::Sources,
         (CliChoice::Sources, KeyCode::Up) => CliChoice::Codex,
         (_, KeyCode::Left | KeyCode::Right | KeyCode::Up | KeyCode::Down) => choice,
         _ => return None,

@@ -2,10 +2,10 @@
 
 ### `cli-picker`: 설치 대상 선택과 소스 관리
 
-- **위치**: GUI의 시작 카드 또는 TUI의 `Select target` 상자
+- **위치**: GUI의 작업 공간 목록 또는 TUI의 `Select target` 상자
 - **별칭**: 첫 화면, 대상 선택, Claude 선택, Codex 선택, 인스톨러
 - **UI 문구**: `"Claude Code"`, `"Codex CLI"`, GUI `"Manage sources"` · ko `"소스 관리"`, TUI `"Manage Sources"`와 `"Select target"`
-- **컨트롤**: 두 화면에서 Tab과 Shift+Tab으로 세 선택지를 순환하고 Enter로 연다. GUI는 좌우 방향키로 대상 카드를, 위아래 방향키로 카드와 소스 관리를 이동한다. TUI는 위아래 또는 j와 k를 사용한다.
+- **컨트롤**: 두 화면에서 Tab과 Shift+Tab으로 세 선택지를 순환하고 Enter로 연다. GUI에서는 위아래 방향키로 Claude Code, Codex CLI, 소스 관리 사이를 이동한다. 좌우 방향키로 두 CLI 사이를 이동할 수도 있다. TUI는 위아래 또는 j와 k를 사용한다.
 - **코드 경로**:
   - GUI: `tools/installer/src/gui/home.rs` → `view`, 방향키는 `tools/installer/src/gui/shortcuts.rs` → `picker_arrow`
   - TUI: `tools/installer/src/ui/cli_selection.rs` → `render`, 키 입력은 `tools/installer/src/cli/mod.rs` → `handle_cli_selection`

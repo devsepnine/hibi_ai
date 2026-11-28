@@ -19,8 +19,8 @@
 
 | 화면 / 영역 | 기능 ID |
 |---|---|
-| GUI 대상 카드와 TUI `Select target` | `cli-picker`, `sources-screen` |
-| GUI 헤더 오른쪽 팔레트와 시스템 테마 선택, 하단 언어 선택 | `gui-appearance` |
+| GUI 작업 공간 목록와 TUI `Select target` | `cli-picker`, `sources-screen` |
+| GUI 헤더 오른쪽 강조색과 테마 선택, 하단 언어 선택 | `gui-appearance` |
 | GUI 오른쪽 아래 버전과 업데이트 대화상자 | `app-update` |
 | 시작 직후와 CLI 선택 직후의 스피너 상자 | `startup-loading` |
 | 터미널 명령행, TUI 없이 | `cli-flags`, `install-script` |

@@ -4,13 +4,14 @@ use anyhow::Result;
 
 use super::runtime::Runtime;
 use crate::app::App;
-use crate::fs::installer::preferences::{self, Appearance, Language, Preferences};
+use crate::fs::installer::preferences::{self, Accent, Appearance, Language, Preferences};
 
 impl Runtime {
     pub(super) fn restore_preferences(&mut self, saved: Option<&Preferences>) {
         if self.appearance.busy() {
             return;
         }
+        self.accent = saved.and_then(|p| p.accent).unwrap_or_default();
         self.theme_choice = saved.and_then(|p| p.appearance.clone()).unwrap_or_default();
         self.language = saved
             .and_then(|p| p.language)
@@ -29,6 +30,10 @@ impl Writer {
         self.pending
             .get_or_insert_with(Preferences::default)
             .appearance = Some(choice);
+    }
+
+    pub fn request_accent(&mut self, accent: Accent) {
+        self.pending.get_or_insert_with(Preferences::default).accent = Some(accent);
     }
 
     pub fn request_language(&mut self, language: Language) {
@@ -89,12 +94,15 @@ mod tests {
         let nord = Appearance::Palette("Nord".into());
         runtime.dispatch(Action::SetAppearance(nord.clone()));
         runtime.dispatch(Action::SetLanguage(Language::Korean));
+        runtime.dispatch(Action::SetAccent(Accent::Mint));
         runtime.restore_preferences(Some(&Preferences {
             appearance: Some(Appearance::Dark),
             language: Some(Language::English),
+            ..Preferences::default()
         }));
         assert_eq!(runtime.theme_choice, nord);
         assert_eq!(runtime.language, Language::Korean);
+        assert_eq!(runtime.accent, Accent::Mint);
     }
 
     #[test]
@@ -105,7 +113,9 @@ mod tests {
             pending: None,
         };
         writer.request_language(Language::Japanese);
+        writer.request_accent(Accent::Lavender);
         writer.request_theme(Appearance::Dark);
+        writer.request_accent(Accent::Rose);
         writer.request_language(Language::Korean);
         writer.request_theme(Appearance::Light);
         assert!(writer.tick().is_none());
@@ -113,7 +123,8 @@ mod tests {
             writer.pending,
             Some(Preferences {
                 appearance: Some(Appearance::Light),
-                language: Some(Language::Korean)
+                language: Some(Language::Korean),
+                accent: Some(Accent::Rose),
             })
         );
         assert!(writer.busy());

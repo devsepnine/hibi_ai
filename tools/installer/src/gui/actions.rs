@@ -1,7 +1,7 @@
 use crossterm::event::KeyCode;
 
 use crate::app::{ComponentFilter, HiddenVisibility, Tab, TargetCli, View};
-use crate::fs::installer::preferences::Appearance;
+use crate::fs::installer::preferences::{Accent, Appearance};
 use crate::{cli, loading};
 
 use super::filters::Choice;
@@ -29,6 +29,7 @@ pub enum Action {
     SetEnvInput(String),
     ToggleTheme,
     SetAppearance(Appearance),
+    SetAccent(Accent),
     SetLanguage(super::Language),
     OpenSources,
     SelectSource(usize),
@@ -125,6 +126,11 @@ impl Runtime {
                 return;
             }
             _ if self.removal_pending() => return,
+            Action::SetAccent(accent) => {
+                self.accent = accent;
+                self.appearance.request_accent(accent);
+                return;
+            }
             Action::SetAppearance(choice) => {
                 self.appearance.request_theme(choice.clone());
                 self.theme_choice = choice;

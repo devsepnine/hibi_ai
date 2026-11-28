@@ -22,6 +22,15 @@ pub(super) fn interface() -> Font {
     })
 }
 
+pub(super) fn display() -> Font {
+    Font {
+        weight: iced::font::Weight::Bold,
+        stretch: iced::font::Stretch::Condensed,
+        style: iced::font::Style::Italic,
+        ..interface()
+    }
+}
+
 pub(super) fn monospace() -> Font {
     static FONT: OnceLock<Font> = OnceLock::new();
     *FONT.get_or_init(|| {

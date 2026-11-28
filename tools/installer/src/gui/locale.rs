@@ -71,6 +71,14 @@ impl Language {
 }
 
 catalog! {
+    "Blue" => "블루", "ブルー";
+    "Accent color" => "강조색", "アクセントカラー";
+    "Lavender" => "라벤더", "ラベンダー";
+    "Mint" => "민트", "ミント";
+    "Peach" => "피치", "ピーチ";
+    "Rose" => "로즈", "ローズ";
+    "Red" => "레드", "レッド";
+    "Choose a workspace" => "작업 공간 선택", "ワークスペースを選択";
     "System theme" => "시스템 테마 따르기", "システム設定に従う";
     "Checking for updates…" => "업데이트 확인 중…", "更新を確認中…";
     "Up to date" => "최신 버전입니다", "最新です";
@@ -107,11 +115,8 @@ catalog! {
     "No environment variable is awaiting a value" => "입력할 환경 변수가 없습니다", "入力待ちの環境変数はありません";
     "Minimize" => "최소화", "最小化";
     "Maximize or restore" => "최대화 또는 복원", "最大化または元に戻す";
-    "Your workspace, configured." => "작업 공간 설정", "ワークスペースの設定";
-    "Manage the instructions, tools and workflows your AI assistants use." => "AI 도우미가 사용할 지침, 도구, 워크플로를 관리하세요.", "AI アシスタントが使う指示、ツール、ワークフローを管理します。";
     "Agents, skills, hooks, MCP servers and plugins" => "에이전트, 스킬, 훅, MCP 서버, 플러그인", "エージェント、スキル、フック、MCP サーバー、プラグイン";
     "Skills, shared configuration and MCP servers" => "스킬, 공유 설정, MCP 서버", "スキル、共有設定、MCP サーバー";
-    "Connected sources" => "연결된 소스", "接続済みのソース";
     "Manage sources" => "소스 관리", "ソースを管理";
     "Workspace" => "작업 공간", "ワークスペース";
     "Components" => "구성 요소", "コンポーネント";
@@ -250,13 +255,11 @@ catalog! {
     "Back" => "뒤로", "戻る";
     "Click to focus a row. Use its checkbox to select it. Input fields support selection and paste; shortcuts pause while typing." => "행을 클릭하면 포커스가 이동합니다. 체크박스로 항목을 선택하세요. 입력창에서는 선택과 붙여넣기를 사용할 수 있으며 입력 중에는 단축키가 일시 중지됩니다.", "行をクリックしてフォーカスし、チェックボックスで選択します。入力欄では選択と貼り付けができ、入力中はショートカットが停止します。";
     "Sources" => "소스", "ソース";
-    "Your component libraries, all in one place." => "구성 요소를 가져올 라이브러리를 관리하세요.", "コンポーネントの取得元となるライブラリを管理します。";
     "Bundled library" => "기본 제공 라이브러리", "同梱ライブラリ";
     "Included with HIBI AI · Read only" => "HIBI AI에 포함됨 · 읽기 전용", "HIBI AI に同梱 · 読み取り専用";
     "Add source" => "소스 추가", "ソースを追加";
     "Sync all" => "모두 동기화", "すべて同期";
     "Connected libraries" => "연결된 라이브러리", "接続済みライブラリ";
-    "Selected sources provide your components" => "선택한 소스에서 구성 요소를 가져옵니다", "選択したソースからコンポーネントを取得します";
     "Edit source" => "소스 편집", "ソースを編集";
     "Remove source" => "소스 제거", "ソースを削除";
     "Cached version · Sync to retry" => "캐시된 버전 · 동기화하여 다시 시도", "キャッシュを使用中 · 同期して再試行";

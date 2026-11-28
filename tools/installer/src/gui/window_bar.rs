@@ -74,12 +74,20 @@ pub(super) fn view(state: &Runtime) -> Element<'_, Message> {
     #[cfg(not(target_os = "macos"))]
     let controls: Element<'_, Message> = {
         use super::{actions::Action, styles};
-        use iced::widget::{button, text, tooltip};
+        use iced::widget::{button, svg, text, tooltip};
         let control =
-            |symbol: &'static str, label: &'static str, action| -> Element<'static, Message> {
+            |image: &'static [u8], label: &'static str, action| -> Element<'static, Message> {
+                let icon = svg(svg::Handle::from_memory(image))
+                    .width(12)
+                    .height(12)
+                    .style(|theme: &Theme, _| svg::Style {
+                        color: Some(theme.palette().text),
+                    });
                 tooltip(
-                    button(text(symbol).size(15).center())
+                    button(icon)
                         .width(32)
+                        .height(32)
+                        .padding(10)
                         .style(styles::subtle)
                         .on_press(action),
                     text(state.language.text(label)).size(12),
@@ -90,13 +98,17 @@ pub(super) fn view(state: &Runtime) -> Element<'_, Message> {
             };
         row![
             control(
-                "×",
+                include_bytes!("../../assets/window-close.svg"),
                 "Close application",
                 Message::Action(Action::RequestClose)
             ),
-            control("−", "Minimize", Message::Window(Command::Minimize)),
             control(
-                "□",
+                include_bytes!("../../assets/window-minimize.svg"),
+                "Minimize",
+                Message::Window(Command::Minimize)
+            ),
+            control(
+                include_bytes!("../../assets/window-maximize.svg"),
                 "Maximize or restore",
                 Message::Window(Command::Maximize)
             ),
@@ -105,7 +117,21 @@ pub(super) fn view(state: &Runtime) -> Element<'_, Message> {
     };
     row![
         controls,
+        iced::widget::container(
+            iced::widget::text("HIBI AI")
+                .font(super::fonts::display())
+                .size(16)
+        )
+        .padding(iced::Padding {
+            top: 3.0,
+            right: 24.0,
+            bottom: 3.0,
+            left: 12.0
+        })
+        .style(super::styles::wordmark),
         grip(Fill, Fill, Command::Drag),
+        super::appearance::accents(state),
+        Space::new().width(10),
         super::appearance::picker(state),
         Space::new().width(8),
         theme_button(state)
@@ -312,6 +338,21 @@ mod tests {
             messages
         };
         assert!(click(734.0, 7.0).is_empty());
+        #[cfg(not(target_os = "macos"))]
+        {
+            assert!(matches!(
+                click(24.0, HEIGHT / 2.0).as_slice(),
+                [Message::Action(Action::RequestClose)]
+            ));
+            assert!(matches!(
+                click(56.0, HEIGHT / 2.0).as_slice(),
+                [Message::Window(Command::Minimize)]
+            ));
+            assert!(matches!(
+                click(88.0, HEIGHT / 2.0).as_slice(),
+                [Message::Window(Command::Maximize)]
+            ));
+        }
         assert!(matches!(
             click(734.0, HEIGHT / 2.0).as_slice(),
             [Message::Action(Action::ToggleTheme)]

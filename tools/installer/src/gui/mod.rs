@@ -67,7 +67,7 @@ pub fn run() -> iced::Result {
     )
     .default_font(fonts::interface())
     .title("HIBI AI")
-    .theme(|state: &Runtime| appearance::window_theme(&state.theme_choice))
+    .theme(|state: &Runtime| appearance::window_theme(&state.theme_choice, state.accent))
     .subscription(subscription)
     .window(window_bar::settings())
     .centered()
@@ -176,7 +176,7 @@ fn search_available(state: &Runtime) -> bool {
 }
 
 fn theme(state: &Runtime) -> Theme {
-    appearance::resolve(&state.theme_choice, state.system_mode)
+    appearance::resolve(&state.theme_choice, state.system_mode, state.accent)
 }
 
 fn view(state: &Runtime) -> Element<'_, Message> {

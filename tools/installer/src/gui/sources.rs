@@ -20,16 +20,12 @@ pub fn view(lang: Language, app: &App) -> Element<'_, Message> {
         _ => source_input(lang, app),
     };
     column![
-        column![
-            text(lang.text("Sources")).size(28),
-            text(lang.text("Your component libraries, all in one place."))
-                .size(14)
-                .style(styles::muted)
-        ]
-        .spacing(6),
+        text(lang.text("Sources"))
+            .font(super::fonts::display())
+            .size(26),
         content,
     ]
-    .spacing(24)
+    .spacing(14)
     .height(Fill)
     .into()
 }
@@ -89,14 +85,7 @@ fn source_list(lang: Language, app: &App) -> Element<'_, Message> {
     .spacing(8)
     .align_y(iced::Center);
     let mut panel = column![
-        row![
-            text(lang.text("Connected libraries")).size(17),
-            Space::new().width(Fill),
-            text(lang.text("Selected sources provide your components"))
-                .size(12)
-                .style(styles::muted)
-        ]
-        .spacing(10),
+        text(lang.text("Connected libraries")).size(17),
         scrollable(entries).height(Fill),
         row![
             button(lang.text("Edit source"))

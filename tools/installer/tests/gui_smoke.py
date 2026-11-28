@@ -118,7 +118,7 @@ esac
                     self.window = window
                     self.window.set_input_focus(X.RevertToParent, X.CurrentTime)
                     self.d.sync()
-                    self.expect("Your workspace")
+                    self.expect("Choose a workspace")
                     return
             time.sleep(.1)
         raise TimeoutError("Installer did not open its X11 window")
@@ -147,6 +147,8 @@ esac
         # independently recognize light and dark text on colored buttons.
         regions = [(image, 0, 0, "11")]
         dark = sum(image.getpixel((0, 0))) < 300
+        # Colored selection fills can obscure filename strokes in channel-based OCR.
+        regions.append((ImageOps.grayscale(image), 0, 0, "11"))
         regions.append((text_layer(image, dark), 0, 0, "11"))
         # The selection count can be skipped in sparse-page recognition.
         # Read the work bar independently of the results and sidebar.
@@ -420,15 +422,16 @@ esac
         deadline = time.monotonic() + 8
         while time.monotonic() < deadline:
             image = self.capture(park_pointer=False)
-            dark = sum(image.getpixel((0, 0))) < 300
-            accent = (250, 250, 250) if dark else (63, 61, 218)
             center = image.crop((365, 88, 515, 210))
-            strokes = [y for y in range(center.height)
-                       if center.crop((0, y, center.width, y + 1)).getcolors(1) == [(center.width, accent)]]
-            # A progress bar can have the same color as a focused text input.
+            rows = [center.crop((0, y, center.width, y + 1)).getcolors(1)
+                    for y in range(center.height)]
+            # Both sides of the two-pixel focus ring contain a solid accent line.
+            # Skip flat fills and one-pixel controls with antialiased outlines.
+            strokes = [y for y in range(1, len(rows) - 1)
+                       if rows[y] and rows[y] != rows[y-1] and rows[y] != rows[y+1]]
             for top in strokes:
                 for bottom in strokes:
-                    if 28 <= bottom - top <= 42:
+                    if 28 <= bottom - top <= 42 and rows[top] == rows[bottom]:
                         return 365 + center.width // 2, 88 + (top + bottom) // 2
             time.sleep(.1)
         self.screenshot("search-focus-failure")
@@ -659,22 +662,22 @@ esac
 
     def back_to_home(self):
         self.click_text("Switch CLI", (35, 80, 215, 205))
-        screen = self.expect_any(("Your workspace", "Leave this environment"), timeout=20)
+        screen = self.expect_any(("Choose a workspace", "Leave this environment"), timeout=20)
         if screen == "Leave this environment":
             self.key("y")
-            self.expect("Your workspace", timeout=20)
+            self.expect("Choose a workspace", timeout=20)
 
-    def wait_for_appearance(self, appearance):
+    def wait_for_preference(self, key, value):
         deadline = time.monotonic() + 8
         path = self.home / ".hibi/preferences.json"
         while time.monotonic() < deadline:
             try:
-                if json.loads(path.read_text()).get("appearance") == appearance:
+                if json.loads(path.read_text()).get(key) == value:
                     return
             except (FileNotFoundError, json.JSONDecodeError):
                 pass
             time.sleep(.1)
-        raise AssertionError(f"Appearance {appearance} was not persisted")
+        raise AssertionError(f"Preference {key}={value!r} was not persisted")
 
     def close_window(self):
         self.window.send_event(protocol.event.ClientMessage(
@@ -707,11 +710,12 @@ esac
         self.expect_theme("light")
         assert sum(self.capture().getpixel((0, 0))) > 600
         self.passed("02-light-home")
-        self.wait_for_appearance("light")
+        self.wait_for_preference("appearance", "light")
         self.close_window()
         self.launch()
         self.expect_theme("light")
         self.passed("02b-light-theme-restored")
+        self.check_accent_restore()
         self.click_text("Claude Code")
         self.expect_components()
         self.expect("Agents")
@@ -853,11 +857,11 @@ esac
         self.click_text("Cancel")
         self.expect("Bundled library")
         self.click_text("Back")
-        self.expect("Your workspace")
+        self.expect("Choose a workspace")
         self.click_theme()
         self.expect_theme("dark")
         self.passed("16-dark-home-final")
-        self.wait_for_appearance("dark")
+        self.wait_for_preference("appearance", "dark")
         self.close_window()
         self.launch()
         self.expect_theme("dark")
@@ -867,11 +871,27 @@ esac
         self.remove_source_with_busy_cache()
         (self.artifacts / "results.json").write_text(json.dumps({"passed": self.results, "isolated_home": str(self.home)}, indent=2))
 
+    def check_accent_restore(self):
+        width = self.window.get_geometry().width
+        header = (width - 480, 0, width - 160, 50)
+        self.click_text("Blue", header)
+        self.click_text("Rose", (width - 480, 32, width - 160, 360))
+        self.wait_for_preference("accent", "rose")
+        self.click_theme()
+        self.expect_theme("dark")
+        self.close_window()
+        self.launch()
+        self.find("Rose", header)
+        self.expect_theme("dark")
+        self.click_theme()
+        self.expect_theme("light")
+        self.passed("02c-accent-restored-across-brightness")
+
     def check_palette_restore(self):
         width = self.window.get_geometry().width
         self.click(width - 120, 25)
         self.click_text("Nord", (width - 320, 32, width - 40, 700))
-        self.wait_for_appearance({"palette": "Nord"})
+        self.wait_for_preference("appearance", {"palette": "Nord"})
         backdrop = self.capture().getpixel((0, 0))
         self.close_window()
         self.launch()
@@ -879,7 +899,7 @@ esac
         assert self.capture().getpixel((0, 0)) == backdrop
         self.click(width - 120, 25)
         self.click_text("System theme", (width - 320, 32, width - 40, 700))
-        self.wait_for_appearance("system")
+        self.wait_for_preference("appearance", "system")
         self.passed("17a-palette-restored-and-system-reselected")
 
     def manage_individual_settings(self):
@@ -977,7 +997,7 @@ esac
             assert marker.read_text() == "Shared cache fixture"
             self.passed("18-remove-source-with-busy-cache")
             self.click_text("Back")
-            self.expect("Your workspace")
+            self.expect("Choose a workspace")
         self.close_window()
 
     def close(self):

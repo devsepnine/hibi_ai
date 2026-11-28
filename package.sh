@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="2.3.0"
+VERSION="2.4.0"
 NAME="hibi-ai"
 
 echo "📦 Packaging ${NAME} v${VERSION}..."

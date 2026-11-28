@@ -23,9 +23,12 @@ pub fn view(
             .iter()
             .any(|node| node.is_folder() && !node.is_expanded())
     });
-    let mut heading =
-        column![text(lang.text(app.tab.display_name())).size(if compact { 22 } else { 24 })]
-            .spacing(5);
+    let mut heading = column![
+        text(lang.text(app.tab.display_name()))
+            .font(super::fonts::display())
+            .size(if compact { 22 } else { 26 })
+    ]
+    .spacing(5);
     if !compact {
         heading = heading.push(
             text(lang.text(description(app.tab)))
@@ -161,18 +164,22 @@ pub fn view(
         );
     }
     let table = column![
-        row![
-            text(lang.text("Component"))
-                .size(11)
-                .style(if focus == Some(FocusArea::Content) {
-                    text::primary
-                } else {
-                    styles::muted
-                }),
-            Space::new().width(Fill),
-            text(lang.text("Status")).size(11).style(styles::muted)
-        ]
-        .padding([10, 16]),
+        container(
+            row![
+                text(lang.text("Component"))
+                    .size(11)
+                    .style(if focus == Some(FocusArea::Content) {
+                        text::primary
+                    } else {
+                        styles::muted
+                    }),
+                Space::new().width(Fill),
+                text(lang.text("Status")).size(11).style(styles::muted)
+            ]
+            .padding([10, 16])
+        )
+        .width(Fill)
+        .style(styles::table_header),
         rule::horizontal(1).style(styles::divider),
         scrollable(rows::items(lang, app, focus == Some(FocusArea::Content)))
             .id("component-list")
@@ -239,7 +246,7 @@ fn work_bar<'a>(
                 .size(12)
             )
             .padding([9, 18])
-            .style(styles::primary)
+            .style(styles::install)
             .on_press_maybe((install > 0).then_some(Message::Action(Action::InstallSelected))),
         ]
         .spacing(8)

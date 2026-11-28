@@ -108,7 +108,8 @@ fn theme_changes_repaint_the_entire_page_background() {
                 channel > 200
             }));
         }
-        assert_ne!(corners[0], corners[3]);
+        let top_edge = &pixels[..1120 * 4];
+        assert!(top_edge.chunks_exact(4).any(|pixel| pixel != corners[0]));
     }
 }
 
@@ -467,7 +468,7 @@ fn editing_search_keeps_native_cursor_arrows_and_does_not_collapse_folders() {
 }
 
 #[test]
-fn home_panel_and_title_are_centered_after_switching_language() {
+fn home_panel_stays_centered_and_title_aligns_with_list_in_each_language() {
     #[derive(Default)]
     struct Bounds {
         panel: Option<Rectangle>,
@@ -491,9 +492,9 @@ fn home_panel_and_title_are_centered_after_switching_language() {
     for size in [Size::new(760.0, 560.0), Size::new(1120.0, 780.0)] {
         desktop.state.window_size = size;
         for (lang, title) in [
-            (super::Language::Japanese, "ワークスペースの設定"),
-            (super::Language::Korean, "작업 공간 설정"),
-            (super::Language::English, "Your workspace, configured."),
+            (super::Language::Japanese, "ワークスペースを選択"),
+            (super::Language::Korean, "작업 공간 선택"),
+            (super::Language::English, "Choose a workspace"),
         ] {
             desktop.message(Message::Action(Action::SetLanguage(lang)));
             let mut bounds = Bounds::default();
@@ -512,7 +513,7 @@ fn home_panel_and_title_are_centered_after_switching_language() {
                 .iter()
                 .find(|(label, _)| label == title)
                 .unwrap();
-            assert!((title_bounds.center_x() - panel.center_x()).abs() <= 1.0);
+            assert!((title_bounds.x - panel.x).abs() <= 1.0);
         }
     }
 }
@@ -578,6 +579,16 @@ fn home_right_arrow_moves_visible_focus_to_codex() {
     assert_eq!(desktop.app().cli_choice, crate::app::CliChoice::Codex);
     let after = render_page(&desktop.state, &mut desktop.tree, &mut desktop.renderer);
     assert!(before != after, "the focused card must visibly change");
+    use crate::app::CliChoice;
+    for (arrow, target) in [
+        (key::Named::ArrowUp, CliChoice::Claude),
+        (key::Named::ArrowDown, CliChoice::Codex),
+        (key::Named::ArrowDown, CliChoice::Sources),
+        (key::Named::ArrowUp, CliChoice::Codex),
+    ] {
+        desktop.key(arrow);
+        assert_eq!(desktop.app().cli_choice, target);
+    }
 }
 
 #[test]
