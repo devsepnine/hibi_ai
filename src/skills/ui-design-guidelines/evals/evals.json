@@ -1,0 +1,33 @@
+{
+  "skill_name": "ui-design-guidelines",
+  "evals": [
+    {
+      "id": 1,
+      "name": "mixed-batch",
+      "prompt": "사진 3장의 별점이 다르고 1장은 읽기 전용이다. 설명만 일괄 수정한 뒤 다른 묶음을 선택하려고 한다. 일부 성공도 가능하다.",
+      "expected_output": "Preserves untouched ratings, identifies eligible objects, and ties completion or partial failure to the original selection.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "watch-handoff",
+      "prompt": "시계에서 판독한 장비 번호를 폰의 정비 메모로 이어줘. 저장과 동기화 보장은 아직 정해지지 않았다.",
+      "expected_output": "Displays the recognized value, distinguishes uncertain receipt from completion, and makes any retention or retry guarantee conditional.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "shared-table",
+      "prompt": "공용 터치 테이블 양쪽에서 두 사람이 다른 사진을 회전하다 같은 사진을 잡는다. 조작 흐름을 설계해줘.",
+      "expected_output": "Supports independent operations and specifies visible, predictable ownership and release when the same object is touched. Accounts for reading direction at the table.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "preserve-product-controls",
+      "prompt": "고객 카드에서 사유를 검색하고 같은 카드로 돌아가는 태블릿 흐름을 설계해줘. 기존 제품 스타일을 유지해야 해.",
+      "expected_output": "Shows which existing controls carry into the new flow, puts the chosen reason on the originating card and restores its context on return. Does not invent project component names.",
+      "files": []
+    }
+  ]
+}

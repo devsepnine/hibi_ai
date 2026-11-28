@@ -19,8 +19,10 @@ def check_document(document, labels):
                 issues.append(f"MISSING {path} at {location}")
         for path, symbol in re.findall(r"`([^`]+)` → `([A-Za-z_$][A-Za-z0-9_$]*)`", line):
             cited = Path(path)
-            if "/" in path and cited.suffix and not path.startswith(("/", "~/")) and "://" not in path:
-                if not cited.is_file() or symbol.encode() not in cited.read_bytes():
+            file_citation = cited.suffix and ("/" in path or re.fullmatch(r"\.[\w-]+", cited.suffix))
+            if file_citation and not path.startswith(("/", "~/")) and "://" not in path:
+                token = rf"(?<![\w$]){re.escape(symbol)}(?![\w$])"
+                if not cited.is_file() or not re.search(token, cited.read_text(encoding="utf-8", errors="replace")):
                     issues.append(f"MISSING-SYMBOL {path} → {symbol} at {location}")
         if re.match(r"^- \*\*(UI strings|Controls|UI 문구|컨트롤)\*\*:", line):
             labels.update(re.findall(r'"([^"]+)"', line))

@@ -1,0 +1,7 @@
+[
+  {"query": "스킬 목록에서 같은 일을 두 번 하는 것이 있는지, 합쳤을 때 예외가 사라지는지 감사해줘.", "should_trigger": true},
+  {"query": "이 배포용 스킬이 없을 때보다 결과가 나은지 비교하고 효용과 발동 조건을 검토해줘.", "should_trigger": true},
+  {"query": "이번 작업에서 내가 반복해서 고친 부분을 회고하고 다음에 쓸 교훈을 정리해줘.", "should_trigger": false},
+  {"query": "이미 정의한 모델 평가 스위트를 실행해서 pass@k 결과를 보여줘.", "should_trigger": false},
+  {"query": "새 React 설정 화면의 키보드 접근성을 코드 리뷰해줘.", "should_trigger": false}
+]

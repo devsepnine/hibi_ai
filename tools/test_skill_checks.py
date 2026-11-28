@@ -1,5 +1,7 @@
-"""Run the document checks shipped with the architecture and feature map skills."""
+"""Exercise the checks and evaluation tools shipped with repository skills."""
 
+import json
+import os
 from pathlib import Path
 import re
 import runpy
@@ -38,6 +40,60 @@ class DocumentChecks(unittest.TestCase):
         return subprocess.run([sys.executable, SKILLS / script, *args], cwd=self.repo,
                               capture_output=True, text=True, encoding="utf-8")
 
+    def test_audit_inventory_preserves_distinct_owners(self):
+        fixture = SKILLS / "skill-audit/evals/fixtures/dispatch.json"
+        for name, content in json.loads(fixture.read_text(encoding="utf-8")).items():
+            path = self.repo / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content, encoding="utf-8")
+        catalog = self.repo / "catalog"
+        contract = catalog / "dispatch-export/references/status.md"
+        shutil.copyfile(contract, contract.with_name("status-ko.md"))
+        (catalog / "incomplete").mkdir()
+        result = self.run_check("skill-audit/scripts/inventory.py", catalog)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        names = [entry["folder"] for entry in report["skills"]]
+        self.assertEqual(names, ["dispatch-export", "dispatch-review"])
+        self.assertEqual(report["directories_without_entry"], ["incomplete"])
+        self.assertEqual(report["matching_bodies"], [[
+            "dispatch-export/references/status.md", "dispatch-review/references/status.md",
+        ]])
+
+    def test_audit_inventory_distinguishes_empty_and_unreadable(self):
+        script = "skill-audit/scripts/inventory.py"
+        catalog = self.repo / "catalog"
+        catalog.mkdir()
+        self.assertEqual(self.run_check(script, catalog).returncode, 1)
+        skill = catalog / "broken"
+        skill.mkdir()
+        (skill / "SKILL.md").write_bytes(b"\xff")
+        result = self.run_check(script, catalog)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("SKILL.md", result.stderr)
+        self.assertEqual(result.stdout, "")
+
+    def test_audit_inventory_reports_unreadable_reference_directory(self):
+        script = "skill-audit/scripts/inventory.py"
+        skill = self.repo / "catalog/sample"
+        nested = skill / "references/nested"
+        nested.mkdir(parents=True)
+        (skill / "SKILL.md").write_text("Entry", encoding="utf-8")
+        (nested / "record.md").write_text("Record", encoding="utf-8")
+        nested.chmod(0)
+        self.addCleanup(nested.chmod, 0o700)
+        if os.access(nested, os.R_OK):
+            self.skipTest("directory permissions do not restrict this account")
+        result = self.run_check(script, skill.parent)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("nested", result.stderr)
+        self.assertEqual(result.stdout, "")
+        nested.chmod(0o700)
+        result = self.run_check(script, skill.parent)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        files = json.loads(result.stdout)["skills"][0]["instruction_files"]
+        self.assertIn("sample/references/nested/record.md", files)
+
     @unittest.skipUnless(shutil.which("bash"), "the documented grader uses Bash")
     def test_documented_grader_propagates_failure(self):
         src = self.repo / "src"
@@ -68,6 +124,12 @@ class DocumentChecks(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("FIELD arch-first: Why occurs 2 times", result.stdout)
         self.assertIn("FIELD arch-second: Why occurs 0 times", result.stdout)
+        document.write_text(first.replace("**Why**: example", "**Why**:  ")
+                            .replace("**Evidence**: example", "**Evidence**:\n  measured import count"),
+                            encoding="utf-8")
+        result = self.run_check(checker)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout.splitlines(), ["FIELD arch-first: Why is empty"])
         document.write_text("## Rules\n", encoding="utf-8")
         self.assertNotEqual(self.run_check(checker).returncode, 0)
 
@@ -89,12 +151,22 @@ class DocumentChecks(unittest.TestCase):
         doc = self.repo / "docs/FEATURES.md"
         doc.write_text("- Source: `source files/screen.py` → `render`\n", encoding="utf-8")
         source = self.repo / "source files/screen.py"
-        source.write_text("def draw(): pass\n", encoding="utf-8")
+        source.write_text("def renderLegacy(): pass\n", encoding="utf-8")
         checker = "feature-map/scripts/check_map.py"
         result = self.run_check(checker, source)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("MISSING-SYMBOL source files/screen.py → render", result.stdout)
         source.write_text("def render(): pass\n", encoding="utf-8")
+        self.assertEqual(self.run_check(checker, source).returncode, 0)
+
+    def test_feature_symbol_in_root_file(self):
+        doc = self.repo / "docs/FEATURES.md"
+        doc.write_text("`Sidebar.tsx` → `$collapsed`\n", encoding="utf-8")
+        source = self.repo / "Sidebar.tsx"
+        source.write_text("const $collapsedLegacy = true", encoding="utf-8")
+        checker = "feature-map/scripts/check_map.py"
+        self.assertIn("MISSING-SYMBOL Sidebar.tsx → $collapsed", self.run_check(checker, source).stdout)
+        source.write_text("const $collapsed = true", encoding="utf-8")
         self.assertEqual(self.run_check(checker, source).returncode, 0)
 
 

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dispatch queue style study</title>
+<link rel="stylesheet" href="style-specimen.css">
+<main>
+  <div class="controls">
+    <label>Visual style
+      <select id="style">
+        <option value="classic">Classic Macintosh</option>
+        <option value="motif">Motif workstation</option>
+        <option value="aqua">Aqua</option>
+        <option value="metro">Metro</option>
+        <option value="modern" selected>Fluent inspired workspace</option>
+        <option value="material">Material 3 inspired workspace</option>
+        <option value="apple">Contemporary Apple inspired workspace</option>
+      </select>
+    </label>
+    <button id="reset" type="button">Reset queue</button>
+  </div>
+  <section class="workspace" data-style="modern" aria-labelledby="heading">
+    <header><h1 id="heading">Dispatch queue</h1></header>
+    <div class="records" id="records">
+      <label class="record">
+        <input type="checkbox" aria-label="Select order ORD-0217">
+        <bdi>ORD-0217</bdi><span class="status">Priority dispatch</span><span>North depot</span>
+      </label>
+      <label class="record">
+        <input type="checkbox" aria-label="Select order ORD-0218">
+        <bdi>ORD-0218</bdi><span class="status">Ready</span><span>Central depot</span>
+      </label>
+      <label class="record">
+        <input type="checkbox" aria-label="Select order ORD-0219">
+        <bdi>ORD-0219</bdi><span class="status">Ready</span><span>South depot</span>
+      </label>
+    </div>
+    <footer>
+      <button id="process" class="command" type="button" disabled>Process selected (0)</button>
+      <p role="status" id="result"></p>
+    </footer>
+  </section>
+</main>
+<script>
+  const workspace = document.querySelector(".workspace");
+  const records = [...document.querySelectorAll(".record")];
+  const processButton = document.querySelector("#process");
+  const result = document.querySelector("#result");
+  const initialStatuses = records.map(row => row.querySelector(".status").textContent);
+
+  function selectedRows() {
+    return records.filter(row => row.querySelector("input").checked);
+  }
+
+  function updateCommand() {
+    const count = selectedRows().length;
+    processButton.textContent = "Process selected (" + count + ")";
+    processButton.disabled = count === 0;
+  }
+
+  document.querySelector("#style").addEventListener("change", event => {
+    workspace.dataset.style = event.target.value;
+  });
+  document.querySelector("#records").addEventListener("change", () => {
+    result.textContent = "";
+    updateCommand();
+  });
+  processButton.addEventListener("click", () => {
+    const selected = selectedRows();
+    for (const row of selected) {
+      row.querySelector(".status").textContent = "Processed";
+      const checkbox = row.querySelector("input");
+      checkbox.checked = false;
+      checkbox.disabled = true;
+    }
+    result.textContent = selected.length + (selected.length === 1 ? " order processed." : " orders processed.");
+    updateCommand();
+    const next = workspace.querySelector("input:enabled") || document.querySelector("#reset");
+    next.focus();
+  });
+  document.querySelector("#reset").addEventListener("click", () => {
+    records.forEach((row, index) => {
+      const checkbox = row.querySelector("input");
+      checkbox.disabled = false;
+      checkbox.checked = false;
+      row.querySelector(".status").textContent = initialStatuses[index];
+    });
+    result.textContent = "Queue reset.";
+    updateCommand();
+  });
+</script>
+</html>

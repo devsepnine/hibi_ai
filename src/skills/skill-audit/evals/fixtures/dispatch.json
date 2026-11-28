@@ -1,0 +1,9 @@
+{
+  "catalog/dispatch-export/SKILL.md": "---\nname: dispatch-export\ndescription: Create a dispatch list from a warehouse CSV.\n---\nRun scripts/ready_ids.py on the supplied CSV. Print eligible identifiers in input order, one per line. See references/status.md for the source contract.\n",
+  "catalog/dispatch-export/scripts/ready_ids.py": "import csv\nimport sys\nwith open(sys.argv[1], newline='') as file:\n    for row in csv.DictReader(file):\n        if row['status'].startswith('READY'):\n            print(row['id'])\n",
+  "catalog/dispatch-export/references/status.md": "# Warehouse status\nOnly the exact state READY authorizes dispatch. READY_HOLD is awaiting supervisor release. PENDING is ineligible.\n",
+  "catalog/dispatch-review/SKILL.md": "---\nname: dispatch-review\ndescription: Review a proposed dispatch list against a warehouse CSV.\n---\nCompare the proposed list with the warehouse CSV using references/status.md. Report incorrect or missing IDs and their source rows. Preserve both input files.\n",
+  "catalog/dispatch-review/references/status.md": "# Warehouse status\nOnly the exact state READY authorizes dispatch. READY_HOLD is awaiting supervisor release. PENDING is ineligible.\n",
+  "stock.csv": "id,status\nA,READY\nB,READY_HOLD\nC,PENDING\nD,READY\n",
+  "proposed.txt": "A\nB\nD\n"
+}

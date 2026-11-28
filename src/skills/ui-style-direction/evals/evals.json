@@ -1,0 +1,47 @@
+{
+  "skill_name": "ui-style-direction",
+  "evals": [
+    {
+      "id": 1,
+      "name": "classic-collection",
+      "prompt": "1992년 Macintosh풍 웹 자료 보관소를 설계해줘. 여러 자료를 체크한 채 키보드로 다른 자료로 이동할 수 있어.",
+      "expected_output": "Uses a period window or control cue alongside an independent focus cue. Checked items remain checked when focus moves. Identifies web adaptations without claiming pixel fidelity.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "migrate-collection",
+      "prompt": "같은 자료 보관소를 Fluent 2 사내 도구로 옮겨줘. 기존 사용자는 체크한 자료만 내보내. 다크 테마도 지원해.",
+      "expected_output": "Preserves the selected export scope while focus moves, maps visual roles to theme-aware components, and describes both themes.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "document-modal-era",
+      "prompt": "2001년 Aqua 문서 A에서 저장 결정을 열어 둔 채 문서 B를 편집하는 전시 화면을 설계해줘. 현대 Apple 버전과도 비교해줘.",
+      "expected_output": "Identifies the owner of the sheet and the document that still accepts input. Distinguishes Aqua-era control appearance from the target modern system.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "motif-states",
+      "prompt": "Motif 버튼의 눌림과 토글이 계속 켜져 있는 모습을 현대 웹에서 재현해줘. 키보드 포커스 위치도 보여야 해.",
+      "expected_output": "Momentary press, persistent selection and movable focus are distinguishable in the same task.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "metro-transit",
+      "prompt": "2010년 Windows Phone풍 교통 안내 화면과 현대 Material 제품 시안을 비교해줘. 목적지와 출발 시간이 중요하고 노선 보기를 바꿔야 해.",
+      "expected_output": "Uses type and alignment for content priority, provides discoverable peer navigation, and preserves the selected route in both systems.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "series60-music",
+      "prompt": "Nokia Series 60풍 음악 라이브러리의 옵션 메뉴를 열기 전과 후 두 화면을 설계해줘.",
+      "expected_output": "Maps the current row and contextual labels to physical soft keys, shows how labels change, and restores the selected song on dismissal.",
+      "files": []
+    }
+  ]
+}

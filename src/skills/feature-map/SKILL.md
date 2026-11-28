@@ -160,7 +160,7 @@ wrong path with the authority of documentation behind it.
 
 ### 6. Verify, then wire it in
 
-From the repository root, run the bundled [feature map checker](scripts/check_map.py) with Python 3. Pass each directory containing code or translations as a separate argument, for example `src` and `public/locales` if both exist. Choose source directories so the map cannot match its own labels. The checker verifies cited paths, symbols, UI text, and the cause recorded for each pitfall. On exit code zero, continue with the review below.
+From the repository root, run the bundled [feature map checker](scripts/check_map.py) with Python 3. Pass each directory containing code or translations as a separate argument, for example `src` and `public/locales` if both exist. Choose source directories so the map cannot match its own labels. The checker verifies cited paths, looks for the complete symbol name in the cited file, and checks UI text and the cause recorded for each pitfall. Read each symbol in context to confirm its role. On exit code zero, continue with the review below.
 
 - A missing string is paraphrased or stale: fix it, do not keep it.
 - Write paths in full from the repo root; a shortened path fails the check.

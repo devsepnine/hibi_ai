@@ -100,7 +100,7 @@ ls .dependency-cruiser.* .eslintrc* eslint.config.* importlinter* .importlinter 
 
 ### 넘기기 전에 검증한다
 
-저장소 루트에서 이 스킬에 포함된 [검증 스크립트](scripts/check_rules.py)를 Python 3으로 실행한다. 문서가 없거나, 경로가 없거나, 규칙 ID가 중복되거나, 한 규칙 안에서 필드가 빠지거나 중복되면 종료 코드가 0이 아니다. 통과한 뒤에는 각 증거 명령을 다시 실행해 문서의 횟수가 여전히 맞는지 확인한다.
+저장소 루트에서 이 스킬에 포함된 [검증 스크립트](scripts/check_rules.py)를 Python 3으로 실행한다. 문서가 없거나, 경로가 없거나, 규칙 ID가 중복되거나, 한 규칙 안에서 필드가 빠지거나 값이 비거나 중복되면 종료 코드가 0이 아니다. 통과한 뒤에는 각 증거 명령을 다시 실행해 문서의 횟수가 여전히 맞는지 확인한다.
 
 ## Update mode
 

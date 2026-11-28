@@ -2,7 +2,7 @@
 
 import re
 import sys
-from collections import Counter
+from collections import defaultdict
 from pathlib import Path
 
 
@@ -23,10 +23,15 @@ def findings(text):
         if name in seen:
             yield f"DUPLICATE {name}"
         seen.add(name)
-        counts = Counter(re.findall(r"^- \*\*(.+?)\*\*:", body, re.MULTILINE))
+        values = defaultdict(list)
+        for field, value in re.findall(r"^- \*\*([^*\n]+)\*\*:([^\n]*(?:\n[ \t]+[^\n]*)*)", body, re.MULTILINE):
+            values[field].append(value.strip())
         for field in required:
-            if counts[field] != 1:
-                yield f"FIELD {name}: {field} occurs {counts[field]} times"
+            entries = values[field]
+            if len(entries) != 1:
+                yield f"FIELD {name}: {field} occurs {len(entries)} times"
+            elif not entries[0]:
+                yield f"FIELD {name}: {field} is empty"
     if not seen:
         yield "No architecture rule headings found"
 

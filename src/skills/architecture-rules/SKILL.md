@@ -100,7 +100,7 @@ Writing the document is a content change, so the post-work review gate in `CLAUD
 
 ### Verify before handing back
 
-From the repository root, run the bundled [rule checker](scripts/check_rules.py) with Python 3. It exits with a nonzero status for an unreadable document, a missing path, duplicate rule IDs, or missing or repeated fields within a rule. After it passes, rerun each evidence command and confirm the counts still match.
+From the repository root, run the bundled [rule checker](scripts/check_rules.py) with Python 3. It exits with a nonzero status for an unreadable document, a missing path, duplicate rule IDs, or missing, empty, or repeated fields within a rule. After it passes, rerun each evidence command and confirm the counts still match.
 
 ## Update mode
 

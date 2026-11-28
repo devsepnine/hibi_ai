@@ -1,0 +1,26 @@
+{
+  "skill_name": "skill-audit",
+  "evals": [
+    {
+      "id": 1,
+      "name": "audit-and-repair-independent-packages",
+      "prompt": "첨부한 JSON의 경로와 내용을 빈 임시 디렉터리에 파일로 준비해줘. 창고 스킬 두 개는 각각 설치할 수 있어. 효용과 중복 여부를 감사하고 재현한 결함을 고친 뒤 검증해줘. 입력 CSV와 제안 목록은 보존해줘.",
+      "files": ["evals/fixtures/dispatch.json"],
+      "expected_output": "Reproduces B leaking into the export. Changes only the responsible behavior and verifies A and D in order, a fresh noneligible state and the neighboring review. Tells generation from discrepancy review and preserves access to the status contract for each installation. Separates observed behavior from unmeasured incremental value."
+    },
+    {
+      "id": 2,
+      "name": "equivalent-contracts-with-different-words",
+      "prompt": "두 스킬의 통합 여부만 검토해줘. A는 선택한 주문의 ID를 화면 순서로 텍스트 파일에 쓰고 B는 체크한 행의 주문번호를 현재 표시 순서대로 줄마다 저장해. 같은 입력으로 파일 바이트가 같았고 오류 처리도 같아. 한 기존 명령이 B를 이름으로 호출해. 파일 수정은 요청하지 않았어.",
+      "files": [],
+      "expected_output": "Identifies a semantic consolidation candidate despite different wording. Names the caller to preserve or migrate. Gives a verification case and a review decision without mutating either skill or presenting supplied results as its own run."
+    },
+    {
+      "id": 3,
+      "name": "utility-tie-and-unavailable-router",
+      "prompt": "동일한 여섯 과제에서 대상 스킬을 제공한 답과 제외한 답이 모두 루브릭을 충족했어. 목록에는 스킬이 보이지만 자동 발동 로그 수집은 계정 오류로 중단됐어. 이 스킬이 유용하고 잘 발동하는지 판정해줘.",
+      "files": [],
+      "expected_output": "Reports a tie on the supplied tasks and unknown incremental benefit elsewhere. Keeps catalog visibility separate from unmeasured invocation, avoids an automatic-trigger success or failure rate, and identifies a discriminating high-impact or boundary case."
+    }
+  ]
+}
