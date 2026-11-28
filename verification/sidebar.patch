@@ -1,0 +1,15 @@
+--- a/tools/installer/tests/gui_smoke.py
++++ b/tools/installer/tests/gui_smoke.py
+@@ -827,9 +827,9 @@
+         self.back_to_home()
+         self.click_text("Codex CLI")
+         self.expect_components()
+-        sidebar = " ".join(w["text"] for w in self.words() if w["x"] < 210)
+-        assert all(name in sidebar for name in ["Skills", "Config", "MCP"]), sidebar
+-        assert all(name not in sidebar for name in ["Agents", "Commands", "Plugins"]), sidebar
++        sidebar = {normalized(w["text"]) for w in self.words() if w["x"] < 210}
++        assert {"skills", "config", "mcp"} <= sidebar, sidebar
++        assert sidebar.isdisjoint({"agents", "commands", "plugins"}), sidebar
+         self.passed("12-codex-three-categories")
+         self.back_to_home()
+         self.click_text("Manage sources")

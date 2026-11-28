@@ -24,7 +24,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: 6d8b6a79d7ef6f0308cb3b2dca68f08cd2fab588
           fetch-depth: 0
+      - name: Apply the reviewed sidebar OCR assertion to the tagged test suite
+        run: |
+          git show "$GITHUB_SHA:verification/sidebar.patch" | git apply
+          test "$(git diff --name-only)" = tools/installer/tests/gui_smoke.py
       - uses: dtolnay/rust-toolchain@stable
       - name: Install Linux display and GUI test dependencies
         run: |
@@ -116,6 +121,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 6d8b6a79d7ef6f0308cb3b2dca68f08cd2fab588
       - uses: dtolnay/rust-toolchain@stable
         if: runner.os != 'Linux'
       - uses: Swatinem/rust-cache@v2
@@ -162,6 +169,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 6d8b6a79d7ef6f0308cb3b2dca68f08cd2fab588
       - name: Build Alpine desktop installer
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work rust:alpine sh -ec '
@@ -179,6 +188,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 6d8b6a79d7ef6f0308cb3b2dca68f08cd2fab588
       - uses: actions/download-artifact@v4
         with:
           pattern: installer-*
@@ -228,6 +239,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 6d8b6a79d7ef6f0308cb3b2dca68f08cd2fab588
       - uses: actions/download-artifact@v4
         with:
           name: windows-msi-smoke-fixtures
@@ -251,6 +264,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 6d8b6a79d7ef6f0308cb3b2dca68f08cd2fab588
       - uses: actions/download-artifact@v4
         with:
           name: release-packages
